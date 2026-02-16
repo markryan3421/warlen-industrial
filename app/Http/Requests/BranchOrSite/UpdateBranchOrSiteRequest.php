@@ -27,7 +27,7 @@ class UpdateBranchOrSiteRequest extends FormRequest
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('branch_or_sites', 'branch_name')->ignore($this->route('branch_or_site')->id)
+               Rule::unique('branch_or_sites', 'branch_name')->ignore($this->route('branch'))
             ],
             'branch_address' => [
                 'required',

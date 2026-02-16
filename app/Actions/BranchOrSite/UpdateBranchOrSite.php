@@ -14,7 +14,7 @@ class UpdateBranchOrSite
         //
     }
 
-    public function update(array $data, $branchOrSite): BranchOrSite
+    public function update(array $data, BranchOrSite $branchOrSite): BranchOrSite
     {
         $branchOrSite->update([
             'branch_name' => $data['branch_name'],

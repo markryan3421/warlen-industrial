@@ -7,7 +7,13 @@ use App\Actions\BranchOrSite\UpdateBranchOrSite;
 use App\Http\Requests\BranchOrSite\StoreBranchOrSiteRequest;
 use App\Http\Requests\BranchOrSite\UpdateBranchOrSiteRequest;
 use App\Models\BranchOrSite;
+<<<<<<< HEAD
+=======
+use Illuminate\Support\Facades\Cache;
+>>>>>>> 7ea0aeb994732ea4a80c27d57a2f189673bbda94
 use Illuminate\Support\Facades\DB;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class BranchOrSiteController extends Controller
 {
@@ -16,7 +22,12 @@ class BranchOrSiteController extends Controller
      */
     public function index()
     {
-        //
+
+        $branches = Cache::rememberForever('branches', function () {
+            return BranchOrSite::get(['id', 'branch_name', 'branch_address']);
+        });
+
+        return Inertia::render('Branch/index', compact('branches'));
     }
 
     /**
@@ -24,7 +35,7 @@ class BranchOrSiteController extends Controller
      */
     public function create()
     {
-        //
+        return Inertia::render('Branch/create');
     }
 
     /**
@@ -34,21 +45,22 @@ class BranchOrSiteController extends Controller
     {
         try {
             DB::beginTransaction();
-            
-             $action->create($request->validated());
-            
+
+            $action->create($request->validated());
+
+            Cache::forget('branches');
+
             DB::commit();
-            
-            return back()->with('success', 'Branch or Site created successfully.');
-            
+
+            return to_route('branches.index')->with('success', 'Branch or Site created successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
-            
+
             return back()
                 ->with('error', 'Failed to create branch or site. Please try again.' . $e->getMessage());
         }
     }
-    
+
 
     /**
      * Display the specified resource.
@@ -61,42 +73,42 @@ class BranchOrSiteController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(BranchOrSite $branchOrSite)
+    public function edit(BranchOrSite $branch)
     {
-        //
+        return Inertia::render('Branch/edit',compact('branch'));
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateBranchOrSiteRequest $request, BranchOrSite $branchOrSite, UpdateBranchOrSite $action)
+    public function update(UpdateBranchOrSiteRequest $request, BranchOrSite $branch, UpdateBranchOrSite $action)
     {
-         try {
+        try {
             DB::beginTransaction();
-            
-             $action->update($request->validated(), $branchOrSite);
-            
+
+            $action->update($request->validated(), $branch);
+
+            Cache::forget('branches');
+
             DB::commit();
-            
-            return back()->with('success', 'Branch or Site updated successfully.');
-            
+
+            return to_route('branches.index')->with('success', 'Branch or Site updated successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
-            
-            return back()
-                ->with('error', 'Failed to update branch or site. Please try again.' . $e->getMessage());
-        }
 
-       
+            return back()->with('error', 'Failed to update branch or site. Please try again.' . $e->getMessage());
+        }
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(BranchOrSite $branchOrSite)
+    public function destroy(BranchOrSite $branch)
     {
-        $branchOrSite->delete();
+        $branch->delete();
 
-        return back()->with('success', 'Branch or Site deleted successfully.');
+        Cache::forget('branches');
+
+        return to_route('branches.index')->with('success', 'Branch or Site deleted successfully.');
     }
 }

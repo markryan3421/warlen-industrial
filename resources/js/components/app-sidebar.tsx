@@ -1,5 +1,9 @@
 import { Link } from '@inertiajs/react';
+<<<<<<< HEAD
 import { BookOpen, CircleMinus, CircleUser, Flag, Folder, Landmark } from 'lucide-react';
+=======
+import { BookOpen, CircleMinus, Flag, Folder, Landmark,UserCog } from 'lucide-react';
+>>>>>>> 7ea0aeb994732ea4a80c27d57a2f189673bbda94
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -15,12 +19,20 @@ import {
 import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
 import AppLogo from './app-logo';
+import BranchController from '@/actions/App/Http/Controllers/BranchOrSiteController';
+import PositionController from '@/actions/App/Http/Controllers/PositionController';
 
 const mainNavItems: NavItem[] = [
     {
-        title: 'Payroll',
-        href: dashboard(),
+        title: 'Branches',
+        href: BranchController.index(),
         icon: Landmark,
+    },
+
+     {
+        title: 'Positions',
+        href: PositionController.index(),
+        icon: UserCog,
     },
     {
         title: 'Attendance',
