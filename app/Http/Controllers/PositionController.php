@@ -20,7 +20,7 @@ class PositionController extends Controller
     {
         $positions = Cache::remember('positions', 60, function () {
             return Position::query()
-                ->with(['deductions' => function ($query) {
+                ->with(['deduction' => function ($query) {
                     $query->deductionsOnly();
                 }])
                 ->get(['id', 'pos_name']);

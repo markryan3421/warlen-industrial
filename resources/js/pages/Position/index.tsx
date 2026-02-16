@@ -53,12 +53,12 @@ export default function index({ positions }: any) {
                          {positions.map((pos) => (
                             <TableRow key={pos.id}>
                                 <TableCell>{pos.pos_name}</TableCell>
-                                <TableCell>₱{pos.deductions?.salary_rate || '0.00'}</TableCell>
-                                <TableCell>{pos.deductions?.reg_overtime_rate || '0.00'}%</TableCell>
-                                <TableCell>{pos.deductions?.special_overtime_rate || '0.00'}%</TableCell>
-                                <TableCell>{pos.deductions?.sss_rate || '0.00'}%</TableCell>
-                                <TableCell>{pos.deductions?.philhealth_rate || '0.00'}%</TableCell>
-                                <TableCell>{pos.deductions?.pagibig_rate || '0.00'}%</TableCell>
+                                <TableCell>₱{pos.deduction?.salary_rate || '0.00'}</TableCell>
+                                <TableCell>{pos.deduction?.reg_overtime_rate || '0.00'}%</TableCell>
+                                <TableCell>{pos.deduction?.special_overtime_rate || '0.00'}%</TableCell>
+                                <TableCell>{pos.deduction?.sss_rate || '0.00'}%</TableCell>
+                                <TableCell>{pos.deduction?.philhealth_rate || '0.00'}%</TableCell>
+                                <TableCell>{pos.deduction?.pagibig_rate || '0.00'}%</TableCell>
                                 <TableCell>
                                     <div className="flex gap-2">
                                         <Link 
