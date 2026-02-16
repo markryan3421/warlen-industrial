@@ -1,9 +1,5 @@
 import { Link } from '@inertiajs/react';
-<<<<<<< HEAD
-import { BookOpen, CircleMinus, CircleUser, Flag, Folder, Landmark } from 'lucide-react';
-=======
-import { BookOpen, CircleMinus, Flag, Folder, Landmark,UserCog } from 'lucide-react';
->>>>>>> 7ea0aeb994732ea4a80c27d57a2f189673bbda94
+import { BookOpen, CircleMinus, CircleUser, Flag, Folder, Landmark , UserCog} from 'lucide-react';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';

@@ -7,13 +7,10 @@ use App\Actions\BranchOrSite\UpdateBranchOrSite;
 use App\Http\Requests\BranchOrSite\StoreBranchOrSiteRequest;
 use App\Http\Requests\BranchOrSite\UpdateBranchOrSiteRequest;
 use App\Models\BranchOrSite;
-<<<<<<< HEAD
-=======
 use Illuminate\Support\Facades\Cache;
->>>>>>> 7ea0aeb994732ea4a80c27d57a2f189673bbda94
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
-use Inertia\Response;
+// use Inertia\Response;
 
 class BranchOrSiteController extends Controller
 {

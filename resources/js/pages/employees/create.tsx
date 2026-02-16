@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { BreadcrumbItem } from '@/types';
+import InputError from '@/components/input-error';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -30,7 +31,7 @@ export default function Create({ positions, branches }: Props) {
         branch_or_site_id: '',
         employee_number: '',
         emergency_contact_number: '',
-        department: '',
+        department: 'monthly',
         employee_status: 'active',
     });
 
@@ -52,16 +53,19 @@ export default function Create({ positions, branches }: Props) {
                         <div>
                             <Label htmlFor="name">Name</Label>
                             <Input id="name" value={data.name} onChange={e => setData('name', e.target.value)} className="" />
+                            <InputError message={errors.name} />
                         </div>
 
                         <div>
                             <Label htmlFor="email">Email</Label>
                             <Input id="email" type="email" value={data.email} onChange={e => setData('email', e.target.value)} className="" />
+                            <InputError message={errors.email} />
                         </div>
 
                         <div>
                             <Label htmlFor="password">Password </Label>
                             <Input id="password" type="password" value={data.password} onChange={e => setData('password', e.target.value)} className="" />
+                            <InputError message={errors.password} />
                         </div>
                     </div>
 
@@ -70,16 +74,18 @@ export default function Create({ positions, branches }: Props) {
                         <div>
                             <Label htmlFor="employee_number">Employee Number </Label>
                             <Input id="employee_number" type="number" value={data.employee_number} onChange={e => setData('employee_number', e.target.value)} className="" />
+                            <InputError message={errors.employee_number} />
                         </div>
 
                         <div>
                             <Label htmlFor="department">Department *</Label>
                             <select id="department" value={data.department} onChange={e => setData('department', e.target.value)} className="">
                                 <option value="">Select a Department</option>
-                                <option value="IT">WeekEnder</option>
-                                <option value="HR">HR</option>
-                                <option value="Admin">Admin</option>
+                                <option value="weekender">Weekender</option>
+                                <option value="monthly">Monthly</option>
+                                <option value="semi_monthly">Semi-Monthly</option>
                             </select>
+                            <InputError message={errors.department} />
                         </div>
 
                         <div>
@@ -92,23 +98,25 @@ export default function Create({ positions, branches }: Props) {
                                     </option>
                                 ))}
                             </select>
+                            <InputError message={errors.position_id} />
                         </div>
 
                         <div>
                             <Label htmlFor="branch_or_site_id">Branch/Site *</Label>
                             <select id="branch_or_site_id" value={data.branch_or_site_id} onChange={e => setData('branch_or_site_id', e.target.value)} className="">
                                 <option value="">Select a Branch</option>
-                            {branches?.map((branch_or_site) => (
-                                <option key={branch_or_site.id} value={branch_or_site.id}>
-                                    {branch_or_site.branch_name}
-                                </option>
-                            ))}
+                                {branches?.map((branch_or_site) => (
+                                    <option key={branch_or_site.id} value={branch_or_site.id}>
+                                        {branch_or_site.branch_name}
+                                    </option>
+                                ))}
                             </select>
+                            <InputError message={errors.branch_or_site_id} />
                         </div>
 
                         <div>
                             <Label htmlFor="emergency_contact_number">Emergency Contact</Label>
-                            <Input id="emergency_contact_number" type="number" value={data.emergency_contact_number} onChange={e => setData('emergency_contact_number', e.target.value)}/>
+                            <Input id="emergency_contact_number" type="number" value={data.emergency_contact_number} onChange={e => setData('emergency_contact_number', e.target.value)} />
                         </div>
 
                         <div>
@@ -117,6 +125,7 @@ export default function Create({ positions, branches }: Props) {
                                 <option value="active">Active</option>
                                 <option value="inactive">Inactive</option>
                             </select>
+                            <InputError message={errors.employee_status} />
                         </div>
                     </div>
 

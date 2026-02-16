@@ -11,6 +11,7 @@ use App\Models\Position;
 use App\Models\BranchOrSite;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
+use function Pest\Laravel\get;
 
 class EmployeeController extends Controller
 {
@@ -19,10 +20,10 @@ class EmployeeController extends Controller
      */
     public function index()
     {
-        $employees = Employee::with(['position', 'branch_or_site', 'user'])
+        $employees = Employee::with(['position', 'branchOrSite', 'user'])
             ->latest()
-            ->paginate(10); 
-            
+            ->get();
+
         return Inertia::render('employees/index', [
             'employees' => $employees
         ]);

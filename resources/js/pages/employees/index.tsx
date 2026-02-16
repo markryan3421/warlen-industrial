@@ -4,10 +4,10 @@ import { SectionCards } from '@/components/section-cards';
 import { ChartAreaInteractive } from '@/components/section-chart';
 // import { PlaceholderPattern } from '@/components/ui/placeholder-pattern';
 import AppLayout from '@/layouts/app-layout';
-import { dashboard } from '@/routes';
+// import { dashboard } from '@/routes';
 import type { BreadcrumbItem } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Table, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -16,6 +16,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 interface Employee {
+    id: number;
     position: {
         pos_name: string;
     }
@@ -28,9 +29,9 @@ interface Employee {
         email: string;
     }
     employee_number: string;
-    emergency_contact: string;
+    emergency_contact_number: string;
     department: string;
-    status: string;
+    employee_status: string;
 
 }
 
@@ -64,8 +65,23 @@ export default function Index({ employees }: PageProps) {
                                 <TableHead>Actions</TableHead>
                             </TableRow>
                         </TableHeader>
-
                     </Table>
+                    <TableBody>
+                        {employees.map((employee) => (
+                            <TableRow key={employee.id}>
+                                <TableCell>{employee.user.name}</TableCell>
+                                <TableCell>{employee.position.pos_name}</TableCell>
+                                <TableCell>{employee.department}</TableCell>
+                                <TableCell>{employee.branch_or_site.branch_name}</TableCell>
+                                <TableCell>{employee.employee_number}</TableCell>
+                                <TableCell>{employee.emergency_contact_number}</TableCell>
+                                <TableCell>{employee.employee_status}</TableCell>
+                                <TableCell>
+                                    <Link href={`/employees/${employee.id}/edit`}>Edit</Link>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
                 </div>
 
             </div>
