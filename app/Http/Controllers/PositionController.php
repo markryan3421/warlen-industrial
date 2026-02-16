@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Position\CreateNewPosition;
+use App\Actions\Position\UpdatePosition;
 use App\Http\Requests\Position\StorePositionRequest;
 use App\Http\Requests\Position\UpdatePositionRequest;
 use App\Models\Position;
-use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class PositionController extends Controller
 {
@@ -28,10 +30,25 @@ class PositionController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StorePositionRequest $request)
+    public function store(StorePositionRequest $request, CreateNewPosition $action)
     {
-        //
+        try {
+            DB::beginTransaction();
+            
+             $action->create($request->validated());
+            
+            DB::commit();
+            
+            return back()->with('success', 'Position created successfully.');
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            return back()->with('error', 'Failed to create position. Please try again.' . $e->getMessage());
+        }
+
     }
+  
 
     /**
      * Display the specified resource.
@@ -52,9 +69,22 @@ class PositionController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdatePositionRequest $request, Position $position)
+    public function update(UpdatePositionRequest $request, Position $position, UpdatePosition $action)
     {
-        //
+        try {
+            DB::beginTransaction();
+            
+             $action->update($request->validated(), $position);
+            
+            DB::commit();
+            
+            return back()->with('success', 'Position updated successfully.');
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            return back()->with('error', 'Failed to update position. Please try again.' . $e->getMessage());
+        }
     }
 
     /**
