@@ -6,6 +6,8 @@ use App\Models\Position;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 
 class Deduction extends Model
 {
@@ -24,6 +26,21 @@ class Deduction extends Model
         return $this->belongsTo(Position::class,'position_id');
     }
 
+
+    #[Scope]
+    protected function deductionsOnly(Builder $query): void
+    {
+         $query->select(
+                'id',
+                'position_id',
+                'salary_rate',
+                'reg_overtime_rate',
+                'special_overtime_rate',
+                'sss_rate',
+                'philhealth_rate',
+                'pagibig_rate'
+        );
+    }
 
     // Accessors and Mutators
     protected function salaryRate(): Attribute

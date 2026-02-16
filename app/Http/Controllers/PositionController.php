@@ -7,7 +7,9 @@ use App\Actions\Position\UpdatePosition;
 use App\Http\Requests\Position\StorePositionRequest;
 use App\Http\Requests\Position\UpdatePositionRequest;
 use App\Models\Position;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Inertia\Inertia;
 
 class PositionController extends Controller
 {
@@ -16,7 +18,15 @@ class PositionController extends Controller
      */
     public function index()
     {
-        //
+        $positions = Cache::remember('positions', 60, function () {
+            return Position::query()
+                ->with(['deductions' => function ($query) {
+                    $query->deductionsOnly();
+                }])
+                ->get(['id', 'pos_name']);
+        });
+       
+        return Inertia::render('Position/index', compact('positions'));
     }
 
     /**
@@ -24,7 +34,7 @@ class PositionController extends Controller
      */
     public function create()
     {
-        //
+        return Inertia::render('Position/create');
     }
 
     /**
@@ -34,21 +44,21 @@ class PositionController extends Controller
     {
         try {
             DB::beginTransaction();
-            
-             $action->create($request->validated());
-            
+
+            $action->create($request->validated());
+
+            Cache::forget('positions');
+
             DB::commit();
-            
-            return back()->with('success', 'Position created successfully.');
-            
+
+            return to_route('positions.index')->with('success', 'Position created successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
-            
-            return back()->with('error', 'Failed to create position. Please try again.' . $e->getMessage());
-        }
 
+            return to_route('positions.index')->with('error', 'Failed to create position. Please try again.' . $e->getMessage());
+        }
     }
-  
+
 
     /**
      * Display the specified resource.
@@ -63,7 +73,7 @@ class PositionController extends Controller
      */
     public function edit(Position $position)
     {
-        //
+        return Inertia::render('Position/edit', compact('position'));
     }
 
     /**
@@ -73,17 +83,18 @@ class PositionController extends Controller
     {
         try {
             DB::beginTransaction();
-            
-             $action->update($request->validated(), $position);
-            
+
+            $action->update($request->validated(), $position);
+
+            Cache::forget('positions');
+
             DB::commit();
-            
-            return back()->with('success', 'Position updated successfully.');
-            
+
+            return to_route('positions.index')->with('success', 'Position updated successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
-            
-            return back()->with('error', 'Failed to update position. Please try again.' . $e->getMessage());
+
+            return to_route('positions.index')->with('error', 'Failed to update position. Please try again.' . $e->getMessage());
         }
     }
 
@@ -92,6 +103,10 @@ class PositionController extends Controller
      */
     public function destroy(Position $position)
     {
-        //
+        $position->delete();
+
+        Cache::forget('positions');
+
+        return to_route('positions.index')->with('success', 'Position deleted successfully.');
     }
 }

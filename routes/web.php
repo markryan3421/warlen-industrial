@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\BranchOrSiteController;
+use App\Http\Controllers\PositionController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -22,6 +23,7 @@ Route::middleware(['auth','verified'])->group(function () {
    })->name('dashboard');
 
    Route::resource('branches',BranchOrSiteController::class)->only(['index','create','store','edit','update','destroy']);
+   Route::resource('positions',PositionController::class)->only(['index','create','store','edit','update','destroy']);
 
 });
 
