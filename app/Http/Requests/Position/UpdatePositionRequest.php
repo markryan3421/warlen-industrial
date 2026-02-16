@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Position;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdatePositionRequest extends FormRequest
 {
@@ -11,7 +12,7 @@ class UpdatePositionRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -22,7 +23,13 @@ class UpdatePositionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'pos_name' => [
+                'required',
+                'string',
+                'max:100',
+                Rule::unique('positions', 'pos_name')->ignore($this->position->id),
+                'min:5'
+            ],
         ];
     }
 }
