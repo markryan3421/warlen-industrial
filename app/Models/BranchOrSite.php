@@ -6,6 +6,7 @@ use App\Models\Employee;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 class BranchOrSite extends Model
 {
@@ -23,7 +24,7 @@ class BranchOrSite extends Model
     protected function branchName():Attribute
     {
         return Attribute::make(
-            get: fn ($value) => ucwords($value),
+            get: fn ($value) => Str::upper($value),
             set: fn ($value) => strtolower(strip_tags($value)),
         );
     }

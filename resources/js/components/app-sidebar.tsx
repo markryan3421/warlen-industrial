@@ -15,11 +15,12 @@ import {
 import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
 import AppLogo from './app-logo';
+import BranchController from '@/actions/App/Http/Controllers/BranchOrSiteController';
 
 const mainNavItems: NavItem[] = [
     {
-        title: 'Payroll',
-        href: dashboard(),
+        title: 'Branches',
+        href: BranchController.index(),
         icon: Landmark,
     },
     {
