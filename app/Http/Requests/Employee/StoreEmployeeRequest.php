@@ -44,10 +44,10 @@ class StoreEmployeeRequest extends FormRequest
                 'required',
                 'exists:branch_or_sites,id'
             ],
-            'user_id' => [
-                'required',
-                'exists:users,id'
-            ],
+
+            'name' => ['required','string','max:255'],
+            'email' => ['required','string','email','max:255','unique:users'],
+            'password' => ['nullable','string','min:8','max:255'],
 
         ];
     }

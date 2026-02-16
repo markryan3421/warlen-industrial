@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { BookOpen, CircleMinus, Flag, Folder, Landmark } from 'lucide-react';
+import { BookOpen, CircleMinus, CircleUser, Flag, Folder, Landmark } from 'lucide-react';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -32,6 +32,12 @@ const mainNavItems: NavItem[] = [
         href: '#',
         icon: CircleMinus,
     },
+
+    {
+        title: 'Employees',
+        href: '/employees',
+        icon: CircleUser,
+    }
 ];
 
 const footerNavItems: NavItem[] = [
