@@ -7,7 +7,6 @@ use App\Actions\BranchOrSite\UpdateBranchOrSite;
 use App\Http\Requests\BranchOrSite\StoreBranchOrSiteRequest;
 use App\Http\Requests\BranchOrSite\UpdateBranchOrSiteRequest;
 use App\Models\BranchOrSite;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class BranchOrSiteController extends Controller
@@ -84,8 +83,7 @@ class BranchOrSiteController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             
-            return back()
-                ->with('error', 'Failed to update branch or site. Please try again.' . $e->getMessage());
+            return back()->with('error', 'Failed to update branch or site. Please try again.' . $e->getMessage());
         }
 
        

@@ -18,7 +18,8 @@ class BranchOrSite extends Model
     {
         return $this->hasMany(Employee::class, 'branch_or_site_id');
     }
-
+    
+    // Accessors and Mutators
     protected function branchName():Attribute
     {
         return Attribute::make(
