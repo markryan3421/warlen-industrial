@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Position extends Model
 {
     protected $fillable = [
-        'position_name',
+        'pos_name',
     ];
 
     public function employees(): HasMany
