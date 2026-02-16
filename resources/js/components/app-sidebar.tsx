@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid } from 'lucide-react';
+import { BookOpen, CircleMinus, Flag, Folder, Landmark } from 'lucide-react';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -18,9 +18,19 @@ import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
     {
-        title: 'Dashboard',
+        title: 'Payroll',
         href: dashboard(),
-        icon: LayoutGrid,
+        icon: Landmark,
+    },
+    {
+        title: 'Attendance',
+        href: '#',
+        icon: Flag,
+    },
+    {
+        title: 'Deductions',
+        href: '#',
+        icon: CircleMinus,
     },
 ];
 
