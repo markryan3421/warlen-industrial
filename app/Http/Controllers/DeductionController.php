@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Deduction\StoreDeductionRequest;
+use App\Http\Requests\Deduction\UpdateDeductionRequest;
 use App\Models\Deduction;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpKernel\HttpCache\Store;
 
 class DeductionController extends Controller
 {
@@ -26,7 +29,7 @@ class DeductionController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(StoreDeductionRequest $request)
     {
         //
     }
@@ -50,7 +53,7 @@ class DeductionController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Deduction $deduction)
+    public function update(UpdateDeductionRequest $request, Deduction $deduction)
     {
         //
     }

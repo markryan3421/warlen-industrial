@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Employee;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -16,5 +17,21 @@ class BranchOrSite extends Model
     public function employees(): HasMany
     {
         return $this->hasMany(Employee::class, 'branch_or_site_id');
+    }
+
+    protected function branchName():Attribute
+    {
+        return Attribute::make(
+            get: fn ($value) => ucwords($value),
+            set: fn ($value) => strtolower(strip_tags($value)),
+        );
+    }
+
+    protected function branchAddress():Attribute
+    {
+        return Attribute::make(
+            get: fn ($value) => ucwords($value),
+            set: fn ($value) => strtolower(strip_tags($value)),
+        );
     }
 }

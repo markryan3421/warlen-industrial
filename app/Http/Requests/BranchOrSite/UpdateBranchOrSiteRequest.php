@@ -3,6 +3,7 @@
 namespace App\Http\Requests\BranchOrSite;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateBranchOrSiteRequest extends FormRequest
 {
@@ -26,7 +27,7 @@ class UpdateBranchOrSiteRequest extends FormRequest
                 'required',
                 'string',
                 'max:255',
-                'unique:branch_or_sites,branch_name,' . $this->route('branch_or_site')->id
+                Rule::unique('branch_or_sites', 'branch_name')->ignore($this->route('branch_or_site')->id)
             ],
             'branch_address' => [
                 'required',

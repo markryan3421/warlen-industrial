@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Position\StorePositionRequest;
+use App\Http\Requests\Position\UpdatePositionRequest;
 use App\Models\Position;
 use Illuminate\Http\Request;
 
@@ -26,7 +28,7 @@ class PositionController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(StorePositionRequest $request)
     {
         //
     }
@@ -50,7 +52,7 @@ class PositionController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Position $position)
+    public function update(UpdatePositionRequest $request, Position $position)
     {
         //
     }

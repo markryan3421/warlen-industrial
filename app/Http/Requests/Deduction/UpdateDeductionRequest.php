@@ -55,7 +55,7 @@ class UpdateDeductionRequest extends FormRequest
             ],
              'position_id' => [
                 'required',
-                'exists:positions,'. $this->route('position_id')->id
+                'exists:positions,id'
             ],
         ];
     }

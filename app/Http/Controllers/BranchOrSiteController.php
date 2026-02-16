@@ -2,8 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\BranchOrSite\CreateNewBranchOrSite;
+use App\Actions\BranchOrSite\UpdateBranchOrSite;
+use App\Http\Requests\BranchOrSite\StoreBranchOrSiteRequest;
+use App\Http\Requests\BranchOrSite\UpdateBranchOrSiteRequest;
 use App\Models\BranchOrSite;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class BranchOrSiteController extends Controller
 {
@@ -26,10 +31,25 @@ class BranchOrSiteController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(StoreBranchOrSiteRequest $request, CreateNewBranchOrSite $action)
     {
-        //
+        try {
+            DB::beginTransaction();
+            
+             $action->create($request->validated());
+            
+            DB::commit();
+            
+            return back()->with('success', 'Branch or Site created successfully.');
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            return back()
+                ->with('error', 'Failed to create branch or site. Please try again.' . $e->getMessage());
+        }
     }
+    
 
     /**
      * Display the specified resource.
@@ -50,9 +70,25 @@ class BranchOrSiteController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, BranchOrSite $branchOrSite)
+    public function update(UpdateBranchOrSiteRequest $request, BranchOrSite $branchOrSite, UpdateBranchOrSite $action)
     {
-        //
+         try {
+            DB::beginTransaction();
+            
+             $action->update($request->validated(), $branchOrSite);
+            
+            DB::commit();
+            
+            return back()->with('success', 'Branch or Site updated successfully.');
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            return back()
+                ->with('error', 'Failed to update branch or site. Please try again.' . $e->getMessage());
+        }
+
+       
     }
 
     /**
@@ -60,6 +96,8 @@ class BranchOrSiteController extends Controller
      */
     public function destroy(BranchOrSite $branchOrSite)
     {
-        //
+        $branchOrSite->delete();
+
+        return back()->with('success', 'Branch or Site deleted successfully.');
     }
 }
