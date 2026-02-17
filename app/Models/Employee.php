@@ -5,8 +5,10 @@ namespace App\Models;
 use App\Models\BranchOrSite;
 use App\Models\Position;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Str;
 
 class Employee extends Model
 {
@@ -37,5 +39,20 @@ class Employee extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
+    public function employeeStatus(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($value) => Str::title($value),
+            set: fn ($value) => strtolower(strip_tags($value)),
+        );
+    }
+
+    public function department(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($value) => Str::title($value),
+            set: fn ($value) => strtolower(strip_tags($value)),
+        );
+    }
     
 }

@@ -27,27 +27,9 @@ class StoreEmployeeRequest extends FormRequest
         return $this->empRules();
     }
 
-<<<<<<< HEAD
-    public function attributes(): array
+
+   public function attributes(): array
     {
         return $this->empAttributes();
-=======
-            'department' => ['required'],
-
-            'employee_status' => ['required'],
-
-            'position_id' => ['required', 'exists:positions,id'],
-
-            'branch_or_site_id' => [
-                'required',
-                'exists:branch_or_sites,id'
-            ],
-
-            'name' => ['required','string','max:255'],
-            'email' => ['required','string','email','max:255','unique:users'],
-            'password' => ['nullable','string','min:8','max:255'],
-
-        ];
->>>>>>> 88b644d23dd6037da9e66dc99df61ec307e2232c
     }
 }

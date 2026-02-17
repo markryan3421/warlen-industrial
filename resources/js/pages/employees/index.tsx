@@ -77,7 +77,7 @@ export default function Index({ employees }: PageProps) {
                                 <TableCell>{employee.emergency_contact_number}</TableCell>
                                 <TableCell>{employee.employee_status}</TableCell>
                                 <TableCell>
-                                    <Link href={`/employees/${employee.id}/edit`}>Edit</Link>
+                                    <Link href={`/employees/${employee.id}/edit`}>Edit</Link> 
                                 </TableCell>
                             </TableRow>
                         ))}
