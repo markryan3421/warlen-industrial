@@ -25,7 +25,7 @@ class PositionController extends Controller
                 }])
                 ->get(['id', 'pos_name']);
         });
-       
+
         return Inertia::render('Position/index', compact('positions'));
     }
 
@@ -73,6 +73,10 @@ class PositionController extends Controller
      */
     public function edit(Position $position)
     {
+        $position->load(['deduction' => function ($query) {
+            $query->deductionsOnly();
+        }]);
+        
         return Inertia::render('Position/edit', compact('position'));
     }
 

@@ -2,11 +2,13 @@
 
 namespace App\Http\Requests\Position;
 
+use App\Concerns\Position\PositionAttributes;
+use App\Concerns\Position\PositionValidationRules;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class UpdatePositionRequest extends FormRequest
 {
+    use PositionValidationRules, PositionAttributes;
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -22,53 +24,11 @@ class UpdatePositionRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
-            'pos_name' => [
-                'required',
-                'string',
-                'max:100',
-                Rule::unique('positions', 'pos_name')->ignore($this->position->id),
-                'min:5'
-            ],
-            'salary_rate' => [
-                'required',
-                'numeric',
-                //'min:0',
-                //'regex:/^\d+(\.\d{1,2})?$/'
-            ],
-            'reg_overtime_rate' => [
-                'required',
-                'numeric',
-                // 'min:0',
-                //'regex:/^\d+(\.\d{1,2})?$/'
-            ],
-            'special_overtime_rate' => [
-                'required',
-                'numeric',
-                //'min:0',
-                //'regex:/^\d+(\.\d{1,2})?$/'
-            ],
-            'sss_rate' => [
-                'required',
-                'numeric',
-                //'min:0',
-                // 'max:100',
-                // 'regex:/^\d+(\.\d{1,2})?$/'
-            ],
-            'philhealth_rate' => [
-                'required',
-                'numeric',
-                // 'min:0',
-                //'max:100',
-                //'regex:/^\d+(\.\d{1,2})?$/'
-            ],
-            'pagibig_rate' => [
-                'required',
-                'numeric',
-                //'min:0',
-                // 'max:100',
-                //'regex:/^\d+(\.\d{1,2})?$/'
-            ],
-        ];
+        return $this->updateRules();
+    }
+
+    public function attributes(): array
+    {
+        return $this->positionAttributes();
     }
 }

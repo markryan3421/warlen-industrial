@@ -1,6 +1,6 @@
 import AppLayout from '@/layouts/app-layout';
 import { Button } from "@/components/ui/button"
-import { type BreadcrumbItem } from '@/types';
+import { type BreadcrumbItem , type Position} from '@/types';
 import { Head, Link, useForm, } from '@inertiajs/react';
 import PositionController from "@/actions/App/Http/Controllers/PositionController";
 
@@ -22,11 +22,15 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function index({ positions }: any) {
+interface PosProps {
+    positions: Position[];
+}
+
+export default function index({ positions }: PosProps) {
     const { delete: destroy } = useForm();
     const handleDelete = (id: number) => {
-        if (confirm("Are you sure you want to delete this branch?")) {
-           // destroy(BranchController.destroy(id));
+        if (confirm("Are you sure you want to delete this position?")) {
+           destroy(PositionController.destroy(id).url);
         }
     }
 

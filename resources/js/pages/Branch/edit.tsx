@@ -1,9 +1,10 @@
 import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem } from '@/types';
+import { type BreadcrumbItem, type Branch } from '@/types';
 import { Head, useForm } from '@inertiajs/react';
 import InputError from '@/components/input-error';
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { update } from '@/actions/App/Http/Controllers/BranchOrSiteController';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -16,17 +17,11 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-interface Branch {
-    id: number;
-    branch_name: string;
-    branch_address: string;
+interface BranchProps {
+    branch: Branch
 }
 
-interface Props {
-    branch: Branch;
-}
-
-export default function Edit({ branch }: Props) {
+export default function Edit({ branch }: BranchProps) {
     const { data, setData, put, errors, processing } = useForm({
         branch_name: branch.branch_name,
         branch_address: branch.branch_address,
@@ -34,7 +29,7 @@ export default function Edit({ branch }: Props) {
 
     function submitBranch(e) {
         e.preventDefault();
-        put(`/branches/${branch.id}`);
+        put(update(branch.id).url);
     }
 
     return (

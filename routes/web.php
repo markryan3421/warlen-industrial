@@ -22,8 +22,8 @@ Route::middleware(['auth','verified'])->group(function () {
        return Inertia::render('dashboard');
    })->name('dashboard');
 
-   Route::resource('branches',BranchOrSiteController::class)->only(['index','create','store','edit','update','destroy']);
-   Route::resource('positions',PositionController::class)->only(['index','create','store','edit','update','destroy']);
+   Route::resource('branches', BranchOrSiteController::class)->except(['show']);
+   Route::resource('positions', PositionController::class)->except(['show']);
 
 });
 

@@ -1,7 +1,7 @@
 
 import AppLayout from '@/layouts/app-layout';
 import { Button } from "@/components/ui/button"
-import { type BreadcrumbItem } from '@/types';
+import { type BreadcrumbItem, type Branch} from '@/types';
 import { Head, Link, useForm, } from '@inertiajs/react';
 import BranchController from "@/actions/App/Http/Controllers/BranchOrSiteController";
 
@@ -23,11 +23,15 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function index({ branches }: any) {
+interface BranchProps {
+    branches: Branch[];
+}
+
+export default function index({ branches }: BranchProps) {
     const { delete: destroy } = useForm();
     const handleDelete = (id: number) => {
         if (confirm("Are you sure you want to delete this branch?")) {
-            destroy(BranchController.destroy(id));
+            destroy(BranchController.destroy(id).url);
         }
     }
 
@@ -50,9 +54,9 @@ export default function index({ branches }: any) {
                             <TableRow key={branch.id}>
                                 <TableCell>{branch.branch_name}</TableCell>
                                 <TableCell>{branch.branch_address}</TableCell>
-                                 <TableCell>
+                                <TableCell>
                                     <Link href={BranchController.edit(branch.id)}>Edit Branch</Link>
-                                    <Button variant="destructive" onClick={() => handleDelete(branch.id)}>Delete Task</Button>
+                                    <Button variant="destructive" onClick={() => handleDelete(branch.id)}>Delete</Button>
                                 </TableCell>
                             </TableRow>
                         ))}

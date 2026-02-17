@@ -2,10 +2,13 @@
 
 namespace App\Http\Requests\Position;
 
+use App\Concerns\Position\PositionAttributes;
+use App\Concerns\Position\PositionValidationRules;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StorePositionRequest extends FormRequest
 {
+    use PositionValidationRules, PositionAttributes;
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -21,66 +24,11 @@ class StorePositionRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
-            'pos_name' => [
-                'required',
-                'string',
-                'max:100',
-                'unique:positions,pos_name',
-                'min:3'
-            ],
-            'salary_rate' => [
-                'required',
-                'numeric',
-                //'min:0',
-                //'regex:/^\d+(\.\d{1,2})?$/'
-            ],
-            'reg_overtime_rate' => [
-                'required',
-                'numeric',
-                // 'min:0',
-                //'regex:/^\d+(\.\d{1,2})?$/'
-            ],
-            'special_overtime_rate' => [
-                'required',
-                'numeric',
-                //'min:0',
-                //'regex:/^\d+(\.\d{1,2})?$/'
-            ],
-            'sss_rate' => [
-                'required',
-                'numeric',
-                //'min:0',
-                // 'max:100',
-                // 'regex:/^\d+(\.\d{1,2})?$/'
-            ],
-            'philhealth_rate' => [
-                'required',
-                'numeric',
-                // 'min:0',
-                //'max:100',
-                //'regex:/^\d+(\.\d{1,2})?$/'
-            ],
-            'pagibig_rate' => [
-                'required',
-                'numeric',
-                //'min:0',
-                // 'max:100',
-                //'regex:/^\d+(\.\d{1,2})?$/'
-            ],
-        ];
+        return $this->storeRules();
     }
 
     public function attributes(): array
     {
-        return [
-            'pos_name' => 'position name',
-            'salary_rate' => 'salary rate',
-            'reg_overtime_rate' => 'regular overtime rate',
-            'special_overtime_rate' => 'special overtime rate',
-            'sss_rate' => 'SSS rate',
-            'philhealth_rate' => 'PhilHealth rate',
-            'pagibig_rate' => 'Pag-IBIG rate',
-        ];
+        return $this->positionAttributes();
     }
 }

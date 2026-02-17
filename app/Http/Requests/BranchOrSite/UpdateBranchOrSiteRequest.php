@@ -2,11 +2,14 @@
 
 namespace App\Http\Requests\BranchOrSite;
 
+use App\Concerns\Branch\BranchAttributes;
+use App\Concerns\Branch\BranchValidationRules;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
+
 
 class UpdateBranchOrSiteRequest extends FormRequest
 {
+    use BranchValidationRules, BranchAttributes;
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -22,18 +25,11 @@ class UpdateBranchOrSiteRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
-            'branch_name' => [
-                'required',
-                'string',
-                'max:255',
-               Rule::unique('branch_or_sites', 'branch_name')->ignore($this->route('branch'))
-            ],
-            'branch_address' => [
-                'required',
-                'string',
-                'max:255',
-            ],
-        ];
+        return $this->updateRules();
+    }
+
+    public function attributes(): array
+    {
+        return $this->branchAttributes();
     }
 }

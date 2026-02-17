@@ -2,10 +2,13 @@
 
 namespace App\Http\Requests\Employee;
 
+use App\Concerns\Employee\EmployeeAttributes;
+use App\Concerns\Employee\EmployeeValidationRules;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreEmployeeRequest extends FormRequest
 {
+    use EmployeeValidationRules, EmployeeAttributes;
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -21,34 +24,11 @@ class StoreEmployeeRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
-            'emergency_contact_number' => [
-                'required',
-                'numeric',
-                'min:11'
-            ],
-            
-            'employee_number' => [
-                'required',
-                'numeric',
-                'min:11'
-            ],
+        return $this->empRules();
+    }
 
-            'department' => ['required'],
-
-            'employee_status' => ['required'],
-
-            'position_id' => ['required', 'exists:positions,id'],
-
-            'branch_or_site_id' => [
-                'required',
-                'exists:branch_or_sites,id'
-            ],
-            'user_id' => [
-                'required',
-                'exists:users,id'
-            ],
-
-        ];
+    public function attributes(): array
+    {
+        return $this->empAttributes();
     }
 }
