@@ -10,13 +10,13 @@ trait EmployeeValidationRules
             'emergency_contact_number' => [
                 'required',
                 'numeric',
-                'min:11'
+                'min:11',
             ],
 
             'employee_number' => [
                 'required',
                 'numeric',
-                'min:11'
+                'min:11',
             ],
 
             'department' => ['required'],
@@ -29,10 +29,7 @@ trait EmployeeValidationRules
                 'required',
                 'exists:branch_or_sites,id'
             ],
-            'user_id' => [
-                'required',
-                'exists:users,id'
-            ],
+
             'name' => ['required', 'string', 'max:255'],
 
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],

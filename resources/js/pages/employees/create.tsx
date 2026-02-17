@@ -73,7 +73,7 @@ export default function Create({ positions, branches }: Props) {
                         <h2 className="">Employee Details</h2>
                         <div>
                             <Label htmlFor="employee_number">Employee Number </Label>
-                            <Input id="employee_number" type="number" value={data.employee_number} onChange={e => setData('employee_number', e.target.value)} className="" />
+                            <Input id="employee_number" type="number" value={data.employee_number} onChange={e => setData('employee_number', e.target.value)} onInput={(e) => { e.target.value = e.target.value.slice(0, 11);}} />
                             <InputError message={errors.employee_number} />
                         </div>
 
@@ -116,7 +116,7 @@ export default function Create({ positions, branches }: Props) {
 
                         <div>
                             <Label htmlFor="emergency_contact_number">Emergency Contact</Label>
-                            <Input id="emergency_contact_number" type="number" value={data.emergency_contact_number} onChange={e => setData('emergency_contact_number', e.target.value)} />
+                            <Input id="emergency_contact_number" type="number" value={data.emergency_contact_number} onChange={e => setData('emergency_contact_number', e.target.value)} onInput={(e) => { e.target.value = e.target.value.slice(0, 11);}} />
                         </div>
 
                         <div>
