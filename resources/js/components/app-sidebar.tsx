@@ -30,11 +30,13 @@ const mainNavItems: NavItem[] = [
         href: PositionController.index(),
         icon: UserCog,
     },
+
     // {
     //     title: 'Attendance',
     //     href: '#',
     //     icon: Flag,
     // },
+
     // {
     //     title: 'Deductions',
     //     href: '#',
