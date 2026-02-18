@@ -32,27 +32,26 @@ class Employee extends Model
     public function branchOrSite(): BelongsTo
     {
         return $this->belongsTo(BranchOrSite::class, 'branch_or_site_id');
-    } 
+    }
 
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    public function employeeStatus(): Attribute
+    protected function employeeStatus(): Attribute
     {
         return Attribute::make(
-            get: fn ($value) => Str::title($value),
-            set: fn ($value) => strtolower(strip_tags($value)),
+            get: fn($value) => Str::title($value),
+            set: fn($value) => strtolower(strip_tags($value)),
         );
     }
 
-    public function department(): Attribute
+    protected function department(): Attribute
     {
         return Attribute::make(
-            get: fn ($value) => Str::title($value),
-            set: fn ($value) => strtolower(strip_tags($value)),
+            get: fn($value) => preg_replace('/[^a-zA-Z0-9\s]/', ' ', Str::title($value)),
+            set: fn($value) => strtolower(strip_tags($value)),
         );
     }
-    
 }

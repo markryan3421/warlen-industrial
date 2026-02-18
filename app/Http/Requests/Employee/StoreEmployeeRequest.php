@@ -27,12 +27,7 @@ class StoreEmployeeRequest extends FormRequest
         return $this->empRules();
     }
 
-<<<<<<< HEAD
     public function attributes(): array
-=======
-
-   public function attributes(): array
->>>>>>> 5fd22a77900bae46489973405b4d048efeb0cee7
     {
         return $this->empAttributes();
     }

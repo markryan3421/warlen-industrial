@@ -36,17 +36,10 @@ trait EmployeeValidationRules
                 'required',
                 'exists:branch_or_sites,id'
             ],
-<<<<<<< HEAD
             // 'user_id' => [
             //     'required',
             //     'exists:users,id'
             // ],
-=======
-
-            'name' => ['required', 'string', 'max:255'],
-
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
->>>>>>> 5fd22a77900bae46489973405b4d048efeb0cee7
 
         ];
     }
