@@ -2,6 +2,8 @@
 
 namespace App\Concerns\Employee;
 
+use Illuminate\Validation\Rule;
+
 trait EmployeeValidationRules
 {
     protected function empRules(): array
@@ -12,6 +14,11 @@ trait EmployeeValidationRules
                 'numeric',
                 'min:11'
             ],
+
+            'name' => ['required', 'string', 'max:80', 'min:3'],
+
+            'email' => ['required', 'email', 'max:80', Rule::unique('users', 'email')->ignore($this->route('employee')?->user_id)],
+            'password' => ['required', 'string', 'min:8'],
 
             'employee_number' => [
                 'required',
@@ -29,10 +36,10 @@ trait EmployeeValidationRules
                 'required',
                 'exists:branch_or_sites,id'
             ],
-            'user_id' => [
-                'required',
-                'exists:users,id'
-            ],
+            // 'user_id' => [
+            //     'required',
+            //     'exists:users,id'
+            // ],
 
         ];
     }

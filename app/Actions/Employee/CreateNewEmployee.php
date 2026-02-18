@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 
 class CreateNewEmployee
 {
-    public function create(array $data, $authUser) 
+    public function create(array $data) 
     {
         return DB::transaction(function () use ($data) {
             $user = User::create([

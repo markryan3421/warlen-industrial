@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, useForm } from '@inertiajs/react';
 import { CustomTable } from '@/components/custom-table';
 import { SectionCards } from '@/components/section-cards';
 import { ChartAreaInteractive } from '@/components/section-chart';
@@ -8,6 +8,7 @@ import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import EmmployeeController from '@/actions/App/Http/Controllers/EmployeeController';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -40,8 +41,13 @@ interface PageProps {
 }
 
 export default function Index({ employees }: PageProps) {
+    const { delete: destroy } = useForm();
 
-    
+    const handleDelete = (id: number) => {
+        if (confirm("Are you sure you want to delete this employee?")) {
+            destroy(EmmployeeController.destroy(id).url);
+        }
+    }
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Employees" />
@@ -77,7 +83,8 @@ export default function Index({ employees }: PageProps) {
                                 <TableCell>{employee.emergency_contact_number}</TableCell>
                                 <TableCell>{employee.employee_status}</TableCell>
                                 <TableCell>
-                                    <Link href={`/employees/${employee.id}/edit`}>Edit</Link>
+                                    <Link href={EmmployeeController.edit(employee.id)}>Edit</Link>
+                                    <Button variant="destructive" onClick={() => handleDelete(employee.id)}>Delete</Button>
                                 </TableCell>
                             </TableRow>
                         ))}

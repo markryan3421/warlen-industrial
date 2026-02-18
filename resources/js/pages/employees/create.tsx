@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { BreadcrumbItem } from '@/types';
 import InputError from '@/components/input-error';
+import { store, edit } from '@/actions/App/Http/Controllers/EmployeeController';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -23,7 +24,7 @@ interface Props {
 }
 
 export default function Create({ positions, branches }: Props) {
-    const { data, setData, post, processing, errors } = useForm({
+    const { data, setData, submit, processing, errors } = useForm({
         name: '',
         email: '',
         password: '',
@@ -37,7 +38,7 @@ export default function Create({ positions, branches }: Props) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
-        post('/employees');
+        submit(store());
     }
     return (
         <AppLayout breadcrumbs={breadcrumbs}>

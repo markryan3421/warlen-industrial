@@ -53,7 +53,8 @@ class EmployeeController extends Controller
 
         try {
             $validatedData = $request->validated();
-            $action->create($validatedData, $request->user()); // This creates both user and employee
+
+            $action->create($validatedData); 
 
             DB::commit();
 
@@ -85,8 +86,10 @@ class EmployeeController extends Controller
         // Load data for dropdowns
         $positions = Position::all();
         $branches = BranchOrSite::all();
+
+        $employee->load(['position', 'branchOrSite', 'user']);
         
-        return Inertia::render('employees/edit', [
+        return Inertia::render('employees/update', [
             'employee' => $employee,
             'positions' => $positions,
             'branches' => $branches
