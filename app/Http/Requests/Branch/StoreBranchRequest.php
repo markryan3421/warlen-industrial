@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Http\Requests\BranchOrSite;
+namespace App\Http\Requests\Branch;
 
 use App\Concerns\Branch\BranchAttributes;
 use App\Concerns\Branch\BranchValidationRules;
 use Illuminate\Foundation\Http\FormRequest;
 
-class StoreBranchOrSiteRequest extends FormRequest
+class StoreBranchRequest extends FormRequest
 {
     use BranchValidationRules, BranchAttributes;
     /**

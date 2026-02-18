@@ -4,7 +4,7 @@ import { Head, useForm } from '@inertiajs/react';
 import InputError from '@/components/input-error';
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { update } from '@/actions/App/Http/Controllers/BranchOrSiteController';
+import { update } from '@/actions/App/Http/Controllers/BranchController';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {

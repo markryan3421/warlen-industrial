@@ -6,7 +6,7 @@ use App\Actions\Employee\CreateNewEmployee;
 use App\Actions\Employee\UpdateEmployee;
 use App\Http\Requests\Employee\StoreEmployeeRequest;
 use App\Http\Requests\Employee\UpdateEmployeeRequest;
-use App\Models\BranchOrSite;
+use App\Models\Branch;
 use App\Models\Employee;
 use App\Models\Position;
 use App\Repository\EmployeeRepository;
@@ -41,7 +41,7 @@ class EmployeeController extends Controller
         $positions = Position::query()
             ->get(['id', 'pos_name']);
 
-        $branches = BranchOrSite::query()
+        $branches = Branch::query()
             ->get(['id', 'branch_name']);
 
         return Inertia::render('employees/create', [
@@ -78,7 +78,7 @@ class EmployeeController extends Controller
      */
     public function show(Employee $employee)
     {
-        $employee->load(['position', 'branch_or_site', 'user']);
+        $employee->load(['position', 'branch', 'user']);
 
         return Inertia::render('employees/show', [
             'employee' => $employee
@@ -94,10 +94,10 @@ class EmployeeController extends Controller
         $positions = Position::query()
             ->get(['id', 'pos_name']);
 
-        $branches = BranchOrSite::query()
+        $branches = Branch::query()
             ->get(['id', 'branch_name']);
 
-        $employee->load(['position', 'branchOrSite', 'user']);
+        $employee->load(['position', 'branch', 'user']);
 
         return Inertia::render('employees/update', [
             'employee' => $employee,

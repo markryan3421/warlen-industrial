@@ -20,7 +20,7 @@ class CreateNewEmployee
             
             return Employee::create([
                 'position_id' => $data['position_id'],
-                'branch_or_site_id' => $data['branch_or_site_id'],
+                'branch_id' => $data['branch_id'],
                 'user_id' => $user->id,
                 'employee_number' => $data['employee_number'],
                 'emergency_contact_number' => $data['emergency_contact_number'],

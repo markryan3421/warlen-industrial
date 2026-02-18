@@ -20,14 +20,14 @@ class EmployeeRepository
         return Employee::query()
             ->with([
                 'position',
-                'branchOrSite',
+                'branch',
                 'user' => fn($query) => $query->getUserName()
             ])
             ->latest()
             ->get([
                 'id',
                 'position_id',
-                'branch_or_site_id',
+                'branch_id',
                 'user_id',
                 'employee_number',
                 'emergency_contact_number',
