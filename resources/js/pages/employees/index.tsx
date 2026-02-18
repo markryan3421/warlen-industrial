@@ -83,8 +83,12 @@ export default function Index({ employees }: PageProps) {
                                 <TableCell>{employee.emergency_contact_number}</TableCell>
                                 <TableCell>{employee.employee_status}</TableCell>
                                 <TableCell>
+<<<<<<< HEAD
                                     <Link href={EmmployeeController.edit(employee.id)}>Edit</Link>
                                     <Button variant="destructive" onClick={() => handleDelete(employee.id)}>Delete</Button>
+=======
+                                    <Link href={`/employees/${employee.id}/edit`}>Edit</Link> 
+>>>>>>> 5fd22a77900bae46489973405b4d048efeb0cee7
                                 </TableCell>
                             </TableRow>
                         ))}
