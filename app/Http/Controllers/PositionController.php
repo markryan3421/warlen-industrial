@@ -7,23 +7,24 @@ use App\Actions\Position\UpdatePosition;
 use App\Http\Requests\Position\StorePositionRequest;
 use App\Http\Requests\Position\UpdatePositionRequest;
 use App\Models\Position;
+use App\Repository\PositionRepository;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class PositionController extends Controller
 {
+    public function __construct(private PositionRepository $positionRepository)
+    {
+        
+    }
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
         $positions = Cache::remember('positions', 60, function () {
-            return Position::query()
-                ->with(['deduction' => function ($query) {
-                    $query->deductionsOnly();
-                }])
-                ->get(['id', 'pos_name']);
+            return $this->positionRepository->getPositions();
         });
 
         return Inertia::render('Position/index', compact('positions'));

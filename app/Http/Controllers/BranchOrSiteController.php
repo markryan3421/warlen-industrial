@@ -7,6 +7,7 @@ use App\Actions\BranchOrSite\UpdateBranchOrSite;
 use App\Http\Requests\BranchOrSite\StoreBranchOrSiteRequest;
 use App\Http\Requests\BranchOrSite\UpdateBranchOrSiteRequest;
 use App\Models\BranchOrSite;
+use App\Repository\BranchRepository;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -14,14 +15,14 @@ use Inertia\Inertia;
 
 class BranchOrSiteController extends Controller
 {
+    public function __construct(private BranchRepository $branchRepository) {}
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-
         $branches = Cache::rememberForever('branches', function () {
-            return BranchOrSite::get(['id', 'branch_name', 'branch_address']);
+            return $this->branchRepository->getBranches();
         });
 
         return Inertia::render('Branch/index', compact('branches'));
@@ -72,7 +73,7 @@ class BranchOrSiteController extends Controller
      */
     public function edit(BranchOrSite $branch)
     {
-        return Inertia::render('Branch/edit',compact('branch'));
+        return Inertia::render('Branch/edit', compact('branch'));
     }
 
     /**

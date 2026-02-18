@@ -6,23 +6,26 @@ use App\Actions\Employee\CreateNewEmployee;
 use App\Actions\Employee\UpdateEmployee;
 use App\Http\Requests\Employee\StoreEmployeeRequest;
 use App\Http\Requests\Employee\UpdateEmployeeRequest;
+use App\Models\BranchOrSite;
 use App\Models\Employee;
 use App\Models\Position;
-use App\Models\BranchOrSite;
+use App\Repository\EmployeeRepository;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
-use function Pest\Laravel\get;
 
 class EmployeeController extends Controller
 {
+
+    public function __construct(private EmployeeRepository $employeeRepository) {}
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        $employees = Employee::with(['position', 'branchOrSite', 'user'])
-            ->latest()
-            ->get();
+        $employees = Cache::remember('employees', 60, function () {
+            return  $this->employeeRepository->getEmployees();
+        });
 
         return Inertia::render('employees/index', [
             'employees' => $employees
@@ -35,9 +38,12 @@ class EmployeeController extends Controller
     public function create()
     {
         // Load data for dropdowns
-        $positions = Position::all();
-        $branches = BranchOrSite::all();
-        
+        $positions = Position::query()
+            ->get(['id', 'pos_name']);
+
+        $branches = BranchOrSite::query()
+            ->get(['id', 'branch_name']);
+
         return Inertia::render('employees/create', [
             'positions' => $positions,
             'branches' => $branches
@@ -54,12 +60,13 @@ class EmployeeController extends Controller
         try {
             $validatedData = $request->validated();
 
-            $action->create($validatedData); 
+            $action->create($validatedData);
+
+            Cache::forget('employees');
 
             DB::commit();
 
             return to_route('employees.index')->with('success', 'Employee created successfully.');
-            
         } catch (\Exception $e) {
             DB::rollBack();
             throw $e;
@@ -72,7 +79,7 @@ class EmployeeController extends Controller
     public function show(Employee $employee)
     {
         $employee->load(['position', 'branch_or_site', 'user']);
-        
+
         return Inertia::render('employees/show', [
             'employee' => $employee
         ]);
@@ -84,11 +91,14 @@ class EmployeeController extends Controller
     public function edit(Employee $employee)
     {
         // Load data for dropdowns
-        $positions = Position::all();
-        $branches = BranchOrSite::all();
+        $positions = Position::query()
+            ->get(['id', 'pos_name']);
+
+        $branches = BranchOrSite::query()
+            ->get(['id', 'branch_name']);
 
         $employee->load(['position', 'branchOrSite', 'user']);
-        
+
         return Inertia::render('employees/update', [
             'employee' => $employee,
             'positions' => $positions,
@@ -106,11 +116,12 @@ class EmployeeController extends Controller
         try {
             $validatedData = $request->validated();
             $action->update($validatedData, $employee);
-            
+
+            Cache::forget('employees');
+
             DB::commit();
-            
+
             return to_route('employees.index')->with('success', 'Employee updated successfully.');
-            
         } catch (\Exception $e) {
             DB::rollBack();
             throw $e;
@@ -122,21 +133,10 @@ class EmployeeController extends Controller
      */
     public function destroy(Employee $employee)
     {
-        DB::beginTransaction();
-        
-        try {
-            if ($employee->user) {
-                $employee->user->delete();
-            }
-            
-            $employee->delete();
-            DB::commit();
-            
-            return to_route('employees.index')->with('success', 'Employee deleted successfully.');
-            
-        } catch (\Exception $e) {
-            DB::rollBack();
-            throw $e;
-        }
+        $employee->user()->delete();
+
+        Cache::forget('employees');
+
+        return to_route('employees.index')->with('success', 'Employee deleted successfully.');  
     }
 }

@@ -4,6 +4,8 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Models\Employee;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -56,15 +58,23 @@ class User extends Authenticatable
 
     public function employee(): HasOne
     {
-        return $this->hasOne(Employee::class,'user_id');
+        return $this->hasOne(Employee::class, 'user_id');
     }
 
-    public function name(): Attribute
+    protected function name(): Attribute
     {
         return Attribute::make(
-            get: fn ($value) => Str::title($value),
-            set: fn ($value) => strtolower(strip_tags($value)),
+            get: fn($value) => Str::title($value),
+            set: fn($value) => strtolower(strip_tags($value)),
         );
     }
-    
+
+    #[Scope]
+    protected function getUserName(Builder $query): void
+    {
+        $query->select(
+            'id',
+            'name',
+        );
+    }
 }
