@@ -21,7 +21,7 @@ class BranchController extends Controller
      */
     public function index()
     {
-        $branches = Cache::rememberForever('branches', function () {
+        $branches = $this->cacheRemember('branches', 60, function () {
             return $this->branchRepository->getBranches();
         });
 

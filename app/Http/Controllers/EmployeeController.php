@@ -24,8 +24,8 @@ class EmployeeController extends Controller
      */
     public function index()
     {
-        $employees = Cache::remember('employees', 60, function () {
-            return  $this->employeeRepository->getEmployees();
+        $employees = $this->cacheRemember('employees', 60, function () {
+            return $this->employeeRepository->getEmployees();
         });
 
         return Inertia::render('employees/index', [
@@ -81,7 +81,11 @@ class EmployeeController extends Controller
      */
     public function show(Employee $employee)
     {
+<<<<<<< HEAD
         $employee->load(['position', 'branch', 'user', 'sites']);
+=======
+        $employee->load(['position', 'branch', 'user' => fn($query) => $query->getUserName()]);
+>>>>>>> d41309d6d4be4706a7a880c644d2b34d35d38115
 
         return Inertia::render('employees/show', [
             'employee' => $employee
@@ -101,8 +105,12 @@ class EmployeeController extends Controller
             ->get(['id', 'branch_name']);
         
 
+<<<<<<< HEAD
 
         $employee->load(['position', 'branch', 'user', 'sites']);
+=======
+        $employee->load(['position', 'branch', 'user' => fn($query) => $query->getUserName()]);
+>>>>>>> d41309d6d4be4706a7a880c644d2b34d35d38115
 
         return Inertia::render('employees/update', [
             'employee' => $employee,

@@ -23,7 +23,7 @@ class PositionController extends Controller
      */
     public function index()
     {
-        $positions = Cache::remember('positions', 60, function () {
+        $positions = $this->cacheRemember('positions', 60, function () {
             return $this->positionRepository->getPositions();
         });
 
