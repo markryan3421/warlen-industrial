@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import type { BreadcrumbItem } from '@/types';
 import InputError from '@/components/input-error';
 import { update } from '@/actions/App/Http/Controllers/EmployeeController';
+import { useEffect, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -21,20 +22,37 @@ const breadcrumbs: BreadcrumbItem[] = [
 interface Props {
     positions: any[];
     branches: any[];
+    employee: any;
+    sites: any[];
 }
 
-export default function Update({ positions, branches, employee }: Props) {
+export default function Update({ positions, branches, employee, sites = [] }: Props) {
+
+    const [availableSites, setAvailableSites] = useState<any[]>([]);
     const { data, setData, put, processing, errors } = useForm({
         name: employee.user.name,
         email: employee.user.email,
-        // password: '',
+        password: '',
         position_id: employee.position_id,
-        branch_id: employee.branch_id, 
+        branch_id: employee.branch_id,
+        site_id: employee.site_id,
         employee_number: employee.employee_number,
         emergency_contact_number: employee.emergency_contact_number,
         department: employee.department,
         employee_status: employee.employee_status,
     });
+
+    useEffect(() => {
+        if (data.branch_id) {
+            const filteredSites = sites.filter(
+                (site: any) => site.branch_id === parseInt(data.branch_id)
+            );
+            setAvailableSites(filteredSites);
+        } else {
+            setAvailableSites([]);
+        }
+        // setData('site_id', '');
+    }, [data.branch_id]);
 
     const handleSubmit = (e) => {
         e.preventDefault()
@@ -45,7 +63,7 @@ export default function Update({ positions, branches, employee }: Props) {
             <Head title="Create Employee" />
 
             <div className="w-1/2 p-4">
-                <h1 className="text-2xl font-bold mb-6">Create New Employee</h1>
+                <h1 className="text-2xl font-bold mb-6">Update Employee</h1>
 
                 <form onSubmit={handleSubmit} className="">
                     <div className="">
@@ -103,8 +121,13 @@ export default function Update({ positions, branches, employee }: Props) {
                         </div>
 
                         <div>
-                            <Label htmlFor="branch_or_site_id">Branch/Site *</Label>
-                            <select id="branch_or_site_id" value={data.branch_id} onChange={e => setData('branch_or_site_id', e.target.value)} className="">
+                            <Label htmlFor="branch_id">Branch/Site *</Label>
+                            <select
+                                id="branch_id"
+                                value={data.branch_id}
+                                onChange={e => setData('branch_id', e.target.value)}
+                                className=""
+                            >
                                 <option value="">Select a Branch</option>
                                 {branches?.map((branch) => (
                                     <option key={branch.id} value={branch.id}>
@@ -112,8 +135,34 @@ export default function Update({ positions, branches, employee }: Props) {
                                     </option>
                                 ))}
                             </select>
-                            <InputError message={errors.branch_or_site_id} />
+                            <InputError message={errors.branch_id} />
                         </div>
+
+                        {/* Sites dropdown */}
+                        {data.branch_id && (
+                            <div>
+                                <Label htmlFor="site_id">Site *</Label>
+                                <select
+                                    id="site_id"
+                                    value={data.site_id}
+                                    onChange={e => setData('site_id', e.target.value)}
+                                    className=""
+                                >
+                                    <option value="">Select a Site</option>
+                                    {availableSites?.map((site) => (
+                                        <option key={site.id} value={site.id}>
+                                            {site.site_name || site.name}
+                                        </option>
+                                    ))}
+                                </select>
+                                <InputError message={errors.site_id} />
+                                {availableSites.length === 0 && (
+                                    <p className="text-sm text-yellow-600 mt-1">
+                                        No sites available for this branch
+                                    </p>
+                                )}
+                            </div>
+                        )}
 
                         <div>
                             <Label htmlFor="emergency_contact_number">Emergency Contact</Label>

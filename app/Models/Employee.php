@@ -18,6 +18,7 @@ class Employee extends Model
         'position_id',
         'branch_id',
         'user_id',
+        'site_id',
         'employee_number',
         'emergency_contact_number',
         'department',
@@ -50,7 +51,8 @@ class Employee extends Model
     protected function department(): Attribute
     {
         return Attribute::make(
-            get: fn($value) => preg_replace('/[^a-zA-Z0-9\s]/', ' ', Str::title($value)),
+            // get: fn($value) => preg_replace('/[^a-zA-Z0-9\s]/', ' ', Str::title($value)),
+            get: fn($value) => Str::title($value),
             set: fn($value) => strtolower(strip_tags($value)),
         );
     }
@@ -58,5 +60,10 @@ class Employee extends Model
     public function applications()
     {
         return $this->hasMany(ApplicationLeave::class, 'employee_id');
+    }
+
+    public function sites()
+    {
+        return $this->belongsTo(Site::class, 'site_id');
     }
 }

@@ -33,6 +33,7 @@ class UpdateEmployee
             'position_id' => $data['position_id'],
             'branch_id' => $data['branch_id'],
             'user_id' => $user->id,
+            'site_id' => $data['site_id'],
             'employee_number' => $data['employee_number'],
             'emergency_contact_number' => $data['emergency_contact_number'],
             'department' => $data['department'],

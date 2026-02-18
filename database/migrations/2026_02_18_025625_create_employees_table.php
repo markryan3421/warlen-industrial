@@ -2,6 +2,7 @@
 
 use App\Models\Branch;
 use App\Models\Position;
+use App\Models\Site;
 use App\Models\User;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -19,6 +20,7 @@ return new class extends Migration
             $table->foreignIdFor(Position::class,'position_id')->constrained('positions')->cascadeOnDelete();
             $table->foreignIdFor(Branch::class,'branch_id')->constrained('branches')->cascadeOnDelete();
             $table->foreignIdFor(User::class,'user_id')->constrained('users')->cascadeOnDelete();
+            $table->foreignIdFor(Site::class,'site_id')->constrained('sites')->cascadeOnDelete();
             $table->string('employee_number')->unique();
             $table->string('emergency_contact_number');
             $table->enum('department',['weekender','monthly','semi_monthly'])->default('monthly');

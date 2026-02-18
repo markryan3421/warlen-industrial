@@ -18,7 +18,7 @@ trait EmployeeValidationRules
             'name' => ['required', 'string', 'max:80', 'min:3'],
 
             'email' => ['required', 'email', 'max:80', Rule::unique('users', 'email')->ignore($this->route('employee')?->user_id)],
-            'password' => ['required', 'string', 'min:8'],
+            'password' => ['nullable', 'string', 'min:8'],
 
             'employee_number' => [
                 'required',
@@ -35,6 +35,11 @@ trait EmployeeValidationRules
             'branch_id' => [
                 'required',
                 'exists:branches,id'
+            ],
+
+            'site_id' => [
+                'required',
+                'exists:sites,id'
             ],
             // 'user_id' => [
             //     'required',

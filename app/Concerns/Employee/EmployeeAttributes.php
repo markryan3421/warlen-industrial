@@ -14,6 +14,7 @@ trait EmployeeAttributes
             'position_id' => 'position',
             'branch_id' => 'branch',
             'user_id' => 'user',
+            'site_id' => 'site',
         ];
     }
 }
