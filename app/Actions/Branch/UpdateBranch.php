@@ -21,6 +21,17 @@ class UpdateBranch
             'branch_address' => $data['branch_address'],
         ]);
 
+        $branch->sites()->delete();
+        
+        if (!empty($data['sites'])) {
+            
+            foreach ($data['sites'] as $site) {
+                $branch->sites()->create([
+                    'site_name' => $site['site_name'],
+                ]);
+            }
+        }
+
         return $branch;
     }
 }

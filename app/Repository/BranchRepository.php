@@ -18,6 +18,7 @@ class BranchRepository
     public function getBranches(): Collection
     {
         return Branch::query()
+            ->with(['sites' => fn($query) => $query->getSiteName()])
             ->get(['id', 'branch_name', 'branch_address']);
     }
 }

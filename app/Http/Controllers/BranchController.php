@@ -73,6 +73,7 @@ class BranchController extends Controller
      */
     public function edit(Branch $branch)
     {
+        $branch->load(['sites'=>fn($query) => $query->getSiteName()]);
         return Inertia::render('Branch/edit', compact('branch'));
     }
 
