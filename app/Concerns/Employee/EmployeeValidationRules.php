@@ -32,9 +32,9 @@ trait EmployeeValidationRules
 
             'position_id' => ['required', 'exists:positions,id'],
 
-            'branch_or_site_id' => [
+            'branch_id' => [
                 'required',
-                'exists:branch_or_sites,id'
+                'exists:branches,id'
             ],
             // 'user_id' => [
             //     'required',

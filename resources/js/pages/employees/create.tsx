@@ -29,7 +29,7 @@ export default function Create({ positions, branches }: Props) {
         email: '',
         password: '',
         position_id: '',
-        branch_or_site_id: '',
+        branch_id: '',
         employee_number: '',
         emergency_contact_number: '',
         department: 'monthly',
@@ -104,15 +104,15 @@ export default function Create({ positions, branches }: Props) {
 
                         <div>
                             <Label htmlFor="branch_or_site_id">Branch/Site *</Label>
-                            <select id="branch_or_site_id" value={data.branch_or_site_id} onChange={e => setData('branch_or_site_id', e.target.value)} className="">
+                            <select id="branch_or_site_id" value={data.branch_id} onChange={e => setData('branch_id', e.target.value)} className="">
                                 <option value="">Select a Branch</option>
-                                {branches?.map((branch_or_site) => (
-                                    <option key={branch_or_site.id} value={branch_or_site.id}>
-                                        {branch_or_site.branch_name}
+                                {branches?.map((branch) => (
+                                    <option key={branch.id} value={branch.id}>
+                                        {branch.branch_name}
                                     </option>
                                 ))}
                             </select>
-                            <InputError message={errors.branch_or_site_id} />
+                            <InputError message={errors.branch_id} />
                         </div>
 
                         <div>

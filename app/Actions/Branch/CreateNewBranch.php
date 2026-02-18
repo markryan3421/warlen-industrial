@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Actions\BranchOrSite;
+namespace App\Actions\Branch;
 
-use App\Models\BranchOrSite;
+use App\Models\Branch;
 
-class CreateNewBranchOrSite
+class CreateNewBranch
 {
     /**
      * Create a new class instance.
@@ -14,9 +14,9 @@ class CreateNewBranchOrSite
         //
     }
 
-    public function create(array $data): BranchOrSite
+    public function create(array $data): Branch
     {
-        return BranchOrSite::create([
+        return Branch::create([
            'branch_name' => $data['branch_name'],
            'branch_address' => $data['branch_address'],
         ]);

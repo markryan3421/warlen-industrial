@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
-class BranchOrSite extends Model
+class Branch extends Model
 {
     protected $fillable = [
         'branch_name',
@@ -19,7 +19,12 @@ class BranchOrSite extends Model
 
     public function employees(): HasMany
     {
-        return $this->hasMany(Employee::class, 'branch_or_site_id');
+        return $this->hasMany(Employee::class, 'branch_id');
+    }
+
+    public function sites(): HasMany
+    {
+        return $this->hasMany(Site::class, 'branch_id');
     }
     
     // Accessors and Mutators

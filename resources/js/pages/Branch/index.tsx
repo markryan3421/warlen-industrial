@@ -3,7 +3,7 @@ import AppLayout from '@/layouts/app-layout';
 import { Button } from "@/components/ui/button"
 import { type BreadcrumbItem, type Branch} from '@/types';
 import { Head, Link, useForm, } from '@inertiajs/react';
-import BranchController from "@/actions/App/Http/Controllers/BranchOrSiteController";
+import BranchController from "@/actions/App/Http/Controllers/BranchController";
 
 import {
     Table,

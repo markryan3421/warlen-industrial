@@ -12,6 +12,6 @@ class EditEmployee
     }
     public function edit(Employee $employee): Employee
     {
-        return $employee->load(['position', 'branch_or_site', 'user']);
+        return $employee->load(['position', 'branch', 'user']);
     }
 }

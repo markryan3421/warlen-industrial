@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Models\BranchOrSite;
+use App\Models\Branch;
 use App\Models\Position;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -16,7 +16,7 @@ class Employee extends Model
 
     protected $fillable = [
         'position_id',
-        'branch_or_site_id',
+        'branch_id',
         'user_id',
         'employee_number',
         'emergency_contact_number',
@@ -29,9 +29,9 @@ class Employee extends Model
         return $this->belongsTo(Position::class, 'position_id');
     }
 
-    public function branchOrSite(): BelongsTo
+    public function branch(): BelongsTo
     {
-        return $this->belongsTo(BranchOrSite::class, 'branch_or_site_id');
+        return $this->belongsTo(Branch::class, 'branch_id');
     }
 
     public function user(): BelongsTo

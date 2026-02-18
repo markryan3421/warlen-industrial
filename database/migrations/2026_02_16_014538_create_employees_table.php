@@ -1,6 +1,6 @@
 <?php
 
-use App\Models\BranchOrSite;
+use App\Models\Branch;
 use App\Models\Position;
 use App\Models\User;
 use Illuminate\Database\Migrations\Migration;
@@ -17,7 +17,7 @@ return new class extends Migration
         Schema::create('employees', function (Blueprint $table) {
             $table->id();
             $table->foreignIdFor(Position::class,'position_id')->constrained('positions')->cascadeOnDelete();
-            $table->foreignIdFor(BranchOrSite::class,'branch_or_site_id')->constrained('branch_or_sites')->cascadeOnDelete();
+            $table->foreignIdFor(Branch::class,'branch_id')->constrained('branches')->cascadeOnDelete();
             $table->foreignIdFor(User::class,'user_id')->constrained('users')->cascadeOnDelete();
             $table->string('employee_number')->unique();
             $table->string('emergency_contact_number');

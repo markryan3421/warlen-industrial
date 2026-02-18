@@ -15,7 +15,7 @@ import {
 import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
 import AppLogo from './app-logo';
-import BranchController from '@/actions/App/Http/Controllers/BranchOrSiteController';
+import BranchController from '@/actions/App/Http/Controllers/BranchController';
 import PositionController from '@/actions/App/Http/Controllers/PositionController';
 
 const mainNavItems: NavItem[] = [
