@@ -39,7 +39,7 @@ export default function index({ branches }: BranchProps) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Branch" />
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-                <Link href={BranchController.create()}>Create Branch or Site</Link>
+                <Link href={BranchController.create()}>Create Branch </Link>
                 <Table>
                     <TableCaption>A list of your Branch.</TableCaption>
                     <TableHeader>

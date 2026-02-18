@@ -35,11 +35,11 @@ const mainNavItems: NavItem[] = [
         href: '#',
         icon: Flag,
     },
-    {
-        title: 'Deductions',
-        href: '#',
-        icon: CircleMinus,
-    },
+    // {
+    //     title: 'Deductions',
+    //     href: '#',
+    //     icon: CircleMinus,
+    // },
 
     {
         title: 'Employees',
