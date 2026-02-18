@@ -54,4 +54,9 @@ class Employee extends Model
             set: fn($value) => strtolower(strip_tags($value)),
         );
     }
+
+    public function applications()
+    {
+        return $this->hasMany(ApplicationLeave::class, 'employee_id');
+    }
 }
