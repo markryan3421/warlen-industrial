@@ -27,7 +27,9 @@ Route::middleware(['auth','verified'])->group(function () {
    Route::resource('positions', PositionController::class)->except(['show']);
    Route::resource('employees', EmployeeController::class)->except(['show']);
 
-
+   Route::get('/coming-soon', function() {
+    return Inertia::render('coming-soon');
+   });
 });
 
 require __DIR__.'/settings.php';

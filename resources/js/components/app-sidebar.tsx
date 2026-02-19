@@ -1,5 +1,7 @@
 import { Link } from '@inertiajs/react';
-import { BookOpen, CircleMinus, CircleUser, Flag, Folder, Landmark , UserCog} from 'lucide-react';
+import { CircleMinus, CircleUser, Flag, Landmark, UserCog } from 'lucide-react';
+import BranchController from '@/actions/App/Http/Controllers/BranchController';
+import PositionController from '@/actions/App/Http/Controllers/PositionController';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -15,34 +17,33 @@ import {
 import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
 import AppLogo from './app-logo';
-import BranchController from '@/actions/App/Http/Controllers/BranchController';
-import PositionController from '@/actions/App/Http/Controllers/PositionController';
 
-const mainNavItems: NavItem[] = [
+const FinanceItems: NavItem[] = [
     {
         title: 'Branches',
         href: BranchController.index(),
         icon: Landmark,
     },
 
-     {
+    {
+        title: 'Attendance',
+        href: '/coming-soon',
+        icon: Flag,
+    },
+
+    {
+        title: 'Deductions',
+        href: '/coming-soon',
+        icon: CircleMinus,
+    },
+];
+
+const AccessControlItems: NavItem[] = [
+    {
         title: 'Positions',
         href: PositionController.index(),
         icon: UserCog,
     },
-
-    // {
-    //     title: 'Attendance',
-    //     href: '#',
-    //     icon: Flag,
-    // },
-
-    // {
-    //     title: 'Deductions',
-    //     href: '#',
-    //     icon: CircleMinus,
-    // },
-
     {
         title: 'Employees',
         href: '/employees',
@@ -79,7 +80,8 @@ export function AppSidebar() {
             </SidebarHeader>
 
             <SidebarContent>
-                <NavMain items={mainNavItems} />
+                <NavMain label='Finance' items={FinanceItems} />
+                <NavMain label='Access Control' items={AccessControlItems} />
             </SidebarContent>
 
             <SidebarFooter>
