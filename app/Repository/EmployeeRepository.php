@@ -21,8 +21,14 @@ class EmployeeRepository
             ->with([
                 'position',
                 'branch',
+<<<<<<< HEAD
                 'sites',
                 'user' => fn($query) => $query->getUserName()
+=======
+                'user' => fn($query) => $query->getUserName(),
+                'site',
+
+>>>>>>> 7ef705fb18a446cb8121ddbc25d8b9bdfd7ca1ab
             ])
             ->latest()
             ->get([

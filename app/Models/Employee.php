@@ -83,4 +83,9 @@ class Employee extends Model
             set: fn($value) => strtolower(strip_tags($value)),
         );
     }
+
+    public function site()
+    {
+        return $this->belongsTo(Site::class, 'site_id');
+    }
 }

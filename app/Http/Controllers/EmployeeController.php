@@ -48,7 +48,7 @@ class EmployeeController extends Controller
         return Inertia::render('employees/create', [
             'positions' => $positions,
             'branches' => $branches,
-            'sites' => Site::with('branch')->get(),
+            'site' => Site::with('branch')->get(),
         ]);
     }
 
@@ -83,7 +83,7 @@ class EmployeeController extends Controller
      */
     public function show(Employee $employee)
     {
-        $employee->load(['position', 'branch', 'user', 'sites']);
+        $employee->load(['position', 'branch', 'user', 'site']);
 
         return Inertia::render('employees/show', [
             'employee' => $employee
@@ -102,13 +102,22 @@ class EmployeeController extends Controller
         $branches = Branch::query()
             ->get(['id', 'branch_name']);
 
+<<<<<<< HEAD
         $employee->load(['position', 'branch', 'user' => fn($query) => $query->getUserName(), 'sites']);
+=======
+
+        $employee->load(['position', 'branch', 'user', 'site']);
+>>>>>>> 7ef705fb18a446cb8121ddbc25d8b9bdfd7ca1ab
 
         return Inertia::render('employees/update', [
             'employee' => $employee,
             'positions' => $positions,
             'branches' => $branches,
+<<<<<<< HEAD
             'sites' => Site::with('branch')->get(['id', 'branch_id', 'site_name']),
+=======
+            'site' => Site::with('branch')->get(['id','branch_id', 'site_name']),
+>>>>>>> 7ef705fb18a446cb8121ddbc25d8b9bdfd7ca1ab
         ]);
     }
 
