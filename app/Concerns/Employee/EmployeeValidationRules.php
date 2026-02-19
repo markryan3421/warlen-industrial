@@ -24,6 +24,7 @@ trait EmployeeValidationRules
                 'required',
                 'numeric',
                 'min:11',
+                Rule::unique('employees', 'employee_number')->ignore($this->route('employee')?->id),
             ],
 
             'department' => ['required'],
@@ -38,8 +39,9 @@ trait EmployeeValidationRules
             ],
 
             'site_id' => [
-                'required',
-                'exists:sites,id'
+                'exists:sites,id',
+                'nullable',
+                'sometimes',
             ],
             // 'user_id' => [
             //     'required',

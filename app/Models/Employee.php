@@ -52,7 +52,6 @@ class Employee extends Model
     {
         return Attribute::make(
             // get: fn($value) => preg_replace('/[^a-zA-Z0-9\s]/', ' ', Str::title($value)),
-            get: fn($value) => Str::title($value),
             set: fn($value) => strtolower(strip_tags($value)),
         );
     }

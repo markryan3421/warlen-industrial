@@ -54,7 +54,7 @@ export default function Index({ employees }: PageProps) {
             <div className="@container/main flex flex-1 flex-col gap-2">
                 <div>
                     <Link href="/employees/create">
-                        <Button className="btn btn-primary">+ Create Employee</Button>
+                        <Button size="sm" className="btn btn-primary ml-4  ">+ Create Employee</Button>
                     </Link>
                 </div>
                 <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
@@ -64,33 +64,41 @@ export default function Index({ employees }: PageProps) {
                                 <TableHead>Name</TableHead>
                                 <TableHead>Position</TableHead>
                                 <TableHead>Department</TableHead>
-                                <TableHead>Branch or Site</TableHead>
+                                <TableHead>Branch</TableHead>
                                 <TableHead>Employee Number</TableHead>
                                 <TableHead>Emergency Contact</TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead>Actions</TableHead>
                             </TableRow>
                         </TableHeader>
+                        <TableBody>
+                            {employees.map((employee) => (
+                                <TableRow key={employee.id}>
+                                    <TableCell>{employee.user.name}</TableCell>
+                                    <TableCell>{employee.position.pos_name}</TableCell>
+                                    <TableCell>{employee.department}</TableCell>
+                                    <TableCell>{employee.branch.branch_name}</TableCell>
+                                    <TableCell>{employee.employee_number}</TableCell>
+                                    <TableCell>{employee.emergency_contact_number}</TableCell>
+                                    <TableCell>
+                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${employee.employee_status === 'Active'
+                                                ? 'bg-green-100 text-green-800'
+                                                : 'bg-yellow-100 text-yellow-800'
+                                            }`}>
+                                            {employee.employee_status}
+                                        </span>
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="flex justify-end gap-2">
+                                            <Link href={EmmployeeController.edit(employee.id)}><Button variant="outline" size="sm">Edit</Button></Link>
+                                            <Button size="sm" variant="destructive" onClick={() => handleDelete(employee.id)}>Delete</Button>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
                     </Table>
-                    <TableBody>
-                        {employees.map((employee) => (
-                            <TableRow key={employee.id}>
-                                <TableCell>{employee.user.name}</TableCell>
-                                <TableCell>{employee.position.pos_name}</TableCell>
-                                <TableCell>{employee.department}</TableCell>
-                                <TableCell>{employee.branch.branch_name}</TableCell>
-                                <TableCell>{employee.employee_number}</TableCell>
-                                <TableCell>{employee.emergency_contact_number}</TableCell>
-                                <TableCell>{employee.employee_status}</TableCell>
-                                <TableCell>
-                                    <Link href={EmmployeeController.edit(employee.id)}>Edit</Link>
-                                    <Button variant="destructive" onClick={() => handleDelete(employee.id)}>Delete</Button>
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
                 </div>
-
             </div>
         </AppLayout>
     );
