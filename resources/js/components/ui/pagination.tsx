@@ -47,7 +47,6 @@ export const Pagination = ({ pagination, perPage, onPerPageChange, totalCount, f
                     </SelectTrigger>
 
                     <SelectContent>
-                        <SelectItem value='5'>5</SelectItem>
                         <SelectItem value='10'>10</SelectItem>
                         <SelectItem value='25'>25</SelectItem>
                         <SelectItem value='50'>50</SelectItem>
