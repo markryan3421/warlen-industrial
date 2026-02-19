@@ -24,6 +24,7 @@ class Branch extends Model
     {
         return $this->hasMany(Site::class, 'branch_id');
     }
+
     
     // Accessors and Mutators
     protected function branchName():Attribute

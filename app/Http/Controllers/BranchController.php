@@ -8,7 +8,6 @@ use App\Http\Requests\Branch\StoreBranchRequest;
 use App\Http\Requests\Branch\UpdateBranchRequest;
 use App\Models\Branch;
 use App\Repository\BranchRepository;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 // use Inertia\Response;
@@ -46,7 +45,7 @@ class BranchController extends Controller
 
             $action->create($request->validated());
 
-            Cache::forget('branches');
+            $this->cacheForget('branches');
 
             DB::commit();
 
@@ -73,7 +72,7 @@ class BranchController extends Controller
      */
     public function edit(Branch $branch)
     {
-        $branch->load(['sites'=>fn($query) => $query->getSiteName()]);
+        $branch->load(['sites' => fn($query) => $query->getSiteName()]);
         return Inertia::render('Branch/edit', compact('branch'));
     }
 
@@ -87,7 +86,7 @@ class BranchController extends Controller
 
             $action->update($request->validated(), $branch);
 
-            Cache::forget('branches');
+            $this->cacheForget('branches');
 
             DB::commit();
 
@@ -106,7 +105,7 @@ class BranchController extends Controller
     {
         $branch->delete();
 
-        Cache::forget('branches');
+        $this->cacheForget('branches');
 
         return to_route('branches.index')->with('success', 'Branch or Site deleted successfully.');
     }
