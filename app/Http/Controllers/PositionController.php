@@ -8,87 +8,26 @@ use App\Http\Requests\Position\StorePositionRequest;
 use App\Http\Requests\Position\UpdatePositionRequest;
 use App\Models\Position;
 use App\Repository\PositionRepository;
-<<<<<<< HEAD
-=======
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
->>>>>>> 33883b448cde9d0e170bc5456e6b8eb3a344e398
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class PositionController extends Controller
 {
-    public function __construct(private PositionRepository $positionRepository)
-    {
-        
-    }
+    public function __construct(private PositionRepository $positionRepository) {}
     /**
      * Display a listing of the resource.
      */
     public function index(Request $request)
     {
-        // $positions = Cache::remember('positions', 60, function () {
-        //     return $this->positionRepository->getPositions();
-        // });
+        $data = $this->positionRepository->getFilteredPositions($request);
 
-        $positionQuery = $this->positionRepository->getPositions();
-
-        $totalCount = $positionQuery->count();
-
-        // Check if the search query matches any of the data in the database
-        if($request->filled('search')) {
-            $search = $request->search;
-
-            $positionQuery->where(fn($query) =>
-                $query->where('pos_name', 'like', "%{$search}%")
-            );
-        }
-
-        $filteredCount = $positionQuery->count();
-
-        $perPage = (int) ($request->perPage ?? 10);
-
-        if($perPage === -1) {
-            $allPositions = Position::latest()->get()->map(fn($position) => [
-                "id" => $position->id,
-                "pos_name" => $position->pos_name,
-                "salary_rate" => $position->deduction->salary_rate,
-                "reg_overtime_rate" => $position->deduction->reg_overtime_rate,
-                "special_overtime_rate" => $position->deduction->special_overtime_rate,
-                "sss_rate" => $position->deduction->sss_rate,
-                "philhealth_rate" => $position->deduction->philhealth_rate,
-                "pagibig_rate" => $position->deduction->pagibig_rate,
-            ]);
-
-            $positions = [
-                'data' => $allPositions,
-                'total' => $filteredCount,
-                'perPage' => $perPage,
-                'from' => 1,
-                'to' => $filteredCount,
-                'links' => [],
-            ];
-        } else {
-            // This will fetch all the filtered positions that matches the search query
-            $positions = $positionQuery->latest()->paginate($perPage)->withQueryString();
-
-            $positions->getCollection()->transform(fn($position) => [
-                "id" => $position->id,
-                "pos_name" => $position->pos_name,
-                "salary_rate" => $position->deduction->salary_rate,
-                "reg_overtime_rate" => $position->deduction->reg_overtime_rate,
-                "special_overtime_rate" => $position->deduction->special_overtime_rate,
-                "sss_rate" => $position->deduction->sss_rate,
-                "philhealth_rate" => $position->deduction->philhealth_rate,
-                "pagibig_rate" => $position->deduction->pagibig_rate,
-            ]);
-        }
-
-        // dd($positions);
-
-        $filters = $request->only(['search']);
-
-        return Inertia::render('Position/index', compact('positions', 'filters', 'totalCount', 'filteredCount'));
+        return Inertia::render('Position/index', [
+            'positions' => $data['positions'],
+            'filters' => $data['filters'],
+            'totalCount' => $data['totalCount'],
+            'filteredCount' => $data['filteredCount'],
+        ]);
     }
 
     /**
@@ -104,6 +43,9 @@ class PositionController extends Controller
      */
     public function store(StorePositionRequest $request, CreateNewPosition $action)
     {
+        if ($this->limit('create-position:' . auth()->id(), 60, 25)) {
+            return back()->with('error', 'Too many attempts. Please try again later.');
+        }
         try {
             DB::beginTransaction();
 
@@ -138,7 +80,7 @@ class PositionController extends Controller
         $position->load(['deduction' => function ($query) {
             $query->deductionsOnly();
         }]);
-        
+
         return Inertia::render('Position/edit', compact('position'));
     }
 
@@ -147,6 +89,9 @@ class PositionController extends Controller
      */
     public function update(UpdatePositionRequest $request, Position $position, UpdatePosition $action)
     {
+        if ($this->limit('update-position:' . auth()->id(), 60, 25)) {
+            return back()->with('error', 'Too many attempts. Please try again later.');
+        }
         try {
             DB::beginTransaction();
 
@@ -169,6 +114,9 @@ class PositionController extends Controller
      */
     public function destroy(Position $position)
     {
+        if ($this->limit('delete-position:' . auth()->id(), 60, 10)) {
+            return back()->with('error', 'Too many attempts. Please try again later.');
+        }
         $position->delete();
 
         $this->cacheForget('positions');

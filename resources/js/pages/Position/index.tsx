@@ -118,57 +118,8 @@ export default function Index({ positions, filters, totalCount, filteredCount }:
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Branch" />
+            <Head title="Positions" />
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-<<<<<<< HEAD
-                <Link 
-                    href={PositionController.create()} 
-                    className="mb-4 inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 w-fit"
-                >
-                    Create Position
-                </Link>
-                <Table>
-                    <TableCaption>A list of your Positions.</TableCaption>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Position Name</TableHead>
-                            <TableHead>Salary Rate</TableHead>
-                            <TableHead>Regular OT Rate</TableHead>
-                            <TableHead>Special OT Rate</TableHead>
-                            <TableHead>SSS Rate</TableHead>
-                            <TableHead>PhilHealth Rate</TableHead>
-                            <TableHead>Pag-IBIG Rate</TableHead>
-                            <TableHead>Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                         {positions.map((pos) => (
-                            <TableRow key={pos.id}>
-                                <TableCell>{pos.pos_name}</TableCell>
-                                <TableCell>₱{pos.deduction?.salary_rate || '0.00'}</TableCell>
-                                <TableCell>{pos.deduction?.reg_overtime_rate || '0.00'}%</TableCell>
-                                <TableCell>{pos.deduction?.special_overtime_rate || '0.00'}%</TableCell>
-                                <TableCell>{pos.deduction?.sss_rate || '0.00'}%</TableCell>
-                                <TableCell>{pos.deduction?.philhealth_rate || '0.00'}%</TableCell>
-                                <TableCell>{pos.deduction?.pagibig_rate || '0.00'}%</TableCell>
-                                <TableCell>
-                                    <div className="flex gap-2">
-                                      <Link 
-                                        href={PositionController.edit(pos.id)}
-                                        className="inline-flex items-center justify-center rounded-md bg-secondary px-3 py-1.5 text-sm font-medium text-secondary-foreground hover:bg-secondary/90"
-                                    >
-                                        Edit
-                                    </Link>
-                                        <Button 
-                                            variant="destructive" 
-                                            size="sm"
-                                            onClick={() => handleDelete(pos.id)}
-                                        >
-                                            Delete
-                                        </Button>
-                                    </div>
-                                </TableCell>
-=======
                 <div className='mx-2'>
                     <div className="flex items-center justify-between gap-4 w-full mb-3">
                         {/* Search Bar */}
@@ -207,7 +158,6 @@ export default function Index({ positions, filters, totalCount, filteredCount }:
                                 <TableHead>PhilHealth Rate</TableHead>
                                 <TableHead>Pag-IBIG Rate</TableHead>
                                 <TableHead></TableHead>
->>>>>>> 33883b448cde9d0e170bc5456e6b8eb3a344e398
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -231,10 +181,10 @@ export default function Index({ positions, filters, totalCount, filteredCount }:
                                                     Actions
                                                 </DropdownMenuLabel>
 
-                                                <DropdownMenuItem className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 cursor-pointer transition-colors">
+                                                {/* <DropdownMenuItem className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 cursor-pointer transition-colors">
                                                     <Eye strokeWidth={1} className="h-4 w-4" />
                                                     <span>View</span>
-                                                </DropdownMenuItem>
+                                                </DropdownMenuItem> */}
 
                                                 <DropdownMenuItem className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 cursor-pointer transition-colors">
                                                     <Pencil strokeWidth={1} className="h-4 w-4" />

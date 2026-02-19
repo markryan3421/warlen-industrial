@@ -29,6 +29,9 @@ interface Employee {
         name: string;
         email: string;
     }
+    sites: {
+        site_name: string;
+    }
     employee_number: string;
     emergency_contact_number: string;
     department: string;
@@ -65,6 +68,7 @@ export default function Index({ employees }: PageProps) {
                                 <TableHead>Position</TableHead>
                                 <TableHead>Department</TableHead>
                                 <TableHead>Branch</TableHead>
+                                <TableHead>Site</TableHead>
                                 <TableHead>Employee Number</TableHead>
                                 <TableHead>Emergency Contact</TableHead>
                                 <TableHead>Status</TableHead>
@@ -78,6 +82,7 @@ export default function Index({ employees }: PageProps) {
                                     <TableCell>{employee.position.pos_name}</TableCell>
                                     <TableCell>{employee.department}</TableCell>
                                     <TableCell>{employee.branch.branch_name}</TableCell>
+                                    <TableCell>{employee.sites?.site_name || 'N/A'}</TableCell>
                                     <TableCell>{employee.employee_number}</TableCell>
                                     <TableCell>{employee.emergency_contact_number}</TableCell>
                                     <TableCell>
