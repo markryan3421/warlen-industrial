@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { BookOpen, CircleMinus, CircleUser, Flag, Folder, Landmark , UserCog} from 'lucide-react';
+import { BookOpen, CircleMinus, CircleUser, Flag, Folder, Home, Landmark , UserCog} from 'lucide-react';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -17,8 +17,16 @@ import type { NavItem } from '@/types';
 import AppLogo from './app-logo';
 import BranchController from '@/actions/App/Http/Controllers/BranchController';
 import PositionController from '@/actions/App/Http/Controllers/PositionController';
+import Dashboard from '@/pages/dashboard';
 
 const mainNavItems: NavItem[] = [
+
+    {
+        title: 'Dashboard',
+        href: dashboard().url,
+        icon: Home
+
+    },
     {
         title: 'Branches',
         href: BranchController.index(),

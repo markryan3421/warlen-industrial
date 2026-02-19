@@ -1,10 +1,11 @@
+import { Head, useForm } from '@inertiajs/react';
+import { LoaderCircle } from 'lucide-react';
+import { store } from '@/actions/App/Http/Controllers/PositionController';
+import InputError from '@/components/input-error';
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, useForm } from '@inertiajs/react';
-import InputError from '@/components/input-error';
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { store } from '@/actions/App/Http/Controllers/PositionController';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -13,7 +14,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
     {
         title: 'Create Position',
-        href: '/position/create',
+        href: '/positions/create',
     },
 ];
 
@@ -119,6 +120,7 @@ export default function Create() {
                         type="submit"
                         disabled={processing}
                     >
+                        {processing && <LoaderCircle className='h-4 w-4 animate-spin' />}
                         {processing ? 'Creating...' : 'Create Position'}
                     </Button>
                 </form>

@@ -3,7 +3,7 @@
 namespace App\Repository;
 
 use App\Models\Position;
-use Illuminate\Database\Eloquent\Collection;
+// use Illuminate\Database\Eloquent\Collection;
 
 class PositionRepository
 {
@@ -20,7 +20,7 @@ class PositionRepository
         return Position::query()
             ->with(['deduction' => function ($query) {
                 $query->deductionsOnly();
-            }])
-            ->get(['id', 'pos_name']);
+            }]);
+            // ->get(['id', 'pos_name']);
     }
 }
