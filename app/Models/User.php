@@ -75,6 +75,7 @@ class User extends Authenticatable
         $query->select(
             'id',
             'name',
+            'email',
         );
     }
 }

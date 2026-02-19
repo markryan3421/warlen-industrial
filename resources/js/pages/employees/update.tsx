@@ -32,7 +32,7 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
     const [availableSites, setAvailableSites] = useState<any[]>([]);
     const [positionSearch, setPositionSearch] = useState('');
     const [showPositionDropdown, setShowPositionDropdown] = useState(false);
-    
+
     const { data, setData, put, processing, errors } = useForm({
         name: employee.user.name,
         email: employee.user.email,
@@ -60,6 +60,7 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
                 (site: any) => site.branch_id === parseInt(data.branch_id)
             );
             setAvailableSites(filteredSites);
+            setData('site_id', '');
         } else {
             setAvailableSites([]);
         }
@@ -67,7 +68,7 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
 
     // Filter positions based on search, limit to 5
     const filteredPositions = positions
-        ?.filter(position => 
+        ?.filter(position =>
             position.pos_name.toLowerCase().includes(positionSearch.toLowerCase())
         )
         .slice(0, 5);
@@ -192,7 +193,7 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
                                 <div className="space-y-2">
                                     <Label htmlFor="position_id">Position <span className="text-red-500">*</span></Label>
                                     <div className="relative">
-                                        <div 
+                                        <div
                                             className="flex items-center border border-input rounded-md cursor-pointer"
                                             onClick={() => setShowPositionDropdown(!showPositionDropdown)}
                                         >
@@ -201,7 +202,7 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
                                             </div>
                                             <ChevronDown className="h-4 w-4 mr-2 text-muted-foreground" />
                                         </div>
-                                        
+
                                         {showPositionDropdown && (
                                             <div className="absolute z-10 w-full mt-1 bg-white border border-input rounded-md shadow-lg">
                                                 <div className="p-2 border-b">
@@ -314,7 +315,7 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
                                         <option value="">Select a Site</option>
                                         {availableSites?.map((site) => (
                                             <option key={site.id} value={site.id}>
-                                                {site.site_name || site.name}
+                                                {site.site_name || site.site}
                                             </option>
                                         ))}
                                     </select>
@@ -343,8 +344,8 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
 
             {/* Click outside to close dropdown */}
             {showPositionDropdown && (
-                <div 
-                    className="fixed inset-0 z-0" 
+                <div
+                    className="fixed inset-0 z-0"
                     onClick={() => setShowPositionDropdown(false)}
                 />
             )}
