@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Models\BranchOrSite;
+use App\Models\Branch;
 use App\Models\Position;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -16,8 +16,9 @@ class Employee extends Model
 
     protected $fillable = [
         'position_id',
-        'branch_or_site_id',
+        'branch_id',
         'user_id',
+        'site_id',
         'employee_number',
         'emergency_contact_number',
         'department',
@@ -29,9 +30,9 @@ class Employee extends Model
         return $this->belongsTo(Position::class, 'position_id');
     }
 
-    public function branchOrSite(): BelongsTo
+    public function branch(): BelongsTo
     {
-        return $this->belongsTo(BranchOrSite::class, 'branch_or_site_id');
+        return $this->belongsTo(Branch::class, 'branch_id');
     }
 
     public function user(): BelongsTo
@@ -50,7 +51,8 @@ class Employee extends Model
     protected function department(): Attribute
     {
         return Attribute::make(
-            get: fn($value) => preg_replace('/[^a-zA-Z0-9\s]/', ' ', Str::title($value)),
+            // get: fn($value) => preg_replace('/[^a-zA-Z0-9\s]/', ' ', Str::title($value)),
+            get: fn($value) => Str::title($value),
             set: fn($value) => strtolower(strip_tags($value)),
         );
     }
@@ -58,5 +60,10 @@ class Employee extends Model
     public function applications()
     {
         return $this->hasMany(ApplicationLeave::class, 'employee_id');
+    }
+
+    public function sites()
+    {
+        return $this->belongsTo(Site::class, 'site_id');
     }
 }

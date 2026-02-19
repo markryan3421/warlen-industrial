@@ -15,7 +15,7 @@ import {
 import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
 import AppLogo from './app-logo';
-import BranchController from '@/actions/App/Http/Controllers/BranchOrSiteController';
+import BranchController from '@/actions/App/Http/Controllers/BranchController';
 import PositionController from '@/actions/App/Http/Controllers/PositionController';
 
 const mainNavItems: NavItem[] = [
@@ -30,16 +30,18 @@ const mainNavItems: NavItem[] = [
         href: PositionController.index(),
         icon: UserCog,
     },
-    {
-        title: 'Attendance',
-        href: '#',
-        icon: Flag,
-    },
-    {
-        title: 'Deductions',
-        href: '#',
-        icon: CircleMinus,
-    },
+
+    // {
+    //     title: 'Attendance',
+    //     href: '#',
+    //     icon: Flag,
+    // },
+
+    // {
+    //     title: 'Deductions',
+    //     href: '#',
+    //     icon: CircleMinus,
+    // },
 
     {
         title: 'Employees',
@@ -49,16 +51,16 @@ const mainNavItems: NavItem[] = [
 ];
 
 const footerNavItems: NavItem[] = [
-    {
-        title: 'Repository',
-        href: 'https://github.com/laravel/react-starter-kit',
-        icon: Folder,
-    },
-    {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#react',
-        icon: BookOpen,
-    },
+    // {
+    //     title: 'Repository',
+    //     href: 'https://github.com/laravel/react-starter-kit',
+    //     icon: Folder,
+    // },
+    // {
+    //     title: 'Documentation',
+    //     href: 'https://laravel.com/docs/starter-kits#react',
+    //     icon: BookOpen,
+    // },
 ];
 
 export function AppSidebar() {

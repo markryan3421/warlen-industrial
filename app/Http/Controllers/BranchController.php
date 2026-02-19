@@ -2,18 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use App\Actions\BranchOrSite\CreateNewBranchOrSite;
-use App\Actions\BranchOrSite\UpdateBranchOrSite;
-use App\Http\Requests\BranchOrSite\StoreBranchOrSiteRequest;
-use App\Http\Requests\BranchOrSite\UpdateBranchOrSiteRequest;
-use App\Models\BranchOrSite;
+use App\Actions\Branch\UpdateBranch;
+use App\Actions\Branch\CreateNewBranch;
+use App\Http\Requests\Branch\StoreBranchRequest;
+use App\Http\Requests\Branch\UpdateBranchRequest;
+use App\Models\Branch;
 use App\Repository\BranchRepository;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 // use Inertia\Response;
 
-class BranchOrSiteController extends Controller
+class BranchController extends Controller
 {
     public function __construct(private BranchRepository $branchRepository) {}
     /**
@@ -21,7 +21,7 @@ class BranchOrSiteController extends Controller
      */
     public function index()
     {
-        $branches = Cache::rememberForever('branches', function () {
+        $branches = $this->cacheRemember('branches', 60, function () {
             return $this->branchRepository->getBranches();
         });
 
@@ -39,7 +39,7 @@ class BranchOrSiteController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StoreBranchOrSiteRequest $request, CreateNewBranchOrSite $action)
+    public function store(StoreBranchRequest $request, CreateNewBranch $action)
     {
         try {
             DB::beginTransaction();
@@ -63,7 +63,7 @@ class BranchOrSiteController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(BranchOrSite $branchOrSite)
+    public function show(Branch $branch)
     {
         //
     }
@@ -71,15 +71,16 @@ class BranchOrSiteController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(BranchOrSite $branch)
+    public function edit(Branch $branch)
     {
+        $branch->load(['sites'=>fn($query) => $query->getSiteName()]);
         return Inertia::render('Branch/edit', compact('branch'));
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateBranchOrSiteRequest $request, BranchOrSite $branch, UpdateBranchOrSite $action)
+    public function update(UpdateBranchRequest $request, Branch $branch, UpdateBranch $action)
     {
         try {
             DB::beginTransaction();
@@ -101,7 +102,7 @@ class BranchOrSiteController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(BranchOrSite $branch)
+    public function destroy(Branch $branch)
     {
         $branch->delete();
 

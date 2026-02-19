@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\BranchOrSiteController;
+use App\Http\Controllers\BranchController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\PositionController; // Added missing import
 use Illuminate\Support\Facades\Route;
@@ -23,7 +23,7 @@ Route::middleware(['auth','verified'])->group(function () {
        return Inertia::render('dashboard');
    })->name('dashboard');
 
-   Route::resource('branches', BranchOrSiteController::class)->except(['show']);
+   Route::resource('branches', BranchController::class)->except(['show']);
    Route::resource('positions', PositionController::class)->except(['show']);
    Route::resource('employees', EmployeeController::class)->except(['show']);
 

@@ -6,9 +6,10 @@ use App\Actions\Employee\CreateNewEmployee;
 use App\Actions\Employee\UpdateEmployee;
 use App\Http\Requests\Employee\StoreEmployeeRequest;
 use App\Http\Requests\Employee\UpdateEmployeeRequest;
-use App\Models\BranchOrSite;
+use App\Models\Branch;
 use App\Models\Employee;
 use App\Models\Position;
+use App\Models\Site;
 use App\Repository\EmployeeRepository;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -23,8 +24,8 @@ class EmployeeController extends Controller
      */
     public function index()
     {
-        $employees = Cache::remember('employees', 60, function () {
-            return  $this->employeeRepository->getEmployees();
+        $employees = $this->cacheRemember('employees', 60, function () {
+            return $this->employeeRepository->getEmployees();
         });
 
         return Inertia::render('employees/index', [
@@ -41,12 +42,14 @@ class EmployeeController extends Controller
         $positions = Position::query()
             ->get(['id', 'pos_name']);
 
-        $branches = BranchOrSite::query()
+        $branches = Branch::query()
             ->get(['id', 'branch_name']);
+       
 
         return Inertia::render('employees/create', [
             'positions' => $positions,
-            'branches' => $branches
+            'branches' => $branches,
+            'sites' => Site::with('branch')->get(),
         ]);
     }
 
@@ -78,7 +81,7 @@ class EmployeeController extends Controller
      */
     public function show(Employee $employee)
     {
-        $employee->load(['position', 'branch_or_site', 'user']);
+        $employee->load(['position', 'branch', 'user', 'sites']);
 
         return Inertia::render('employees/show', [
             'employee' => $employee
@@ -94,15 +97,18 @@ class EmployeeController extends Controller
         $positions = Position::query()
             ->get(['id', 'pos_name']);
 
-        $branches = BranchOrSite::query()
+        $branches = Branch::query()
             ->get(['id', 'branch_name']);
+        
 
-        $employee->load(['position', 'branchOrSite', 'user']);
+
+        $employee->load(['position', 'branch', 'user', 'sites']);
 
         return Inertia::render('employees/update', [
             'employee' => $employee,
             'positions' => $positions,
-            'branches' => $branches
+            'branches' => $branches,
+            'sites' => Site::with('branch')->get(['id','branch_id', 'site_name']),
         ]);
     }
 

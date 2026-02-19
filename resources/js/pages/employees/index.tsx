@@ -21,7 +21,7 @@ interface Employee {
     position: {
         pos_name: string;
     }
-    branch_or_site: {
+    branch: {
         branch_name: string;
         branch_address: string;
     }
@@ -78,7 +78,7 @@ export default function Index({ employees }: PageProps) {
                                 <TableCell>{employee.user.name}</TableCell>
                                 <TableCell>{employee.position.pos_name}</TableCell>
                                 <TableCell>{employee.department}</TableCell>
-                                <TableCell>{employee.branch_or_site.branch_name}</TableCell>
+                                <TableCell>{employee.branch.branch_name}</TableCell>
                                 <TableCell>{employee.employee_number}</TableCell>
                                 <TableCell>{employee.emergency_contact_number}</TableCell>
                                 <TableCell>{employee.employee_status}</TableCell>

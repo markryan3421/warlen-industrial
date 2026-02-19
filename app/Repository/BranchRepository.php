@@ -2,7 +2,7 @@
 
 namespace App\Repository;
 
-use App\Models\BranchOrSite;
+use App\Models\Branch;
 use Illuminate\Database\Eloquent\Collection;
 
 class BranchRepository
@@ -17,7 +17,8 @@ class BranchRepository
 
     public function getBranches(): Collection
     {
-        return BranchOrSite::query()
+        return Branch::query()
+            ->with(['sites' => fn($query) => $query->getSiteName()])
             ->get(['id', 'branch_name', 'branch_address']);
     }
 }
