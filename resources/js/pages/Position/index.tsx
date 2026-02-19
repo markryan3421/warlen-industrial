@@ -118,7 +118,7 @@ export default function Index({ positions, filters, totalCount, filteredCount }:
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Branch" />
+            <Head title="Positions" />
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
                 <div className='mx-2'>
                     <div className="flex items-center justify-between gap-4 w-full mb-3">
@@ -181,10 +181,10 @@ export default function Index({ positions, filters, totalCount, filteredCount }:
                                                     Actions
                                                 </DropdownMenuLabel>
 
-                                                <DropdownMenuItem className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 cursor-pointer transition-colors">
+                                                {/* <DropdownMenuItem className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 cursor-pointer transition-colors">
                                                     <Eye strokeWidth={1} className="h-4 w-4" />
                                                     <span>View</span>
-                                                </DropdownMenuItem>
+                                                </DropdownMenuItem> */}
 
                                                 <DropdownMenuItem className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 cursor-pointer transition-colors">
                                                     <Pencil strokeWidth={1} className="h-4 w-4" />

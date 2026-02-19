@@ -43,7 +43,7 @@ class EmployeeController extends Controller
 
         $branches = Branch::query()
             ->get(['id', 'branch_name']);
-       
+
 
         return Inertia::render('employees/create', [
             'positions' => $positions,
@@ -57,6 +57,9 @@ class EmployeeController extends Controller
      */
     public function store(StoreEmployeeRequest $request, CreateNewEmployee $action)
     {
+        if ($this->limit('create-employee:' . auth()->id(), 60, 25)) {
+            return back()->with('error', 'Too many attempts. Please try again later.');
+        }
         DB::beginTransaction();
 
         try {
@@ -64,7 +67,7 @@ class EmployeeController extends Controller
 
             $action->create($validatedData);
 
-           $this->cacheForget('employees');
+            $this->cacheForget('employees');
 
             DB::commit();
 
@@ -98,16 +101,14 @@ class EmployeeController extends Controller
 
         $branches = Branch::query()
             ->get(['id', 'branch_name']);
-        
 
-
-        $employee->load(['position', 'branch', 'user', 'site']);
+        $employee->load(['position', 'branch', 'user' => fn($query) => $query->getUserName(), 'sites']);
 
         return Inertia::render('employees/update', [
             'employee' => $employee,
             'positions' => $positions,
             'branches' => $branches,
-            'site' => Site::with('branch')->get(['id','branch_id', 'site_name']),
+            'sites' => Site::with('branch')->get(['id', 'branch_id', 'site_name']),
         ]);
     }
 
@@ -116,6 +117,9 @@ class EmployeeController extends Controller
      */
     public function update(UpdateEmployeeRequest $request, Employee $employee, UpdateEmployee $action)
     {
+        if ($this->limit('update-employee:' . auth()->id(), 60, 25)) {
+            return back()->with('error', 'Too many attempts. Please try again later.');
+        }
         DB::beginTransaction();
 
         try {
@@ -138,10 +142,13 @@ class EmployeeController extends Controller
      */
     public function destroy(Employee $employee)
     {
+        if ($this->limit('delete-employee:' . auth()->id(), 60, 10)) {
+            return back()->with('error', 'Too many attempts. Please try again later.');
+        }
         $employee->user()->delete();
 
         $this->cacheForget('employees');
 
-        return to_route('employees.index')->with('success', 'Employee deleted successfully.');  
+        return to_route('employees.index')->with('success', 'Employee deleted successfully.');
     }
 }

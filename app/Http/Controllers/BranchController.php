@@ -40,6 +40,9 @@ class BranchController extends Controller
      */
     public function store(StoreBranchRequest $request, CreateNewBranch $action)
     {
+        if ($this->limit('create-branch:' . auth()->id(), 60, 15)) {
+            return back()->with('error', 'Too many attempts. Please try again later.');
+        }
         try {
             DB::beginTransaction();
 
@@ -81,6 +84,9 @@ class BranchController extends Controller
      */
     public function update(UpdateBranchRequest $request, Branch $branch, UpdateBranch $action)
     {
+        if ($this->limit('update-branch:' . auth()->id(), 60, 15)) {
+            return back()->with('error', 'Too many attempts. Please try again later.');
+        }
         try {
             DB::beginTransaction();
 
@@ -103,6 +109,9 @@ class BranchController extends Controller
      */
     public function destroy(Branch $branch)
     {
+        if ($this->limit('delete-branch:' . auth()->id(), 60, 10)) {
+            return back()->with('error', 'Too many attempts. Please try again later.');
+        }
         $branch->delete();
 
         $this->cacheForget('branches');

@@ -16,9 +16,10 @@ const breadcrumbs: BreadcrumbItem[] = [
 interface Employee {
     id: number;
     position: { pos_name: string; }
-    branch: { branch_name: string; branch_address: string; sites?: string; }
+    branch: { branch_name: string; branch_address: string; site?: string; }
     user: { name: string; email: string; }
     employee_number: string;
+    site_name: string;
     emergency_contact_number: string;
     department: string;
     employee_status: string;
@@ -41,7 +42,7 @@ export default function Index({ employees }: PageProps) {
     const departments = [...new Set(employees.map(e => e.department))];
     const positions = [...new Set(employees.map(e => e.position.pos_name))];
     const branches = [...new Set(employees.map(e => e.branch.branch_name))];
-    const sites = [...new Set(employees.map(e => e.branch.sites).filter(Boolean))];
+    const sites = [...new Set(employees.map(e => e.branch.site).filter(Boolean))];
 
     // Filter employees
     const filteredEmployees = useMemo(() => {
@@ -50,7 +51,7 @@ export default function Index({ employees }: PageProps) {
                 (!filters.department || emp.department === filters.department) &&
                 (!filters.position || emp.position.pos_name === filters.position) &&
                 (!filters.branch || emp.branch.branch_name === filters.branch) &&
-                (!filters.site || emp.branch.sites === filters.site || emp.branch.sites?.includes(filters.site))
+                (!filters.site || emp.branch.site === filters.site)
             );
         });
     }, [employees, filters]);
@@ -67,29 +68,49 @@ export default function Index({ employees }: PageProps) {
             <div className="@container/main flex flex-1 flex-col gap-2">
                 <div className="flex justify-between items-center p-4">
                     <div className="flex gap-2 flex-wrap">
-                        <select className="border rounded px-3 py-1" value={filters.department} onChange={(e) => setFilters({...filters, department: e.target.value})}>
+                        <select 
+                            className="border rounded px-3 py-1"
+                            value={filters.department}
+                            onChange={(e) => setFilters({...filters, department: e.target.value})}
+                        >
                             <option value="">All Departments</option>
                             {departments.map(d => <option key={d} value={d}>{d}</option>)}
                         </select>
 
-                        <select className="border rounded px-3 py-1" value={filters.position} onChange={(e) => setFilters({...filters, position: e.target.value})}>
+                        <select 
+                            className="border rounded px-3 py-1"
+                            value={filters.position}
+                            onChange={(e) => setFilters({...filters, position: e.target.value})}
+                        >
                             <option value="">All Positions</option>
                             {positions.map(p => <option key={p} value={p}>{p}</option>)}
                         </select>
 
-                        <select className="border rounded px-3 py-1" value={filters.branch} onChange={(e) => setFilters({...filters, branch: e.target.value, site: ''})}>
+                        <select 
+                            className="border rounded px-3 py-1"
+                            value={filters.branch}
+                            onChange={(e) => setFilters({...filters, branch: e.target.value, site: ''})}
+                        >
                             <option value="">All Branches</option>
                             {branches.map(b => <option key={b} value={b}>{b}</option>)}
                         </select>
 
                         {filters.branch && sites.length > 0 && (
-                            <select className="border rounded px-3 py-1" value={filters.site} onChange={(e) => setFilters({...filters, site: e.target.value})}>
+                            <select 
+                                className="border rounded px-3 py-1"
+                                value={filters.site}
+                                onChange={(e) => setFilters({...filters, site: e.target.value})}
+                            >
                                 <option value="">All Sites</option>
                                 {sites.map(s => <option key={s} value={s}>{s}</option>)}
                             </select>
                         )}
 
-                        <Button  variant="ghost"  size="sm"  onClick={() => setFilters({department: '', position: '', branch: '', site: ''})} >
+                        <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => setFilters({department: '', position: '', branch: '', site: ''})}
+                        >
                             Clear
                         </Button>
                     </div>
