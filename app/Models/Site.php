@@ -29,6 +29,8 @@ class Site extends Model
         return $this->hasMany(Employee::class, 'site_id');
     }
 
+
+    // Accessors and Mutators
     protected function siteName():Attribute
     {
         return Attribute::make(

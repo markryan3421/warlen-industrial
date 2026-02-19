@@ -10,4 +10,15 @@ trait CacheTrait
     {
         return Cache::remember($key, $ttl, $callback);
     }
+
+    protected function cacheRememberForever(string $key, callable $callback){
+
+        return Cache::rememberForever($key, $callback);
+        
+    }
+
+    protected function cacheForget(string $key)
+    {
+       return Cache::forget($key);
+    }
 }

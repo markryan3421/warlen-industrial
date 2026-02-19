@@ -38,7 +38,12 @@ export default function index({ positions }: PosProps) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Branch" />
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-                <Link href={PositionController.create()}>Create Positions</Link>
+                <Link 
+                    href={PositionController.create()} 
+                    className="mb-4 inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 w-fit"
+                >
+                    Create Position
+                </Link>
                 <Table>
                     <TableCaption>A list of your Positions.</TableCaption>
                     <TableHeader>
@@ -65,12 +70,12 @@ export default function index({ positions }: PosProps) {
                                 <TableCell>{pos.deduction?.pagibig_rate || '0.00'}%</TableCell>
                                 <TableCell>
                                     <div className="flex gap-2">
-                                        <Link 
-                                            href={PositionController.edit(pos.id)} 
-                                            className="text-blue-600 hover:underline"
-                                        >
-                                            Edit
-                                        </Link>
+                                      <Link 
+                                        href={PositionController.edit(pos.id)}
+                                        className="inline-flex items-center justify-center rounded-md bg-secondary px-3 py-1.5 text-sm font-medium text-secondary-foreground hover:bg-secondary/90"
+                                    >
+                                        Edit
+                                    </Link>
                                         <Button 
                                             variant="destructive" 
                                             size="sm"

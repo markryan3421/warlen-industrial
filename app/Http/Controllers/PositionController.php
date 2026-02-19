@@ -8,7 +8,6 @@ use App\Http\Requests\Position\StorePositionRequest;
 use App\Http\Requests\Position\UpdatePositionRequest;
 use App\Models\Position;
 use App\Repository\PositionRepository;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
@@ -48,7 +47,7 @@ class PositionController extends Controller
 
             $action->create($request->validated());
 
-            Cache::forget('positions');
+            $this->cacheForget('positions');
 
             DB::commit();
 
@@ -91,7 +90,7 @@ class PositionController extends Controller
 
             $action->update($request->validated(), $position);
 
-            Cache::forget('positions');
+            $this->cacheForget('positions');
 
             DB::commit();
 
@@ -110,7 +109,7 @@ class PositionController extends Controller
     {
         $position->delete();
 
-        Cache::forget('positions');
+        $this->cacheForget('positions');
 
         return to_route('positions.index')->with('success', 'Position deleted successfully.');
     }

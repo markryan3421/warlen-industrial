@@ -11,7 +11,6 @@ use App\Models\Employee;
 use App\Models\Position;
 use App\Models\Site;
 use App\Repository\EmployeeRepository;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
@@ -65,7 +64,7 @@ class EmployeeController extends Controller
 
             $action->create($validatedData);
 
-            Cache::forget('employees');
+           $this->cacheForget('employees');
 
             DB::commit();
 
@@ -81,11 +80,7 @@ class EmployeeController extends Controller
      */
     public function show(Employee $employee)
     {
-<<<<<<< HEAD
         $employee->load(['position', 'branch', 'user', 'sites']);
-=======
-        $employee->load(['position', 'branch', 'user' => fn($query) => $query->getUserName()]);
->>>>>>> d41309d6d4be4706a7a880c644d2b34d35d38115
 
         return Inertia::render('employees/show', [
             'employee' => $employee
@@ -105,12 +100,8 @@ class EmployeeController extends Controller
             ->get(['id', 'branch_name']);
         
 
-<<<<<<< HEAD
 
         $employee->load(['position', 'branch', 'user', 'sites']);
-=======
-        $employee->load(['position', 'branch', 'user' => fn($query) => $query->getUserName()]);
->>>>>>> d41309d6d4be4706a7a880c644d2b34d35d38115
 
         return Inertia::render('employees/update', [
             'employee' => $employee,
@@ -131,7 +122,7 @@ class EmployeeController extends Controller
             $validatedData = $request->validated();
             $action->update($validatedData, $employee);
 
-            Cache::forget('employees');
+            $this->cacheForget('employees');
 
             DB::commit();
 
@@ -149,7 +140,7 @@ class EmployeeController extends Controller
     {
         $employee->user()->delete();
 
-        Cache::forget('employees');
+        $this->cacheForget('employees');
 
         return to_route('employees.index')->with('success', 'Employee deleted successfully.');  
     }

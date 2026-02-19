@@ -2,13 +2,11 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 
 class ApplicationLeave extends Model
 {
-    protected $casts = [
-        'is_approved'=> 'boolean',
-    ];
 
     protected $fillable = [
         'employee_id',
@@ -18,8 +16,21 @@ class ApplicationLeave extends Model
         'is_approved',
     ];
 
+    protected $casts = [
+        'is_approved' => 'boolean',
+        'leave_start' => 'date',
+        'leave_end' => 'date',
+    ];
+
     public function employee()
     {
         return $this->belongsTo(Employee::class, 'employee_id');
+    }
+
+    protected function reasonToLeave(): Attribute
+    {
+        return Attribute::make(
+            set: fn($value) => strip_tags($value),
+        );
     }
 }
