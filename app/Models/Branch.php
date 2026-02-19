@@ -29,7 +29,7 @@ class Branch extends Model
     protected function branchName():Attribute
     {
         return Attribute::make(
-            get: fn ($value) => Str::upper($value),
+            get: fn ($value) => Str::title($value),
             set: fn ($value) => strtolower(strip_tags($value)),
         );
     }

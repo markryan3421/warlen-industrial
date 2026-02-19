@@ -61,7 +61,7 @@ class Employee extends Model
         return $this->hasMany(ApplicationLeave::class, 'employee_id');
     }
 
-    public function sites()
+    public function site()
     {
         return $this->belongsTo(Site::class, 'site_id');
     }

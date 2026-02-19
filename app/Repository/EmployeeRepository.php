@@ -21,7 +21,9 @@ class EmployeeRepository
             ->with([
                 'position',
                 'branch',
-                'user' => fn($query) => $query->getUserName()
+                'user' => fn($query) => $query->getUserName(),
+                'site',
+
             ])
             ->latest()
             ->get([
@@ -29,6 +31,7 @@ class EmployeeRepository
                 'position_id',
                 'branch_id',
                 'user_id',
+                'site_id',
                 'employee_number',
                 'emergency_contact_number',
                 'department',
