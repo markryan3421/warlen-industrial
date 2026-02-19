@@ -1,7 +1,7 @@
 import { Head, Link, router, useForm, } from '@inertiajs/react';
 import { DropdownMenuContent, DropdownMenuTrigger } from '@radix-ui/react-dropdown-menu';
 import { CirclePlusIcon, Eye, MoreHorizontalIcon, Pencil, Trash } from 'lucide-react';
-import { useRoute } from 'ziggy-js';
+// import { useRoute } from 'ziggy-js';
 import PositionController from "@/actions/App/Http/Controllers/PositionController";
 // import { Button } from "@/components/ui/button"
 import { Button } from '@/components/ui/button';
@@ -54,7 +54,7 @@ interface IndexProps {
 }
 
 export default function Index({ positions, filters, totalCount, filteredCount }: IndexProps) {
-    const route = useRoute();
+    // const route = useRoute();
 
     console.log(positions);
 
@@ -83,7 +83,7 @@ export default function Index({ positions, filters, totalCount, filteredCount }:
         };
 
         // Pass the search query to the backend to filter products
-        router.get(route('positions.index'), queryString, {
+        router.get(PositionController.index().url, queryString, {
             preserveState: true,
             preserveScroll: true,
         });
@@ -94,10 +94,10 @@ export default function Index({ positions, filters, totalCount, filteredCount }:
         setData('search', '');
         setData('perPage', '10');
 
-        router.get(route('positions.index'), {}, {
+        router.get(PositionController.index().url), {}, {
             preserveState: true,
             preserveScroll: true,
-        });
+        };
     }
 
     // Handle number of products to display per page
@@ -110,7 +110,7 @@ export default function Index({ positions, filters, totalCount, filteredCount }:
             ...(value && { perPage: value }),
         };
 
-        router.get(route('positions.index'), queryString, {
+        router.get(PositionController.index().url, queryString, {
             preserveState: true,
             preserveScroll: true,
         });
