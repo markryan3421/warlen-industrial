@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { CircleMinus, CircleUser, Flag, Landmark, UserCog } from 'lucide-react';
+import { Airplay, CircleMinus, CircleUser, Flag, Landmark, Lock, UserCog } from 'lucide-react';
 import BranchController from '@/actions/App/Http/Controllers/BranchController';
 import PositionController from '@/actions/App/Http/Controllers/PositionController';
 import { NavFooter } from '@/components/nav-footer';
@@ -20,17 +20,20 @@ import AppLogo from './app-logo';
 
 const FinanceItems: NavItem[] = [
     {
+        title: 'Dashboard',
+        href: '/dashboard',
+        icon: Airplay,
+    },
+    {
         title: 'Branches',
         href: BranchController.index(),
         icon: Landmark,
     },
-
     {
         title: 'Attendance',
         href: '/coming-soon',
         icon: Flag,
     },
-
     {
         title: 'Deductions',
         href: '/coming-soon',
@@ -48,7 +51,12 @@ const AccessControlItems: NavItem[] = [
         title: 'Employees',
         href: '/employees',
         icon: CircleUser,
-    }
+    },
+    {
+        title: 'Permissions',
+        href: '/permissions',
+        icon: Lock,
+    },
 ];
 
 const footerNavItems: NavItem[] = [

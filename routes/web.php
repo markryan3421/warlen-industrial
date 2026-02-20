@@ -2,7 +2,8 @@
 
 use App\Http\Controllers\BranchController;
 use App\Http\Controllers\EmployeeController;
-use App\Http\Controllers\PositionController; // Added missing import
+use App\Http\Controllers\PositionController;
+use App\Http\Controllers\PermissionController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -26,6 +27,7 @@ Route::middleware(['auth','verified'])->group(function () {
    Route::resource('branches', BranchController::class)->except(['show']);
    Route::resource('positions', PositionController::class)->except(['show']);
    Route::resource('employees', EmployeeController::class)->except(['show']);
+   Route::resource('permissions', PermissionController::class);
 
    Route::get('/coming-soon', function() {
     return Inertia::render('coming-soon');
