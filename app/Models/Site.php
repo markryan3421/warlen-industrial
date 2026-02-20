@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Site extends Model
 {
     //
+    protected $table = 'sites';
 
     protected $fillable = [
         'branch_id',
@@ -29,6 +30,8 @@ class Site extends Model
         return $this->hasMany(Employee::class, 'site_id');
     }
 
+
+    // Accessors and Mutators
     protected function siteName():Attribute
     {
         return Attribute::make(

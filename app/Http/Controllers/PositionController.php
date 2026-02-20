@@ -9,21 +9,18 @@ use App\Http\Requests\Position\UpdatePositionRequest;
 use App\Models\Position;
 use App\Repository\PositionRepository;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class PositionController extends Controller
 {
-    public function __construct(private PositionRepository $positionRepository)
-    {
-        
-    }
+    public function __construct(private PositionRepository $positionRepository) {}
     /**
      * Display a listing of the resource.
      */
     public function index(Request $request)
     {
+<<<<<<< HEAD
         $positionQuery = $this->positionRepository->getPositions();
 
         $totalCount = $positionQuery->count();
@@ -82,6 +79,16 @@ class PositionController extends Controller
         $filters = $request->only(['search']);
 
         return Inertia::render('Position/index', compact('positions', 'filters', 'totalCount', 'filteredCount'));
+=======
+        $data = $this->positionRepository->getFilteredPositions($request);
+
+        return Inertia::render('Position/index', [
+            'positions' => $data['positions'],
+            'filters' => $data['filters'],
+            'totalCount' => $data['totalCount'],
+            'filteredCount' => $data['filteredCount'],
+        ]);
+>>>>>>> 5d9cfda9fd4dfe2310f976cf8b495b3096d9f4da
     }
 
     /**
@@ -97,12 +104,15 @@ class PositionController extends Controller
      */
     public function store(StorePositionRequest $request, CreateNewPosition $action)
     {
+        if ($this->limit('create-position:' . auth()->id(), 60, 25)) {
+            return back()->with('error', 'Too many attempts. Please try again later.');
+        }
         try {
             DB::beginTransaction();
 
             $action->create($request->validated());
 
-            Cache::forget('positions');
+            $this->cacheForget('positions');
 
             DB::commit();
 
@@ -131,7 +141,7 @@ class PositionController extends Controller
         $position->load(['deduction' => function ($query) {
             $query->deductionsOnly();
         }]);
-        
+
         return Inertia::render('Position/edit', compact('position'));
     }
 
@@ -140,12 +150,15 @@ class PositionController extends Controller
      */
     public function update(UpdatePositionRequest $request, Position $position, UpdatePosition $action)
     {
+        if ($this->limit('update-position:' . auth()->id(), 60, 25)) {
+            return back()->with('error', 'Too many attempts. Please try again later.');
+        }
         try {
             DB::beginTransaction();
 
             $action->update($request->validated(), $position);
 
-            Cache::forget('positions');
+            $this->cacheForget('positions');
 
             DB::commit();
 
@@ -162,9 +175,12 @@ class PositionController extends Controller
      */
     public function destroy(Position $position)
     {
+        if ($this->limit('delete-position:' . auth()->id(), 60, 10)) {
+            return back()->with('error', 'Too many attempts. Please try again later.');
+        }
         $position->delete();
 
-        Cache::forget('positions');
+        $this->cacheForget('positions');
 
         return to_route('positions.index')->with('success', 'Position deleted successfully.');
     }

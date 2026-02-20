@@ -11,7 +11,6 @@ use App\Models\Employee;
 use App\Models\Position;
 use App\Models\Site;
 use App\Repository\EmployeeRepository;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
@@ -44,12 +43,12 @@ class EmployeeController extends Controller
 
         $branches = Branch::query()
             ->get(['id', 'branch_name']);
-       
+
 
         return Inertia::render('employees/create', [
             'positions' => $positions,
             'branches' => $branches,
-            'sites' => Site::with('branch')->get(),
+            'site' => Site::with('branch')->get(),
         ]);
     }
 
@@ -58,6 +57,9 @@ class EmployeeController extends Controller
      */
     public function store(StoreEmployeeRequest $request, CreateNewEmployee $action)
     {
+        if ($this->limit('create-employee:' . auth()->id(), 60, 25)) {
+            return back()->with('error', 'Too many attempts. Please try again later.');
+        }
         DB::beginTransaction();
 
         try {
@@ -65,7 +67,7 @@ class EmployeeController extends Controller
 
             $action->create($validatedData);
 
-            Cache::forget('employees');
+            $this->cacheForget('employees');
 
             DB::commit();
 
@@ -81,7 +83,7 @@ class EmployeeController extends Controller
      */
     public function show(Employee $employee)
     {
-        $employee->load(['position', 'branch', 'user', 'sites']);
+        $employee->load(['position', 'branch', 'user', 'site']);
 
         return Inertia::render('employees/show', [
             'employee' => $employee
@@ -99,16 +101,14 @@ class EmployeeController extends Controller
 
         $branches = Branch::query()
             ->get(['id', 'branch_name']);
-        
 
-
-        $employee->load(['position', 'branch', 'user', 'sites']);
+        $employee->load(['position', 'branch', 'user' => fn($query) => $query->getUserName(), 'site']);
 
         return Inertia::render('employees/update', [
             'employee' => $employee,
             'positions' => $positions,
             'branches' => $branches,
-            'sites' => Site::with('branch')->get(['id','branch_id', 'site_name']),
+            'site' => Site::with('branch')->get(['id', 'branch_id', 'site_name']),
         ]);
     }
 
@@ -117,13 +117,16 @@ class EmployeeController extends Controller
      */
     public function update(UpdateEmployeeRequest $request, Employee $employee, UpdateEmployee $action)
     {
+        if ($this->limit('update-employee:' . auth()->id(), 60, 25)) {
+            return back()->with('error', 'Too many attempts. Please try again later.');
+        }
         DB::beginTransaction();
 
         try {
             $validatedData = $request->validated();
             $action->update($validatedData, $employee);
 
-            Cache::forget('employees');
+            $this->cacheForget('employees');
 
             DB::commit();
 
@@ -139,10 +142,13 @@ class EmployeeController extends Controller
      */
     public function destroy(Employee $employee)
     {
+        if ($this->limit('delete-employee:' . auth()->id(), 60, 10)) {
+            return back()->with('error', 'Too many attempts. Please try again later.');
+        }
         $employee->user()->delete();
 
-        Cache::forget('employees');
+        $this->cacheForget('employees');
 
-        return to_route('employees.index')->with('success', 'Employee deleted successfully.');  
+        return to_route('employees.index')->with('success', 'Employee deleted successfully.');
     }
 }

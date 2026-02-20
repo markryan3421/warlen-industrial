@@ -8,7 +8,6 @@ use App\Http\Requests\Branch\StoreBranchRequest;
 use App\Http\Requests\Branch\UpdateBranchRequest;
 use App\Models\Branch;
 use App\Repository\BranchRepository;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 // use Inertia\Response;
@@ -41,12 +40,15 @@ class BranchController extends Controller
      */
     public function store(StoreBranchRequest $request, CreateNewBranch $action)
     {
+        if ($this->limit('create-branch:' . auth()->id(), 60, 15)) {
+            return back()->with('error', 'Too many attempts. Please try again later.');
+        }
         try {
             DB::beginTransaction();
 
             $action->create($request->validated());
 
-            Cache::forget('branches');
+            $this->cacheForget('branches');
 
             DB::commit();
 
@@ -73,7 +75,7 @@ class BranchController extends Controller
      */
     public function edit(Branch $branch)
     {
-        $branch->load(['sites'=>fn($query) => $query->getSiteName()]);
+        $branch->load(['sites' => fn($query) => $query->getSiteName()]);
         return Inertia::render('Branch/edit', compact('branch'));
     }
 
@@ -82,12 +84,15 @@ class BranchController extends Controller
      */
     public function update(UpdateBranchRequest $request, Branch $branch, UpdateBranch $action)
     {
+        if ($this->limit('update-branch:' . auth()->id(), 60, 15)) {
+            return back()->with('error', 'Too many attempts. Please try again later.');
+        }
         try {
             DB::beginTransaction();
 
             $action->update($request->validated(), $branch);
 
-            Cache::forget('branches');
+            $this->cacheForget('branches');
 
             DB::commit();
 
@@ -104,9 +109,12 @@ class BranchController extends Controller
      */
     public function destroy(Branch $branch)
     {
+        if ($this->limit('delete-branch:' . auth()->id(), 60, 10)) {
+            return back()->with('error', 'Too many attempts. Please try again later.');
+        }
         $branch->delete();
 
-        Cache::forget('branches');
+        $this->cacheForget('branches');
 
         return to_route('branches.index')->with('success', 'Branch or Site deleted successfully.');
     }

@@ -1,7 +1,7 @@
 import { Head, Link, router, useForm, } from '@inertiajs/react';
 import { DropdownMenuContent, DropdownMenuTrigger } from '@radix-ui/react-dropdown-menu';
 import { CirclePlusIcon, Eye, MoreHorizontalIcon, Pencil, Trash } from 'lucide-react';
-import { useRoute } from 'ziggy-js';
+// import { useRoute } from 'ziggy-js';
 import PositionController from "@/actions/App/Http/Controllers/PositionController";
 // import { Button } from "@/components/ui/button"
 import { Button } from '@/components/ui/button';
@@ -54,7 +54,7 @@ interface IndexProps {
 }
 
 export default function Index({ positions, filters, totalCount, filteredCount }: IndexProps) {
-    const route = useRoute();
+    // const route = useRoute();
 
     console.log(positions);
 
@@ -68,7 +68,7 @@ export default function Index({ positions, filters, totalCount, filteredCount }:
     // Search form state management using Inertia's useForm hook
     const { data, setData } = useForm({
         search: filters.search || '',
-        perPage: filters.perPage || '10',
+        perPage: filters.perPage || '20',
     });
 
     // Handle search input change
@@ -83,7 +83,7 @@ export default function Index({ positions, filters, totalCount, filteredCount }:
         };
 
         // Pass the search query to the backend to filter products
-        router.get(route('positions.index'), queryString, {
+        router.get(PositionController.index().url, queryString, {
             preserveState: true,
             preserveScroll: true,
         });
@@ -92,12 +92,12 @@ export default function Index({ positions, filters, totalCount, filteredCount }:
     // Clears the search bar and resets the position list
     const handleReset = () => {
         setData('search', '');
-        setData('perPage', '10');
+        setData('perPage', '20');
 
-        router.get(route('positions.index'), {}, {
+        router.get(PositionController.index().url), {}, {
             preserveState: true,
             preserveScroll: true,
-        });
+        };
     }
 
     // Handle number of products to display per page
@@ -110,7 +110,7 @@ export default function Index({ positions, filters, totalCount, filteredCount }:
             ...(value && { perPage: value }),
         };
 
-        router.get(route('positions.index'), queryString, {
+        router.get(PositionController.index().url, queryString, {
             preserveState: true,
             preserveScroll: true,
         });
@@ -118,7 +118,7 @@ export default function Index({ positions, filters, totalCount, filteredCount }:
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Branch" />
+            <Head title="Positions" />
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
                 <div className='mx-2'>
                     <div className="flex items-center justify-between gap-4 w-full mb-3">
@@ -181,10 +181,10 @@ export default function Index({ positions, filters, totalCount, filteredCount }:
                                                     Actions
                                                 </DropdownMenuLabel>
 
-                                                <DropdownMenuItem className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 cursor-pointer transition-colors">
+                                                {/* <DropdownMenuItem className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 cursor-pointer transition-colors">
                                                     <Eye strokeWidth={1} className="h-4 w-4" />
                                                     <span>View</span>
-                                                </DropdownMenuItem>
+                                                </DropdownMenuItem> */}
 
                                                 <DropdownMenuItem className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 cursor-pointer transition-colors">
                                                     <Pencil strokeWidth={1} className="h-4 w-4" />

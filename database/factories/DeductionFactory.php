@@ -12,35 +12,53 @@ class DeductionFactory extends Factory
 
     public function definition(): array
     {
-        // Random salary rate between 200 and 1000 (daily rate)
         $salaryRate = $this->faker->randomFloat(2, 200, 1000);
         
         return [
-            'position_id' => Position::factory(), // Creates a new position if not provided
-            'salary_rate' => $salaryRate,
-            'reg_overtime_rate' => $salaryRate * 1.25, // 25% overtime premium
-            'special_overtime_rate' => $salaryRate * 1.30, // 30% special overtime premium
-            'sss_rate' => $this->faker->randomFloat(2, 100, 500), // Monthly SSS contribution
-            'philhealth_rate' => $this->faker->randomFloat(2, 50, 300), // Monthly PhilHealth
-            'pagibig_rate' => $this->faker->randomFloat(2, 20, 100), // Monthly Pag-IBIG
+            'position_id' => function() {
+                // This ensures a position exists when creating
+                return Position::inRandomOrder()->first()?->id 
+                    ?? Position::factory()->create()->id;
+            },
+            'salary_rate' => $salaryRate, 
+            'reg_overtime_rate' => $salaryRate * 1.25,
+            'special_overtime_rate' => $salaryRate * 1.30,
+            'sss_rate' => $this->faker->randomFloat(2, 100, 500),
+            'philhealth_rate' => $this->faker->randomFloat(2, 50, 300),
+            'pagibig_rate' => $this->faker->randomFloat(2, 20, 100),
         ];
     }
 
     /**
-     * Configure the factory to use existing positions
+     * Use a specific position
      */
-    public function withExistingPositions()
+    public function forPosition(Position $position)
     {
-        return $this->state(function (array $attributes) {
+        return $this->state(function (array $attributes) use ($position) {
             return [
-                'position_id' => Position::inRandomOrder()->first()?->id ?? Position::factory(),
+                'position_id' => $position->id,
             ];
         });
     }
 
     /**
-     * Create a low salary rate entry
+     * Use a random existing position
      */
+    public function withRandomPosition()
+    {
+        return $this->state(function (array $attributes) {
+            $position = Position::inRandomOrder()->first();
+            
+            if (!$position) {
+                $position = Position::factory()->create();
+            }
+            
+            return [
+                'position_id' => $position->id,
+            ];
+        });
+    }
+
     public function lowSalary()
     {
         return $this->state(function (array $attributes) {
@@ -56,9 +74,6 @@ class DeductionFactory extends Factory
         });
     }
 
-    /**
-     * Create a medium salary rate entry
-     */
     public function mediumSalary()
     {
         return $this->state(function (array $attributes) {
@@ -74,9 +89,6 @@ class DeductionFactory extends Factory
         });
     }
 
-    /**
-     * Create a high salary rate entry
-     */
     public function highSalary()
     {
         return $this->state(function (array $attributes) {
@@ -92,9 +104,6 @@ class DeductionFactory extends Factory
         });
     }
 
-    /**
-     * Set specific contribution rates
-     */
     public function withContributions(float $sss, float $philhealth, float $pagibig)
     {
         return $this->state(function (array $attributes) use ($sss, $philhealth, $pagibig) {
