@@ -55,14 +55,13 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
     }, []);
 
     useEffect(() => {
-        if (data.branch_id) {
-            const filteredSites = site.filter(
-                (site: any) => site.branch_id === parseInt(data.branch_id)
-            );
-            setAvailableSites(filteredSites);
+        if (!data.branch_id) return setAvailableSites([]);
+
+        const filteredSites = site.filter(s => s.branch_id === parseInt(data.branch_id));
+        setAvailableSites(filteredSites);
+
+        if (data.site_id && !filteredSites.some(s => s.id === parseInt(data.site_id))) {
             setData('site_id', '');
-        } else {
-            setAvailableSites([]);
         }
     }, [data.branch_id]);
 

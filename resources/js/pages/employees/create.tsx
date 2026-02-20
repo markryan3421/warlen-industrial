@@ -20,11 +20,16 @@ const breadcrumbs: BreadcrumbItem[] = [
         href: '/employees/create',
     },
 ];
+interface Site {
+    id: number;
+    site_name: string;
+    branch_id: number;
+}
 
 interface Props {
     positions: any[];
     branches: any[];
-    site: any[];
+    site: Site[];
 }
 
 export default function Create({ positions, branches, site = [] }: Props) {

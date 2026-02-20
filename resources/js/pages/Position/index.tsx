@@ -68,7 +68,7 @@ export default function Index({ positions, filters, totalCount, filteredCount }:
     // Search form state management using Inertia's useForm hook
     const { data, setData } = useForm({
         search: filters.search || '',
-        perPage: filters.perPage || '10',
+        perPage: filters.perPage || '20',
     });
 
     // Handle search input change
@@ -92,7 +92,7 @@ export default function Index({ positions, filters, totalCount, filteredCount }:
     // Clears the search bar and resets the position list
     const handleReset = () => {
         setData('search', '');
-        setData('perPage', '10');
+        setData('perPage', '20');
 
         router.get(PositionController.index().url), {}, {
             preserveState: true,
