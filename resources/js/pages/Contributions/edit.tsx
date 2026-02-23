@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Percent } from "lucide-react";
 import { update } from '@/actions/App/Http/Controllers/ContributionVersionController';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -104,6 +104,11 @@ export default function Edit({ contributionVersion }: EditProps) {
         setData('salary_ranges', updatedRanges);
     };
 
+    // Helper function to get nested error messages
+    const getNestedError = (index: number, field: string) => {
+        return errors[`salary_ranges.${index}.${field}`];
+    };
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Edit Contribution Version" />
@@ -171,6 +176,13 @@ export default function Edit({ contributionVersion }: EditProps) {
                                     </Button>
                                 </div>
 
+                                {/* Display salary_ranges array error */}
+                                {errors.salary_ranges && typeof errors.salary_ranges === 'string' && (
+                                    <div className="text-sm text-red-600">
+                                        <InputError message={errors.salary_ranges} />
+                                    </div>
+                                )}
+
                                 {data.salary_ranges.map((range, index) => (
                                     <div key={index} className="relative p-4 border rounded-lg bg-muted/5">
                                         {data.salary_ranges.length > 1 && (
@@ -187,62 +199,76 @@ export default function Edit({ contributionVersion }: EditProps) {
                                         
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div className="space-y-2">
-                                                <label className="text-sm font-medium">Salary From</label>
+                                                <label className="text-sm font-medium">Salary From (₱)</label>
                                                 <Input
                                                     type="number"
                                                     value={range.salary_from}
                                                     onChange={e => updateSalaryRange(index, 'salary_from', e.target.value)}
                                                     placeholder="0.00"
                                                 />
-                                                {errors[`salary_ranges.${index}.salary_from`] && (
-                                                    <InputError message={errors[`salary_ranges.${index}.salary_from`]} />
-                                                )}
+                                                <InputError message={getNestedError(index, 'salary_from')} />
                                             </div>
 
                                             <div className="space-y-2">
-                                                <label className="text-sm font-medium">Salary To</label>
+                                                <label className="text-sm font-medium">Salary To (₱)</label>
                                                 <Input
                                                     type="number"
                                                     value={range.salary_to}
                                                     onChange={e => updateSalaryRange(index, 'salary_to', e.target.value)}
                                                     placeholder="0.00"
                                                 />
-                                                {errors[`salary_ranges.${index}.salary_to`] && (
-                                                    <InputError message={errors[`salary_ranges.${index}.salary_to`]} />
-                                                )}
+                                                <InputError message={getNestedError(index, 'salary_to')} />
                                             </div>
                                         </div>
 
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                                             <div className="space-y-2">
-                                                <label className="text-sm font-medium">Employee Share</label>
-                                                <Input
-                                                    type="number"
-                                                    value={range.employee_share}
-                                                    onChange={e => updateSalaryRange(index, 'employee_share', e.target.value)}
-                                                    placeholder="0.00"
-                                                />
-                                                {errors[`salary_ranges.${index}.employee_share`] && (
-                                                    <InputError message={errors[`salary_ranges.${index}.employee_share`]} />
-                                                )}
+                                                <div className="flex items-center gap-1">
+                                                    <label className="text-sm font-medium">Employee Share</label>
+                                                    <Percent className="h-3 w-3 text-muted-foreground" />
+                                                </div>
+                                                <div className="relative">
+                                                    <Input
+                                                        type="number"
+                                                        value={range.employee_share}
+                                                        onChange={e => updateSalaryRange(index, 'employee_share', e.target.value)}
+                                                        placeholder="0.00"
+                                                        className="pr-8"
+                                                    />
+                                                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                                        <span className="text-sm text-muted-foreground">%</span>
+                                                    </div>
+                                                </div>
+                                                <InputError message={getNestedError(index, 'employee_share')} />
                                             </div>
 
                                             <div className="space-y-2">
-                                                <label className="text-sm font-medium">Employer Share</label>
-                                                <Input
-                                                    type="number"
-                                                    value={range.employer_share}
-                                                    onChange={e => updateSalaryRange(index, 'employer_share', e.target.value)}
-                                                    placeholder="0.00"
-                                                />
-                                                {errors[`salary_ranges.${index}.employer_share`] && (
-                                                    <InputError message={errors[`salary_ranges.${index}.employer_share`]} />
-                                                )}
+                                                <div className="flex items-center gap-1">
+                                                    <label className="text-sm font-medium">Employer Share</label>
+                                                    <Percent className="h-3 w-3 text-muted-foreground" />
+                                                </div>
+                                                <div className="relative">
+                                                    <Input
+                                                        type="number"
+                                                        value={range.employer_share}
+                                                        onChange={e => updateSalaryRange(index, 'employer_share', e.target.value)}
+                                                        placeholder="0.00"
+                                                        className="pr-8"
+                                                    />
+                                                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                                        <span className="text-sm text-muted-foreground">%</span>
+                                                    </div>
+                                                </div>
+                                                <InputError message={getNestedError(index, 'employer_share')} />
                                             </div>
+                                        </div>
+
+                                        {/* Optional: Add helper text */}
+                                        <div className="mt-2 text-xs text-muted-foreground">
+                                            <p>Enter contribution percentage (e.g., 10 for 10%)</p>
                                         </div>
                                     </div>
                                 ))}
-                                <InputError message={errors.salary_ranges} />
                             </div>
 
                             <div className="flex justify-end space-x-2 pt-4">

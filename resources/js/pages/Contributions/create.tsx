@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Percent } from "lucide-react";
 import { store } from '@/actions/App/Http/Controllers/ContributionVersionController';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -175,7 +175,7 @@ export default function Create() {
                                         
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div className="space-y-2">
-                                                <label className="text-sm font-medium">Salary From</label>
+                                                <label className="text-sm font-medium">Salary From (₱)</label>
                                                 <Input
                                                     type="number"
                                                     value={range.salary_from}
@@ -187,7 +187,7 @@ export default function Create() {
                                             </div>
 
                                             <div className="space-y-2">
-                                                <label className="text-sm font-medium">Salary To</label>
+                                                <label className="text-sm font-medium">Salary To (₱)</label>
                                                 <Input
                                                     type="number"
                                                     value={range.salary_to}
@@ -201,28 +201,51 @@ export default function Create() {
 
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                                             <div className="space-y-2">
-                                                <label className="text-sm font-medium">Employee Share</label>
-                                                <Input
-                                                    type="number"
-                                                    value={range.employee_share}
-                                                    onChange={e => updateSalaryRange(index, 'employee_share', e.target.value)}
-                                                    placeholder="0.00"
-                                                />
+                                                <div className="flex items-center gap-1">
+                                                    <label className="text-sm font-medium">Employee Share</label>
+                                                    <Percent className="h-3 w-3 text-muted-foreground" />
+                                                </div>
+                                                <div className="relative">
+                                                    <Input
+                                                        type="number"
+                                                        value={range.employee_share}
+                                                        onChange={e => updateSalaryRange(index, 'employee_share', e.target.value)}
+                                                        placeholder="0.00"
+                                                        className="pr-8"
+                                                    />
+                                                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                                        <span className="text-sm text-muted-foreground">%</span>
+                                                    </div>
+                                                </div>
                                                 {/* Display nested error for employee_share */}
                                                 <InputError message={getNestedError(index, 'employee_share')} />
                                             </div>
 
                                             <div className="space-y-2">
-                                                <label className="text-sm font-medium">Employer Share</label>
-                                                <Input
-                                                    type="number"
-                                                    value={range.employer_share}
-                                                    onChange={e => updateSalaryRange(index, 'employer_share', e.target.value)}
-                                                    placeholder="0.00"
-                                                />
+                                                <div className="flex items-center gap-1">
+                                                    <label className="text-sm font-medium">Employer Share</label>
+                                                    <Percent className="h-3 w-3 text-muted-foreground" />
+                                                </div>
+                                                <div className="relative">
+                                                    <Input
+                                                        type="number"
+                                                        value={range.employer_share}
+                                                        onChange={e => updateSalaryRange(index, 'employer_share', e.target.value)}
+                                                        placeholder="0.00"
+                                                        className="pr-8"
+                                                    />
+                                                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                                        <span className="text-sm text-muted-foreground">%</span>
+                                                    </div>
+                                                </div>
                                                 {/* Display nested error for employer_share */}
                                                 <InputError message={getNestedError(index, 'employer_share')} />
                                             </div>
+                                        </div>
+
+                                        {/* Optional: Add helper text */}
+                                        <div className="mt-2 text-xs text-muted-foreground">
+                                            <p>Enter contribution percentage (e.g., 10 for 10%)</p>
                                         </div>
                                     </div>
                                 ))}

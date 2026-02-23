@@ -119,6 +119,14 @@ export default function Index({ contributionVersions }: ContributionsProps) {
         }).format(amount);
     };
 
+    const formatPercentage = (amount: number) => {
+        return new Intl.NumberFormat('en-PH', {
+            style: 'percent',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(amount / 100); // Divide by 100 to convert to decimal
+    };
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Contributions" />
@@ -226,56 +234,15 @@ export default function Index({ contributionVersions }: ContributionsProps) {
                                                             {formatCurrency(bracket.salary_from)} - {formatCurrency(bracket.salary_to)}
                                                             {bracket.salary_to === 999999999 && ' (and above)'}
                                                         </TableCell>
-                                                        <TableCell className="text-right">{formatCurrency(bracket.employee_share)}</TableCell>
-                                                        <TableCell className="text-right">{formatCurrency(bracket.employer_share)}</TableCell>
-                                                        <TableCell className="text-right font-medium">{formatCurrency(total)}</TableCell>
+                                                        <TableCell className="text-right">{formatPercentage(bracket.employee_share)}</TableCell>
+                                                        <TableCell className="text-right">{formatPercentage(bracket.employer_share)}</TableCell>
+                                                        <TableCell className="text-right font-medium">{formatPercentage(total)}</TableCell>
                                                     </TableRow>
                                                 );
                                             })}
                                         </TableBody>
                                     </Table>
 
-                                    {/* Summary Cards */}
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-                                        <Card>
-                                            <CardHeader className="pb-2">
-                                                <CardTitle className="text-sm font-medium text-muted-foreground">
-                                                    Total Brackets
-                                                </CardTitle>
-                                            </CardHeader>
-                                            <CardContent>
-                                                <p className="text-2xl font-bold">
-                                                    {selectedVersion.contribution_brackets.length}
-                                                </p>
-                                            </CardContent>
-                                        </Card>
-                                        
-                                        <Card>
-                                            <CardHeader className="pb-2">
-                                                <CardTitle className="text-sm font-medium text-muted-foreground">
-                                                    Min Employee Share
-                                                </CardTitle>
-                                            </CardHeader>
-                                            <CardContent>
-                                                <p className="text-2xl font-bold">
-                                                    {formatCurrency(Math.min(...selectedVersion.contribution_brackets.map(b => b.employee_share)))}
-                                                </p>
-                                            </CardContent>
-                                        </Card>
-                                        
-                                        <Card>
-                                            <CardHeader className="pb-2">
-                                                <CardTitle className="text-sm font-medium text-muted-foreground">
-                                                    Max Employee Share
-                                                </CardTitle>
-                                            </CardHeader>
-                                            <CardContent>
-                                                <p className="text-2xl font-bold">
-                                                    {formatCurrency(Math.max(...selectedVersion.contribution_brackets.map(b => b.employee_share)))}
-                                                </p>
-                                            </CardContent>
-                                        </Card>
-                                    </div>
                                 </div>
                             ) : (
                                 <div className="flex flex-col items-center justify-center py-12 text-center">

@@ -4,11 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Actions\Contribution\CreateNewContribution;
 use App\Actions\Contribution\UpdateContribution;
-use App\Actions\Deduction\UpdateDeduction;
 use App\Http\Requests\Contribution\StoreContributionRequest;
 use App\Http\Requests\Contribution\UpdateContributionRequest;
 use App\Models\ContributionVersion;
-use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class ContributionVersionController extends Controller
@@ -18,7 +17,7 @@ class ContributionVersionController extends Controller
      */
     public function index()
     {
-       return Inertia::render('Contributions/index', [
+        return Inertia::render('Contributions/index', [
             'contributionVersions' => ContributionVersion::with('contributionBrackets')->get(),
         ]);
     }
@@ -28,11 +27,7 @@ class ContributionVersionController extends Controller
      */
     public function create()
     {
-<<<<<<< HEAD
         return Inertia::render('Contributions/create');
-=======
-        
->>>>>>> 7520b3d359a76f941d05328b3b126be743e502e8
     }
 
     /**
@@ -40,9 +35,22 @@ class ContributionVersionController extends Controller
      */
     public function store(StoreContributionRequest $request, CreateNewContribution $action)
     {
-        $action->createContribution($request->validated());
+        if ($this->limit('store-contribution:' . auth()->id(), 60, 20)) {
+            return back()->with('error', 'Too many attempts. Please try again later.');
+        }
 
-        return to_route('contribution-versions.index')->with('success', 'Contribution created successfully.');
+        DB::beginTransaction();
+
+        try {
+            $action->createContribution($request->validated());
+
+            DB::commit();
+
+            return to_route('contribution-versions.index')->with('success', 'Contribution created successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withErrors('An error occurred while creating the contribution. Please try again.');
+        }
     }
 
     /**
@@ -68,9 +76,23 @@ class ContributionVersionController extends Controller
      */
     public function update(UpdateContributionRequest $request, ContributionVersion $contributionVersion, UpdateContribution $action)
     {
-        $action->updateContribution($request->validated(), $contributionVersion);
+        if ($this->limit('update-contribution:' . auth()->id(), 60, 20)) {
+            return back()->with('error', 'Too many attempts. Please try again later.');
+        }
 
-        return to_route('contribution-versions.index')->with('success', 'Contribution updated successfully.');
+        DB::beginTransaction();
+
+        try {
+            $action->updateContribution($request->validated(), $contributionVersion);
+
+            DB::commit();
+
+            return to_route('contribution-versions.index')->with('success', 'Contribution updated successfully.');
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withErrors('An error occurred while updating the contribution. Please try again.');
+        }
     }
 
     /**

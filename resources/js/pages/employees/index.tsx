@@ -30,15 +30,12 @@ interface Employee {
     sites: {
         site_name: string;
     }
-<<<<<<< HEAD
-=======
     emp_code: string;
-    contract_start_date: string;
-    contract_end_date: string;
-    pay_frequency: string;
->>>>>>> 7520b3d359a76f941d05328b3b126be743e502e8
     employee_number: string;
     site_name: string;
+    pay_frequency: string;
+    contract_start_date: string;
+    contract_end_date: string;
     emergency_contact_number: string;
     employee_status: string;
 }
@@ -96,18 +93,10 @@ export default function Index({ employees, positions, branches, sites }: PagePro
                                     <TableCell>{employee.emp_code}</TableCell>
                                     <TableCell>{employee.user.name}</TableCell>
                                     <TableCell>{employee.position.pos_name}</TableCell>
-<<<<<<< HEAD
-                                    <TableCell>{employee.department}</TableCell>
-                                    <TableCell>{employee.branch.branch_name}</TableCell>
-                                    <TableCell>{employee.sites?.site_name || 'N/A'}</TableCell>
-                                    <TableCell>{employee.employee_number}</TableCell>
-                                    <TableCell>{employee.emergency_contact_number}</TableCell>
-=======
                                     <TableCell>{employee.pay_frequency}</TableCell>
                                     <TableCell>{employee.branch.branch_name}</TableCell>
                                     <TableCell>{employee.contract_start_date}</TableCell>
                                     <TableCell>{employee.contract_end_date}</TableCell>
->>>>>>> 7520b3d359a76f941d05328b3b126be743e502e8
                                     <TableCell>
                                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                                             employee.employee_status === 'Active'
