@@ -246,18 +246,20 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="employee_status">Status <span className="text-red-500">*</span></Label>
+                                    <Label htmlFor="department">Status <span className="text-red-500">*</span></Label>
                                     <select
                                         id="employee_status"
                                         value={data.employee_status}
                                         onChange={e => setData('employee_status', e.target.value)}
                                         className="w-full h-10 px-3 rounded-md border border-input bg-background"
                                     >
+                                        <option value="">Select a Status</option>
                                         <option value="active">Active</option>
                                         <option value="inactive">Inactive</option>
                                     </select>
                                     <InputError message={errors.employee_status} />
                                 </div>
+
 
                                 <div className="space-y-2">
                                     <Label htmlFor="emergency_contact_number">Emergency Contact</Label>

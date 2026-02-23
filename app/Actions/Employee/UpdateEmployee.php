@@ -29,6 +29,7 @@ class UpdateEmployee
 
         $user->update($userData);
 
+        //dd($data['employee_status']);
         $employee->update([
             'position_id' => $data['position_id'],
             'branch_id' => $data['branch_id'],
@@ -40,6 +41,7 @@ class UpdateEmployee
             'employee_status' => $data['employee_status'],
         ]);
 
+        
         return $employee;
     }
 }
