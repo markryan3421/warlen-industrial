@@ -17,7 +17,10 @@ import {
 import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
 import AppLogo from './app-logo';
+<<<<<<< HEAD
 import ContributionController from '@/actions/App/Http/Controllers/ContributionVersionController';
+=======
+>>>>>>> 7520b3d359a76f941d05328b3b126be743e502e8
 
 const FinanceItems: NavItem[] = [
     {
@@ -35,23 +38,32 @@ const FinanceItems: NavItem[] = [
         href: '/coming-soon',
         icon: Flag,
     },
+<<<<<<< HEAD
     {
         title: 'Contributions',
         href: ContributionController.index(),
         icon: CircleMinus,
     },
+=======
+    // {
+    //     title: 'Deductions',
+    //     href: '/coming-soon',
+    //     icon: CircleMinus,
+    // },
+>>>>>>> 7520b3d359a76f941d05328b3b126be743e502e8
 ];
 
 const AccessControlItems: NavItem[] = [
-    {
-        title: 'Positions',
-        href: PositionController.index(),
-        icon: UserCog,
-    },
+
     {
         title: 'Employees',
         href: '/employees',
         icon: CircleUser,
+    },
+    {
+        title: 'Positions',
+        href: PositionController.index(),
+        icon: UserCog,
     },
     {
         title: 'Permissions',

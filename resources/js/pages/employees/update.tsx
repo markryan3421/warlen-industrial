@@ -33,6 +33,27 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
     const [positionSearch, setPositionSearch] = useState('');
     const [showPositionDropdown, setShowPositionDropdown] = useState(false);
 
+    // Helper function to normalize status value
+    const normalizeStatus = (status: string): string => {
+        if (!status) return 'active';
+        
+        // Convert to lowercase and handle common variations
+        const normalized = status.toLowerCase().trim();
+        
+        // Check for active variations
+        if (normalized === 'active' || normalized === 'act' || normalized === '1' || normalized === 'true') {
+            return 'active';
+        }
+        
+        // Check for inactive variations
+        if (normalized === 'inactive' || normalized === 'inact' || normalized === '0' || normalized === 'false') {
+            return 'inactive';
+        }
+        
+        // Default to active if unknown
+        return 'active';
+    };
+
     const { data, setData, put, processing, errors } = useForm({
         name: employee.user.name,
         email: employee.user.email,
@@ -40,13 +61,15 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
         position_id: employee.position_id,
         branch_id: employee.branch_id,
         site_id: employee.site_id,
+        emp_code: employee.emp_code,
+        contract_start_date: employee.contract_start_date,
+        contract_end_date: employee.contract_end_date,
+        pay_frequency: employee.pay_frequency,
         employee_number: employee.employee_number,
         emergency_contact_number: employee.emergency_contact_number,
-        department: employee.department,
-        employee_status: employee.employee_status,
+        employee_status: normalizeStatus(employee.employee_status), // Normalize the status here
     });
 
-    // Set initial position search value
     useEffect(() => {
         const selectedPos = positions?.find(p => p.id === parseInt(data.position_id));
         if (selectedPos) {
@@ -93,6 +116,12 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
         setPositionSearch(positionName);
         setShowPositionDropdown(false);
     };
+
+    // Debug: Log the employee status to see what's coming from the server
+    useEffect(() => {
+        console.log('Original employee status:', employee.employee_status);
+        console.log('Normalized status:', data.employee_status);
+    }, []);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -173,21 +202,6 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
                                     <InputError message={errors.employee_number} />
                                 </div>
 
-                                <div className="space-y-2">
-                                    <Label htmlFor="department">Department <span className="text-red-500">*</span></Label>
-                                    <select
-                                        id="department"
-                                        value={data.department}
-                                        onChange={e => setData('department', e.target.value)}
-                                        className="w-full h-10 px-3 rounded-md border border-input bg-background"
-                                    >
-                                        <option value="">Select a Department</option>
-                                        <option value="weekender">Weekender</option>
-                                        <option value="monthly">Monthly</option>
-                                        <option value="semi_monthly">Semi-Monthly</option>
-                                    </select>
-                                    <InputError message={errors.department} />
-                                </div>
 
                                 <div className="space-y-2">
                                     <Label htmlFor="position_id">Position <span className="text-red-500">*</span></Label>
@@ -246,13 +260,25 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
                                 </div>
 
                                 <div className="space-y-2">
+                                    <Label htmlFor="pay_frequency">Pay Frequency <span className="text-red-500">*</span></Label>
+                                    <select id="pay_frequency" value={data.pay_frequency} onChange={e => setData('pay_frequency', e.target.value)} className="w-full h-10 px-3 rounded-md border border-input bg-background">
+                                        <option value="">Select a Pay Frequency</option>
+                                        <option value="weekender">Weekender</option>
+                                        <option value="monthly">Monthly</option>
+                                        <option value="semi_monthly">Semi-Monthly</option>
+                                    </select>
+                                    <InputError message={errors.pay_frequency} />
+                                </div>
+
+                                <div className="space-y-2">
                                     <Label htmlFor="employee_status">Status <span className="text-red-500">*</span></Label>
-                                    <select
-                                        id="employee_status"
-                                        value={data.employee_status}
-                                        onChange={e => setData('employee_status', e.target.value)}
+                                    <select 
+                                        id="employee_status" 
+                                        value={data.employee_status || 'active'} 
+                                        onChange={e => setData('employee_status', e.target.value)} 
                                         className="w-full h-10 px-3 rounded-md border border-input bg-background"
                                     >
+                                        <option value="">Select a Status</option>
                                         <option value="active">Active</option>
                                         <option value="inactive">Inactive</option>
                                     </select>
@@ -284,6 +310,7 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
                         <h2 className="text-lg font-semibold border-b pb-2">Location Assignment</h2>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
                             <div className="space-y-2">
                                 <Label htmlFor="branch_id">Branch <span className="text-red-500">*</span></Label>
                                 <select
@@ -314,7 +341,7 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
                                         <option value="">Select a Site</option>
                                         {availableSites?.map((site) => (
                                             <option key={site.id} value={site.id}>
-                                                {site.site_name || site.site}
+                                                {site.site_name || site.name}
                                             </option>
                                         ))}
                                     </select>
@@ -326,6 +353,36 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
                                     )}
                                 </div>
                             )}
+                        </div>
+                    </div>
+
+                    <div className="space-y-4">
+                        <h2 className="text-lg font-semibold border-b pb-2">Date of Contract</h2>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="start_date">Start Date <span className="text-red-500">*</span></Label>
+                                <Input
+                                    id="start_date"
+                                    type="date"
+                                    value={data.contract_start_date}
+                                    onChange={e => setData('contract_start_date', e.target.value)}
+                                    className="w-full h-10 px-3 rounded-md border border-input bg-background"
+                                />
+                                <InputError message={errors.contract_start_date} />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="end_date">End Date <span className="text-red-500">*</span></Label>
+                                <Input
+                                    id="end_date"
+                                    type="date"
+                                    value={data.contract_end_date}
+                                    onChange={e => setData('contract_end_date', e.target.value)}
+                                    className="w-full h-10 px-3 rounded-md border border-input bg-background"
+                                />
+                                <InputError message={errors.contract_end_date} />
+                            </div>
                         </div>
                     </div>
 

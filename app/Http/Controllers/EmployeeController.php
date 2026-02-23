@@ -11,6 +11,7 @@ use App\Models\Employee;
 use App\Models\Position;
 use App\Models\Site;
 use App\Repository\EmployeeRepository;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
@@ -99,6 +100,8 @@ class EmployeeController extends Controller
         $positions = Position::query()
             ->get(['id', 'pos_name']);
 
+            //dd($employee);
+
         $branches = Branch::query()
             ->get(['id', 'branch_name']);
 
@@ -108,7 +111,11 @@ class EmployeeController extends Controller
             'employee' => $employee,
             'positions' => $positions,
             'branches' => $branches,
+<<<<<<< HEAD
             'sites' => Site::with('branch')->get(['id', 'branch_id', 'site_name']),
+=======
+            'site' => Site::with('branch')->get(),
+>>>>>>> 7520b3d359a76f941d05328b3b126be743e502e8
         ]);
     }
 
@@ -124,9 +131,11 @@ class EmployeeController extends Controller
 
         try {
             $validatedData = $request->validated();
+           // dd($validatedData);
             $action->update($validatedData, $employee);
 
-            $this->cacheForget('employees');
+           // $this->cacheForget('employees');
+           Cache::forget('employees');
 
             DB::commit();
 

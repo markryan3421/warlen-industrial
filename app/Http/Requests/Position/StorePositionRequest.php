@@ -2,13 +2,10 @@
 
 namespace App\Http\Requests\Position;
 
-use App\Concerns\Position\PositionAttributes;
-use App\Concerns\Position\PositionValidationRules;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StorePositionRequest extends FormRequest
 {
-    use PositionValidationRules, PositionAttributes;
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -24,11 +21,9 @@ class StorePositionRequest extends FormRequest
      */
     public function rules(): array
     {
-        return $this->storeRules();
-    }
-
-    public function attributes(): array
-    {
-        return $this->positionAttributes();
+        return [
+            'pos_name' => 'required|unique:positions',
+            'basic_salary' => 'required|min:0|max:9999999.99',
+        ];
     }
 }
