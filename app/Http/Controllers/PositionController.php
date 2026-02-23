@@ -19,7 +19,12 @@ class PositionController extends Controller
      */
     public function index()
     {
+<<<<<<< HEAD
         $positions= $this->positionRepository->getPositions();
+=======
+        
+        $positions = Position::all();
+>>>>>>> 3a7745a744ff303fc9e00f174d87560e9b0b6895
 
         return Inertia::render('positions/index', compact('positions'));
     }

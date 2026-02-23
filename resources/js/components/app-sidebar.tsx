@@ -51,7 +51,7 @@ const AccessControlItems: NavItem[] = [
     },
     {
         title: 'Positions',
-        href: PositionController.index(),
+        href:'/positions',
         icon: UserCog,
     },
     {
