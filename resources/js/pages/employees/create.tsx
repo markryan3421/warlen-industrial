@@ -20,14 +20,19 @@ const breadcrumbs: BreadcrumbItem[] = [
         href: '/employees/create',
     },
 ];
+interface Site {
+    id: number;
+    site_name: string;
+    branch_id: number;
+}
 
 interface Props {
     positions: any[];
     branches: any[];
-    sites: any[];
+    site: Site[];
 }
 
-export default function Create({ positions, branches, sites = [] }: Props) {
+export default function Create({ positions, branches, site = [] }: Props) {
     const [availableSites, setAvailableSites] = useState<any[]>([]);
     const [positionSearch, setPositionSearch] = useState('');
     const [showPositionDropdown, setShowPositionDropdown] = useState(false);
@@ -47,7 +52,7 @@ export default function Create({ positions, branches, sites = [] }: Props) {
 
     useEffect(() => {
         if (data.branch_id) {
-            const filteredSites = sites.filter(
+            const filteredSites = site.filter(
                 (site: any) => site.branch_id === parseInt(data.branch_id)
             );
             setAvailableSites(filteredSites);

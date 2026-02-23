@@ -1,12 +1,11 @@
 import { Head } from '@inertiajs/react';
-import { CustomTable } from '@/components/custom-table';
 import { SectionCards } from '@/components/section-cards';
 import { ChartAreaInteractive } from '@/components/section-chart';
 // import { PlaceholderPattern } from '@/components/ui/placeholder-pattern';
+import { StaticTable } from '@/components/static-table';
 import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes';
 import type { BreadcrumbItem } from '@/types';
-
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Dashboard',
@@ -26,7 +25,7 @@ export default function Dashboard() {
                     <ChartAreaInteractive />
                 </div>
                 <div className="my-4 relative min-h-[100vh] flex-1 overflow-hidden rounded-xl border border-sidebar-border/70 md:min-h-min dark:border-sidebar-border mx-6">
-                    <CustomTable />
+                    <StaticTable />
                 </div>
             </div>
         </AppLayout>

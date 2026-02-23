@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Site extends Model
 {
     //
+    protected $table = 'sites';
 
     protected $fillable = [
         'branch_id',
