@@ -20,7 +20,7 @@ class ContributionVersionController extends Controller
      */
     public function create()
     {
-        //
+        
     }
 
     /**
