@@ -20,75 +20,64 @@ class PositionController extends Controller
      */
     public function index(Request $request)
     {
-<<<<<<< HEAD
-        $positionQuery = $this->positionRepository->getPositions();
+        $positions= $this->positionRepository->getPositions();
 
-        $totalCount = $positionQuery->count();
+        // $totalCount = $positionQuery->count();
 
-        // Check if the search query matches any of the data in the database
-        if($request->filled('search')) {
-            $search = $request->search;
+        // // Check if the search query matches any of the data in the database
+        // if($request->filled('search')) {
+        //     $search = $request->search;
 
-            $positionQuery->where(fn($query) =>
-                $query->where('pos_name', 'like', "%{$search}%")
-            );
-        }
+        //     $positionQuery->where(fn($query) =>
+        //         $query->where('pos_name', 'like', "%{$search}%")
+        //     );
+        // }
 
-        $filteredCount = $positionQuery->count();
+        // $filteredCount = $positionQuery->count();
 
-        $perPage = (int) ($request->perPage ?? 10);
+        // $perPage = (int) ($request->perPage ?? 10);
 
-        if($perPage === -1) {
-            $allPositions = Position::latest()->get()->map(fn($position) => [
-                "id" => $position->id,
-                "pos_name" => $position->pos_name,
-                "salary_rate" => $position->deduction->salary_rate,
-                "reg_overtime_rate" => $position->deduction->reg_overtime_rate,
-                "special_overtime_rate" => $position->deduction->special_overtime_rate,
-                "sss_rate" => $position->deduction->sss_rate,
-                "philhealth_rate" => $position->deduction->philhealth_rate,
-                "pagibig_rate" => $position->deduction->pagibig_rate,
-            ]);
+        // if($perPage === -1) {
+        //     $allPositions = Position::latest()->get()->map(fn($position) => [
+        //         "id" => $position->id,
+        //         "pos_name" => $position->pos_name,
+        //         "salary_rate" => $position->deduction->salary_rate,
+        //         "reg_overtime_rate" => $position->deduction->reg_overtime_rate,
+        //         "special_overtime_rate" => $position->deduction->special_overtime_rate,
+        //         "sss_rate" => $position->deduction->sss_rate,
+        //         "philhealth_rate" => $position->deduction->philhealth_rate,
+        //         "pagibig_rate" => $position->deduction->pagibig_rate,
+        //     ]);
 
-            $positions = [
-                'data' => $allPositions,
-                'total' => $filteredCount,
-                'perPage' => $perPage,
-                'from' => 1,
-                'to' => $filteredCount,
-                'links' => [],
-            ];
-        } else {
-            // This will fetch all the filtered positions that matches the search query
-            $positions = $positionQuery->latest()->paginate($perPage)->withQueryString();
+        //     $positions = [
+        //         'data' => $allPositions,
+        //         'total' => $filteredCount,
+        //         'perPage' => $perPage,
+        //         'from' => 1,
+        //         'to' => $filteredCount,
+        //         'links' => [],
+        //     ];
+        // } else {
+        //     // This will fetch all the filtered positions that matches the search query
+        //     $positions = $positionQuery->latest()->paginate($perPage)->withQueryString();
 
-            $positions->getCollection()->transform(fn($position) => [
-                "id" => $position->id,
-                "pos_name" => $position->pos_name,
-                "salary_rate" => $position->deduction->salary_rate,
-                "reg_overtime_rate" => $position->deduction->reg_overtime_rate,
-                "special_overtime_rate" => $position->deduction->special_overtime_rate,
-                "sss_rate" => $position->deduction->sss_rate,
-                "philhealth_rate" => $position->deduction->philhealth_rate,
-                "pagibig_rate" => $position->deduction->pagibig_rate,
-            ]);
-        }
+        //     $positions->getCollection()->transform(fn($position) => [
+        //         "id" => $position->id,
+        //         "pos_name" => $position->pos_name,
+        //        // "salary_rate" => $position->deduction->salary_rate,
+        //         "reg_overtime_rate" => $position->deduction->reg_overtime_rate,
+        //         "special_overtime_rate" => $position->deduction->special_overtime_rate,
+        //         "sss_rate" => $position->deduction->sss_rate,
+        //         "philhealth_rate" => $position->deduction->philhealth_rate,
+        //         "pagibig_rate" => $position->deduction->pagibig_rate,
+        //     ]);
+        // }
 
-        // dd($positions);
+        // // dd($positions);
 
-        $filters = $request->only(['search']);
+        // $filters = $request->only(['search']);
 
-        return Inertia::render('Position/index', compact('positions', 'filters', 'totalCount', 'filteredCount'));
-=======
-        $data = $this->positionRepository->getFilteredPositions($request);
-
-        return Inertia::render('Position/index', [
-            'positions' => $data['positions'],
-            'filters' => $data['filters'],
-            'totalCount' => $data['totalCount'],
-            'filteredCount' => $data['filteredCount'],
-        ]);
->>>>>>> 5d9cfda9fd4dfe2310f976cf8b495b3096d9f4da
+        return Inertia::render('Position/index', compact('positions'));
     }
 
     /**

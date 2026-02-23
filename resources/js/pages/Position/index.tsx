@@ -27,33 +27,33 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-interface LinkProps {
-    active: boolean;
-    label: string;
-    url: string | null;
-}
+// interface LinkProps {
+//     active: boolean;
+//     label: string;
+//     url: string | null;
+// }
 
-interface PositionPagination {
-    data: Position[];
-    links: LinkProps[]; // Array of pagination link objects
-    from: number;
-    to: number;
-    total: number;
-}
+// interface PositionPagination {
+//     data: Position[];
+//     links: LinkProps[]; // Array of pagination link objects
+//     from: number;
+//     to: number;
+//     total: number;
+// }
 
-interface FilterProps {
-    search: string;
-    perPage: string;
-}
+// interface FilterProps {
+//     search: string;
+//     perPage: string;
+// }
 
-interface IndexProps {
-    positions: PositionPagination;
-    filters: FilterProps;
-    totalCount: number;
-    filteredCount: number;
-}
+// interface IndexProps {
+//     positions: PositionPagination;
+//     filters: FilterProps;
+//     totalCount: number;
+//     filteredCount: number;
+// }
 
-export default function Index({ positions, filters, totalCount, filteredCount }: IndexProps) {
+export default function Index({ positions, filters, totalCount, filteredCount }: {
     // const route = useRoute();
 
    // console.log(positions);
@@ -65,77 +65,77 @@ export default function Index({ positions, filters, totalCount, filteredCount }:
         }
     }
 
-    // Local state for input value to provide immediate feedback
-    const [localSearch, setLocalSearch] = useState(filters.search || '');
+    // // Local state for input value to provide immediate feedback
+    // const [localSearch, setLocalSearch] = useState(filters.search || '');
 
-    // Search form state management using Inertia's useForm hook
-    const { data, setData } = useForm({
-        search: filters.search || '',
-        perPage: filters.perPage || '20',
-    });
+    // // Search form state management using Inertia's useForm hook
+    // const { data, setData } = useForm({
+    //     search: filters.search || '',
+    //     perPage: filters.perPage || '20',
+    // });
 
-    // Debounced search function
-    const debouncedSearch = useCallback(
-        debounce((value: string) => {
-            // Update the URL with the search query value
-            const queryString = {
-                ...(value && { search: value }),
-                ...(data.perPage && { perPage: data.perPage }),
-            };
+    // // Debounced search function
+    // const debouncedSearch = useCallback(
+    //     debounce((value: string) => {
+    //         // Update the URL with the search query value
+    //         const queryString = {
+    //             ...(value && { search: value }),
+    //             ...(data.perPage && { perPage: data.perPage }),
+    //         };
 
-            // Pass the search query to the backend to filter positions
-            router.get(PositionController.index().url, queryString, {
-                preserveState: true,
-                preserveScroll: true,
-            });
-        }, 300),
-        [data.perPage] // Dependency to include perPage in the query when it changes
-    );
+    //         // Pass the search query to the backend to filter positions
+    //         router.get(PositionController.index().url, queryString, {
+    //             preserveState: true,
+    //             preserveScroll: true,
+    //         });
+    //     }, 300),
+    //     [data.perPage] // Dependency to include perPage in the query when it changes
+    // );
 
-    // Handle search input change with debounce
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value;
-        setLocalSearch(value); // Update local state immediately for UI
-        setData('search', value); // Update form data immediately
+    // // Handle search input change with debounce
+    // const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    //     const value = e.target.value;
+    //     setLocalSearch(value); // Update local state immediately for UI
+    //     setData('search', value); // Update form data immediately
         
-        // Debounce the actual API call
-        debouncedSearch(value);
-    };
+    //     // Debounce the actual API call
+    //     debouncedSearch(value);
+    // };
 
-    // Clears the search bar and resets the position list
-    const handleReset = () => {
-        setLocalSearch('');
-        setData('search', '');
-        setData('perPage', '20');
+    // // Clears the search bar and resets the position list
+    // const handleReset = () => {
+    //     setLocalSearch('');
+    //     setData('search', '');
+    //     setData('perPage', '20');
 
-        router.get(PositionController.index().url), {}, {
-            preserveState: true,
-            preserveScroll: true,
-        };
-    }
+    //     router.get(PositionController.index().url), {}, {
+    //         preserveState: true,
+    //         preserveScroll: true,
+    //     };
+    // }
 
-    // Handle number of products to display per page
-    const handlePerPageChange = (value: string) => {
-        setData('perPage', value);
+    // // Handle number of products to display per page
+    // const handlePerPageChange = (value: string) => {
+    //     setData('perPage', value);
 
-        // Update the URL with the per page value
-        const queryString = {
-            ...(data.search && { search: data.search }),
-            ...(value && { perPage: value }),
-        };
+    //     // Update the URL with the per page value
+    //     const queryString = {
+    //         ...(data.search && { search: data.search }),
+    //         ...(value && { perPage: value }),
+    //     };
 
-        router.get(PositionController.index().url, queryString, {
-            preserveState: true,
-            preserveScroll: true,
-        });
-    }
+    //     router.get(PositionController.index().url, queryString, {
+    //         preserveState: true,
+    //         preserveScroll: true,
+    //     });
+    // }
 
-    // Cleanup debounced function on unmount
-    useEffect(() => {
-        return () => {
-            debouncedSearch.cancel?.();
-        };
-    }, [debouncedSearch]);
+    // // Cleanup debounced function on unmount
+    // useEffect(() => {
+    //     return () => {
+    //         debouncedSearch.cancel?.();
+    //     };
+    // }, [debouncedSearch]);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -144,7 +144,7 @@ export default function Index({ positions, filters, totalCount, filteredCount }:
                 <div className='mx-2'>
                     <div className="flex items-center justify-between gap-4 w-full mb-3">
                         {/* Search Bar - Now using localSearch for immediate feedback */}
-                        <Input
+                        {/* <Input
                             type="text"
                             value={localSearch}
                             onChange={handleChange}
@@ -155,7 +155,7 @@ export default function Index({ positions, filters, totalCount, filteredCount }:
 
                         <Button onClick={handleReset} className="h-5 w-5 p-5 text-sm cursor-pointer bg-gray-500 hover:bg-gray-400">
                             clear
-                        </Button>
+                        </Button> */}
 
                         <div className='ml-auto'>
                             <Link
@@ -185,12 +185,7 @@ export default function Index({ positions, filters, totalCount, filteredCount }:
                             {positions.data.map((pos) => (
                                 <TableRow key={pos.id}>
                                     <TableCell>{pos.pos_name}</TableCell>
-                                    <TableCell>₱{pos?.salary_rate || '0.00'}</TableCell>
-                                    <TableCell>{pos?.reg_overtime_rate || '0.00'}%</TableCell>
-                                    <TableCell>{pos?.special_overtime_rate || '0.00'}%</TableCell>
-                                    <TableCell>{pos?.sss_rate || '0.00'}%</TableCell>
-                                    <TableCell>{pos?.philhealth_rate || '0.00'}%</TableCell>
-                                    <TableCell>{pos?.pagibig_rate || '0.00'}%</TableCell>
+                                    <TableCell>₱{pos.basic_salary}</TableCell>
                                     <TableCell>
                                         {/* Filter Dropdown */}
                                         <DropdownMenu>
@@ -233,7 +228,7 @@ export default function Index({ positions, filters, totalCount, filteredCount }:
                         </TableBody>
                     </Table>
                 </div>
-                <Pagination
+                {/* <Pagination
                     pagination={positions}
                     perPage={data.perPage}
                     onPerPageChange={handlePerPageChange}
@@ -241,7 +236,7 @@ export default function Index({ positions, filters, totalCount, filteredCount }:
                     filteredCount={filteredCount}
                     search={data.search}
                     resourceName='position'
-                />
+                /> */}
             </div>
         </AppLayout>
     );

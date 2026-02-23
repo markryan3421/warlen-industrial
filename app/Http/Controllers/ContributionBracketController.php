@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Contribution\StoreContributionRequest;
+use App\Http\Requests\Contribution\UpdateContributionRequest;
 use App\Models\ContributionBracket;
 use Illuminate\Http\Request;
 
@@ -12,7 +14,7 @@ class ContributionBracketController extends Controller
      */
     public function index()
     {
-        //
+        
     }
 
     /**
@@ -26,9 +28,9 @@ class ContributionBracketController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(StoreContributionRequest $request)
     {
-        //
+        
     }
 
     /**
@@ -50,7 +52,7 @@ class ContributionBracketController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, ContributionBracket $contributionBracket)
+    public function update(UpdateContributionRequest $request, ContributionBracket $contributionBracket)
     {
         //
     }

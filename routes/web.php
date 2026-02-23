@@ -1,9 +1,10 @@
 <?php
 
 use App\Http\Controllers\BranchController;
+use App\Http\Controllers\ContributionVersionController;
 use App\Http\Controllers\EmployeeController;
-use App\Http\Controllers\PositionController;
 use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\PositionController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -28,6 +29,8 @@ Route::middleware(['auth','verified'])->group(function () {
    Route::resource('positions', PositionController::class)->except(['show']);
    Route::resource('employees', EmployeeController::class)->except(['show']);
    Route::resource('permissions', PermissionController::class);
+
+   Route::resource('contribution-versions', ContributionVersionController::class)->except(['show']);
 
    Route::get('/coming-soon', function() {
     return Inertia::render('coming-soon');

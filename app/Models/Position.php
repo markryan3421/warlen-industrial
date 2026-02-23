@@ -25,10 +25,6 @@ class Position extends Model
         return $this->hasMany(Employee::class, 'position_id');
     }
 
-    public function deduction(): HasOne
-    {
-        return $this->hasOne(Deduction::class, 'position_id');
-    }
     // Accessors and Mutators
     protected function posName(): Attribute
     {

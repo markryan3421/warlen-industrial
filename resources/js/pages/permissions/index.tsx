@@ -1,6 +1,6 @@
 import { Head, router, useForm } from '@inertiajs/react';
 import React from 'react';
-import { useRoute } from 'ziggy-js';
+// import { useRoute } from 'ziggy-js';
 import { CustomModalForm } from '@/components/custom-modal-form';
 import { CustomTable } from '@/components/custom-table';
 import { PermissionModalFormConfig } from '@/config/forms/permission-modal-form';
@@ -70,7 +70,7 @@ interface IndexProps {
 
 export default function Index({ permissions }: IndexProps) {
     // Get the route function from ziggy-js to generate URLs
-    const route = useRoute();
+   //const route = useRoute();
 
     // This will display flash message from the backend (success/error)
     // const { flash } = usePage<{ flash?: { success?: string; error?: string } }>().props;

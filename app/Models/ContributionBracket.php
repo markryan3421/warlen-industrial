@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\ContributionVersion;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -11,14 +12,43 @@ class ContributionBracket extends Model
     protected $fillable = [
         'contribution_version_id',
         'salary_from',
-        'salaray_to',
+        'salary_to',
         'employee_share',
         'employer_share',
     ];
 
     public function contributionVersion(): BelongsTo
     {
-        return $this->belongsTo(ContributionVersion::class);
+        return $this->belongsTo(ContributionVersion::class, 'contribution_version_id');
     }
 
+    // Accessors and Mutators
+    protected function salaryFrom(): Attribute
+    {
+        return Attribute::make(
+            set: fn($value) => is_numeric($value) ? (float) $value : 0,
+        );
+    }
+
+    // Add mutators for other numeric fields
+    protected function salaryTo(): Attribute
+    {
+        return Attribute::make(
+            set: fn($value) => is_numeric($value) ? (float) $value : 0,
+        );
+    }
+
+    protected function employeeShare(): Attribute
+    {
+        return Attribute::make(
+            set: fn($value) => is_numeric($value) ? (float) $value : 0,
+        );
+    }
+
+    protected function employerShare(): Attribute
+    {
+        return Attribute::make(
+            set: fn($value) => is_numeric($value) ? (float) $value : 0,
+        );
+    }
 }

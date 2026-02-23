@@ -16,7 +16,7 @@ return new class extends Migration
             $table->id();
             $table->foreignIdFor(ContributionVersion::class,'contribution_version_id')->constrained('contribution_versions')->cascadeOnDelete();
             $table->decimal('salary_from');
-            $table->decimal('salaray_to');
+            $table->decimal('salary_to');
             $table->decimal('employee_share');
             $table->decimal('employer_share');
             $table->timestamps();

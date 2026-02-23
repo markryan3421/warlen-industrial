@@ -1,11 +1,7 @@
 import { Link } from '@inertiajs/react';
-<<<<<<< HEAD
 import { Airplay, CircleMinus, CircleUser, Flag, Landmark, Lock, UserCog } from 'lucide-react';
 import BranchController from '@/actions/App/Http/Controllers/BranchController';
 import PositionController from '@/actions/App/Http/Controllers/PositionController';
-=======
-import { BookOpen, CircleMinus, CircleUser, Flag, Folder, Home, Landmark , UserCog} from 'lucide-react';
->>>>>>> 5d9cfda9fd4dfe2310f976cf8b495b3096d9f4da
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -21,26 +17,13 @@ import {
 import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
 import AppLogo from './app-logo';
-<<<<<<< HEAD
+import ContributionController from '@/actions/App/Http/Controllers/ContributionVersionController';
 
 const FinanceItems: NavItem[] = [
     {
         title: 'Dashboard',
         href: '/dashboard',
         icon: Airplay,
-=======
-import BranchController from '@/actions/App/Http/Controllers/BranchController';
-import PositionController from '@/actions/App/Http/Controllers/PositionController';
-import Dashboard from '@/pages/dashboard';
-
-const mainNavItems: NavItem[] = [
-
-    {
-        title: 'Dashboard',
-        href: dashboard().url,
-        icon: Home
-
->>>>>>> 5d9cfda9fd4dfe2310f976cf8b495b3096d9f4da
     },
     {
         title: 'Branches',
@@ -53,8 +36,8 @@ const mainNavItems: NavItem[] = [
         icon: Flag,
     },
     {
-        title: 'Deductions',
-        href: '/coming-soon',
+        title: 'Contributions',
+        href: ContributionController.index(),
         icon: CircleMinus,
     },
 ];

@@ -15,12 +15,10 @@ class PositionRepository
         //
     }
 
-    protected function getPositions()
+    public function getPositions()
     {
-        return Position::query()
-            ->with(['deduction' => function ($query) {
-                $query->deductionsOnly();
-            }]);
+        return Position::query()->get(['id', 'pos_name','basic_salary']);
+            
     }
 
     /**
