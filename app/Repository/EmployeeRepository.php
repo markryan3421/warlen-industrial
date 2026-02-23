@@ -34,15 +34,9 @@ class EmployeeRepository
                 'employee_number',
                 'emp_code',
                 'emergency_contact_number',
-<<<<<<< HEAD
                 'pay_frequency',
                 'contract_start_date',
                 'contract_end_date',
-=======
-                'contract_start_date',
-                'contract_end_date',
-                'pay_frequency',
->>>>>>> 7520b3d359a76f941d05328b3b126be743e502e8
                 'employee_status',
             ]);
     }

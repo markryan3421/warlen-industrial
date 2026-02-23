@@ -27,10 +27,7 @@ class Position extends Model
         return $this->hasMany(Employee::class);
     }
 
-<<<<<<< HEAD
     // Accessors and Mutators
-=======
->>>>>>> 7520b3d359a76f941d05328b3b126be743e502e8
     protected function posName(): Attribute
     {
         return Attribute::make(

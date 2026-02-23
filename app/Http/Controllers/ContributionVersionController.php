@@ -28,11 +28,7 @@ class ContributionVersionController extends Controller
      */
     public function create()
     {
-<<<<<<< HEAD
         return Inertia::render('Contributions/create');
-=======
-        
->>>>>>> 7520b3d359a76f941d05328b3b126be743e502e8
     }
 
     /**
