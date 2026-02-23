@@ -13,7 +13,7 @@ trait BranchValidationRules
                 'required',
                 'string',
                 'max:255',
-                'unique:branches,branch_name'
+                'unique:branches'
             ],
             'branch_address' => [
                 'required',

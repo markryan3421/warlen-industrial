@@ -47,8 +47,8 @@ class PositionController extends Controller
             return back()->with('error', 'Too many attempts. Please try again later.');
         }
         try {
+       
             DB::beginTransaction();
-
             $action->create($request->validated());
 
             $this->cacheForget('positions');

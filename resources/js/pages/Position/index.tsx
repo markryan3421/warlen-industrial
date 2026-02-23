@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/table";
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type Position } from '@/types';
-
+import { useState, useEffect, useCallback } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -56,7 +56,7 @@ interface IndexProps {
 export default function Index({ positions, filters, totalCount, filteredCount }: IndexProps) {
     // const route = useRoute();
 
-    console.log(positions);
+   // console.log(positions);
 
     const { delete: destroy } = useForm();
     const handleDelete = (id: number) => {
@@ -65,32 +65,46 @@ export default function Index({ positions, filters, totalCount, filteredCount }:
         }
     }
 
+    // Local state for input value to provide immediate feedback
+    const [localSearch, setLocalSearch] = useState(filters.search || '');
+
     // Search form state management using Inertia's useForm hook
     const { data, setData } = useForm({
         search: filters.search || '',
         perPage: filters.perPage || '10',
     });
 
-    // Handle search input change
+    // Debounced search function
+    const debouncedSearch = useCallback(
+        debounce((value: string) => {
+            // Update the URL with the search query value
+            const queryString = {
+                ...(value && { search: value }),
+                ...(data.perPage && { perPage: data.perPage }),
+            };
+
+            // Pass the search query to the backend to filter positions
+            router.get(PositionController.index().url, queryString, {
+                preserveState: true,
+                preserveScroll: true,
+            });
+        }, 300),
+        [data.perPage] // Dependency to include perPage in the query when it changes
+    );
+
+    // Handle search input change with debounce
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
-        setData('search', value);
-
-        // Update the URL with the search query value
-        const queryString = {
-            ...(value && { search: value }),
-            ...(data.perPage && { perPage: data.perPage }),
-        };
-
-        // Pass the search query to the backend to filter products
-        router.get(PositionController.index().url, queryString, {
-            preserveState: true,
-            preserveScroll: true,
-        });
+        setLocalSearch(value); // Update local state immediately for UI
+        setData('search', value); // Update form data immediately
+        
+        // Debounce the actual API call
+        debouncedSearch(value);
     };
 
     // Clears the search bar and resets the position list
     const handleReset = () => {
+        setLocalSearch('');
         setData('search', '');
         setData('perPage', '10');
 
@@ -116,16 +130,23 @@ export default function Index({ positions, filters, totalCount, filteredCount }:
         });
     }
 
+    // Cleanup debounced function on unmount
+    useEffect(() => {
+        return () => {
+            debouncedSearch.cancel?.();
+        };
+    }, [debouncedSearch]);
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Positions" />
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
                 <div className='mx-2'>
                     <div className="flex items-center justify-between gap-4 w-full mb-3">
-                        {/* Search Bar */}
+                        {/* Search Bar - Now using localSearch for immediate feedback */}
                         <Input
                             type="text"
-                            value={data.search}
+                            value={localSearch}
                             onChange={handleChange}
                             placeholder='Search position...'
                             name="search"
@@ -224,4 +245,23 @@ export default function Index({ positions, filters, totalCount, filteredCount }:
             </div>
         </AppLayout>
     );
+}
+
+// Debounce utility function
+function debounce<T extends (...args: any[]) => any>(func: T, wait: number): T & { cancel?: () => void } {
+    let timeout: NodeJS.Timeout | null = null;
+    
+    const debounced = (...args: Parameters<T>) => {
+        if (timeout) clearTimeout(timeout);
+        timeout = setTimeout(() => func(...args), wait);
+    };
+    
+    debounced.cancel = () => {
+        if (timeout) {
+            clearTimeout(timeout);
+            timeout = null;
+        }
+    };
+    
+    return debounced as T & { cancel?: () => void };
 }

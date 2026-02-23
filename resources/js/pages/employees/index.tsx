@@ -15,7 +15,6 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 interface Employee {
     id: number;
-<<<<<<< HEAD
     position: {
         pos_name: string;
     }
@@ -30,11 +29,6 @@ interface Employee {
     sites: {
         site_name: string;
     }
-=======
-    position: { pos_name: string; }
-    branch: { branch_name: string; branch_address: string; sites?: string; }
-    user: { name: string; email: string; }
->>>>>>> 7ef705fb18a446cb8121ddbc25d8b9bdfd7ca1ab
     employee_number: string;
     emergency_contact_number: string;
     department: string;
@@ -137,16 +131,8 @@ export default function Index({ employees }: PageProps) {
                                     <TableCell>{employee.user.name}</TableCell>
                                     <TableCell>{employee.position.pos_name}</TableCell>
                                     <TableCell>{employee.department}</TableCell>
-<<<<<<< HEAD
                                     <TableCell>{employee.branch.branch_name}</TableCell>
                                     <TableCell>{employee.sites?.site_name || 'N/A'}</TableCell>
-=======
-                                    <TableCell>
-                                        {employee.branch.branch_name}
-
-                                    </TableCell>
-                                    
->>>>>>> 7ef705fb18a446cb8121ddbc25d8b9bdfd7ca1ab
                                     <TableCell>{employee.employee_number}</TableCell>
                                     <TableCell>{employee.emergency_contact_number}</TableCell>
                                     <TableCell>

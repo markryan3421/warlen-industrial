@@ -31,7 +31,7 @@ class Branch extends Model
     {
         return Attribute::make(
             get: fn ($value) => Str::title($value),
-            set: fn ($value) => strtolower(strip_tags($value)),
+            set: fn ($value) => Str::lower(trim(strip_tags($value))),
         );
     }
 
@@ -39,7 +39,7 @@ class Branch extends Model
     {
         return Attribute::make(
             get: fn ($value) => ucwords($value),
-            set: fn ($value) => strtolower(strip_tags($value)),
+            set: fn ($value) => trim(strip_tags($value)),
         );
     }
 

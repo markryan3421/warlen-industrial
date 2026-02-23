@@ -12,14 +12,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('application_leaves', function (Blueprint $table) {
+        Schema::create('attendances', function (Blueprint $table) {
             $table->id();
             $table->foreignIdFor(Employee::class,'employee_id')->constrained('employees')->cascadeOnDelete();
-            $table->date('leave_start');
-            $table->date('leave_end');
-            $table->longText('reason_to_leave');
-            $table->boolean('is_approved')->default(0);
-            $table->text('remarks')->nullable();
+            $table->date('work_date');
+            $table->time('am_in');
+            $table->time('am_out');
+            // $table->time('am_break_time');
+            // $table->time('pm_break_time');
+            $table->time('pm_in');
+            $table->time('pm_out');
             $table->timestamps();
         });
     }
@@ -29,6 +31,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('application_leaves');
+        Schema::dropIfExists('attendances');
     }
 };

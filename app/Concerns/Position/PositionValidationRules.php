@@ -13,7 +13,7 @@ trait PositionValidationRules
                 'required',
                 'string',
                 'max:100',
-                'unique:positions,pos_name',
+                'unique:positions',
                 'min:3'
             ],
             'salary_rate' => [

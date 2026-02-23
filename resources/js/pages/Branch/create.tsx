@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import SiteRepeater from '@/components/site-repeater';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { store } from '@/actions/App/Http/Controllers/BranchController';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -33,7 +34,7 @@ export default function Create() {
 
     function submitBranch(e: React.FormEvent) {
         e.preventDefault();
-        post('/branches'); // Make sure this matches your route
+        post(store().url); 
     }
 
     const setSites = (sites: Array<{ site_name: string }>) => {
