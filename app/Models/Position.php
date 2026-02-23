@@ -17,6 +17,7 @@ class Position extends Model
     
     protected $fillable = [
         'pos_name',
+        'basic_salary',
     ];
 
     public function employees(): HasMany
@@ -32,8 +33,8 @@ class Position extends Model
     protected function posName(): Attribute
     {
         return Attribute::make(
-            get: fn ($value) => Str::title($value),
-            set: fn ($value) => strtolower(strip_tags($value)),
+            get: fn ($value) => Str::upper($value),
+            set: fn ($value) => Str::lower(trim(strip_tags($value))),
         );
     }
 }

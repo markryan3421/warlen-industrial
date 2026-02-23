@@ -105,13 +105,21 @@ class EmployeeController extends Controller
         $branches = Branch::query()
             ->get(['id', 'branch_name']);
 
+<<<<<<< HEAD
+        $employee->load(['position', 'branch', 'user' => fn($query) => $query->getUserName(), 'sites']);
+=======
         $employee->load(['position', 'branch', 'user' => fn($query) => $query->getUserName(), 'site']);
+>>>>>>> 3ada93cb3b978db72f1a0dd768adf1c1d1f2e8bf
 
         return Inertia::render('employees/update', [
             'employee' => $employee,
             'positions' => $positions,
             'branches' => $branches,
+<<<<<<< HEAD
+            'sites' => Site::with('branch')->get(['id', 'branch_id', 'site_name']),
+=======
             'site' => Site::with('branch')->get(['id', 'branch_id', 'site_name']),
+>>>>>>> 3ada93cb3b978db72f1a0dd768adf1c1d1f2e8bf
         ]);
     }
 

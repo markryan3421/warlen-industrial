@@ -22,10 +22,14 @@ return new class extends Migration
             $table->foreignIdFor(User::class,'user_id')->constrained('users')->cascadeOnDelete();
             $table->foreignIdFor(Site::class,'site_id')->nullable()->constrained('sites')->cascadeOnDelete();
             $table->string('employee_number')->unique();
+            $table->integer('emp_code')->unique();
             $table->string('emergency_contact_number');
-            $table->enum('department',['weekender','monthly','semi_monthly'])->default('monthly');
-            $table->enum('employee_status',['active','inactive'])->default('active');
+            $table->date('contract_start_date');
+            $table->date('contract_end_date');
+            $table->enum('pay_frequency',['weekender','monthly','semi_monthly'])->default('monthly');
+            $table->enum('employee_status',['active','inactive'])->default('active'); // base on  contract end date
 
+            $table->softDeletes();
         
             $table->timestamps();
         });

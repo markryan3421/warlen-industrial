@@ -25,7 +25,7 @@ class CreateNewEmployee
                 'site_id' => $data['site_id'],
                 'employee_number' => $data['employee_number'],
                 'emergency_contact_number' => $data['emergency_contact_number'],
-                'department' => $data['department'],
+                'pay_frequency' => $data['pay_frequency'],
                 'employee_status' => $data['employee_status'],
             ]);
         });

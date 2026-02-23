@@ -2,12 +2,14 @@
 
 namespace App\Repository;
 
+use App\Concerns\Concerns\Trait\RateLimiterTraits;
 use App\Models\Position;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class PositionRepository
 {
+      use RateLimiterTraits;
     public function __construct()
     {
         //
@@ -33,6 +35,9 @@ class PositionRepository
 
         // Apply search filter
         if ($request->filled('search')) {
+            // if($this->limit('search-position:' . auth()->id(), 60, 15)) {
+              
+            // }
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('pos_name', 'like', "%{$search}%");
@@ -49,13 +54,12 @@ class PositionRepository
         } else {
             $positions = $this->getPaginatedPositions($query, $perPage, $request);
         }
-
-        return [
-            'positions' => $positions,
-            'totalCount' => $totalCount,
-            'filteredCount' => $filteredCount,
-            'filters' => $request->only(['search']),
-        ];
+         return [
+                'positions' => $positions,
+                'totalCount' => $totalCount,
+                'filteredCount' => $filteredCount,
+                'filters' => $request->only(['search']),
+            ];
     }
 
     /**

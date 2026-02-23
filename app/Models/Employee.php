@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Attendance;
 use App\Models\Branch;
 use App\Models\Position;
 use App\Models\User;
@@ -10,9 +11,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
+use Spatie\Permission\Traits\HasRoles;
 
 class Employee extends Model
 {
+    use HasRoles;
+    
     protected $table = 'employees';
 
 
@@ -23,7 +27,7 @@ class Employee extends Model
         'site_id',
         'employee_number',
         'emergency_contact_number',
-        'department',
+        'pay_frequency',
         'employee_status',
     ];
 
@@ -52,6 +56,11 @@ class Employee extends Model
         return $this->belongsTo(Site::class, 'site_id');
     }
 
+    public function attendances(): HasMany
+    {
+        return $this->hasMany(Attendance::class, 'employee_id');
+    }
+
 
     
     // Accessors and Mutators
@@ -77,10 +86,10 @@ class Employee extends Model
         );
     }
 
-    protected function department(): Attribute
+    protected function payFrequency(): Attribute
     {
         return Attribute::make(
-            // get: fn($value) => preg_replace('/[^a-zA-Z0-9\s]/', ' ', Str::title($value)),
+           // get: fn($value) => preg_replace('/[^a-zA-Z0-9\s]/', '-', Str::title($value)),
             set: fn($value) => strtolower(strip_tags($value)),
         );
     }
