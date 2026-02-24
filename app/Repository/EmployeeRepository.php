@@ -19,7 +19,9 @@ class EmployeeRepository
     {
         return Employee::query()
             ->with([
-                'position',
+                'position' => function($query) {
+                    $query->withTrashed()->select('id', 'pos_name', 'deleted_at');
+                },
                 'branch',
                 'sites',
                 'user' => fn($query) => $query->getUserName()

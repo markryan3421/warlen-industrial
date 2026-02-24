@@ -38,7 +38,7 @@ trait EmployeeValidationRules
 
             'employee_status' => ['required'],
 
-            'position_id' => ['required', 'exists:positions,id'],
+            'position_id' => ['nullable', 'exists:positions,id', 'sometimes'],
 
             'branch_id' => [
                 'required',

@@ -36,7 +36,15 @@ export default function Create({ positions, branches, site = [] }: Props) {
     const [availableSites, setAvailableSites] = useState<any[]>([]);
     const [positionSearch, setPositionSearch] = useState('');
     const [showPositionDropdown, setShowPositionDropdown] = useState(false);
-    
+
+    const getStatusFromDates = (start: string, end: string) => {
+        if (!start || !end) return '';
+        const today = new Date();
+        const startDate = new Date(start);
+        const endDate = new Date(end);
+        return (today >= startDate && today <= endDate) ? 'Active' : 'Inactive';
+    };
+
     const { data, setData, post, processing, errors } = useForm({
         name: '',
         email: '',
@@ -65,9 +73,15 @@ export default function Create({ positions, branches, site = [] }: Props) {
         }
     }, [data.branch_id]);
 
+    useEffect(() => {
+        if (data.contract_start_date && data.contract_end_date) {
+            setData('employee_status', getStatusFromDates(data.contract_start_date, data.contract_end_date));
+        }
+    }, [data.contract_start_date, data.contract_end_date]);
+
     // Filter positions based on search, limit to 5
     const filteredPositions = positions
-        ?.filter(position => 
+        ?.filter(position =>
             position.pos_name.toLowerCase().includes(positionSearch.toLowerCase())
         )
         .slice(0, 5);
@@ -158,7 +172,7 @@ export default function Create({ positions, branches, site = [] }: Props) {
                                 <div className="space-y-2">
                                     <Label htmlFor="position_id">Position <span className="text-red-500">*</span></Label>
                                     <div className="relative">
-                                        <div 
+                                        <div
                                             className="flex items-center border border-input rounded-md cursor-pointer"
                                             onClick={() => setShowPositionDropdown(!showPositionDropdown)}
                                         >
@@ -167,7 +181,7 @@ export default function Create({ positions, branches, site = [] }: Props) {
                                             </div>
                                             <ChevronDown className="h-4 w-4 mr-2 text-muted-foreground" />
                                         </div>
-                                        
+
                                         {showPositionDropdown && (
                                             <div className="absolute z-10 w-full mt-1 bg-white border border-input rounded-md shadow-lg">
                                                 <div className="p-2 border-b">
@@ -210,7 +224,7 @@ export default function Create({ positions, branches, site = [] }: Props) {
                                     </div>
                                     <InputError message={errors.position_id} />
                                 </div>
-                               <div className="space-y-2">
+                                <div className="space-y-2">
                                     <Label htmlFor="pay_frequency">Pay Frequency <span className="text-red-500">*</span></Label>
                                     <select id="pay_frequency" value={data.pay_frequency} onChange={e => setData('pay_frequency', e.target.value)} className="w-full h-10 px-3 rounded-md border border-input bg-background">
                                         <option value="">Select a Pay Frequency</option>
@@ -224,11 +238,7 @@ export default function Create({ positions, branches, site = [] }: Props) {
 
                                 <div className="space-y-2">
                                     <Label htmlFor="employee_status">Status <span className="text-red-500">*</span></Label>
-                                    <select id="employee_status" value={data.employee_status} onChange={e => setData('employee_status', e.target.value)} className="w-full h-10 px-3 rounded-md border border-input bg-background">
-                                        <option value="">Select a Status</option>
-                                        <option value="active">Active</option>
-                                        <option value="inactive">Inactive</option>
-                                    </select>
+                                    <Input id="employee_status" type="text" value={data.employee_status} onChange={e => setData('employee_status', e.target.value)} className="w-full h-10 px-3 rounded-md border border-input bg-background" readOnly placeholder="Employee Status" />
                                     <InputError message={errors.employee_status} />
                                 </div>
 
@@ -347,8 +357,8 @@ export default function Create({ positions, branches, site = [] }: Props) {
 
             {/* Click outside to close dropdown */}
             {showPositionDropdown && (
-                <div 
-                    className="fixed inset-0 z-0" 
+                <div
+                    className="fixed inset-0 z-0"
                     onClick={() => setShowPositionDropdown(false)}
                 />
             )}
