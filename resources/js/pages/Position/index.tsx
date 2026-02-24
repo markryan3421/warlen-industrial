@@ -1,9 +1,9 @@
 import { Head, Link, router, useForm, } from '@inertiajs/react';
 import { DropdownMenuContent, DropdownMenuTrigger } from '@radix-ui/react-dropdown-menu';
-import { CirclePlusIcon, Eye, MoreHorizontalIcon, Pencil, Trash } from 'lucide-react';
+import { CirclePlusIcon, MoreHorizontalIcon, Pencil, Trash, X } from 'lucide-react';
 // import { useRoute } from 'ziggy-js';
 import PositionController from "@/actions/App/Http/Controllers/PositionController";
-// import { Button } from "@/components/ui/button"
+// import { Pagination } from '@/components/custom-pagination';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
@@ -68,7 +68,7 @@ export default function Index({ positions, filters, totalCount, filteredCount }:
     // Search form state management using Inertia's useForm hook
     const { data, setData } = useForm({
         search: filters.search || '',
-        perPage: filters.perPage || '20',
+        perPage: filters.perPage || '10',
     });
 
     // Handle search input change
@@ -92,12 +92,12 @@ export default function Index({ positions, filters, totalCount, filteredCount }:
     // Clears the search bar and resets the position list
     const handleReset = () => {
         setData('search', '');
-        setData('perPage', '20');
+        setData('perPage', '10');
 
-        router.get(PositionController.index().url), {}, {
+        router.get(PositionController.index().url, {}, {
             preserveState: true,
             preserveScroll: true,
-        };
+        });
     }
 
     // Handle number of products to display per page
@@ -133,7 +133,7 @@ export default function Index({ positions, filters, totalCount, filteredCount }:
                         />
 
                         <Button onClick={handleReset} className="h-5 w-5 p-5 text-sm cursor-pointer bg-gray-500 hover:bg-gray-400">
-                            clear
+                            <X />
                         </Button>
 
                         <div className='ml-auto'>

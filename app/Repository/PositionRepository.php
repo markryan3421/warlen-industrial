@@ -13,7 +13,7 @@ class PositionRepository
         //
     }
 
-    protected function getPositions()
+    public function getPositions()
     {
         return Position::query()
             ->with(['deduction' => function ($query) {

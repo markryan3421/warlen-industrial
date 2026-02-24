@@ -22,6 +22,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
+import { CustomToast } from '@/components/custom-toast';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -54,14 +55,15 @@ export default function Index({ branches }: BranchProps) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Branch" />
+            <CustomToast />
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-                <Link 
-                    href={BranchController.create()} 
+                <Link
+                    href={BranchController.create()}
                     className="mb-4 inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 w-fit"
                 >
                     Create Branch
                 </Link>
-                
+
                 <Table>
                     <TableCaption>A list of your Branches.</TableCaption>
                     <TableHeader>
@@ -83,21 +85,21 @@ export default function Index({ branches }: BranchProps) {
                                     </span>
                                 </TableCell>
                                 <TableCell className="space-x-2">
-                                    <Button 
-                                        variant="outline" 
+                                    <Button
+                                        variant="outline"
                                         size="sm"
                                         onClick={() => viewBranchSites(branch)}
                                     >
                                         View Sites
                                     </Button>
-                                    <Link 
+                                    <Link
                                         href={BranchController.edit(branch.id)}
                                         className="inline-flex items-center justify-center rounded-md bg-secondary px-3 py-1.5 text-sm font-medium text-secondary-foreground hover:bg-secondary/90"
                                     >
                                         Edit
                                     </Link>
-                                    <Button 
-                                        variant="destructive" 
+                                    <Button
+                                        variant="destructive"
                                         size="sm"
                                         onClick={() => handleDelete(branch.id)}
                                     >
@@ -125,7 +127,7 @@ export default function Index({ branches }: BranchProps) {
                                 )}
                             </DialogDescription>
                         </DialogHeader>
-                        
+
                         <div className="mt-4 max-h-[400px] overflow-y-auto">
                             {selectedBranch?.sites && selectedBranch.sites.length > 0 ? (
                                 <Table>
@@ -144,17 +146,17 @@ export default function Index({ branches }: BranchProps) {
                                 </Table>
                             ) : (
                                 <div className="flex flex-col items-center justify-center py-12 text-center">
-                                    <svg 
-                                        className="h-12 w-12 text-gray-400 mb-4" 
-                                        fill="none" 
-                                        viewBox="0 0 24 24" 
+                                    <svg
+                                        className="h-12 w-12 text-gray-400 mb-4"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
                                         stroke="currentColor"
                                     >
-                                        <path 
-                                            strokeLinecap="round" 
-                                            strokeLinejoin="round" 
-                                            strokeWidth={2} 
-                                            d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" 
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2}
+                                            d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
                                         />
                                     </svg>
                                     <p className="text-muted-foreground">

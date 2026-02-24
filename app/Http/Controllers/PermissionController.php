@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Controller;
 use App\Http\Requests\PermissionRequest;
 use App\Models\Permission;
-// use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 
@@ -16,6 +16,7 @@ class PermissionController extends Controller
     public function index()
     {
         $permissions = Permission::latest()->paginate(5);
+
         return Inertia::render('permissions/index', compact('permissions'));
     }
 
@@ -39,7 +40,7 @@ class PermissionController extends Controller
             'description' => $request->description,
         ]);
 
-        if($permission) {
+        if ($permission) {
             return redirect()->route('permissions.index')->with('success', 'Permission created successfully.');
         }
 
@@ -67,13 +68,14 @@ class PermissionController extends Controller
      */
     public function update(PermissionRequest $request, Permission $permission)
     {
-        if($permission) {
+        if ($permission) {
             $permission->module = $request->module;
             $permission->label = $request->label;
             $permission->name = Str::slug($request->label);
             $permission->description = $request->description;
 
             $permission->save();
+
             return redirect()->route('permissions.index')->with('success', 'Permission updated successfully.');
         }
 
@@ -85,10 +87,12 @@ class PermissionController extends Controller
      */
     public function destroy(Permission $permission)
     {
-        if($permission) {
+        if ($permission) {
             $permission->delete();
+
             return redirect()->route('permissions.index')->with('success', 'Permission deleted successfully.');
         }
+
         return redirect()->back()->with('error', 'Unable to delete permission, try again.');
     }
 }

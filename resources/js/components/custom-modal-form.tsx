@@ -1,3 +1,4 @@
+import { LoaderCircle } from 'lucide-react';
 import { Button } from "@/components/ui/button"
 import {
     Dialog,
@@ -14,6 +15,7 @@ import { Label } from "@/components/ui/label"
 import InputError from './input-error';
 import { CustomTextarea } from "./ui/custom-textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
+
 
 interface AddButtonProps {
     id: string,
@@ -166,7 +168,8 @@ export const CustomModalForm = ({ addButton, title, description, fields, buttons
                                 } else if (mode !== 'view') {
                                     return (
                                         <Button key={button.key} type={button.type} variant={button.variant} className={button.className}>
-                                            {button.label}
+                                            {processing && <LoaderCircle className='h-4 w-4 animate-spin' />}
+                                            {processing ? 'Saving...' : button.label}
                                         </Button>
                                     );
                                 }

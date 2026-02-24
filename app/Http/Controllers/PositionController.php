@@ -20,7 +20,6 @@ class PositionController extends Controller
      */
     public function index(Request $request)
     {
-<<<<<<< HEAD
         $positionQuery = $this->positionRepository->getPositions();
 
         $totalCount = $positionQuery->count();
@@ -79,16 +78,6 @@ class PositionController extends Controller
         $filters = $request->only(['search']);
 
         return Inertia::render('Position/index', compact('positions', 'filters', 'totalCount', 'filteredCount'));
-=======
-        $data = $this->positionRepository->getFilteredPositions($request);
-
-        return Inertia::render('Position/index', [
-            'positions' => $data['positions'],
-            'filters' => $data['filters'],
-            'totalCount' => $data['totalCount'],
-            'filteredCount' => $data['filteredCount'],
-        ]);
->>>>>>> 5d9cfda9fd4dfe2310f976cf8b495b3096d9f4da
     }
 
     /**

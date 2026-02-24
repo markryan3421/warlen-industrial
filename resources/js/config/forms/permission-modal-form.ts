@@ -7,7 +7,7 @@ export const PermissionModalFormConfig = {
     addButton: {
         id: 'add-permission',
         label: 'Add Permission',
-        className: 'bg-primary hover:bg-chart-4 text-white cursor-pointer',
+        className: 'bg-primary hover:bg-chart-4 text-white cursor-pointer ml-auto me-6',
         icon: CirclePlus,
         type: 'button',
         variant: 'default',

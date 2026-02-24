@@ -8,15 +8,6 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card"
-
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select"
-
 import {
     ChartContainer,
     ChartLegend,
@@ -24,6 +15,13 @@ import {
     ChartTooltip,
     ChartTooltipContent,
 } from "@/components/ui/chart"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
 
 
 export const description = "An interactive area chart"
@@ -154,7 +152,7 @@ export function ChartAreaInteractive() {
     })
 
     return (
-        <Card className="pt-0 transition delay-100 duration-150 ease-in-out hover:-translate-y-1 hover:scale-100">
+        <Card className="pt-0 transition delay-100 duration-150 ease-in-out hover:-translate-y-1 hover:scale-100 pb-12">
             <CardHeader className="flex items-center gap-2 space-y-0 border-b py-5 sm:flex-row">
                 <div className="grid flex-1 gap-1">
                     <CardTitle>Area Chart - Interactive</CardTitle>
