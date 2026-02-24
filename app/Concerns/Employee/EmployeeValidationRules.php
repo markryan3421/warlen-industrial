@@ -34,7 +34,7 @@ trait EmployeeValidationRules
 
             'contract_start_date' => ['required', 'date'],
 
-            'contract_end_date' => ['required', 'date', 'after:contract_start_date'],
+            'contract_end_date' => ['required', 'date', 'after_or_equal:contract_start_date'],
 
             'employee_status' => ['required'],
 

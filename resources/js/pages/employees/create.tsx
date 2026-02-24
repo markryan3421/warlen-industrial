@@ -337,6 +337,7 @@ export default function Create({ positions, branches, site = [] }: Props) {
                                     value={data.contract_end_date}
                                     onChange={e => setData('contract_end_date', e.target.value)}
                                     className="w-full h-10 px-3 rounded-md border border-input bg-background"
+                                    min={data.contract_start_date}
                                 />
                                 <InputError message={errors.contract_end_date} />
                             </div>

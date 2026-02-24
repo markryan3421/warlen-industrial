@@ -126,11 +126,10 @@ export default function Index({ employees, positions, branches, sites }: PagePro
                                         <TableCell>{employee.contract_start_date}</TableCell>
                                         <TableCell>{employee.contract_end_date}</TableCell>
                                         <TableCell>
-                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                                employee.employee_status === 'active' 
-                                                    ? 'bg-green-100 text-green-800' 
+                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${['active', 'Active', 'ACTIVE'].includes(employee.employee_status)
+                                                    ? 'bg-green-100 text-green-800'
                                                     : 'bg-yellow-100 text-yellow-800'
-                                            }`}>
+                                                }`}>
                                                 {employee.employee_status}
                                             </span>
                                         </TableCell>

@@ -33,12 +33,14 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
     const [positionSearch, setPositionSearch] = useState('');
     const [showPositionDropdown, setShowPositionDropdown] = useState(false);
 
-    // Helper function to normalize status value
     const getStatusFromDates = (start: string, end: string) => {
         if (!start || !end) return '';
         const today = new Date();
         const startDate = new Date(start);
         const endDate = new Date(end);
+        today.setHours(0, 0, 0, 0);
+        startDate.setHours(0, 0, 0, 0);
+        endDate.setHours(0, 0, 0, 0);
         return (today >= startDate && today <= endDate) ? 'Active' : 'Inactive';
     };
 
@@ -56,7 +58,7 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
         pay_frequency: employee.pay_frequency,
         employee_number: employee.employee_number,
         emergency_contact_number: employee.emergency_contact_number,
-        employee_status: employee.employee_status, // Normalize the status here
+        employee_status: employee.employee_status || 'Active', // Normalize the status here
     });
     useEffect(() => {
         if (data.contract_start_date && data.contract_end_date) {
@@ -364,6 +366,7 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
                                     value={data.contract_end_date}
                                     onChange={e => setData('contract_end_date', e.target.value)}
                                     className="w-full h-10 px-3 rounded-md border border-input bg-background"
+                                    min={data.contract_start_date}
                                 />
                                 <InputError message={errors.contract_end_date} />
                             </div>
