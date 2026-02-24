@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ApplicationLeaveController;
 use App\Http\Controllers\BranchController;
 use App\Http\Controllers\ContributionVersionController;
 use App\Http\Controllers\EmployeeController;
@@ -31,7 +32,8 @@ Route::middleware(['auth','verified'])->group(function () {
    Route::resource('permissions', PermissionController::class);
 
    Route::resource('contribution-versions', ContributionVersionController::class)->except(['show']);
-
+   Route::resource('application-leave', ApplicationLeaveController::class);
+ 
    Route::get('/coming-soon', function() {
     return Inertia::render('coming-soon');
    });
