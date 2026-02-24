@@ -22,7 +22,7 @@ class StoreApplicationLeaveRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'leave_start' => 'required|date|after_or_equal:now',
+            'leave_start' => 'required|date|after_or_equal:today',
             'leave_end' => 'required|date|after:leave_start',
             'reason_to_leave' => 'required|string|max:1000',
         ];

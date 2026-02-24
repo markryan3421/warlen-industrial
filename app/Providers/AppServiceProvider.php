@@ -28,7 +28,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureDefaults();
 
-        //$this->configureRateLimiting();
+        $this->configureRateLimiting();
     }
 
     /**
