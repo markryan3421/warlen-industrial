@@ -32,6 +32,7 @@ interface Employee {
     sites: {
         site_name: string;
     }
+    slug_emp: string;   
     emp_code: string;
     employee_number: string;
     site_name: string;
@@ -135,7 +136,7 @@ export default function Index({ employees, positions, branches, sites }: PagePro
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex justify-end gap-2">
-                                                <Link href={EmmployeeController.edit(employee.id)}>
+                                                <Link href={EmmployeeController.edit(employee.slug_emp)}>
                                                     <Button variant="outline" size="sm">Edit</Button>
                                                 </Link>
                                                 <Button size="sm" variant="destructive" onClick={() => handleDelete(employee.id)}>

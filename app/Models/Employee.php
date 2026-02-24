@@ -25,6 +25,7 @@ class Employee extends Model
         'branch_id',
         'user_id',
         'site_id',
+        'slug_emp',
         'emp_code',
         'employee_number',
         'contract_start_date',
@@ -100,5 +101,10 @@ class Employee extends Model
     public function site()
     {
         return $this->belongsTo(Site::class, 'site_id');
+    }
+
+    public function getRouteKeyName()
+    {
+        return 'slug_emp';
     }
 }

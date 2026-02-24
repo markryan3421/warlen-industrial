@@ -21,6 +21,7 @@ return new class extends Migration
             $table->foreignIdFor(Branch::class,'branch_id')->nullable()->constrained('branches')->cascadeOnDelete();
             $table->foreignIdFor(User::class,'user_id')->constrained('users')->cascadeOnDelete();
             $table->foreignIdFor(Site::class,'site_id')->nullable()->constrained('sites')->cascadeOnDelete();
+            $table->string('slug_emp')->unique();
             $table->string('employee_number')->unique();
             $table->integer('emp_code')->unique()->index();
             $table->string('emergency_contact_number');

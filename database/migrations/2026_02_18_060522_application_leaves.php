@@ -15,6 +15,7 @@ return new class extends Migration
         Schema::create('application_leaves', function (Blueprint $table) {
             $table->id();
             $table->foreignIdFor(Employee::class,'employee_id')->constrained('employees')->cascadeOnDelete();
+            $table->string('slug_app')->unique();
             $table->date('leave_start');
             $table->date('leave_end');
             $table->longText('reason_to_leave');

@@ -3,6 +3,7 @@
 namespace App\Actions\Employee;
 
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class UpdateEmployee
 {
@@ -37,6 +38,7 @@ class UpdateEmployee
             'site_id' => $data['site_id'],
             'employee_number' => $data['employee_number'],
             'emp_code' => $data['emp_code'],
+            'slug_emp' => Str::slug($data['name']),
             'emergency_contact_number' => $data['emergency_contact_number'],
             'contract_start_date' => $data['contract_start_date'],
             'contract_end_date' => $data['contract_end_date'],

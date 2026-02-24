@@ -33,6 +33,7 @@ class EmployeeRepository
                 'branch_id',
                 'user_id',
                 'site_id',
+                'slug_emp',
                 'employee_number',
                 'emp_code',
                 'emergency_contact_number',
