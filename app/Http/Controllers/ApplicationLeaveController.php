@@ -2,8 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\ApplicationLeave\CreateNewApplication;
+use App\Actions\ApplicationLeave\UpdateApplication;
+use App\Http\Requests\ApplicationLeave\StoreApplicationLeaveRequest;
+use App\Http\Requests\ApplicationLeave\UpdateApplicationLeaveRequest;
 use App\Models\ApplicationLeave;
-use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class ApplicationLeaveController extends Controller
 {
@@ -12,7 +16,11 @@ class ApplicationLeaveController extends Controller
      */
     public function index()
     {
-        //
+        $applicationLeaves = ApplicationLeave::with(['employee.user'])->latest()->get();
+
+        return inertia('ApplicationLeave/index', [
+            'applicationLeaves' => $applicationLeaves,
+        ]);
     }
 
     /**
@@ -20,16 +28,19 @@ class ApplicationLeaveController extends Controller
      */
     public function create()
     {
-        //
+        return Inertia::render('ApplicationLeave/create');
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(StoreApplicationLeaveRequest $request, CreateNewApplication $createNewApplication)
     {
-        //
+        $createNewApplication->createNewApplicationLeave($request->validated());
+
+        return redirect()->route('application-leave.index')->with('success', 'Leave application submitted successfully.');
     }
+    
 
     /**
      * Display the specified resource.
@@ -44,15 +55,19 @@ class ApplicationLeaveController extends Controller
      */
     public function edit(ApplicationLeave $applicationLeave)
     {
-        //
+        return Inertia::render('ApplicationLeave/edit', [
+            'applicationLeave' => $applicationLeave,
+        ]);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, ApplicationLeave $applicationLeave)
+    public function update(UpdateApplicationLeaveRequest $request, ApplicationLeave $applicationLeave, UpdateApplication $updateApplication)
     {
-        //
+        $updateApplication->updateApplicationLeave($request->validated(), $applicationLeave);
+
+        return redirect()->route('application-leave.index')->with('success', 'Leave application updated successfully.');
     }
 
     /**
@@ -60,6 +75,7 @@ class ApplicationLeaveController extends Controller
      */
     public function destroy(ApplicationLeave $applicationLeave)
     {
-        //
+        $applicationLeave->delete();
+        return redirect()->route('application-leave.index')->with('success', 'Leave application deleted successfully.');
     }
 }

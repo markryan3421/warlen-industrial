@@ -18,6 +18,7 @@ import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
 import AppLogo from './app-logo';
 import ContributionController from '@/actions/App/Http/Controllers/ContributionVersionController';
+import ApplicationLeaveController from '@/actions/App/Http/Controllers/ApplicationLeaveController';
 
 const FinanceItems: NavItem[] = [
     {
@@ -47,6 +48,11 @@ const AccessControlItems: NavItem[] = [
     {
         title: 'Employees',
         href: '/employees',
+        icon: CircleUser,
+    },
+      {
+        title: 'Application Leaves',
+        href: ApplicationLeaveController.index(),
         icon: CircleUser,
     },
     {
