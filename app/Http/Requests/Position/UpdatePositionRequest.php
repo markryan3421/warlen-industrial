@@ -2,13 +2,11 @@
 
 namespace App\Http\Requests\Position;
 
-use App\Concerns\Position\PositionAttributes;
-use App\Concerns\Position\PositionValidationRules;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdatePositionRequest extends FormRequest
 {
-    use PositionValidationRules, PositionAttributes;
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -24,11 +22,13 @@ class UpdatePositionRequest extends FormRequest
      */
     public function rules(): array
     {
-        return $this->updateRules();
-    }
+        return [
+            'pos_name' => [
+                'required',
+                Rule::unique('positions', 'pos_name')->ignore($this->position->id),
+            ],
+            'basic_salary' => 'required|numeric|min:0|max:9999999.99',
 
-    public function attributes(): array
-    {
-        return $this->positionAttributes();
+        ];
     }
 }

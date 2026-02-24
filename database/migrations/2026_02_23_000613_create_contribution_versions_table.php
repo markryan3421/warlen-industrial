@@ -11,9 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('positions', function (Blueprint $table) {
+        Schema::create('contribution_versions', function (Blueprint $table) {
             $table->id();
-            $table->string('pos_name');
+            $table->enum('type', ['sss', 'philhealth', 'pagibig']);
+            $table->date('effective_from');
+            $table->date('effective_to')->nullable();
             $table->timestamps();
         });
     }
@@ -23,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('positions');
+        Schema::dropIfExists('contribution_versions');
     }
 };

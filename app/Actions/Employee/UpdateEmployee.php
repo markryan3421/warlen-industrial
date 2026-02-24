@@ -29,17 +29,22 @@ class UpdateEmployee
 
         $user->update($userData);
 
+        //dd($data['employee_status']);
         $employee->update([
             'position_id' => $data['position_id'],
             'branch_id' => $data['branch_id'],
             'user_id' => $user->id,
             'site_id' => $data['site_id'],
             'employee_number' => $data['employee_number'],
+            'emp_code' => $data['emp_code'],
             'emergency_contact_number' => $data['emergency_contact_number'],
-            'department' => $data['department'],
+            'contract_start_date' => $data['contract_start_date'],
+            'contract_end_date' => $data['contract_end_date'],
+            'pay_frequency' => $data['pay_frequency'],
             'employee_status' => $data['employee_status'],
         ]);
 
+        
         return $employee;
     }
 }

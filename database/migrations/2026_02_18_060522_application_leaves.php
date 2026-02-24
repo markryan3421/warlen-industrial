@@ -19,6 +19,7 @@ return new class extends Migration
             $table->date('leave_end');
             $table->longText('reason_to_leave');
             $table->boolean('is_approved')->default(0);
+            $table->text('remarks')->nullable();
             $table->timestamps();
         });
     }

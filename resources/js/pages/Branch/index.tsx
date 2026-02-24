@@ -4,6 +4,7 @@ import { type BreadcrumbItem, type BranchWithSites } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/react';
 import BranchController from "@/actions/App/Http/Controllers/BranchController";
 import { useState } from 'react';
+import { Building2, PlusCircle, MapPin } from 'lucide-react';
 
 import {
     Table,
@@ -31,7 +32,6 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-
 interface BranchProps {
     branches: BranchWithSites[];
 }
@@ -57,59 +57,79 @@ export default function Index({ branches }: BranchProps) {
             <Head title="Branch" />
             <CustomToast />
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-                <Link
-                    href={BranchController.create()}
-                    className="mb-4 inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 w-fit"
-                >
-                    Create Branch
-                </Link>
+                <div className="flex justify-between items-center">
+                    <h1 className="text-2xl font-bold">Branches</h1>
+                    <Link
+                        href={BranchController.create()}
+                        className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                    >
+                        + Add Branch
+                    </Link>
+                </div>
 
-                <Table>
-                    <TableCaption>A list of your Branches.</TableCaption>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Branch Name</TableHead>
-                            <TableHead>Branch Address</TableHead>
-                            <TableHead>Number of Sites</TableHead>
-                            <TableHead>Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {branches.map((branch) => (
-                            <TableRow key={branch.id}>
-                                <TableCell className="font-medium">{branch.branch_name}</TableCell>
-                                <TableCell>{branch.branch_address}</TableCell>
-                                <TableCell>
-                                    <span className="inline-flex items-center justify-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
-                                        {branch.sites?.length || 0} sites
-                                    </span>
-                                </TableCell>
-                                <TableCell className="space-x-2">
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => viewBranchSites(branch)}
-                                    >
-                                        View Sites
-                                    </Button>
-                                    <Link
-                                        href={BranchController.edit(branch.id)}
-                                        className="inline-flex items-center justify-center rounded-md bg-secondary px-3 py-1.5 text-sm font-medium text-secondary-foreground hover:bg-secondary/90"
-                                    >
-                                        Edit
-                                    </Link>
-                                    <Button
-                                        variant="destructive"
-                                        size="sm"
-                                        onClick={() => handleDelete(branch.id)}
-                                    >
-                                        Delete
-                                    </Button>
-                                </TableCell>
+                {branches.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
+                        <div className="rounded-full bg-gray-100 p-6 mb-4">
+                            <Building2 className="h-12 w-12 text-gray-400" />
+                        </div>
+                        <h3 className="text-lg font-semib text-gray-900 mb-2">No branches yet</h3>
+                        <p className="text-gray-500 mb-6 max-w-sm">
+                            Get started by creating your first branch. Branches help you organize your business locations and their associated sites.
+                        </p>
+                        <Link href={BranchController.create()}>
+                            <Button className="gap-2">
+                                Create Your First Branch
+                            </Button>
+                        </Link>
+                    </div>
+                ) : (
+                    <Table>
+                        <TableCaption>A list of your Branches.</TableCaption>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Branch Name</TableHead>
+                                <TableHead>Branch Address</TableHead>
+                                <TableHead>Number of Sites</TableHead>
+                                <TableHead>Actions</TableHead>
                             </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
+                        </TableHeader>
+                        <TableBody>
+                            {branches.map((branch) => (
+                                <TableRow key={branch.id}>
+                                    <TableCell className="font-medium">{branch.branch_name}</TableCell>
+                                    <TableCell>{branch.branch_address}</TableCell>
+                                    <TableCell>
+                                        <span className="inline-flex items-center justify-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
+                                            {branch.sites?.length || 0} sites
+                                        </span>
+                                    </TableCell>
+                                    <TableCell className="space-x-2">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => viewBranchSites(branch)}
+                                        >
+                                            View Sites
+                                        </Button>
+                                        <Link
+                                            href={BranchController.edit(branch.id)}
+                                            className="inline-flex items-center justify-center rounded-md bg-secondary px-3 py-1.5 text-sm font-medium text-secondary-foreground hover:bg-secondary/90"
+                                        >
+                                            Edit
+                                        </Link>
+                                        <Button
+                                            variant="destructive"
+                                            size="sm"
+                                            onClick={() => handleDelete(branch.id)}
+                                        >
+                                            Delete
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                )}
 
                 {/* Modal for displaying branch sites */}
                 <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
@@ -120,11 +140,6 @@ export default function Index({ branches }: BranchProps) {
                             </DialogTitle>
                             <DialogDescription>
                                 List of all sites belonging to this branch.
-                                {selectedBranch?.sites?.length === 0 && (
-                                    <span className="block mt-1 text-amber-600">
-                                        This branch has no sites assigned yet.
-                                    </span>
-                                )}
                             </DialogDescription>
                         </DialogHeader>
 
@@ -139,28 +154,22 @@ export default function Index({ branches }: BranchProps) {
                                     <TableBody>
                                         {selectedBranch.sites.map((site) => (
                                             <TableRow key={site.id}>
-                                                <TableCell className="font-medium">{site.site_name}</TableCell>
+                                                <TableCell className="font-medium flex items-center gap-2">
+                                                    <MapPin className="h-4 w-4 text-gray-400" />
+                                                    {site.site_name}
+                                                </TableCell>
                                             </TableRow>
                                         ))}
                                     </TableBody>
                                 </Table>
                             ) : (
                                 <div className="flex flex-col items-center justify-center py-12 text-center">
-                                    <svg
-                                        className="h-12 w-12 text-gray-400 mb-4"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        stroke="currentColor"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-                                        />
-                                    </svg>
-                                    <p className="text-muted-foreground">
-                                        No sites found for this branch.
+                                    <div className="rounded-full bg-gray-100 p-4 mb-4">
+                                        <MapPin className="h-8 w-8 text-gray-400" />
+                                    </div>
+                                    <p className="text-muted-foreground font-medium mb-1">No sites found</p>
+                                    <p className="text-sm text-gray-500">
+                                        This branch doesn't have any sites assigned yet.
                                     </p>
                                 </div>
                             )}

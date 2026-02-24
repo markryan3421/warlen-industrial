@@ -11,22 +11,14 @@ class CreateNewPosition
      */
     public function __construct()
     {
-        //
+        
     }
 
-    public function create(array $data): Position
+    public function create(array $data)
     {
         $position = Position::create([
             'pos_name' => $data['pos_name'],
-        ]);
-
-        $position->deduction()->create([
-            'salary_rate' => $data['salary_rate'],
-            'reg_overtime_rate' => $data['reg_overtime_rate'],
-            'special_overtime_rate' => $data['special_overtime_rate'],
-            'sss_rate' => $data['sss_rate'],
-            'philhealth_rate' => $data['philhealth_rate'],
-            'pagibig_rate' => $data['pagibig_rate'],
+            'basic_salary' => $data['basic_salary'],
         ]);
 
         return $position;

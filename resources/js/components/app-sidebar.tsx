@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { Airplay, CircleMinus, CircleUser, Flag, Landmark, Lock, UserCog } from 'lucide-react';
+import { Airplay, CircleMinus, CircleUser, Flag, Landmark, Lock, UserCog, Clipboard } from 'lucide-react';
 import BranchController from '@/actions/App/Http/Controllers/BranchController';
 import PositionController from '@/actions/App/Http/Controllers/PositionController';
 import { NavFooter } from '@/components/nav-footer';
@@ -17,6 +17,8 @@ import {
 import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
 import AppLogo from './app-logo';
+import ContributionController from '@/actions/App/Http/Controllers/ContributionVersionController';
+import ApplicationLeaveController from '@/actions/App/Http/Controllers/ApplicationLeaveController';
 
 const FinanceItems: NavItem[] = [
     {
@@ -35,22 +37,28 @@ const FinanceItems: NavItem[] = [
         icon: Flag,
     },
     {
-        title: 'Deductions',
-        href: '/coming-soon',
+        title: 'Contributions',
+        href: ContributionController.index(),
         icon: CircleMinus,
     },
 ];
 
 const AccessControlItems: NavItem[] = [
-    {
-        title: 'Positions',
-        href: PositionController.index(),
-        icon: UserCog,
-    },
+
     {
         title: 'Employees',
         href: '/employees',
         icon: CircleUser,
+    },
+    {
+        title: 'Application Leaves',
+        href: ApplicationLeaveController.index(),
+        icon: Clipboard,
+    },
+    {
+        title: 'Positions',
+        href: '/positions',
+        icon: UserCog,
     },
     {
         title: 'Permissions',

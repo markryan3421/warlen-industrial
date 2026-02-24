@@ -19,9 +19,11 @@ class EmployeeRepository
     {
         return Employee::query()
             ->with([
-                'position',
+                'position' => function($query) {
+                    $query->withTrashed()->select('id', 'pos_name', 'deleted_at');
+                },
                 'branch',
-                'site',
+                'sites',
                 'user' => fn($query) => $query->getUserName()
             ])
             ->latest()
@@ -32,8 +34,11 @@ class EmployeeRepository
                 'user_id',
                 'site_id',
                 'employee_number',
+                'emp_code',
                 'emergency_contact_number',
-                'department',
+                'pay_frequency',
+                'contract_start_date',
+                'contract_end_date',
                 'employee_status',
             ]);
     }
