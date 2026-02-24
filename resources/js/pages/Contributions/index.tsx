@@ -4,6 +4,7 @@ import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/react';
 import ContributionVersionController from "@/actions/App/Http/Controllers/ContributionVersionController";
 import { useState } from 'react';
+import { Calculator, PlusCircle, Percent } from 'lucide-react';
 
 import {
     Table,
@@ -124,7 +125,7 @@ export default function Index({ contributionVersions }: ContributionsProps) {
             style: 'percent',
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
-        }).format(amount / 100); // Divide by 100 to convert to decimal
+        }).format(amount / 100);
     };
 
     return (
@@ -137,62 +138,73 @@ export default function Index({ contributionVersions }: ContributionsProps) {
                         href={ContributionVersionController.create()} 
                         className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
                     >
-                        Create Contribution Version
+                        + Create Contribution Version
                     </Link>
                 </div>
                 
-                <Table>
-                    <TableCaption>A list of all contribution versions.</TableCaption>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Type</TableHead>
-                            <TableHead>Effective From</TableHead>
-                            <TableHead>Effective To</TableHead>
-                            {/* <TableHead>Number of Brackets</TableHead> */}
-                            <TableHead>Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {contributionVersions.map((version) => (
-                            <TableRow key={version.id}>
-                                <TableCell>
-                                    <Badge className={getContributionTypeColor(version.type)}>
-                                        {getContributionTypeLabel(version.type)}
-                                    </Badge>
-                                </TableCell>
-                                <TableCell>{formatDate(version.effective_from)}</TableCell>
-                                <TableCell>{formatDate(version.effective_to)}</TableCell>
-                                {/* <TableCell>
-                                    <span className="inline-flex items-center justify-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
-                                        {version.contribution_brackets?.length || 0} brackets
-                                    </span>
-                                </TableCell> */}
-                                <TableCell className="space-x-2">
-                                    <Button 
-                                        variant="outline" 
-                                        size="sm"
-                                        onClick={() => viewContributionBrackets(version)}
-                                    >
-                                        View Brackets
-                                    </Button>
-                                    <Link 
-                                        href={ContributionVersionController.edit(version.id)}
-                                        className="inline-flex items-center justify-center rounded-md bg-secondary px-3 py-1.5 text-sm font-medium text-secondary-foreground hover:bg-secondary/90"
-                                    >
-                                        Edit
-                                    </Link>
-                                    <Button 
-                                        variant="destructive" 
-                                        size="sm"
-                                        onClick={() => handleDelete(version.id)}
-                                    >
-                                        Delete
-                                    </Button>
-                                </TableCell>
+                {contributionVersions.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
+                        <div className="rounded-full bg-gray-100 p-6 mb-4">
+                            <Calculator className="h-12 w-12 text-gray-400" />
+                        </div>
+                        <h3 className="text-lg font-semib text-gray-900 mb-2">No contribution versions yet</h3>
+                        <p className="text-gray-500 mb-6 max-w-sm">
+                            Create your first contribution version to set up SSS, PhilHealth, and Pag-IBIG contribution tables with their corresponding brackets.
+                        </p>
+                        <Link href={ContributionVersionController.create()}>
+                            <Button className="gap-2">
+                                Create Your First Version
+                            </Button>
+                        </Link>
+                    </div>
+                ) : (
+                    <Table>
+                        <TableCaption>A list of all contribution versions.</TableCaption>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Type</TableHead>
+                                <TableHead>Effective From</TableHead>
+                                <TableHead>Effective To</TableHead>
+                                <TableHead>Actions</TableHead>
                             </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
+                        </TableHeader>
+                        <TableBody>
+                            {contributionVersions.map((version) => (
+                                <TableRow key={version.id}>
+                                    <TableCell>
+                                        <Badge className={getContributionTypeColor(version.type)}>
+                                            {getContributionTypeLabel(version.type)}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell>{formatDate(version.effective_from)}</TableCell>
+                                    <TableCell>{formatDate(version.effective_to)}</TableCell>
+                                    <TableCell className="space-x-2">
+                                        <Button 
+                                            variant="outline" 
+                                            size="sm"
+                                            onClick={() => viewContributionBrackets(version)}
+                                        >
+                                            View Brackets
+                                        </Button>
+                                        <Link 
+                                            href={ContributionVersionController.edit(version.id)}
+                                            className="inline-flex items-center justify-center rounded-md bg-secondary px-3 py-1.5 text-sm font-medium text-secondary-foreground hover:bg-secondary/90"
+                                        >
+                                            Edit
+                                        </Link>
+                                        <Button 
+                                            variant="destructive" 
+                                            size="sm"
+                                            onClick={() => handleDelete(version.id)}
+                                        >
+                                            Delete
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                )}
 
                 {/* Modal for displaying contribution brackets */}
                 <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
@@ -204,11 +216,6 @@ export default function Index({ contributionVersions }: ContributionsProps) {
                             <DialogDescription>
                                 <div className="mt-2 space-y-1">
                                     <p><span className="font-medium">Effective Period:</span> {selectedVersion && formatDate(selectedVersion.effective_from)} to {selectedVersion && formatDate(selectedVersion.effective_to)}</p>
-                                    {selectedVersion?.contribution_brackets?.length === 0 && (
-                                        <span className="block mt-1 text-amber-600">
-                                            This contribution version has no brackets assigned yet.
-                                        </span>
-                                    )}
                                 </div>
                             </DialogDescription>
                         </DialogHeader>
@@ -242,25 +249,15 @@ export default function Index({ contributionVersions }: ContributionsProps) {
                                             })}
                                         </TableBody>
                                     </Table>
-
                                 </div>
                             ) : (
                                 <div className="flex flex-col items-center justify-center py-12 text-center">
-                                    <svg 
-                                        className="h-12 w-12 text-gray-400 mb-4" 
-                                        fill="none" 
-                                        viewBox="0 0 24 24" 
-                                        stroke="currentColor"
-                                    >
-                                        <path 
-                                            strokeLinecap="round" 
-                                            strokeLinejoin="round" 
-                                            strokeWidth={2} 
-                                            d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" 
-                                        />
-                                    </svg>
-                                    <p className="text-muted-foreground">
-                                        No contribution brackets found for this version.
+                                    <div className="rounded-full bg-gray-100 p-4 mb-4">
+                                        <Percent className="h-8 w-8 text-gray-400" />
+                                    </div>
+                                    <p className="text-muted-foreground font-medium mb-1">No brackets found</p>
+                                    <p className="text-sm text-gray-500">
+                                        This contribution version doesn't have any brackets configured yet.
                                     </p>
                                 </div>
                             )}
