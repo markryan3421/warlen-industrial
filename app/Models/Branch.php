@@ -13,6 +13,7 @@ class Branch extends Model
     protected $fillable = [
         'branch_name',
         'branch_address',
+        'branch_slug'
     ];
 
     public function employees(): HasMany
@@ -23,6 +24,11 @@ class Branch extends Model
     public function sites(): HasMany
     {
         return $this->hasMany(Site::class, 'branch_id');
+    }
+
+    public function getRouteKeyName(): string 
+    {
+        return 'branch_slug';
     }
 
     

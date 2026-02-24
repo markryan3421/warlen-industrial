@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('pos_name')->unique();
             $table->decimal('basic_salary', 15, 2);
+            $table->string('pos_slug')->unique();
             $table->softDeletes();
             $table->timestamps();
         });

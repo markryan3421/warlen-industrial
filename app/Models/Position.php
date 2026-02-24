@@ -20,11 +20,17 @@ class Position extends Model
     protected $fillable = [
         'pos_name',
         'basic_salary',
+        'pos_slug'
     ];
 
     public function employees()
     {
         return $this->hasMany(Employee::class);
+    }
+
+    public function getRouteKeyName(): string 
+    {
+        return 'pos_slug';
     }
 
     // Accessors and Mutators

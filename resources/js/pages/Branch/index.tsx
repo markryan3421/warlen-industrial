@@ -40,10 +40,10 @@ export default function Index({ branches }: BranchProps) {
     const { delete: destroy } = useForm();
     const [selectedBranch, setSelectedBranch] = useState<BranchWithSites | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
-
-    const handleDelete = (id: number) => {
+   
+    const handleDelete = (slug: string) => {
         if (confirm("Are you sure you want to delete this branch?")) {
-            destroy(BranchController.destroy(id).url);
+            destroy(BranchController.destroy(slug).url);
         }
     }
 
@@ -112,7 +112,7 @@ export default function Index({ branches }: BranchProps) {
                                             View Sites
                                         </Button>
                                         <Link
-                                            href={BranchController.edit(branch.id)}
+                                            href={BranchController.edit(branch.branch_slug)}
                                             className="inline-flex items-center justify-center rounded-md bg-secondary px-3 py-1.5 text-sm font-medium text-secondary-foreground hover:bg-secondary/90"
                                         >
                                             Edit
@@ -120,7 +120,7 @@ export default function Index({ branches }: BranchProps) {
                                         <Button
                                             variant="destructive"
                                             size="sm"
-                                            onClick={() => handleDelete(branch.id)}
+                                            onClick={() => handleDelete(branch.branch_slug)}
                                         >
                                             Delete
                                         </Button>

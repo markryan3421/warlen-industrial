@@ -19,6 +19,7 @@ interface Position {
     id: number;
     pos_name: string;
     basic_salary: number;
+    pos_slug: string;
 }
 
 interface Props {
@@ -26,9 +27,9 @@ interface Props {
 }
 
 export default function Index({ positions }: Props) {
-    const deletePosition = (id: number) => {
+    const deletePosition = (slug: string) => {
         if (confirm('Are you sure you want to delete this position?')) {
-            router.delete(`/positions/${id}`);
+            router.delete(`/positions/${slug}`);
         }
     }
 
@@ -76,12 +77,12 @@ export default function Index({ positions }: Props) {
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex items-center justify-end gap-2">
-                                            <Link href={`/positions/${position.id}/edit`}>
+                                            <Link href={`/positions/${position.pos_slug}/edit`}>
                                                 <Button variant="outline" size="sm">
                                                     Edit
                                                 </Button>
                                             </Link>
-                                            <Button variant="destructive" size="sm" onClick={() => deletePosition(position.id)}>
+                                            <Button variant="destructive" size="sm" onClick={() => deletePosition(position.pos_slug)}>
                                                 Delete
                                             </Button>
                                         </div>

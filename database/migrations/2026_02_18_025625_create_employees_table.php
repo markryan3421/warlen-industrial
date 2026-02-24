@@ -22,7 +22,7 @@ return new class extends Migration
             $table->foreignIdFor(User::class,'user_id')->constrained('users')->cascadeOnDelete();
             $table->foreignIdFor(Site::class,'site_id')->nullable()->constrained('sites')->cascadeOnDelete();
             $table->string('employee_number')->unique();
-            $table->integer('emp_code')->unique();
+            $table->integer('emp_code')->unique()->index();
             $table->string('emergency_contact_number');
             $table->date('contract_start_date');
             $table->date('contract_end_date');
@@ -32,6 +32,7 @@ return new class extends Migration
             $table->softDeletes();
         
             $table->timestamps();
+
         });
     }
 

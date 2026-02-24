@@ -11,6 +11,7 @@ import { PermissionsTableConfig } from '@/config/tables/permissions-table';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { CustomPieChart } from '@/components/custom-pie-chart';
+import PermissionController from '@/actions/App/Http/Controllers/PermissionController';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {

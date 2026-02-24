@@ -45,18 +45,18 @@ export default function Index({ applicationLeaves }: ApplicationLeaveProps) {
         }
     }
 
-
-
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Branch" />
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-                <Link 
-                    href={ApplicationLeaveController.create()} 
-                    className="mb-4 inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 w-fit"
-                >
-                    Create Application Leave
-                </Link>
+                <div className="flex justify-end">
+                    <Link 
+                        href={ApplicationLeaveController.create()} 
+                        className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 w-fit"
+                    >
+                        Create Application Leave
+                    </Link>
+                </div>
                 
                 <Table>
                     <TableCaption>A list of your Application Leaves.</TableCaption>

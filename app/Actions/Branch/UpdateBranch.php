@@ -3,6 +3,7 @@
 namespace App\Actions\Branch;
 
 use App\Models\Branch;
+use Illuminate\Support\Str;
 
 class UpdateBranch
 {
@@ -18,6 +19,7 @@ class UpdateBranch
     {
         $branch->update([
             'branch_name' => $data['branch_name'],
+            'branch_slug' => Str::slug($data['branch_name']),
             'branch_address' => $data['branch_address'],
         ]);
 
