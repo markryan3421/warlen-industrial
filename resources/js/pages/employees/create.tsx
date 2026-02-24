@@ -46,6 +46,9 @@ export default function Create({ positions, branches, site = [] }: Props) {
         const today = new Date();
         const startDate = new Date(start);
         const endDate = new Date(end);
+        today.setHours(0, 0, 0, 0);
+        startDate.setHours(0, 0, 0, 0);
+        endDate.setHours(0, 0, 0, 0);
         return (today >= startDate && today <= endDate) ? 'Active' : 'Inactive';
     };
 

@@ -4,8 +4,9 @@ namespace App\Actions\Employee;
 
 use App\Models\Employee;
 use App\Models\User;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class CreateNewEmployee
 {
@@ -23,6 +24,7 @@ class CreateNewEmployee
                 'branch_id' => $data['branch_id'],
                 'user_id' => $user->id,
                 'site_id' => $data['site_id'],
+                'slug_emp' => Str::slug($data['name']),
                 'employee_number' => $data['employee_number'],
                 'emp_code' => $data['emp_code'],
                 'emergency_contact_number' => $data['emergency_contact_number'],

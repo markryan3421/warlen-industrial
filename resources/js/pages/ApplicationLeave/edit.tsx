@@ -57,7 +57,7 @@ export default function Edit({ applicationLeave }: EditProps) {
 
     function submitApplication(e: React.FormEvent) {
         e.preventDefault();
-        put(update(applicationLeave.id).url);
+        put(update(applicationLeave.slug_app).url);
     }
 
     // Handle checkbox change explicitly

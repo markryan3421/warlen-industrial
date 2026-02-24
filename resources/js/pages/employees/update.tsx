@@ -122,7 +122,7 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        put(update(employee.id).url);
+        put(update(employee.slug_emp).url);
     };
 
     const selectPosition = (positionId: string, positionName: string) => {

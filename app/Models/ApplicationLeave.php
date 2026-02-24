@@ -11,6 +11,7 @@ class ApplicationLeave extends Model
 
     protected $fillable = [
         'employee_id',
+        'slug_app',
         'leave_start',
         'leave_end',
         'reason_to_leave',
@@ -48,5 +49,10 @@ class ApplicationLeave extends Model
         return Attribute::make(
             set: fn($value) => strip_tags($value),
         );
+    }
+
+    public function getRouteKeyName()
+    {
+        return 'slug_app';
     }
 }
