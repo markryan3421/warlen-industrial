@@ -1,5 +1,6 @@
 import { Link } from '@inertiajs/react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Pagination as ShadcnPagination, PaginationContent, PaginationPrevious, PaginationItem } from './ui/pagination';
 
 interface LinkProps {
     // From links array 
@@ -68,7 +69,6 @@ export const Pagination = ({ pagination, perPage, onPerPageChange, totalCount, f
                     </SelectTrigger>
 
                     <SelectContent>
-                        {/* <SelectItem value='5'>5</SelectItem> */}
                         <SelectItem value='10'>10</SelectItem>
                         <SelectItem value='25'>25</SelectItem>
                         <SelectItem value='50'>50</SelectItem>
@@ -79,35 +79,45 @@ export const Pagination = ({ pagination, perPage, onPerPageChange, totalCount, f
             </div>
 
             <div className='flex gap-2'>
-                {/* Previous Button */}
-                {previousLink?.url && (
-                    <Link
-                        href={previousLink.url}
-                        className='px-2 py-1 border rounded'
-                        dangerouslySetInnerHTML={{ __html: previousLink.label }}
-                    />
-                )}
+                <ShadcnPagination>
+                    <PaginationContent>
+                        {/* Previous Button */}
+                        <PaginationItem>
+                            {previousLink?.url && (
+                                <PaginationPrevious
+                                    href={previousLink.url}
+                                    className='px-2 py-1 border rounded'
+                                    dangerouslySetInnerHTML={{ __html: previousLink.label }}
+                                />
+                            )}
+                        </PaginationItem>
 
-                {/* Pagination numbers */}
-                {visiblePages.map((link, index) => (
-                    <Link
-                        key={index}
-                        href={link.url || '#'}
-                        className={`px-2 py-1 border rounded ${link.active ? 'bg-primary text-white' : ''
-                            }`}
-                        dangerouslySetInnerHTML={{ __html: link.label }}
-                    />
-                ))}
+                        {/* Pagination numbers */}
+                        <PaginationItem>
+                            {visiblePages.map((link, index) => (
+                                <Link
+                                    key={index}
+                                    href={link.url || '#'}
+                                    className={`px-2 py-1 border rounded ${link.active ? 'bg-primary text-white' : ''
+                                        }`}
+                                    dangerouslySetInnerHTML={{ __html: link.label }}
+                                />
+                            ))}
+                        </PaginationItem>
 
 
-                {/* Next Button */}
-                {nextLink?.url && (
-                    <Link
-                        href={nextLink.url}
-                        className='px-2 py-1 border rounded'
-                        dangerouslySetInnerHTML={{ __html: nextLink.label }}
-                    />
-                )}
+                        <PaginationItem>
+                            {nextLink?.url && (
+                                <Link
+                                    href={nextLink.url}
+                                    className='px-2 py-1 border rounded'
+                                    dangerouslySetInnerHTML={{ __html: nextLink.label }}
+                                />
+                            )}
+                        </PaginationItem>
+
+                    </PaginationContent>
+                </ShadcnPagination>
             </div>
         </div>
     )

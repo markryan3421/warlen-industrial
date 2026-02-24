@@ -50,14 +50,14 @@ const AccessControlItems: NavItem[] = [
         href: '/employees',
         icon: CircleUser,
     },
-      {
+    {
         title: 'Application Leaves',
         href: ApplicationLeaveController.index(),
         icon: Clipboard,
     },
     {
         title: 'Positions',
-        href:'/positions',
+        href: '/positions',
         icon: UserCog,
     },
     {

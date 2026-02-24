@@ -3,11 +3,14 @@ import React from 'react';
 // import { useRoute } from 'ziggy-js';
 import { CustomModalForm } from '@/components/custom-modal-form';
 import { CustomTable } from '@/components/custom-table';
+import { CustomToast, toast } from '@/components/custom-toast';
+// import { SectionCards } from '@/components/section-cards';
+import { ChartAreaInteractive } from '@/components/section-chart';
 import { PermissionModalFormConfig } from '@/config/forms/permission-modal-form';
 import { PermissionsTableConfig } from '@/config/tables/permissions-table';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-// import { CustomToast, toast } from '@/components/custom-toast';
+import { CustomPieChart } from '@/components/custom-pie-chart';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -70,7 +73,7 @@ interface IndexProps {
 
 export default function Index({ permissions }: IndexProps) {
     // Get the route function from ziggy-js to generate URLs
-   //const route = useRoute();
+    //const route = useRoute();
 
     // This will display flash message from the backend (success/error)
     // const { flash } = usePage<{ flash?: { success?: string; error?: string } }>().props;
@@ -91,12 +94,12 @@ export default function Index({ permissions }: IndexProps) {
             router.delete(route, {
                 preserveScroll: true,
                 onSuccess: (response: { props: FlashProps }) => {
-                    const successMessage = response.props.flash?.success || 'Category deleted successfully.'
+                    const successMessage = response.props.flash?.success || 'Permission deleted successfully.'
                     toast.success(successMessage);
                     closeModal();
                 },
                 onError: (error: Record<string, string>) => {
-                    const errorMessage = error?.message || 'Failed to delete category.';
+                    const errorMessage = error?.message || 'Failed to delete permission.';
                     toast.error(errorMessage);
                 }
             });
@@ -110,10 +113,10 @@ export default function Index({ permissions }: IndexProps) {
         if (mode === 'edit' && selectedCategory) {
             // setData('_method', 'PUT');
 
-            put(route('permissions.update', selectedCategory.id), {
+            put(PermissionController.update(selectedCategory.id).url, {
                 forceFormData: true,
                 onSuccess: (response: { props: FlashProps }) => {
-                    const successMessage = response.props.flash?.success
+                    const successMessage = response.props.flash?.success || 'Permission updated successfully.'
                     if (successMessage) {
                         toast.success(successMessage);
                     }
@@ -127,9 +130,9 @@ export default function Index({ permissions }: IndexProps) {
                 }
             })
         } else {
-            post(route('permissions.store'), {
+            post(PermissionController.store.url(), {
                 onSuccess: (response: { props: FlashProps }) => {
-                    const successMessage = response.props.flash?.success
+                    const successMessage = response.props.flash?.success || 'Permission created successfully.'
                     if (successMessage) {
                         toast.success(successMessage);
                     }
@@ -185,7 +188,20 @@ export default function Index({ permissions }: IndexProps) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Category Management" />
-            {/* <CustomToast /> */}
+            <CustomToast />
+            <div className="@container/main flex flex-1 flex-col gap-2">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mx-6 my-4 pb-4">
+                    {/* Chart Area - Full width on mobile, 2/3 on desktop */}
+                    <div className="md:col-span-2 relative overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
+                        <ChartAreaInteractive />
+                    </div>
+
+                    {/* Pie Chart - Full width on mobile, 1/3 on desktop */}
+                    <div className="md:col-span-1 relative overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
+                        <CustomPieChart />
+                    </div>
+                </div>
+            </div>
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
                 {/* Custom Modal Form */}
                 <div className="ml-auto">

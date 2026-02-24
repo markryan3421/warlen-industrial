@@ -23,6 +23,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
+import { CustomToast } from '@/components/custom-toast';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -54,17 +55,18 @@ export default function Index({ branches }: BranchProps) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Branch" />
+            <CustomToast />
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
                 <div className="flex justify-between items-center">
                     <h1 className="text-2xl font-bold">Branches</h1>
-                    <Link 
-                        href={BranchController.create()} 
+                    <Link
+                        href={BranchController.create()}
                         className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
                     >
                         + Add Branch
                     </Link>
                 </div>
-                
+
                 {branches.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
                         <div className="rounded-full bg-gray-100 p-6 mb-4">
@@ -102,21 +104,21 @@ export default function Index({ branches }: BranchProps) {
                                         </span>
                                     </TableCell>
                                     <TableCell className="space-x-2">
-                                        <Button 
-                                            variant="outline" 
+                                        <Button
+                                            variant="outline"
                                             size="sm"
                                             onClick={() => viewBranchSites(branch)}
                                         >
                                             View Sites
                                         </Button>
-                                        <Link 
+                                        <Link
                                             href={BranchController.edit(branch.id)}
                                             className="inline-flex items-center justify-center rounded-md bg-secondary px-3 py-1.5 text-sm font-medium text-secondary-foreground hover:bg-secondary/90"
                                         >
                                             Edit
                                         </Link>
-                                        <Button 
-                                            variant="destructive" 
+                                        <Button
+                                            variant="destructive"
                                             size="sm"
                                             onClick={() => handleDelete(branch.id)}
                                         >
@@ -140,7 +142,7 @@ export default function Index({ branches }: BranchProps) {
                                 List of all sites belonging to this branch.
                             </DialogDescription>
                         </DialogHeader>
-                        
+
                         <div className="mt-4 max-h-[400px] overflow-y-auto">
                             {selectedBranch?.sites && selectedBranch.sites.length > 0 ? (
                                 <Table>
