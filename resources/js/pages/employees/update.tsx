@@ -34,25 +34,14 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
     const [showPositionDropdown, setShowPositionDropdown] = useState(false);
 
     // Helper function to normalize status value
-    const normalizeStatus = (status: string): string => {
-        if (!status) return 'active';
-        
-        // Convert to lowercase and handle common variations
-        const normalized = status.toLowerCase().trim();
-        
-        // Check for active variations
-        if (normalized === 'active' || normalized === 'act' || normalized === '1' || normalized === 'true') {
-            return 'active';
-        }
-        
-        // Check for inactive variations
-        if (normalized === 'inactive' || normalized === 'inact' || normalized === '0' || normalized === 'false') {
-            return 'inactive';
-        }
-        
-        // Default to active if unknown
-        return 'active';
+    const getStatusFromDates = (start: string, end: string) => {
+        if (!start || !end) return '';
+        const today = new Date();
+        const startDate = new Date(start);
+        const endDate = new Date(end);
+        return (today >= startDate && today <= endDate) ? 'Active' : 'Inactive';
     };
+
 
     const { data, setData, put, processing, errors } = useForm({
         name: employee.user.name,
@@ -67,8 +56,13 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
         pay_frequency: employee.pay_frequency,
         employee_number: employee.employee_number,
         emergency_contact_number: employee.emergency_contact_number,
-        employee_status: normalizeStatus(employee.employee_status), // Normalize the status here
+        employee_status: employee.employee_status, // Normalize the status here
     });
+    useEffect(() => {
+        if (data.contract_start_date && data.contract_end_date) {
+            setData('employee_status', getStatusFromDates(data.contract_start_date, data.contract_end_date));
+        }
+    }, [data.contract_start_date, data.contract_end_date]);
 
     useEffect(() => {
         const selectedPos = positions?.find(p => p.id === parseInt(data.position_id));
@@ -269,19 +263,9 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
                                     </select>
                                     <InputError message={errors.pay_frequency} />
                                 </div>
-
                                 <div className="space-y-2">
                                     <Label htmlFor="employee_status">Status <span className="text-red-500">*</span></Label>
-                                    <select 
-                                        id="employee_status" 
-                                        value={data.employee_status || 'active'} 
-                                        onChange={e => setData('employee_status', e.target.value)} 
-                                        className="w-full h-10 px-3 rounded-md border border-input bg-background"
-                                    >
-                                        <option value="">Select a Status</option>
-                                        <option value="active">Active</option>
-                                        <option value="inactive">Inactive</option>
-                                    </select>
+                                    <Input id="employee_status" type="text" value={data.employee_status} onChange={e => setData('employee_status', e.target.value)} className="w-full h-10 px-3 rounded-md border border-input bg-background" readOnly placeholder="Employee Status" />
                                     <InputError message={errors.employee_status} />
                                 </div>
 

@@ -111,11 +111,7 @@ class EmployeeController extends Controller
             'employee' => $employee,
             'positions' => $positions,
             'branches' => $branches,
-<<<<<<< HEAD
-            'sites' => Site::with('branch')->get(['id', 'branch_id', 'site_name']),
-=======
             'site' => Site::with('branch')->get(),
->>>>>>> 3a7745a744ff303fc9e00f174d87560e9b0b6895
         ]);
     }
 

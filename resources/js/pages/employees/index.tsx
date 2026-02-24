@@ -18,6 +18,7 @@ interface Employee {
     id: number;
     position: {
         pos_name: string;
+        deleted_at: string;
     }
     branch: {
         branch_name: string;
@@ -54,7 +55,9 @@ export default function Index({ employees, positions, branches, sites }: PagePro
         branch: '',
         site: ''
     });
-
+    const hasValidPosition = (employee: Employee) => {
+        return employee.position && !employee.position.deleted_at;
+    }
     const handleDelete = (id: number) => {
         if (confirm("Are you sure you want to delete this employee?")) {
             destroy(EmmployeeController.destroy(id).url);
@@ -66,7 +69,7 @@ export default function Index({ employees, positions, branches, sites }: PagePro
             <Head title="Employees" />
             <div className="@container/main flex flex-1 flex-col gap-2">
                 <div className="flex justify-between items-center p-4">
- 
+
                     <Link href="/employees/create">
                         <Button size="sm">+ Create Employee</Button>
                     </Link>
@@ -92,17 +95,26 @@ export default function Index({ employees, positions, branches, sites }: PagePro
                                 <TableRow key={employee.id}>
                                     <TableCell>{employee.emp_code}</TableCell>
                                     <TableCell>{employee.user.name}</TableCell>
-                                    <TableCell>{employee.position.pos_name}</TableCell>
-                                    <TableCell>{employee.pay_frequency}</TableCell>
+                                    <TableCell>
+                                        {hasValidPosition(employee) ? (
+                                            employee.position.pos_name
+                                        ) : (
+                                            <span className="text-gray-400 italic">Not assigned</span>
+                                        )}
+                                    </TableCell>
+
+                                    <TableCell className="capitalize first-letter">
+                                        {employee.pay_frequency.replace('_', ' ')}
+                                    </TableCell>
+
                                     <TableCell>{employee.branch.branch_name}</TableCell>
                                     <TableCell>{employee.contract_start_date}</TableCell>
                                     <TableCell>{employee.contract_end_date}</TableCell>
                                     <TableCell>
-                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                            employee.employee_status === 'Active'
-                                                ? 'bg-green-100 text-green-800'
-                                                : 'bg-yellow-100 text-yellow-800'
-                                        }`}>
+                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${employee.employee_status === 'Active'
+                                            ? 'bg-green-100 text-green-800'
+                                            : 'bg-yellow-100 text-yellow-800'
+                                            }`}>
                                             {employee.employee_status}
                                         </span>
                                     </TableCell>
