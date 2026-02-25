@@ -24,6 +24,7 @@ interface Position {
     id: number;
     pos_name: string;
     basic_salary: number;
+    pos_slug: string;
 }
 
 interface PageProps {
@@ -37,7 +38,7 @@ export default function Update({ position }: PageProps) {
     })
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
-        put(`/positions/${position.id}`);
+        put(`/positions/${position.pos_slug}`);
     };
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
