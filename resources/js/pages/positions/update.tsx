@@ -21,6 +21,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 interface Position {
+    pos_slug: string;
     id: number;
     pos_name: string;
     basic_salary: number;

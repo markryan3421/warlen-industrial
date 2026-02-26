@@ -2,6 +2,13 @@
 
 namespace Database\Seeders;
 
+use App\Models\ApplicationLeave;
+use App\Models\Branch;
+use App\Models\ContributionBracket;
+use App\Models\ContributionVersion;
+use App\Models\Employee;
+use App\Models\Position;
+use App\Models\Site;
 use App\Models\User;
 use Database\Seeders\DeductionSeeder;
 use Database\Seeders\UserSeeder;

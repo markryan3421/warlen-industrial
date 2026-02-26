@@ -6,9 +6,12 @@ use App\Models\ContributionVersion;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class ContributionBracket extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'contribution_version_id',
         'salary_from',

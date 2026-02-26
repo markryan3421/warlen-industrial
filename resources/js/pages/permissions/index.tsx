@@ -190,19 +190,18 @@ export default function Index({ permissions }: IndexProps) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Category Management" />
             <CustomToast />
-            <div className="@container/main flex flex-1 flex-col gap-2">
+            {/* <div className="@container/main flex flex-1 flex-col gap-2">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mx-6 my-4 pb-4">
-                    {/* Chart Area - Full width on mobile, 2/3 on desktop */}
+                    
                     <div className="md:col-span-2 relative overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
                         <ChartAreaInteractive />
                     </div>
 
-                    {/* Pie Chart - Full width on mobile, 1/3 on desktop */}
                     <div className="md:col-span-1 relative overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
                         <CustomPieChart />
                     </div>
                 </div>
-            </div>
+            </div> */}
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
                 {/* Custom Modal Form */}
                 <div className="ml-auto">

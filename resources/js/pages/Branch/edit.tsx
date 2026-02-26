@@ -27,6 +27,7 @@ interface FormData {
 
 interface Props {
     branch: {
+        branch_slug: string;
         id: number;
         branch_name: string;
         branch_address: string;
