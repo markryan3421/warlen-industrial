@@ -27,6 +27,7 @@ interface FormData {
 
 interface Props {
     branch: {
+        branch_slug: string;
         id: number;
         branch_name: string;
         branch_address: string;
@@ -43,7 +44,7 @@ export default function Edit({ branch }: Props) {
 
     function submitBranch(e: React.FormEvent) {
         e.preventDefault();
-        put(`/branches/${branch.id}`); // Make sure this matches your route
+        put(`/branches/${branch.branch_slug}`); // Make sure this matches your route
     }
 
     const setSites = (sites: Array<{ id?: number; site_name: string }>) => {
