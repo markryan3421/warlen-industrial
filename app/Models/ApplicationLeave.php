@@ -15,7 +15,7 @@ class ApplicationLeave extends Model
         'leave_start',
         'leave_end',
         'reason_to_leave',
-        'is_approved',
+        'app_status',
         'remarks',
     ];
 
@@ -28,6 +28,13 @@ class ApplicationLeave extends Model
     public function employee()
     {
         return $this->belongsTo(Employee::class, 'employee_id');
+    }
+
+    protected function appStatus(): Attribute
+    {
+       return Attribute::make(
+            set: fn($value) => trim(strip_tags($value)),
+        );
     }
 
     protected function leaveStart(): Attribute

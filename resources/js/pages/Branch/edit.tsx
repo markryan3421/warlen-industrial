@@ -31,6 +31,7 @@ interface Props {
         id: number;
         branch_name: string;
         branch_address: string;
+        branch_slug: string;
         sites: Array<{ id: number; site_name: string }>;
     };
 }

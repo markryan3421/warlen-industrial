@@ -28,8 +28,6 @@ class CreateNewApplication
             'leave_start' => $data['leave_start'],
             'leave_end' => $data['leave_end'],
             'reason_to_leave' => $data['reason_to_leave'],
-            'is_approved' => false,
-            'remarks' => null,
         ]);
     }
 
