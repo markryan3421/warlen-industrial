@@ -39,7 +39,7 @@ class Position extends Model
     {
         return Attribute::make(
             get: fn($value) => Str::title($value),
-            set: fn($value) => strtolower(strip_tags($value)),
+            set: fn($value) => strtolower(trim(strip_tags($value))),
         );
     }
 

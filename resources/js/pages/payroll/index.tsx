@@ -2,7 +2,7 @@ import type { BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import PayrollProcessingCards from '@/components/payroll-processing-cards';
-import EmployeeTable from '@/components/employee-table'
+import EmployeePayrollTable from '@/components/employee-payroll-table'
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -10,6 +10,7 @@ const breadcrumbs: BreadcrumbItem[] = [
         href: '/payroll',
     },
 ];
+
 export default function Index () {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -18,7 +19,7 @@ export default function Index () {
             
                 <div className="my-4 relative flex-1 overflow-hidden rounded-xl border-sidebar-border/70 dark:border-sidebar-border mx-6">
                     <PayrollProcessingCards/>
-                    <EmployeeTable/>
+                    <EmployeePayrollTable/>
                 </div>
             </div>
         </AppLayout> 

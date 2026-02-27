@@ -50,6 +50,7 @@ class ApplicationLeaveController extends Controller
 
             return redirect()->route('application-leave.index')->with('success', 'Leave application submitted successfully.');
         } catch (\Exception $e) {
+            dd($e);
             DB::rollBack();
             return back()->with('error', 'An error occurred while submitting the leave application. Please try again.');
          
@@ -70,6 +71,7 @@ class ApplicationLeaveController extends Controller
      */
     public function edit(ApplicationLeave $applicationLeave)
     {
+         $applicationLeave->load('employee.user');
         return Inertia::render('ApplicationLeave/edit', [
             'applicationLeave' => $applicationLeave,
         ]);
@@ -93,6 +95,7 @@ class ApplicationLeaveController extends Controller
 
             return redirect()->route('application-leave.index')->with('success', 'Leave application updated successfully.');
         } catch (\Exception $e) {
+            dd($e);
             DB::rollBack();
             return back()->with('error', 'An error occurred while updating the leave application. Please try again.');
         }

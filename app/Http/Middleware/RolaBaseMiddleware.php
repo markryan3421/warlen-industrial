@@ -25,7 +25,7 @@ class RolaBaseMiddleware
         $user = Auth::user();
 
         // Admin should not access employee routes and hr head routes
-        if ($user->hasRole('admin') && ($request->routeIs('employee.dashboard', 'hr.dashboard'))) {
+        if ($user->hasRole('admin') && ($request->routeIs('employee.dashboard', 'hr.dashboard', 'employee.application-leave.*'))) {
             // return redirect()->intended(route('dashboard'));
             abort(401);
         }

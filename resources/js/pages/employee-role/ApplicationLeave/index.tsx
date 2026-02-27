@@ -1,8 +1,8 @@
-import AppLayout from '@/layouts/app-layout';
+import AppLayout from '@/layouts/emp-layout';
 import { Button } from "@/components/ui/button";
 import { type BreadcrumbItem, type BranchWithSites } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/react';
-import ApplicationLeaveController from "@/actions/App/Http/Controllers/ApplicationLeaveController";
+import ApplicationLeaveController from '@/actions/App/Http/Controllers/EmployeeRole/ApplicationLeaveController';
 import { useState } from 'react';
 import { CalendarDays, PlusCircle } from 'lucide-react';
 
@@ -36,14 +36,6 @@ interface ApplicationLeaveProps {
 }
 
 export default function Index({ applicationLeaves }: ApplicationLeaveProps) {
-    const { delete: destroy } = useForm();
-   
-
-    const handleDelete = (slug_app: string) => {
-        if (confirm("Are you sure you want to delete this application leave?")) {
-            destroy(ApplicationLeaveController.destroy(slug_app).url);
-        }
-    }
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -77,7 +69,7 @@ export default function Index({ applicationLeaves }: ApplicationLeaveProps) {
                             <TableCaption>A list of your Application Leaves.</TableCaption>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Employee name</TableHead>
+                                    {/* <TableHead>Employee name</TableHead> */}
                                     <TableHead>Leave Start</TableHead>
                                     <TableHead>Leave End</TableHead>
                                     <TableHead>Is approved</TableHead>
@@ -87,7 +79,7 @@ export default function Index({ applicationLeaves }: ApplicationLeaveProps) {
                             <TableBody>
                                 {applicationLeaves.map((applicationLeave) => (
                                     <TableRow key={applicationLeave.id}>
-                                        <TableCell className="font-medium">{applicationLeave.employee.user.name}</TableCell>
+                                        {/* <TableCell className="font-medium">{applicationLeave.employee.user.name}</TableCell> */}
                                         <TableCell>{applicationLeave.leave_start}</TableCell>
                                         <TableCell>{applicationLeave.leave_end}</TableCell>
                                        <TableCell>
@@ -110,13 +102,7 @@ export default function Index({ applicationLeaves }: ApplicationLeaveProps) {
                                             >
                                                 Edit
                                             </Link>
-                                            <Button 
-                                                variant="destructive" 
-                                                size="sm"
-                                                onClick={() => handleDelete(applicationLeave.slug_app)}
-                                            >
-                                                Delete
-                                            </Button>
+                            
                                         </TableCell>
                                     </TableRow>
                                 ))}

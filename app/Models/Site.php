@@ -38,7 +38,7 @@ class Site extends Model
     {
         return Attribute::make(
             get: fn($value) => Str::upper($value),
-            set: fn($value) => Str::lower(strip_tags($value)),
+            set: fn($value) => Str::lower(trim(strip_tags($value))),
         );
     }
 

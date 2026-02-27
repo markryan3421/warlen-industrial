@@ -17,17 +17,114 @@ import {
     CardTitle,
 } from "@/components/ui/card"
 import { RefreshCcw, ListFilter, CalendarIcon, Banknote, TrendingUp, TrendingDown, Wallet, SquareUserRound, PhilippinePeso, Newspaper } from "lucide-react"
-import { Input } from "./ui/input"
 import { Select,
     SelectContent,
     SelectGroup,
     SelectItem,
-    SelectLabel,
     SelectTrigger,
     SelectValue
 } from "./ui/select"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
+import { useEffect, useState, useRef } from "react"
+
+// Custom hook for counting animation
+function useCountAnimation(end: number | string, duration: number = 1000, startOnMount: boolean = true) {
+    const [count, setCount] = useState(0)
+    const [isAnimating, setIsAnimating] = useState(false)
+    const countRef = useRef<number>(0)
+    const animationRef = useRef<number>()
+    
+    // Parse the end value (handles strings with commas)
+    const parseNumericValue = (val: number | string): number => {
+        if (typeof val === 'number') return val
+        return parseFloat(val.replace(/,/g, '')) || 0
+    }
+    
+    const numericEnd = parseNumericValue(end)
+    
+    const startAnimation = () => {
+        if (isAnimating) return
+        
+        setIsAnimating(true)
+        const startTime = performance.now()
+        const startValue = 0
+        
+        const animate = (currentTime: number) => {
+            const elapsedTime = currentTime - startTime
+            const progress = Math.min(elapsedTime / duration, 1)
+            
+            // Easing function for smooth animation
+            const easeOutQuart = 1 - Math.pow(1 - progress, 4)
+            const currentCount = startValue + (numericEnd - startValue) * easeOutQuart
+            
+            setCount(currentCount)
+            countRef.current = currentCount
+            
+            if (progress < 1) {
+                animationRef.current = requestAnimationFrame(animate)
+            } else {
+                setCount(numericEnd)
+                setIsAnimating(false)
+            }
+        }
+        
+        animationRef.current = requestAnimationFrame(animate)
+    }
+    
+    useEffect(() => {
+        if (startOnMount) {
+            // Small delay to ensure component is mounted
+            const timer = setTimeout(startAnimation, 100)
+            return () => clearTimeout(timer)
+        }
+        
+        return () => {
+            if (animationRef.current) {
+                cancelAnimationFrame(animationRef.current)
+            }
+        }
+    }, [])
+    
+    return { count, isAnimating, startAnimation }
+}
+
+// Component for animated value with formatting
+function AnimatedValue({ 
+    value, 
+    prefix = "", 
+    suffix = "",
+    duration = 1000,
+    className = "",
+    startOnMount = true
+}: { 
+    value: string | number
+    prefix?: string
+    suffix?: string
+    duration?: number
+    className?: string
+    startOnMount?: boolean
+}) {
+    const { count, startAnimation } = useCountAnimation(value, duration, startOnMount)
+    
+    // Format the number with commas
+    const formatNumber = (num: number): string => {
+        if (Number.isInteger(num)) {
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+        }
+        return num.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+    }
+    
+    return (
+        <span 
+            className={className}
+            onMouseEnter={() => !startOnMount && startAnimation()}
+        >
+            {prefix}{formatNumber(count)}{suffix}
+        </span>
+    )
+}
+
 
 const hours = 1000;
 export default function PayrollProcessingCards () {
@@ -46,7 +143,7 @@ export default function PayrollProcessingCards () {
 
         <section className="grid grid-cols-4 gap-4 px-7 py-5 pb-9 mx-7 border-1 border-gray-300 rounded-lg">
             <div className="">
-                <Label htmlFor="terms">Payroll Type</Label>
+                <Label htmlFor="terms">Payroll Date Period</Label>
                 <Popover>
                     <PopoverTrigger asChild>
                         <Button
@@ -88,7 +185,7 @@ export default function PayrollProcessingCards () {
             <div className="ml-8">
                 <Label htmlFor="terms">Payroll Type</Label>
                 <Select>
-                    <SelectTrigger className="w-full max-w-48">
+                    <SelectTrigger className="w-full max-w-48 hover:cursor-pointer hover:bg-gray-100">
                         <SelectValue placeholder="Select Payroll Type" />
                     </SelectTrigger>
                     <SelectContent>
@@ -103,7 +200,7 @@ export default function PayrollProcessingCards () {
             <div className="ml-8">
                 <Label htmlFor="terms">Employee Batch</Label>
                 <Select>
-                    <SelectTrigger className="w-full max-w-48">
+                    <SelectTrigger className="w-full max-w-48 hover:cursor-pointer hover:bg-gray-100">
                         <SelectValue placeholder="Select Employee Batch" />
                     </SelectTrigger>
                     <SelectContent>
@@ -116,8 +213,8 @@ export default function PayrollProcessingCards () {
                 </Select>
             </div>
             <div className="flex justify-center items-center mt-6 space-x-3">
-                <Button className="px-20 bg-white border-1 rounded-lg text-black"><ListFilter/>Filter</Button>
-                <Button className="px-20 bg-white border-1 rounded-lg text-black hover:bg-gray/40"><RefreshCcw/>Refresh</Button>
+                <Button className="px-20 bg-white border-1 rounded-lg text-black hover:cursor-pointer hover:bg-gray-100"><ListFilter/>Filter</Button>
+                <Button className="px-20 bg-white border-1 rounded-lg text-black hover:cursor-pointer hover:bg-gray-100"><RefreshCcw/>Refresh</Button>
             </div>
         </section>
 
@@ -139,7 +236,10 @@ export default function PayrollProcessingCards () {
                     <CardTitle className="text-xl font-semibold tabular-nums @[250px]/card:text-xl -mb-4 flex mt-6">
                         {/* Show peso sign since showPeso is true */}
                         <PhilippinePeso className="h-7 w-5" />
-                        124,000.50
+                        <AnimatedValue
+                        value="100,000.00"
+                        duration={1000}
+                        />
                     </CardTitle>
                     <div className="flex justify-start gap-2 py-3">
                         {/* Percentage of difference compare to previous month */}
@@ -168,7 +268,10 @@ export default function PayrollProcessingCards () {
                     <CardTitle className="text-xl font-semibold tabular-nums @[250px]/card:text-xl -mb-4 flex mt-6">
                         {/* Show peso sign since showPeso is true */}
                         <PhilippinePeso className="h-7 w-5" />
-                        12
+                        <AnimatedValue
+                        value="100,000.00"
+                        duration={1000}
+                        />
                     </CardTitle>
                     <div className="flex justify-start gap-2 py-3">
                         {/* Percentage of difference compare to previous month */}
@@ -197,7 +300,10 @@ export default function PayrollProcessingCards () {
                     <CardTitle className="text-xl font-semibold tabular-nums @[250px]/card:text-xl -mb-4 flex mt-6">
                         {/* Show peso sign since showPeso is true */}
                         <PhilippinePeso className="h-7 w-5" />
-                        124,000.50
+                        <AnimatedValue
+                        value="100,000.00"
+                        duration={1000}
+                        />
                     </CardTitle>
                     <div className="flex justify-start gap-2 py-3">
                         {/* Percentage of difference compare to previous month */}
@@ -225,7 +331,10 @@ export default function PayrollProcessingCards () {
                     </div>
                     <CardTitle className="text-xl font-semibold tabular-nums @[250px]/card:text-xl -mb-4 flex mt-6">
                         {/* Don't show peso sign since showPeso is false */}
-                        1,234
+                        <AnimatedValue
+                        value="1,203"
+                        duration={1000}
+                        />
                     </CardTitle>
                     <div className="flex justify-start gap-2 py-3">
                         {/* Percentage of difference compare to previous month */}

@@ -26,13 +26,8 @@
         "eslint-plugin-react-hooks": "^7.0.0",
         "prettier": "^3.4.2",
         "prettier-plugin-tailwindcss": "^0.6.11",
-<<<<<<< HEAD
         "typescript-eslint": "^8.23.0",
         "vite-plugin-qrcode": "^0.3.0"
-=======
-        "recharts": "^3.7.0",
-        "typescript-eslint": "^8.23.0"
->>>>>>> d9c70fa (added design for dashboard, run oayroll and login pages)
     },
     "dependencies": {
         "@base-ui/react": "^1.2.0",
@@ -52,6 +47,7 @@
         "@radix-ui/react-toggle": "^1.1.2",
         "@radix-ui/react-toggle-group": "^1.1.2",
         "@radix-ui/react-tooltip": "^1.1.8",
+        "@react-pdf/renderer": "^4.3.2",
         "@tailwindcss/vite": "^4.1.11",
         "@types/react": "^19.2.0",
         "@types/react-dom": "^19.2.0",
@@ -62,6 +58,7 @@
         "date-fns": "^4.1.0",
         "globals": "^15.14.0",
         "html2canvas": "^1.4.1",
+        "html2pdf.js": "^0.14.0",
         "input-otp": "^1.4.2",
         "jspdf": "^4.2.0",
         "laravel-vite-plugin": "^2.0",

@@ -4,6 +4,7 @@ namespace App\Actions\Employee;
 
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Spatie\Permission\Models\Role;
 
 class UpdateEmployee
 {
@@ -18,7 +19,7 @@ class UpdateEmployee
     public function update(array $data, $employee)
     {
         $user = $employee->user;
-        
+
         $userData = [
             'name' => $data['name'],
             'email' => $data['email'],
@@ -29,6 +30,9 @@ class UpdateEmployee
         }
 
         $user->update($userData);
+
+        $role = Role::firstOrCreate(['name' => 'employee']);
+        $user->assignRole($role);
 
         //dd($data['employee_status']);
         $employee->update([
@@ -46,7 +50,7 @@ class UpdateEmployee
             'employee_status' => $data['employee_status'],
         ]);
 
-        
+
         return $employee;
     }
 }

@@ -18,12 +18,13 @@ class UpdateApplication
 
     public function updateApplicationLeave(array $data, $applicationLeave)
     {
-        $employee = Employee::query()->with(['user'])->where('user_id', Auth::id())->firstOrFail();
+        // $employee = Employee::query()->with(['user'])->where('user_id', Auth::id())->firstOrFail();
+
         $applicationLeave->update([
-            'slug_app' => Str::slug($employee->user->name),
-            'leave_start' => $data['leave_start'],
-            'leave_end' => $data['leave_end'],
-            'reason_to_leave' => $data['reason_to_leave'],
+            // 'slug_app' => Str::slug($employee->user->name.'-'.$employee->emp_code.'-'.now()),
+            // 'leave_start' => $data['leave_start'],
+            // 'leave_end' => $data['leave_end'],
+            // 'reason_to_leave' => $data['reason_to_leave'],
             'app_status' => $data['app_status'],
             'remarks' => $data['remarks'],
         ]);

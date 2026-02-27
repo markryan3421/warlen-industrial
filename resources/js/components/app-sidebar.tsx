@@ -1,7 +1,6 @@
 import { Link } from '@inertiajs/react';
-import { Airplay, CircleMinus, CircleUser, Flag, Landmark, Lock, UserCog, Clipboard } from 'lucide-react';
+import { Airplay, CircleMinus, CircleUser, Flag, Landmark, Lock, UserCog, Clipboard, Banknote } from 'lucide-react';
 import BranchController from '@/actions/App/Http/Controllers/BranchController';
-import PositionController from '@/actions/App/Http/Controllers/PositionController';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -44,7 +43,11 @@ const ExpendituresItems: NavItem[] = [
 ];
 
 const AccessControlItems: NavItem[] = [
-
+    {
+        title: 'Run Payroll',
+        href: '/payroll',
+        icon: Banknote,
+    },
     {
         title: 'Employees',
         href: '/employees',
@@ -82,7 +85,7 @@ const footerNavItems: NavItem[] = [
 
 export function AppSidebar() {
     return (
-        <Sidebar collapsible="icon" variant="inset" className ="border-r-1 border-gray-400">
+        <Sidebar collapsible="icon"  className ="border-r-1 border-gray-400">
             <SidebarHeader>
                 <SidebarMenu>
                     <SidebarMenuItem>
@@ -101,8 +104,8 @@ export function AppSidebar() {
             </SidebarContent>
 
             <SidebarFooter>
-                <NavFooter items={footerNavItems} className="mt-auto" />
-                <NavUser />
+                <NavFooter items={footerNavItems}/>
+                <NavUser/>
             </SidebarFooter>
         </Sidebar>
     );

@@ -35,7 +35,7 @@ import { dashboard } from '@/routes';
 import type { BreadcrumbItem, NavItem } from '@/types';
 import AppLogo from './app-logo';
 import AppLogoIcon from './app-logo-icon';
-import ApplicationLeaveController from '@/actions/App/Http/Controllers/ApplicationLeaveController';
+import ApplicationLeaveController from  '@/actions/App/Http/Controllers/EmployeeRole/ApplicationLeaveController';
 
 type Props = {
     breadcrumbs?: BreadcrumbItem[];
