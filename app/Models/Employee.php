@@ -61,9 +61,14 @@ class Employee extends Model
         return $this->belongsTo(Site::class, 'site_id');
     }
 
-    public function attendances(): HasMany
+    // public function attendances(): HasMany
+    // {
+    //     return $this->hasMany(Attendance::class, 'employee_id');
+    // }
+
+    public function payrolls(): HasMany
     {
-        return $this->hasMany(Attendance::class, 'employee_id');
+        return $this->hasMany(Payroll::class, 'employee_id');
     }
 
 

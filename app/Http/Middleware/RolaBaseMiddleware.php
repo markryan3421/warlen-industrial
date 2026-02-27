@@ -58,7 +58,8 @@ class RolaBaseMiddleware
                 'positions.*',
                 'employees.*',
                 'permissions.*',
-                'contribution-versions.*'
+                'contribution-versions.*',
+                'employee.application-leave.*'
             )
         ) {
             // return redirect()->intended(route('hr.dashboard'));

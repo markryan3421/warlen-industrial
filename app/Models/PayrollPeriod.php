@@ -1,0 +1,27 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+class PayrollPeriod extends Model
+{
+    protected $fillable = [
+        'start_date',
+        'end_date',
+        'pay_date',
+        'payroll_per_status',
+    ];
+
+    protected $casts = [
+        'start_date' => 'date',
+        'end_date' => 'date',
+        'pay_date' => 'date'
+    ];
+
+    public function payrolls(): HasMany
+    {
+        return $this->hasMany(Payroll::class, 'payroll_period_id');
+    }
+}

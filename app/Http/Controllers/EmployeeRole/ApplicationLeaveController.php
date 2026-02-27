@@ -16,13 +16,15 @@ class ApplicationLeaveController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(CreateNewApplication $action)
     {
         $applicationLeaves = ApplicationLeave::whereHas('employee', function ($query) {
             $query->where('user_id', auth()->id());
         })->latest()->get();
 
-        return Inertia::render('employee-role/ApplicationLeave/index', compact('applicationLeaves'));
+        $approvedCount = $action->approvedLimit();
+
+        return Inertia::render('employee-role/ApplicationLeave/index', compact('applicationLeaves', 'approvedCount'));
     }
 
     /**
@@ -36,7 +38,7 @@ class ApplicationLeaveController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StoreApplicationLeaveRequest $request, CreateNewApplication $createNewApplication)
+    public function store(StoreApplicationLeaveRequest $request, CreateNewApplication $action)
     {
         if ($this->limit('create-application-leave:' . auth()->id(), 60, 20)) {
             return back()->with('error', 'Too many attempts. Please try again later.');
@@ -45,7 +47,15 @@ class ApplicationLeaveController extends Controller
         try {
             $validatedData = $request->validated();
 
-            $createNewApplication->createNewApplicationLeave($validatedData);
+            // Check if user has reached the limit of 5 approved leaves for the current year
+            $approvedLeavesCount = $action->approvedLimit();
+
+            if ($approvedLeavesCount >= 5) {
+                DB::rollBack();
+                return back()->with('error', 'You have reached the maximum limit of 5 approved leaves for this year.');
+            }
+
+            $action->createNewApplicationLeave($validatedData);
 
             DB::commit();
 
