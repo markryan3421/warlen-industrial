@@ -24,7 +24,7 @@ class CreateNewApplication
 
         ApplicationLeave::create([
             'employee_id' => $this->getEmployeeId(),
-            'slug_app' => Str::slug($employee->user->name),
+            'slug_app' => Str::slug($employee->user->name.'-'.$employee->emp_code.'-'.now()),
             'leave_start' => $data['leave_start'],
             'leave_end' => $data['leave_end'],
             'reason_to_leave' => $data['reason_to_leave'],

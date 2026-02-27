@@ -9,6 +9,7 @@ import type { BreadcrumbItem } from '@/types';
 import EmmployeeController from '@/actions/App/Http/Controllers/EmployeeController';
 import { Tab } from '@headlessui/react';
 import { Users, PlusCircle } from 'lucide-react';
+import { toast } from "sonner"
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -62,12 +63,12 @@ export default function Index({ employees, positions, branches, sites }: PagePro
     const hasValidPosition = (employee: Employee) => {
         return employee.position && !employee.position.deleted_at;
     }
-    const handleDelete = (id: number) => {
+    const handleDelete = (slug:string) => {
         if (confirm("Are you sure you want to delete this employee?")) {
-            destroy(EmmployeeController.destroy(id).url);
+            destroy(EmmployeeController.destroy(slug).url);
         }
     }
-
+    
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Employees" />
@@ -154,7 +155,7 @@ export default function Index({ employees, positions, branches, sites }: PagePro
                                                 <Link href={EmmployeeController.edit(employee.slug_emp)}>
                                                     <Button variant="outline" size="sm">Edit</Button>
                                                 </Link>
-                                                <Button size="sm" variant="destructive" onClick={() => handleDelete(employee.id)}>
+                                                <Button size="sm" variant="destructive" onClick={() => handleDelete(employee.slug_emp)}>
                                                     Delete
                                                 </Button>
                                             </div>
