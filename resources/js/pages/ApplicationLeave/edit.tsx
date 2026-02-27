@@ -25,7 +25,7 @@ interface FormData {
     leave_start: string;
     leave_end: string;
     reason_to_leave: string;
-    is_approved: boolean;
+    app_status: string;
     remarks: string;
 }
 
@@ -35,8 +35,9 @@ interface EditProps {
         leave_start: string;
         leave_end: string;
         reason_to_leave: string;
-        is_approved: boolean;
+        app_status: string;
         remarks: string;
+        slug_app: string;
     };
 }
 
@@ -45,15 +46,15 @@ export default function Edit({ applicationLeave }: EditProps) {
         leave_start: applicationLeave.leave_start || '',
         leave_end: applicationLeave.leave_end || '',
         reason_to_leave: applicationLeave.reason_to_leave || '',
-        is_approved: applicationLeave.is_approved,
+        app_status: applicationLeave.app_status || '',
         remarks: applicationLeave.remarks || '',
     });
 
     // Transform the data before submission to ensure is_approved is properly formatted
-    transform((formData) => ({
-        ...formData,
-        is_approved: formData.is_approved ? 1 : 0, // Convert boolean to integer for backend
-    }));
+    // transform((formData) => ({
+    //     ...formData,
+    //     is_approved: formData.is_approved ? 1 : 0, // Convert boolean to integer for backend
+    // }));
 
     function submitApplication(e: React.FormEvent) {
         e.preventDefault();
@@ -61,9 +62,9 @@ export default function Edit({ applicationLeave }: EditProps) {
     }
 
     // Handle checkbox change explicitly
-    const handleApprovedChange = (checked: boolean | 'indeterminate') => {
-        setData('is_approved', checked === true);
-    };
+    // const handleApprovedChange = (checked: boolean | 'indeterminate') => {
+    //     setData('is_approved', checked === true);
+    // };
 
     // Get today's date in YYYY-MM-DD format for min attribute
     const today = new Date().toISOString().split('T')[0];
@@ -132,21 +133,16 @@ export default function Edit({ applicationLeave }: EditProps) {
                                 {/* Approval Status Section */}
                                 <div className="border-t pt-4 mt-4">
                                     <CardTitle className="text-lg mb-4">Approval Information</CardTitle>
-                                    
-                                    <div className="flex items-center space-x-2 mb-4">
-                                        <Checkbox
-                                            id="is_approved"
-                                            checked={data.is_approved}
-                                            onCheckedChange={handleApprovedChange}
-                                        />
-                                        <Label 
-                                            htmlFor="is_approved" 
-                                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                                        >
-                                            Approved
-                                        </Label>
+                                    <div className="space-y-2 w-1/2">
+                                        <Label htmlFor="pay_frequency">Application Leave Status<span className="text-red-500">*</span></Label>
+                                        <select id="pay_frequency" value={data.app_status} onChange={e => setData('app_status', e.target.value)} className="w-full h-10 px-3 rounded-md border border-input bg-background">
+                                            <option value="">Select a Status</option>
+                                            <option value="pending">Pending</option>
+                                            <option value="approved">Approved</option>
+                                            <option value="rejected">Rejected</option>
+                                        </select>
+                                        <InputError message={errors.app_status} />
                                     </div>
-                                    <InputError message={errors.is_approved} />
 
                                     <div className="mt-4">
                                         <label className="text-sm font-medium mb-2 block">
