@@ -16,7 +16,7 @@ export function Breadcrumbs({
     breadcrumbs: BreadcrumbItemType[];
 }) {
     return (
-        <>
+        <div className="flex items-center justify-between lg:w-[1180px] w-full transition-all duration-200">
             {breadcrumbs.length > 0 && (
                 <Breadcrumb>
                     <BreadcrumbList>
@@ -26,7 +26,7 @@ export function Breadcrumbs({
                                 <Fragment key={index}>
                                     <BreadcrumbItem>
                                         {isLast ? (
-                                            <BreadcrumbPage>
+                                            <BreadcrumbPage className="font-medium">
                                                 {item.title}
                                             </BreadcrumbPage>
                                         ) : (
@@ -37,13 +37,13 @@ export function Breadcrumbs({
                                             </BreadcrumbLink>
                                         )}
                                     </BreadcrumbItem>
-                                    {!isLast && <BreadcrumbSeparator />}
+                                    {!isLast && <BreadcrumbSeparator />}    
                                 </Fragment>
                             );
                         })}
                     </BreadcrumbList>
                 </Breadcrumb>
             )}
-        </>
+        </div>
     );
 }

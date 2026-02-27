@@ -20,7 +20,7 @@ import AppLogo from './app-logo';
 import ContributionController from '@/actions/App/Http/Controllers/ContributionVersionController';
 import ApplicationLeaveController from '@/actions/App/Http/Controllers/ApplicationLeaveController';
 
-const FinanceItems: NavItem[] = [
+const ExpendituresItems: NavItem[] = [
     {
         title: 'Dashboard',
         href: '/dashboard',
@@ -82,13 +82,13 @@ const footerNavItems: NavItem[] = [
 
 export function AppSidebar() {
     return (
-        <Sidebar collapsible="icon" variant="inset">
+        <Sidebar collapsible="icon" variant="inset" className ="border-r-1 border-gray-400">
             <SidebarHeader>
                 <SidebarMenu>
                     <SidebarMenuItem>
-                        <SidebarMenuButton size="lg" asChild>
-                            <Link href={dashboard()} prefetch>
-                                <AppLogo />
+                        <SidebarMenuButton className='py-10' asChild>
+                            <Link href={dashboard()} prefetch className='h-8 w-8 '>
+                                <AppLogo/>
                             </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -96,7 +96,7 @@ export function AppSidebar() {
             </SidebarHeader>
 
             <SidebarContent>
-                <NavMain label='Finance' items={FinanceItems} />
+                <NavMain label='Expenditures' items={ExpendituresItems} />
                 <NavMain label='Access Control' items={AccessControlItems} />
             </SidebarContent>
 

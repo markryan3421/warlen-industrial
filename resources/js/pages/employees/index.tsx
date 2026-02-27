@@ -1,14 +1,49 @@
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
+<<<<<<< HEAD
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { CustomPieChart } from '@/components/custom-pie-chart';
 import { ChartAreaInteractive } from '@/components/section-chart';
+=======
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from '@/components/ui/table';
+>>>>>>> d9c70fa (added design for dashboard, run oayroll and login pages)
 import AppLayout from '@/layouts/app-layout';
 import { useState, useMemo } from 'react';
 import type { BreadcrumbItem } from '@/types';
 import EmmployeeController from '@/actions/App/Http/Controllers/EmployeeController';
+<<<<<<< HEAD
 import { Tab } from '@headlessui/react';
 import { Users, PlusCircle } from 'lucide-react';
+=======
+import { MoreHorizontalIcon, Plus } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+    Pagination,
+    PaginationContent,
+    PaginationEllipsis,
+    PaginationItem,
+    PaginationLink,
+    PaginationNext,
+    PaginationPrevious,
+} from "@/components/ui/pagination"
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@/components/ui/combobox"
+import PageHeader from '@/components/page-header';
+>>>>>>> d9c70fa (added design for dashboard, run oayroll and login pages)
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -71,7 +106,9 @@ export default function Index({ employees, positions, branches, sites }: PagePro
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Employees" />
+            <PageHeader />
             <div className="@container/main flex flex-1 flex-col gap-2">
+<<<<<<< HEAD
                 <div className="@container/main flex flex-1 flex-col gap-2">
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mx-6 my-4 pb-4">
                                     {/* Chart Area - Full width on mobile, 2/3 on desktop */}
@@ -87,10 +124,74 @@ export default function Index({ employees, positions, branches, sites }: PagePro
                             </div>
                 <div className="flex justify-between items-center p-4">
                     <h1 className="text-2xl font-bold">Employees</h1>
+=======
+                <div className="flex justify-between items-center p-4 px-10">
+                    <div className="flex gap-2 flex-wrap">
+                        <Combobox>
+                        <ComboboxInput placeholder="All Departments" onChange={(e) => setFilters({...filters, department: e.target.value})}/>
+                        <ComboboxContent>
+                            <ComboboxList>
+                            {departments.length === 0 ? (
+                                <ComboboxEmpty>No departments found</ComboboxEmpty>
+                            ) : (
+                                departments.map(d => <ComboboxItem key={d} value={d}>{d}</ComboboxItem>)
+                            )}
+                            </ComboboxList>
+                        </ComboboxContent>
+                        </Combobox> 
+                        <select     
+                            className="border rounded px-3 py-1"
+                            value={filters.department}
+                            onChange={(e) => setFilters({...filters, department: e.target.value})}
+                        >
+                            <option value="">All Departments</option>
+                            
+                        </select>
+
+                        <select 
+                            className="border rounded px-3 py-1"
+                            value={filters.position}
+                            onChange={(e) => setFilters({...filters, position: e.target.value})}
+                        >
+                            <option value="">All Positions</option>
+                            {positions.map(p => <option key={p} value={p}>{p}</option>)}
+                        </select>
+                        
+                        <select 
+                            className="border rounded px-3 py-1"
+                            value={filters.branch}
+                            onChange={(e) => setFilters({...filters, branch: e.target.value, site: ''})}
+                        >
+                            <option value="">All Branches</option>
+                            {branches.map(b => <option key={b} value={b}>{b}</option>)}
+                        </select>
+
+                        {filters.branch && sites.length > 0 && (
+                            <select 
+                                className="border rounded px-3 py-1"
+                                value={filters.site}
+                                onChange={(e) => setFilters({...filters, site: e.target.value})}
+                            >
+                                <option value="">All Sites</option>
+                                {sites.map(s => <option key={s} value={s}>{s}</option>)}
+                            </select>
+                        )}
+
+                        <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => setFilters({department: '', position: '', branch: '', site: ''})}
+                        >
+                            Clear
+                        </Button>
+                    </div>
+
+>>>>>>> d9c70fa (added design for dashboard, run oayroll and login pages)
                     <Link href="/employees/create">
-                        <Button size="sm">+ Create Employee</Button>
+                        <Button size="sm"><Plus/> Create Employee</Button>
                     </Link>
                 </div>
+<<<<<<< HEAD
 
                 <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
                     {employees.length === 0 ? (
@@ -164,6 +265,105 @@ export default function Index({ employees, positions, branches, sites }: PagePro
                             </TableBody>
                         </Table>
                     )}
+=======
+                
+                <div className="flex flex-col gap-4 overflow-hidden rounded-lg border-1 mx-10 border-gray-200">
+                    <Table>
+                        <TableHeader className='bg-gray-50'>
+                            <TableRow>
+                                <TableHead>Emp ID</TableHead>
+                                <TableHead>Employee Name</TableHead>
+                                <TableHead>Position</TableHead>
+                                <TableHead>Department</TableHead>
+                                <TableHead>Branch</TableHead>
+                                <TableHead>Employee Number</TableHead>
+                                <TableHead>Emergency Contact</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead>Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {filteredEmployees.map((employee) => (
+                                <TableRow key={employee.id}>
+                                    <TableCell>EMP-{employee.id}</TableCell>
+                                    <TableCell>{employee.user.name}</TableCell>
+                                    <TableCell>{employee.position.pos_name}</TableCell>
+                                    <TableCell>{employee.department}</TableCell>
+                                    <TableCell>
+                                        {employee.branch.branch_name}
+
+                                    </TableCell>
+                                    
+                                    <TableCell>{employee.employee_number}</TableCell>
+                                    <TableCell>{employee.emergency_contact_number}</TableCell>
+                                    <TableCell>
+                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                            employee.employee_status === 'Active'
+                                                ? 'bg-green-100 text-green-800'
+                                                : 'bg-yellow-100 text-yellow-800'
+                                        }`}>
+                                            {employee.employee_status}
+                                        </span>
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="flex justify-center">
+                                            <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" size="icon">
+                                                <MoreHorizontalIcon />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent>                                               
+                                                <DropdownMenuItem>
+                                                    <Link href={EmmployeeController.edit(employee.id)}>
+                                                    Edit
+                                                    </Link>
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem>
+                                                    <Link onClick = {() => handleDelete(employee.id)} className="text-red-600">
+                                                    Delete
+                                                    </Link>
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                    <div className='py-3 flex justify-between border-t-1 -mt-4'>
+                        <div>
+                            <span className='ml-3 text-xs'>Showing {filteredEmployees.length} of {employees.length}</span>
+                        </div>
+                        <div>
+                        <Pagination className='mr-3'>
+                            <PaginationContent>
+                                <PaginationItem>
+                                <PaginationPrevious href="#" />
+                                </PaginationItem>
+                                <PaginationItem>
+                                <PaginationLink href="#">1</PaginationLink>
+                                </PaginationItem>
+                                <PaginationItem>
+                                <PaginationLink href="#" isActive>
+                                    2
+                                </PaginationLink>
+                                </PaginationItem>
+                                <PaginationItem>
+                                <PaginationLink href="#">3</PaginationLink>
+                                </PaginationItem>
+                                <PaginationItem>
+                                <PaginationEllipsis />
+                                </PaginationItem>
+                                <PaginationItem>
+                                <PaginationNext href="#" />
+                                </PaginationItem>
+                            </PaginationContent>
+                        </Pagination>
+                        </div>
+                    </div>
+>>>>>>> d9c70fa (added design for dashboard, run oayroll and login pages)
                 </div>
             </div>
         </AppLayout>

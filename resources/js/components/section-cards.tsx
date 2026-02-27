@@ -1,4 +1,4 @@
-import { TrendingDown, TrendingUp, Users } from "lucide-react"
+import { TrendingDown, TrendingUp, Users, PhilippinePeso, Inbox, UsersRound, CalendarClock, HandCoins, MoveUpRight } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import {
     Card,
@@ -7,7 +7,44 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card"
+import { Button } from "@headlessui/react"
+import { Link } from "@inertiajs/react"
+import { title } from "process"
 
+const cardItems = [
+    {
+        title: "Total Revenue",
+        symbol: {type: "icon", value: PhilippinePeso},
+        value: "124,000.50",
+        badge: "+12.5%",
+        footer: "Last Month",
+        icon: TrendingUp
+    },
+    {
+        title: "Anomalies",
+        symbol: {type: "icon", value: Inbox},
+        value: "12",
+        badge: "+12.5%",
+        footer: "Approvals",
+        icon: TrendingUp
+    },
+    {
+        title: "Pending Actions",
+        symbol: {type: "icon", value: CalendarClock},
+        value: "124,000.50",
+        badge: "+12.5%",
+        footer: "Last Month",
+        icon: TrendingUp
+    },
+    {
+        title: "Total Employees",
+        symbol: {type: "icon", value: UsersRound},
+        value: "1,234",
+        badge: "+12.5%",
+        footer: "Newly Hires",
+        icon: TrendingUp
+    }
+]
 export function SectionCards() {
     return (
         <div className="grid grid-cols-1 gap-6 px-4 lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
@@ -70,6 +107,13 @@ export function SectionCards() {
                         </Badge>
                         <span className="text-xs text-gray-500 dark:text-gray-400">vs last month</span>
                     </div>
+
+                        <Button className='py-2 flex justify-center items-center border-1 rounded-md bg-[#05469D] mt-3'>
+                            <Link className="text-white text-sm ml-5" href="/payroll"><HandCoins className="absolute -ml-8 h-5 w-8" />Run Payroll</Link>
+                        </Button>
+                        <Button className='py-2 flex justify-center items-center border-1 rounded-md bg-white'>
+                            <Link className="text-black text-sm ml-5"><MoveUpRight className="absolute -ml-8 h-5 w-8" />View Full Report</Link>
+                        </Button>
                 </CardHeader>
 
                 <CardFooter className="relative mt-4 border-t border-gray-100 pt-4 dark:border-gray-800">

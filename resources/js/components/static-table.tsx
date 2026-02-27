@@ -89,7 +89,7 @@ export const StaticTable = () => {
                 <div className="flex">
                     <div className="grid gap-1">
                         <CardTitle className="text-2xl font-bold">
-                            Invoices
+                            Recent Payroll Runs 
                         </CardTitle>
                         <CardDescription className="text-sm text-gray-600 dark:text-gray-400">
                             Manage and track your invoice payments
@@ -102,7 +102,7 @@ export const StaticTable = () => {
                                 <Button
                                     variant="outline"
                                     className="button-sm w-full sm:w-auto justify-center sm:justify-start px-4"
-                                >
+                                >   
                                     <ListFilter className="h-4 w-4 sm:mr-2" />
                                     <span className="hidden sm:inline">Filter By</span>
                                     <span className="sm:hidden">Filter</span>

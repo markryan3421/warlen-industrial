@@ -221,7 +221,7 @@ export default function Index({ permissions }: IndexProps) {
                         mode={mode}
                     />
                 </div>
-
+                
                 <CustomTable
                     columns={PermissionsTableConfig.columns}
                     actions={PermissionsTableConfig.actions}
