@@ -33,6 +33,8 @@ class Position extends Model
         return 'pos_slug';
     }
 
+    // In App\Models\Position
+
     // Accessors and Mutators
     protected function posName(): Attribute
     {
