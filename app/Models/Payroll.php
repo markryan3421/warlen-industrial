@@ -31,4 +31,6 @@ class Payroll extends Model
     {
         return $this->hasMany(PayrollItem::class, 'payroll_id');
     }
+
+    
 }

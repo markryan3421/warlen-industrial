@@ -41,7 +41,8 @@ class RolaBaseMiddleware
                 'employees.*',
                 'permissions.*',
                 'contribution-versions.*',
-                'application-leave.*'
+                'application-leave.*',
+                'payroll-periods.*'
             )
         ) {
             // return redirect()->intended(route('employee.dashboard'));

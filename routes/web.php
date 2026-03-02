@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
 use App\Http\Controllers\EmployeeRole\ApplicationLeaveController as EmployeeApplicationLeaveController;
+use App\Http\Controllers\PayrollPeriodController;
 
 Route::get('/', function () {
     return Inertia::render('welcome', [
@@ -53,6 +54,8 @@ Route::middleware(['auth', 'verified', 'roleBase'])->group(function () {
         'edit' => 'employee.application-leave.edit',
         'update' => 'employee.application-leave.update',
     ]); //employee only
+
+    Route::resource('payroll-periods', PayrollPeriodController::class)->except(['show']); //admin and hr
 
     Route::get('/coming-soon', function () {
         return Inertia::render('coming-soon');
