@@ -42,7 +42,7 @@ interface FormData {
 interface EditProps {
     applicationLeave: {
         id: number;
-        
+        employee: Employee;
         leave_start: string;
         leave_end: string;
         reason_to_leave: string;
@@ -61,11 +61,6 @@ export default function Edit({ applicationLeave }: EditProps) {
         remarks: applicationLeave.remarks || '',
     });
 
-    // Transform the data before submission to ensure is_approved is properly formatted
-    // transform((formData) => ({
-    //     ...formData,
-    //     is_approved: formData.is_approved ? 1 : 0, // Convert boolean to integer for backend
-    // }));
 
     function submitApplication(e: React.FormEvent) {
         e.preventDefault();
