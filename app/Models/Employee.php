@@ -71,7 +71,6 @@ class Employee extends Model
         return $this->hasMany(Payroll::class, 'employee_id');
     }
 
-
     
     // Accessors and Mutators
     protected function employeeStatus(): Attribute
