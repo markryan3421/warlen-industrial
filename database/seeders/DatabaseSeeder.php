@@ -2,11 +2,19 @@
 
 namespace Database\Seeders;
 
+use App\Models\ApplicationLeave;
+use App\Models\Branch;
+use App\Models\ContributionBracket;
+use App\Models\ContributionVersion;
+use App\Models\Employee;
+use App\Models\Position;
+use App\Models\Site;
 use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Database\Seeders\DeductionSeeder;
+use Database\Seeders\UserSeeder;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Role;
 
 class DatabaseSeeder extends Seeder
 {
@@ -17,15 +25,11 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
-        User::factory()->create([
-            'name' => 'John Paul Morgan',
-            'email' => 'jpm@gmail.com',
-            'password' => Hash::make('password'),
-        ]);
 
         $this->call([
-            PositionSeeder::class, // Make sure this runs first
-            DeductionSeeder::class,
+           // PositionSeeder::class, // Make sure this runs first
+            //DeductionSeeder::class,
+            UserSeeder::class,
         ]);
     }
 }

@@ -15,7 +15,9 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
-
+        $middleware->alias([
+                'roleBase' => \App\Http\Middleware\RolaBaseMiddleware::class,
+        ]);
         $middleware->web(append: [
             HandleAppearance::class,
             HandleInertiaRequests::class,

@@ -6,11 +6,12 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Position extends Model
 {
     //
-    use SoftDeletes;
+    use SoftDeletes, HasFactory;
 
     protected $casts = [
         'deleted_at' => 'datetime',
@@ -40,7 +41,7 @@ class Position extends Model
     {
         return Attribute::make(
             get: fn($value) => Str::title($value),
-            set: fn($value) => strtolower(strip_tags($value)),
+            set: fn($value) => strtolower(trim(strip_tags($value))),
         );
     }
 

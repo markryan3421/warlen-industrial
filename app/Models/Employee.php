@@ -12,10 +12,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 use Spatie\Permission\Traits\HasRoles;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Employee extends Model
 {
-    use HasRoles;
+    use HasRoles, HasFactory;
     
     protected $table = 'employees';
 
@@ -60,9 +61,14 @@ class Employee extends Model
         return $this->belongsTo(Site::class, 'site_id');
     }
 
-    public function attendances(): HasMany
+    // public function attendances(): HasMany
+    // {
+    //     return $this->hasMany(Attendance::class, 'employee_id');
+    // }
+
+    public function payrolls(): HasMany
     {
-        return $this->hasMany(Attendance::class, 'employee_id');
+        return $this->hasMany(Payroll::class, 'employee_id');
     }
 
     
@@ -105,5 +111,5 @@ class Employee extends Model
     public function getRouteKeyName()
     {
         return 'slug_emp';
-    }
+    } 
 }

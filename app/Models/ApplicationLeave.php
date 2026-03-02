@@ -4,10 +4,14 @@ namespace App\Models;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class ApplicationLeave extends Model
 {
+
+    use HasFactory;
 
     protected $fillable = [
         'employee_id',
@@ -16,6 +20,8 @@ class ApplicationLeave extends Model
         'leave_end',
         'reason_to_leave',
         'app_status',
+        'approved_by',
+        'rejected_by',
         'remarks',
     ];
 
@@ -28,6 +34,22 @@ class ApplicationLeave extends Model
     public function employee()
     {
         return $this->belongsTo(Employee::class, 'employee_id');
+    }
+
+    protected function approvedBy(): Attribute
+    {
+        return Attribute::make(
+            get: fn($value) => Str::title($value),
+            set: fn($value) => trim(strip_tags($value))
+        );
+    }
+
+    protected function rejectedBy(): Attribute
+    {
+        return Attribute::make(
+            get: fn($value) => Str::title($value),
+            set: fn($value) => trim(strip_tags($value))
+        );
     }
 
     protected function appStatus(): Attribute
