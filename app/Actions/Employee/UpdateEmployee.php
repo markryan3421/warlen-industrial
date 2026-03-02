@@ -2,6 +2,7 @@
 
 namespace App\Actions\Employee;
 
+use App\Models\Employee;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
@@ -16,7 +17,7 @@ class UpdateEmployee
         //
     }
 
-    public function update(array $data, $employee)
+    public function update(array $data, Employee $employee): Employee
     {
         $user = $employee->user;
 

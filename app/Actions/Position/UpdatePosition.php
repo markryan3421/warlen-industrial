@@ -15,7 +15,7 @@ class UpdatePosition
         //
     }
 
-    public function update(array $data, Position $position)
+    public function update(array $data, Position $position): Position
     {
         $position->update([
             'pos_name' => $data['pos_name'],

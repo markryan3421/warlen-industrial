@@ -18,7 +18,7 @@ class UpdateApplication
         //
     }
 
-    public function updateApplicationLeave(array $data, ApplicationLeave $applicationLeave)
+    public function updateApplicationLeave(array $data, ApplicationLeave $applicationLeave): ApplicationLeave
     {
         // $employee = Employee::query()->with(['user'])->where('user_id', Auth::id())->firstOrFail();
 
@@ -38,5 +38,7 @@ class UpdateApplication
         }
 
         $applicationLeave->update($updateData);
+
+        return $applicationLeave;
     }
 }

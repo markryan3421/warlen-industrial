@@ -15,7 +15,7 @@ class CreateNewPosition
         
     }
 
-    public function create(array $data)
+    public function create(array $data): Position
     {
         $position = Position::create([
             'pos_name' => $data['pos_name'],
