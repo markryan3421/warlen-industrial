@@ -19,7 +19,7 @@ class IncentiveController extends Controller
      */
     public function index()
     {
-        $incentives = Incentive::with('payroll_period')->get();
+        $incentives = Incentive::with(['payroll_period', 'employees','employees.user', 'employees.position', 'employees.branch' ])->get();
         return Inertia::render('incentives/index', compact('incentives'));
     }
 
@@ -29,7 +29,7 @@ class IncentiveController extends Controller
     public function create()
     {
         $payroll_periods = PayrollPeriod::all();
-        $employees = Employee::with('user')->get();
+        $employees = Employee::with('user')->where('employee_status', 'active')->get();
         return Inertia::render('incentives/create', compact('payroll_periods','employees' ));
     }
 
@@ -54,11 +54,21 @@ class IncentiveController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Incentive $incentive)
-    {
+public function edit(Incentive $incentive)
+{
     
-        return Inertia::render('incentives/update', compact('incentive'));
-    }
+    $incentive->load('payroll_period', 'employees');
+    $employees = Employee::with('user')->where('employee_status', 'active')->get();
+    
+
+    $payroll_periods = PayrollPeriod::all();
+    
+    return Inertia::render('incentives/update', [
+        'incentive' => $incentive,
+        'employees' => $employees,
+        'payroll_periods' => $payroll_periods
+    ]);
+}
 
     /**
      * Update the specified resource in storage.

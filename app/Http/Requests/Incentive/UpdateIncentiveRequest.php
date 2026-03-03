@@ -25,6 +25,9 @@ class UpdateIncentiveRequest extends FormRequest
             'payroll_period_id' => 'required|exists:payroll_periods,id',
             'incentive_name' => 'required|string|max:255|min:3',
             'incentive_amount' => 'required|numeric|min:0',
+            'employee_ids' => ['required', 'array', 'min:1'],
+            'employee_ids.*' => ['exists:employees,id'],
+
         ];
     }
 

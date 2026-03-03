@@ -19,7 +19,7 @@ class CreateNewIncentive
             
             // Attach employees if provided
             if (isset($data['employee_ids']) && !empty($data['employee_ids'])) {
-                $incentive->employeeIncentives()->sync($data['employee_ids']);
+                $incentive->employees()->sync($data['employee_ids']);
             }
             
             return $incentive;

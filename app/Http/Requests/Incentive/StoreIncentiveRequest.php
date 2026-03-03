@@ -18,7 +18,7 @@ class StoreIncentiveRequest extends FormRequest
             'incentive_name' => ['required', 'string', 'max:255'],
             'incentive_amount' => ['required', 'numeric', 'min:0'],
             'employee_ids' => ['required', 'array', 'min:1'],
-            'employee_ids.*' => ['exists:employees,id'],
+            'employee_ids.*' => ['required', 'exists:employees,id'],
         ];
     }
 

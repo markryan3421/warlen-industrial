@@ -22,15 +22,15 @@ interface Employee {
 }
 
 interface CreateProps {
-    payrollPeriods?: Array<{ id: number; name: string; start_date?: string; end_date?: string }>;
+    payroll_periods?: Array<{ id: number; name: string; start_date?: string; end_date?: string }>;
     employees?: Employee[];
 }
 
-export default function Create({ payrollPeriods = [], employees = [] }: CreateProps) {
+export default function Create({ payroll_periods = [], employees = [] }: CreateProps) {
     const [searchTerm, setSearchTerm] = useState('');
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
-    
+
     const { data, setData, post, processing, errors } = useForm({
         incentive_name: '',
         incentive_amount: '',
@@ -68,7 +68,7 @@ export default function Create({ payrollPeriods = [], employees = [] }: CreatePr
     const displayedEmployees = searchTerm ? filteredEmployees : filteredEmployees.slice(0, 10);
 
     const toggleEmployee = (id: number) => {
-        setData('employee_ids', 
+        setData('employee_ids',
             data.employee_ids.includes(id)
                 ? data.employee_ids.filter(eId => eId !== id)
                 : [...data.employee_ids, id]
@@ -88,11 +88,11 @@ export default function Create({ payrollPeriods = [], employees = [] }: CreatePr
                 {/* Incentive Name */}
                 <div className="space-y-2">
                     <Label htmlFor="incentive_name">Incentive Name <span className="text-red-500">*</span></Label>
-                    <Input 
-                        id="incentive_name" 
-                        value={data.incentive_name} 
-                        onChange={e => setData('incentive_name', e.target.value)} 
-                        placeholder="Enter incentive name" 
+                    <Input
+                        id="incentive_name"
+                        value={data.incentive_name}
+                        onChange={e => setData('incentive_name', e.target.value)}
+                        placeholder="Enter incentive name"
                     />
                     <InputError message={errors.incentive_name} />
                 </div>
@@ -100,12 +100,12 @@ export default function Create({ payrollPeriods = [], employees = [] }: CreatePr
                 {/* Incentive Amount */}
                 <div className="space-y-2 mt-4">
                     <Label htmlFor="incentive_amount">Incentive Amount <span className="text-red-500">*</span></Label>
-                    <Input 
-                        type='number' 
+                    <Input
+                        type='number'
                         id="incentive_amount"
-                        value={data.incentive_amount} 
-                        onChange={e => setData('incentive_amount', e.target.value)} 
-                        placeholder="Enter incentive amount" 
+                        value={data.incentive_amount}
+                        onChange={e => setData('incentive_amount', e.target.value)}
+                        placeholder="Enter incentive amount"
                     />
                     <InputError message={errors.incentive_amount} />
                 </div>
@@ -113,14 +113,17 @@ export default function Create({ payrollPeriods = [], employees = [] }: CreatePr
                 {/* Payroll Period */}
                 <div className="space-y-2 mt-4">
                     <Label htmlFor="payroll_period_id">Payroll Period <span className="text-red-500">*</span></Label>
-                    <select 
+                    <select
                         id="payroll_period_id"
-                        value={data.payroll_period_id} 
-                        onChange={e => setData('payroll_period_id', e.target.value)} 
+                        value={data.payroll_period_id}
+                        onChange={e => {
+                            console.log('Selected payroll period:', e.target.value);
+                            setData('payroll_period_id', e.target.value);
+                        }}
                         className="w-full p-2 border rounded"
                     >
                         <option value="">Select Payroll Period</option>
-                        {payrollPeriods.map(period => (
+                        {payroll_periods.map(period => (
                             <option key={period.id} value={period.id}>
                                 {period.name || `${period.start_date} to ${period.end_date}`}
                             </option>
@@ -132,7 +135,7 @@ export default function Create({ payrollPeriods = [], employees = [] }: CreatePr
                 {/* Employee Selection */}
                 <div className="space-y-2 mt-4" ref={dropdownRef}>
                     <Label>Select Employees <span className="text-red-500">*</span></Label>
-                    
+
                     {/* Selected Tags */}
                     {selectedEmployees.length > 0 && (
                         <div className="flex flex-wrap gap-2 mb-3 p-2 border rounded bg-gray-50">
@@ -149,7 +152,7 @@ export default function Create({ payrollPeriods = [], employees = [] }: CreatePr
 
                     {/* Dropdown */}
                     <div className="relative">
-                        <div 
+                        <div
                             className="flex items-center border rounded cursor-pointer p-2"
                             onClick={() => setIsOpen(!isOpen)}
                         >
@@ -158,7 +161,7 @@ export default function Create({ payrollPeriods = [], employees = [] }: CreatePr
                             </span>
                             <ChevronDown className="h-4 w-4" />
                         </div>
-                        
+
                         {isOpen && (
                             <div className="absolute z-10 w-full mt-1 border rounded bg-white shadow-lg max-h-80 overflow-y-auto">
                                 <div className="p-2 sticky top-0 bg-white border-b">
@@ -175,7 +178,7 @@ export default function Create({ payrollPeriods = [], employees = [] }: CreatePr
                                         />
                                     </div>
                                 </div>
-                                
+
                                 <div className="py-1">
                                     {displayedEmployees.map(emp => (
                                         <div
@@ -186,19 +189,19 @@ export default function Create({ payrollPeriods = [], employees = [] }: CreatePr
                                             <input
                                                 type="checkbox"
                                                 checked={data.employee_ids.includes(emp.id)}
-                                                onChange={() => {}}
+                                                onChange={() => { }}
                                                 className="rounded"
                                             />
                                             <span>{String(emp.emp_code || 'N/A')} - {emp.user?.name || 'No name'}</span>
                                         </div>
                                     ))}
-                                    
+
                                     {!searchTerm && employees.length > 10 && (
                                         <div className="p-2 text-center text-sm text-gray-500 border-t">
                                             Showed 10 of {employees.length}. Type to search more.
                                         </div>
                                     )}
-                                    
+
                                     {searchTerm && displayedEmployees.length === 0 && (
                                         <div className="p-4 text-center text-gray-500">No employees found</div>
                                     )}
