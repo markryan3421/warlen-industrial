@@ -9,11 +9,11 @@ use Illuminate\Support\Str;
 
 class CreateNewApplication
 {
-    public function createNewApplicationLeave(array $data)
+    public function createNewApplicationLeave(array $data): ApplicationLeave
     {
         $employee = $this->getEmployee();
 
-        ApplicationLeave::create([
+        return ApplicationLeave::create([
             'employee_id' => $this->getEmployeeId(),
             'slug_app' => Str::slug($employee->user->name . '-' . $employee->emp_code . '-' . now()),
             'leave_start' => $data['leave_start'],

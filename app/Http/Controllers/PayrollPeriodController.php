@@ -8,6 +8,7 @@ use App\Http\Requests\PayrollPeriod\StorePayrollPeriodRequest;
 use App\Http\Requests\PayrollPeriod\UpdatePayrollPeriodRequest;
 use App\Models\PayrollPeriod;
 use Illuminate\Support\Facades\DB;
+use Inertia\Inertia;
 
 class PayrollPeriodController extends Controller
 {
@@ -16,7 +17,10 @@ class PayrollPeriodController extends Controller
      */
     public function index()
     {
-        //
+
+        $payrollPeriods = PayrollPeriod::query()->get();
+
+        return Inertia::render('PayrollPeriod/index',compact('payrollPeriods'));
     }
 
     /**
@@ -24,7 +28,7 @@ class PayrollPeriodController extends Controller
      */
     public function create()
     {
-        //
+        return Inertia::render('PayrollPeriod/create');
     }
 
     /**
@@ -41,6 +45,7 @@ class PayrollPeriodController extends Controller
 
             return redirect()->route('payroll-periods.index')->with('success', 'Payroll period created successfully.');
         } catch (\Exception $e) {
+            dd($e);
             DB::rollBack();
             return back()->with('error', $e->getMessage());
         }
@@ -59,7 +64,7 @@ class PayrollPeriodController extends Controller
      */
     public function edit(PayrollPeriod $payrollPeriod)
     {
-        //
+        return Inertia::render('PayrollPeriod/edit', compact('payrollPeriod'));
     }
 
     /**

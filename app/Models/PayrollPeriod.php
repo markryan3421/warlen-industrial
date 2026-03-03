@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -15,11 +16,11 @@ class PayrollPeriod extends Model
         'payroll_per_status',
     ];
 
-    protected $casts = [
-        'start_date' => 'date',
-        'end_date' => 'date',
-        'pay_date' => 'date'
-    ];
+    // protected $casts = [
+    //     'start_date' => 'date',
+    //     'end_date' => 'date',
+    //     'pay_date' => 'date'
+    // ];
 
     public function payrolls(): HasMany
     {

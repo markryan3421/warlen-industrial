@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { Airplay, CircleMinus, CircleUser, Flag, Landmark, Lock, UserCog, Clipboard, FileBadge, Folder, ClipboardPlus } from 'lucide-react';
+import { Airplay, CircleMinus, CircleUser, Flag, Landmark, Lock, UserCog, Clipboard, FileBadge, Folder, ClipboardPlus, Calendar } from 'lucide-react';
 import BranchController from '@/actions/App/Http/Controllers/BranchController';
 import PositionController from '@/actions/App/Http/Controllers/PositionController';
 import { NavFooter } from '@/components/nav-footer';
@@ -20,6 +20,7 @@ import AppLogo from './app-logo';
 import ContributionController from '@/actions/App/Http/Controllers/ContributionVersionController';
 import ApplicationLeaveController from '@/actions/App/Http/Controllers/ApplicationLeaveController';
 import IncentiveController from '@/actions/App/Http/Controllers/IncentiveController';
+import PayrollPeriodController from '@/actions/App/Http/Controllers/PayrollPeriodController';
 
 
 
@@ -65,6 +66,11 @@ const AccessControlItems: NavItem[] = [
         title: 'Application Leaves',
         href: ApplicationLeaveController.index(),
         icon: Clipboard,
+    },
+    {
+        title: 'Payroll Periods',
+        href: PayrollPeriodController.index(),
+        icon: Calendar,
     },
     {
         title: 'Positions',
