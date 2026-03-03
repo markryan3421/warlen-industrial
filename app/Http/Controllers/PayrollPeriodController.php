@@ -45,7 +45,6 @@ class PayrollPeriodController extends Controller
 
             return redirect()->route('payroll-periods.index')->with('success', 'Payroll period created successfully.');
         } catch (\Exception $e) {
-            dd($e);
             DB::rollBack();
             return back()->with('error', $e->getMessage());
         }
