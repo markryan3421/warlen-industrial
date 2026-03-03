@@ -5,10 +5,8 @@ use App\Http\Controllers\BranchController;
 use App\Http\Controllers\ContributionVersionController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\IncentiveController;
-use App\Http\Controllers\IncentiveTypeController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\PositionController;
-use App\Http\Controllers\ProjectController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -45,7 +43,8 @@ Route::middleware(['auth', 'verified', 'roleBase'])->group(function () {
     Route::resource('branches', BranchController::class)->except(['show']); // admin only
     Route::resource('positions', PositionController::class)->except(['show']); // admin only
     Route::resource('employees', EmployeeController::class)->except(['show']); // admin only
-    Route::resource('permissions', PermissionController::class); // admin only
+    Route::resource('permissions', PermissionController::class); 
+    Route::resource('incentives', IncentiveController::class)->except(['show']); // admin only
 
     Route::resource('contribution-versions', ContributionVersionController::class)->except(['show']); // admin only
     Route::resource('application-leave', ApplicationLeaveController::class); //admin only

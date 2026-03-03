@@ -27,30 +27,11 @@ class PayrollPeriod extends Model
         return $this->hasMany(Payroll::class, 'payroll_period_id');
     }
 
-    protected function payDate(): Attribute
+   
+    public function incentives(): HasMany
     {
-        return Attribute::make(
-            get: fn($value) => $value ? Carbon::parse($value)->format('Y-m-d') : null,
-            set: fn($value) => $value ? Carbon::parse($value)->format('Y-m-d') : null,
-        );
+        return $this->hasMany(Incentive::class, 'payroll_period_id');
     }
-
-    protected function startDate(): Attribute
-    {
-        return Attribute::make(
-            get: fn($value) => $value ? Carbon::parse($value)->format('Y-m-d') : null,
-            set: fn($value) => $value ? Carbon::parse($value)->format('Y-m-d') : null,
-        );
-    }
-
-    protected function endDate(): Attribute
-    {
-        return Attribute::make(
-            get: fn($value) => $value ? Carbon::parse($value)->format('Y-m-d') : null,
-            set: fn($value) => $value ? Carbon::parse($value)->format('Y-m-d') : null,
-        );
-    }
-
     protected function payrollPerStatus(): Attribute
     {
         return Attribute::make(

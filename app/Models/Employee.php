@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Models\Attendance;
+
 use App\Models\Branch;
 use App\Models\Position;
 use App\Models\User;
@@ -70,6 +70,12 @@ class Employee extends Model
     {
         return $this->hasMany(Payroll::class, 'employee_id');
     }
+
+    public function employeeIncentives()
+    {
+        return $this->belongsToMany(Employee::class, 'employee_incentives', 'employee_id', 'incentive_id');
+    }
+
 
     
     // Accessors and Mutators

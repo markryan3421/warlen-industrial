@@ -1,7 +1,7 @@
 <?php
 
-
-use App\Models\PayrollPeriod;
+use App\Models\Employee;
+use App\Models\Incentive;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -13,11 +13,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('incentives', function (Blueprint $table) {
+        Schema::create('employee_incentives', function (Blueprint $table) {
             $table->id();
-            $table->foreignIdFor(PayrollPeriod::class,'payroll_period_id')->constrained('payroll_periods')->cascadeOnDelete();
-            $table->string('incentive_name');
-            $table->string('incentive_amount');
+            $table->foreignIdFor(Employee::class,'employee_id')->constrained('employees')->cascadeOnDelete();
+            $table->foreignIdFor(Incentive::class,'incentive_id')->constrained('incentives')->cascadeOnDelete();
             $table->timestamps();
         });
     }
@@ -27,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('incentives');
+        Schema::dropIfExists('employee_incentives');
     }
 };
