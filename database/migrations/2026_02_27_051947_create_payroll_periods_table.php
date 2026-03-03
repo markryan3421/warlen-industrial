@@ -16,9 +16,13 @@ return new class extends Migration
             $table->date('start_date');
             $table->date('end_date');
             $table->date('pay_date');
-            $table->enum('payroll_per_status',['open','processing', 'completed'])->default('open');
+            $table->enum('payroll_per_status', ['open', 'processing', 'completed'])->default('open');
             $table->timestamps();
         });
+        /*
+          if open user pwedi paka add employee check
+            sng attencdance and incentives if processing nd na pwedi mabase ni sa queue sng payroll for autogenerate
+        */
     }
 
     /**
