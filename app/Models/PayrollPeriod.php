@@ -26,6 +26,11 @@ class PayrollPeriod extends Model
         return $this->hasMany(Payroll::class, 'payroll_period_id');
     }
 
+   
+    public function incentives(): HasMany
+    {
+        return $this->hasMany(Incentive::class, 'payroll_period_id');
+    }
     protected function payrollPerStatus(): Attribute
     {
         return Attribute::make(
