@@ -17,8 +17,8 @@ class Incentive extends Model
         return $this->belongsTo(PayrollPeriod::class);
     }
 
-public function employees()
-{
-    return $this->belongsToMany(Employee::class, 'employee_incentives', 'incentive_id', 'employee_id');
-}
+    public function employees()
+    {
+        return $this->belongsToMany(Employee::class, 'employee_incentives', 'incentive_id', 'employee_id');
+    }
 }

@@ -13,6 +13,7 @@ use App\Models\Site;
 use App\Repository\EmployeeRepository;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 
 class EmployeeController extends Controller
@@ -24,6 +25,8 @@ class EmployeeController extends Controller
      */
     public function index()
     {
+        Gate::authorize('viewAny', Employee::class);
+
         $employees = $this->cacheRemember('employees', 60, function () {
             return $this->employeeRepository->getEmployees();
         });
@@ -38,6 +41,7 @@ class EmployeeController extends Controller
      */
     public function create()
     {
+        Gate::authorize('create', Employee::class);
         // Load data for dropdowns
         $positions = Position::query()
             ->get(['id', 'pos_name']);
@@ -58,6 +62,8 @@ class EmployeeController extends Controller
      */
     public function store(StoreEmployeeRequest $request, CreateNewEmployee $action)
     {
+        Gate::authorize('create', Employee::class);
+
         if ($this->limit('create-employee:' . auth()->id(), 60, 25)) {
             return back()->with('error', 'Too many attempts. Please try again later.');
         }
@@ -84,6 +90,8 @@ class EmployeeController extends Controller
      */
     public function show(Employee $employee)
     {
+        Gate::authorize('view',$employee);
+
         $employee->load(['position', 'branch', 'user', 'site']);
 
         return Inertia::render('employees/show', [
@@ -96,6 +104,7 @@ class EmployeeController extends Controller
      */
     public function edit(Employee $employee)
     {
+        Gate::authorize('update', $employee);
         // Load data for dropdowns
         $positions = Position::query()
             ->get(['id', 'pos_name']);
@@ -120,6 +129,8 @@ class EmployeeController extends Controller
      */
     public function update(UpdateEmployeeRequest $request, Employee $employee, UpdateEmployee $action)
     {
+        Gate::authorize('update', $employee);
+
         if ($this->limit('update-employee:' . auth()->id(), 60, 25)) {
             return back()->with('error', 'Too many attempts. Please try again later.');
         }
@@ -147,6 +158,8 @@ class EmployeeController extends Controller
      */
     public function destroy(Employee $employee)
     {
+        Gate::authorize('delete', $employee);
+        
         if ($this->limit('delete-employee:' . auth()->id(), 60, 10)) {
             return back()->with('error', 'Too many attempts. Please try again later.');
         }

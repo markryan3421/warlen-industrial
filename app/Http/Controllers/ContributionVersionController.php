@@ -8,6 +8,7 @@ use App\Http\Requests\Contribution\StoreContributionRequest;
 use App\Http\Requests\Contribution\UpdateContributionRequest;
 use App\Models\ContributionVersion;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 
 class ContributionVersionController extends Controller
@@ -17,6 +18,7 @@ class ContributionVersionController extends Controller
      */
     public function index()
     {
+        Gate::authorize('viewAny', ContributionVersion::class);
         return Inertia::render('Contributions/index', [
             'contributionVersions' => ContributionVersion::with('contributionBrackets')->get(),
         ]);
@@ -27,6 +29,7 @@ class ContributionVersionController extends Controller
      */
     public function create()
     {
+        Gate::authorize('create', ContributionVersion::class);
         return Inertia::render('Contributions/create');
     }
 
@@ -35,6 +38,7 @@ class ContributionVersionController extends Controller
      */
     public function store(StoreContributionRequest $request, CreateNewContribution $action)
     {
+        Gate::authorize('create', ContributionVersion::class);
         if ($this->limit('store-contribution:' . auth()->id(), 60, 20)) {
             return back()->with('error', 'Too many attempts. Please try again later.');
         }
@@ -58,7 +62,7 @@ class ContributionVersionController extends Controller
      */
     public function show(ContributionVersion $contributionVersion)
     {
-        //
+        Gate::authorize('view', $contributionVersion);
     }
 
     /**
@@ -66,6 +70,7 @@ class ContributionVersionController extends Controller
      */
     public function edit(ContributionVersion $contributionVersion)
     {
+        Gate::authorize('update', $contributionVersion);
         $contributionVersion->load('contributionBrackets');
 
         return Inertia::render('Contributions/edit', compact('contributionVersion'));
@@ -76,6 +81,7 @@ class ContributionVersionController extends Controller
      */
     public function update(UpdateContributionRequest $request, ContributionVersion $contributionVersion, UpdateContribution $action)
     {
+        Gate::authorize('update', $contributionVersion);
         if ($this->limit('update-contribution:' . auth()->id(), 60, 20)) {
             return back()->with('error', 'Too many attempts. Please try again later.');
         }
@@ -100,6 +106,7 @@ class ContributionVersionController extends Controller
      */
     public function destroy(ContributionVersion $contributionVersion)
     {
+        Gate::authorize('delete', $contributionVersion);
         $contributionVersion->delete();
 
         return to_route('contribution-versions.index')->with('success', 'Contribution deleted successfully.');

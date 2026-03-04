@@ -8,6 +8,7 @@ use App\Http\Requests\ApplicationLeave\StoreApplicationLeaveRequest;
 use App\Http\Requests\ApplicationLeave\UpdateApplicationLeaveRequest;
 use App\Models\ApplicationLeave;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 
 class ApplicationLeaveController extends Controller
@@ -29,6 +30,7 @@ class ApplicationLeaveController extends Controller
      */
     public function create()
     {
+        Gate::authorize('create', ApplicationLeave::class);
         return Inertia::render('ApplicationLeave/create');
     }
 
@@ -37,6 +39,7 @@ class ApplicationLeaveController extends Controller
      */
     public function store(StoreApplicationLeaveRequest $request, CreateNewApplication $createNewApplication)
     {
+        Gate::authorize('create', ApplicationLeave::class);
         if ($this->limit('create-application-leave:' . auth()->id(), 60, 20)) {
             return back()->with('error', 'Too many attempts. Please try again later.');
         }
@@ -71,6 +74,8 @@ class ApplicationLeaveController extends Controller
      */
     public function edit(ApplicationLeave $applicationLeave)
     {
+        Gate::authorize('update', $applicationLeave);
+
          $applicationLeave->load('employee.user');
         return Inertia::render('ApplicationLeave/edit', [
             'applicationLeave' => $applicationLeave,
@@ -82,6 +87,8 @@ class ApplicationLeaveController extends Controller
      */
     public function update(UpdateApplicationLeaveRequest $request, ApplicationLeave $applicationLeave, UpdateApplication $updateApplication)
     {
+        Gate::authorize('update', $applicationLeave);
+
         if ($this->limit('update-application-leave:' . auth()->id(), 60, 20)) {
             return back()->with('error', 'Too many attempts. Please try again later.');
         }
@@ -106,6 +113,8 @@ class ApplicationLeaveController extends Controller
      */
     public function destroy(ApplicationLeave $applicationLeave)
     {
+        Gate::authorize('delete', $applicationLeave);
+        
         if ($this->limit('delete-application-leave:' . auth()->id(), 60, 20)) {
             return back()->with('error', 'Too many attempts. Please try again later.');
         }
