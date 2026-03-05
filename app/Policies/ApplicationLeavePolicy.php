@@ -13,7 +13,13 @@ class ApplicationLeavePolicy
      */
     public function viewAny(User $user): bool
     {
-        return false;
+        if ($user->hasRole('admin')) {
+            return true;
+        }
+
+        return $user->hasRole('employee')
+            && $user->employee
+            && $user->employee->employee_status == 'Active';
     }
 
     /**
@@ -29,7 +35,10 @@ class ApplicationLeavePolicy
      */
     public function create(User $user): bool
     {
-        return $user->hasRole('employee');
+        return $user->hasRole('employee')
+            &&
+            $user->employee &&
+            $user->employee->employee_status == 'Active';
     }
 
     /**

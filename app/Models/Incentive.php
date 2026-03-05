@@ -2,8 +2,11 @@
 
 namespace App\Models;
 
+use App\Policies\IncentivePolicy;
+use Illuminate\Database\Eloquent\Attributes\UsePolicy;
 use Illuminate\Database\Eloquent\Model;
 
+#[UsePolicy(IncentivePolicy::class)]
 class Incentive extends Model
 {
     protected $fillable = [

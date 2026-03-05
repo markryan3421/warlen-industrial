@@ -163,6 +163,7 @@ class EmployeeController extends Controller
         if ($this->limit('delete-employee:' . auth()->id(), 60, 10)) {
             return back()->with('error', 'Too many attempts. Please try again later.');
         }
+        
         $employee->user()->delete();
 
         $this->cacheForget('employees');

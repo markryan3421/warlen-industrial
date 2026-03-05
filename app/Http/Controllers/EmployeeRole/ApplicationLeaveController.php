@@ -19,6 +19,8 @@ class ApplicationLeaveController extends Controller
      */
     public function index(CreateNewApplication $action)
     {
+        Gate::authorize('viewAny',ApplicationLeave::class);
+
         $applicationLeaves = ApplicationLeave::whereHas('employee', function ($query) {
             $query->where('user_id', auth()->id());
         })->latest()->get();

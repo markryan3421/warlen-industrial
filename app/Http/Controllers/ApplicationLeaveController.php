@@ -18,6 +18,7 @@ class ApplicationLeaveController extends Controller
      */
     public function index()
     {
+        Gate::authorize('viewAny',ApplicationLeave::class);
         $applicationLeaves = ApplicationLeave::with(['employee.user'])->latest()->get();
 
         return inertia('ApplicationLeave/index', [
