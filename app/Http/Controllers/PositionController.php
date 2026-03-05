@@ -82,4 +82,5 @@ class PositionController extends Controller
         DB::commit();
         return redirect()->route('positions.index');
     }
+    
 }

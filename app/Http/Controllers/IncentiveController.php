@@ -19,8 +19,9 @@ class IncentiveController extends Controller
      */
     public function index()
     {
+        $payroll_periods = PayrollPeriod::all();
         $incentives = Incentive::with(['payroll_period', 'employees','employees.user', 'employees.position', 'employees.branch' ])->get();
-        return Inertia::render('incentives/index', compact('incentives'));
+        return Inertia::render('incentives/index', compact('incentives','payroll_periods'));
     }
 
     /**

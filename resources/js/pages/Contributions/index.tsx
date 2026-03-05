@@ -3,8 +3,8 @@ import { Button } from "@/components/ui/button";
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/react';
 import ContributionVersionController from "@/actions/App/Http/Controllers/ContributionVersionController";
-import { useState } from 'react';
-import { Calculator, PlusCircle, Percent } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { Calculator, PlusCircle, Percent, Filter } from 'lucide-react';
 
 import {
     Table,
@@ -31,6 +31,14 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
+
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 
 import { Badge } from "@/components/ui/badge";
 
@@ -65,6 +73,17 @@ export default function Index({ contributionVersions }: ContributionsProps) {
     const { delete: destroy } = useForm();
     const [selectedVersion, setSelectedVersion] = useState<ContributionVersion | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    
+    // Initialize filter from localStorage or use default
+    const [typeFilter, setTypeFilter] = useState<string>(() => {
+        const savedFilter = localStorage.getItem('contributions-typeFilter');
+        return savedFilter || 'all';
+    });
+   
+    // Save filter to localStorage whenever it changes
+    useEffect(() => {
+        localStorage.setItem('contributions-typeFilter', typeFilter);
+    }, [typeFilter]);
 
     const handleDelete = (id: number) => {
         if (confirm("Are you sure you want to delete this contribution version?")) {
@@ -76,6 +95,14 @@ export default function Index({ contributionVersions }: ContributionsProps) {
         setSelectedVersion(version);
         setIsModalOpen(true);
     };
+
+    // Filter contribution versions based on type
+    const filteredVersions = useMemo(() => {
+        if (typeFilter === 'all') {
+            return contributionVersions;
+        }
+        return contributionVersions.filter(version => version.type === typeFilter);
+    }, [contributionVersions, typeFilter]);
 
     const getContributionTypeColor = (type: string) => {
         switch(type) {
@@ -158,52 +185,79 @@ export default function Index({ contributionVersions }: ContributionsProps) {
                         </Link>
                     </div>
                 ) : (
-                    <Table>
-                        <TableCaption>A list of all contribution versions.</TableCaption>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Type</TableHead>
-                                <TableHead>Effective From</TableHead>
-                                <TableHead>Effective To</TableHead>
-                                <TableHead>Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {contributionVersions.map((version) => (
-                                <TableRow key={version.id}>
-                                    <TableCell>
-                                        <Badge className={getContributionTypeColor(version.type)}>
-                                            {getContributionTypeLabel(version.type)}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell>{formatDate(version.effective_from)}</TableCell>
-                                    <TableCell>{formatDate(version.effective_to)}</TableCell>
-                                    <TableCell className="space-x-2">
-                                        <Button 
-                                            variant="outline" 
-                                            size="sm"
-                                            onClick={() => viewContributionBrackets(version)}
-                                        >
-                                            View Brackets
-                                        </Button>
-                                        <Link 
-                                            href={ContributionVersionController.edit(version.id)}
-                                            className="inline-flex items-center justify-center rounded-md bg-secondary px-3 py-1.5 text-sm font-medium text-secondary-foreground hover:bg-secondary/90"
-                                        >
-                                            Edit
-                                        </Link>
-                                        <Button 
-                                            variant="destructive" 
-                                            size="sm"
-                                            onClick={() => handleDelete(version.id)}
-                                        >
-                                            Delete
-                                        </Button>
-                                    </TableCell>
+                    <>
+                        {/* Filter Section - Right aligned */}
+                        <div className="flex justify-end px-4">
+                            <div className="flex items-center gap-2">
+                                <Select value={typeFilter} onValueChange={setTypeFilter}>
+                                    <SelectTrigger className="w-[130px]">
+                                        <SelectValue placeholder="Filter" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Types</SelectItem>
+                                        <SelectItem value="sss">SSS</SelectItem>
+                                        <SelectItem value="philhealth">PhilHealth</SelectItem>
+                                        <SelectItem value="pagibig">Pag-IBIG</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+
+                        <Table>
+                            <TableCaption>A list of all contribution versions.</TableCaption>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Type</TableHead>
+                                    <TableHead>Effective From</TableHead>
+                                    <TableHead>Effective To</TableHead>
+                                    <TableHead>Actions</TableHead>
                                 </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
+                            </TableHeader>
+                            <TableBody>
+                                {filteredVersions.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={4} className="text-center py-8 text-gray-500">
+                                            No contribution versions found with the selected filter.
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
+                                    filteredVersions.map((version) => (
+                                        <TableRow key={version.id}>
+                                            <TableCell>
+                                                <Badge className={getContributionTypeColor(version.type)}>
+                                                    {getContributionTypeLabel(version.type)}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell>{formatDate(version.effective_from)}</TableCell>
+                                            <TableCell>{formatDate(version.effective_to)}</TableCell>
+                                            <TableCell className="space-x-2">
+                                                <Button 
+                                                    variant="outline" 
+                                                    size="sm"
+                                                    onClick={() => viewContributionBrackets(version)}
+                                                >
+                                                    View Brackets
+                                                </Button>
+                                                <Link 
+                                                    href={ContributionVersionController.edit(version.id)}
+                                                    className="inline-flex items-center justify-center rounded-md bg-secondary px-3 py-1.5 text-sm font-medium text-secondary-foreground hover:bg-secondary/90"
+                                                >
+                                                    Edit
+                                                </Link>
+                                                <Button 
+                                                    variant="destructive" 
+                                                    size="sm"
+                                                    onClick={() => handleDelete(version.id)}
+                                                >
+                                                    Delete
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
+                    </>
                 )}
 
                 {/* Modal for displaying contribution brackets */}
