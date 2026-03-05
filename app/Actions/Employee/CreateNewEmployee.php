@@ -7,10 +7,11 @@ use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Spatie\Permission\Models\Role;
 
 class CreateNewEmployee
 {
-    public function create(array $data) 
+    public function create(array $data): Employee
     {
         return DB::transaction(function () use ($data) {
             $user = User::create([
@@ -18,6 +19,9 @@ class CreateNewEmployee
                 'email' => $data['email'],
                 'password' => Hash::make($data['password'] ?? 'password'),
             ]);
+
+            $role = Role::firstOrCreate(['name' => 'employee']);
+            $user->assignRole($role);
             
             return Employee::create([
                 'position_id' => $data['position_id'],

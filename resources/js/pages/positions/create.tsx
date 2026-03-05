@@ -39,7 +39,7 @@ export default function Create() {
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="name">Basic Salary <span className="text-red-500">*</span></Label>
-                    <Input type='number' value={data.basic_salary} onChange={e => setData('basic_salary', e.target.value)} className="w-full" placeholder="Enter basic salary" />
+                    <Input type='number' value={data.basic_salary} onChange={e => setData('basic_salary', e.target.value)} className="w-full" placeholder="Enter basic salary" min={1} />
                     <InputError message={errors.basic_salary} />
                 </div>
                 <div className="flex justify-right gap-2 mt-4">

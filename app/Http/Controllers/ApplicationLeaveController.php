@@ -8,6 +8,7 @@ use App\Http\Requests\ApplicationLeave\StoreApplicationLeaveRequest;
 use App\Http\Requests\ApplicationLeave\UpdateApplicationLeaveRequest;
 use App\Models\ApplicationLeave;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 
 class ApplicationLeaveController extends Controller
@@ -17,6 +18,7 @@ class ApplicationLeaveController extends Controller
      */
     public function index()
     {
+        Gate::authorize('viewAny',ApplicationLeave::class);
         $applicationLeaves = ApplicationLeave::with(['employee.user'])->latest()->get();
 
         return inertia('ApplicationLeave/index', [
@@ -29,6 +31,7 @@ class ApplicationLeaveController extends Controller
      */
     public function create()
     {
+        Gate::authorize('create', ApplicationLeave::class);
         return Inertia::render('ApplicationLeave/create');
     }
 
@@ -37,6 +40,7 @@ class ApplicationLeaveController extends Controller
      */
     public function store(StoreApplicationLeaveRequest $request, CreateNewApplication $createNewApplication)
     {
+        Gate::authorize('create', ApplicationLeave::class);
         if ($this->limit('create-application-leave:' . auth()->id(), 60, 20)) {
             return back()->with('error', 'Too many attempts. Please try again later.');
         }
@@ -50,6 +54,7 @@ class ApplicationLeaveController extends Controller
 
             return redirect()->route('application-leave.index')->with('success', 'Leave application submitted successfully.');
         } catch (\Exception $e) {
+            dd($e);
             DB::rollBack();
             return back()->with('error', 'An error occurred while submitting the leave application. Please try again.');
          
@@ -70,6 +75,9 @@ class ApplicationLeaveController extends Controller
      */
     public function edit(ApplicationLeave $applicationLeave)
     {
+        Gate::authorize('update', $applicationLeave);
+
+         $applicationLeave->load('employee.user');
         return Inertia::render('ApplicationLeave/edit', [
             'applicationLeave' => $applicationLeave,
         ]);
@@ -80,6 +88,8 @@ class ApplicationLeaveController extends Controller
      */
     public function update(UpdateApplicationLeaveRequest $request, ApplicationLeave $applicationLeave, UpdateApplication $updateApplication)
     {
+        Gate::authorize('update', $applicationLeave);
+
         if ($this->limit('update-application-leave:' . auth()->id(), 60, 20)) {
             return back()->with('error', 'Too many attempts. Please try again later.');
         }
@@ -93,6 +103,7 @@ class ApplicationLeaveController extends Controller
 
             return redirect()->route('application-leave.index')->with('success', 'Leave application updated successfully.');
         } catch (\Exception $e) {
+            dd($e);
             DB::rollBack();
             return back()->with('error', 'An error occurred while updating the leave application. Please try again.');
         }
@@ -103,6 +114,8 @@ class ApplicationLeaveController extends Controller
      */
     public function destroy(ApplicationLeave $applicationLeave)
     {
+        Gate::authorize('delete', $applicationLeave);
+        
         if ($this->limit('delete-application-leave:' . auth()->id(), 60, 20)) {
             return back()->with('error', 'Too many attempts. Please try again later.');
         }

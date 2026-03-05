@@ -2,21 +2,25 @@
 
 namespace App\Models;
 
-use App\Models\Attendance;
+
 use App\Models\Branch;
 use App\Models\Position;
 use App\Models\User;
+use App\Policies\EmployeePolicy;
+use Illuminate\Database\Eloquent\Attributes\UsePolicy;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 use Spatie\Permission\Traits\HasRoles;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 
+#[UsePolicy(EmployeePolicy::class)]
 class Employee extends Model
 {
-    use HasRoles, HasFactory;
+    use HasRoles, HasFactory, SoftDeletes;
     
     protected $table = 'employees';
 
@@ -61,9 +65,19 @@ class Employee extends Model
         return $this->belongsTo(Site::class, 'site_id');
     }
 
-    public function attendances(): HasMany
+    // public function attendances(): HasMany
+    // {
+    //     return $this->hasMany(Attendance::class, 'employee_id');
+    // }
+
+    public function payrolls(): HasMany
     {
-        return $this->hasMany(Attendance::class, 'employee_id');
+        return $this->hasMany(Payroll::class, 'employee_id');
+    }
+
+    public function employeeIncentives()
+    {
+        return $this->belongsToMany(Employee::class, 'employee_incentives', 'employee_id', 'incentive_id');
     }
 
 
@@ -72,7 +86,7 @@ class Employee extends Model
     protected function employeeStatus(): Attribute
     {
         return Attribute::make(
-            get: fn($value) => Str::title($value),
+           get: fn($value) => Str::title($value),
             set: fn($value) => strtolower(strip_tags($value)),
         );
     }
@@ -107,5 +121,5 @@ class Employee extends Model
     public function getRouteKeyName()
     {
         return 'slug_emp';
-    }
+    } 
 }

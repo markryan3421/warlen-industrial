@@ -1,8 +1,10 @@
 import { Link } from '@inertiajs/react';
-import { Airplay, CircleMinus, CircleUser, Landmark, UserCog, Clipboard, ChevronDown, Users, Contact, BookUser, UserRoundCog } from 'lucide-react';
+import { Airplay, CircleMinus, CircleUser, Landmark, UserCog, Clipboard, Calendar, Users, Contact, BookUser, UserRoundCog, ChevronDown, FileBadge } from 'lucide-react';
 import ApplicationLeaveController from '@/actions/App/Http/Controllers/ApplicationLeaveController';
-import BranchImportController from '@/actions/App/Http/Controllers/BranchController';
+import BranchController from '@/actions/App/Http/Controllers/BranchController';
 import ContributionController from '@/actions/App/Http/Controllers/ContributionVersionController';
+import IncentiveController from '@/actions/App/Http/Controllers/IncentiveController';
+// import PositionController from '@/actions/App/Http/Controllers/PositionController';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -21,6 +23,8 @@ import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
 import AppLogo from './app-logo';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible';
+import PayrollPeriodController from '@/actions/App/Http/Controllers/PayrollPeriodController';
+
 
 const FinanceItems: NavItem[] = [
     {
@@ -30,7 +34,7 @@ const FinanceItems: NavItem[] = [
     },
     {
         title: 'Branches',
-        href: BranchImportController.index(),
+        href: BranchController.index(),
         icon: Landmark,
     },
     {
@@ -38,6 +42,14 @@ const FinanceItems: NavItem[] = [
         href: ContributionController.index(),
         icon: CircleMinus,
     },
+    {
+        title: 'Incentives',
+        href: '/incentives',
+        icon: FileBadge,
+    }
+
+
+
 ];
 
 const AccessControlItems: NavItem[] = [
@@ -51,6 +63,11 @@ const AccessControlItems: NavItem[] = [
         title: 'Application Leaves',
         href: ApplicationLeaveController.index(),
         icon: Clipboard,
+    },
+    {
+        title: 'Payroll Periods',
+        href: PayrollPeriodController.index(),
+        icon: Calendar,
     },
     {
         title: 'Positions',

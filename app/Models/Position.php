@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use App\Policies\PositionPolicy;
+use Illuminate\Database\Eloquent\Attributes\UsePolicy;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 
+#[UsePolicy(PositionPolicy::class)]
 class Position extends Model
 {
     //
@@ -34,12 +37,14 @@ class Position extends Model
         return 'pos_slug';
     }
 
+    // In App\Models\Position
+
     // Accessors and Mutators
     protected function posName(): Attribute
     {
         return Attribute::make(
             get: fn($value) => Str::title($value),
-            set: fn($value) => strtolower(strip_tags($value)),
+            set: fn($value) => strtolower(trim(strip_tags($value))),
         );
     }
 

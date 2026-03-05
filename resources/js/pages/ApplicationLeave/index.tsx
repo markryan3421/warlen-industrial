@@ -39,9 +39,9 @@ export default function Index({ applicationLeaves }: ApplicationLeaveProps) {
     const { delete: destroy } = useForm();
    
 
-    const handleDelete = (id: number) => {
+    const handleDelete = (slug_app: string) => {
         if (confirm("Are you sure you want to delete this application leave?")) {
-            destroy(ApplicationLeaveController.destroy(id).url);
+            destroy(ApplicationLeaveController.destroy(slug_app).url);
         }
     }
 
@@ -90,13 +90,17 @@ export default function Index({ applicationLeaves }: ApplicationLeaveProps) {
                                         <TableCell className="font-medium">{applicationLeave.employee.user.name}</TableCell>
                                         <TableCell>{applicationLeave.leave_start}</TableCell>
                                         <TableCell>{applicationLeave.leave_end}</TableCell>
-                                        <TableCell>
+                                       <TableCell>
                                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                                applicationLeave.is_approved 
+                                                applicationLeave.app_status === 'approved' 
                                                     ? 'bg-green-100 text-green-800' 
+                                                    : applicationLeave.app_status === 'rejected'
+                                                    ? 'bg-red-100 text-red-800'
                                                     : 'bg-yellow-100 text-yellow-800'
                                             }`}>
-                                                {applicationLeave.is_approved ? 'Approved' : 'Not Approved'}
+                                                {applicationLeave.app_status ? 
+                                                    applicationLeave.app_status.charAt(0).toUpperCase() + applicationLeave.app_status.slice(1) 
+                                                    : 'Pending'}
                                             </span>
                                         </TableCell>
                                         <TableCell className="space-x-2">
@@ -109,7 +113,7 @@ export default function Index({ applicationLeaves }: ApplicationLeaveProps) {
                                             <Button 
                                                 variant="destructive" 
                                                 size="sm"
-                                                onClick={() => handleDelete(applicationLeave.id)}
+                                                onClick={() => handleDelete(applicationLeave.slug_app)}
                                             >
                                                 Delete
                                             </Button>

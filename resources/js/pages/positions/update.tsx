@@ -25,7 +25,6 @@ interface Position {
     id: number;
     pos_name: string;
     basic_salary: number;
-    pos_slug: string;
 }
 
 interface PageProps {
