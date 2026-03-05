@@ -3,8 +3,8 @@ import { Button } from "@/components/ui/button";
 import { type BreadcrumbItem, type BranchWithSites } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/react';
 import BranchController from "@/actions/App/Http/Controllers/BranchController";
-import { useState } from 'react';
-import { Building2, PlusCircle, MapPin } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Building2, PlusCircle, MapPin, Search, X } from 'lucide-react';
 
 import {
     Table,
@@ -24,6 +24,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { CustomToast } from '@/components/custom-toast';
+import { Input } from "@/components/ui/input";
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -40,6 +41,7 @@ export default function Index({ branches }: BranchProps) {
     const { delete: destroy } = useForm();
     const [selectedBranch, setSelectedBranch] = useState<BranchWithSites | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
    
     const handleDelete = (slug: string) => {
         if (confirm("Are you sure you want to delete this branch?")) {
@@ -52,19 +54,61 @@ export default function Index({ branches }: BranchProps) {
         setIsModalOpen(true);
     };
 
+    // Filter branches based on search term
+    const filteredBranches = useMemo(() => {
+        if (!searchTerm.trim()) {
+            return branches;
+        }
+        
+        const lowercaseSearch = searchTerm.toLowerCase().trim();
+        return branches.filter(branch => 
+            branch.branch_name.toLowerCase().includes(lowercaseSearch)
+        );
+    }, [branches, searchTerm]);
+
+    const clearSearch = () => {
+        setSearchTerm('');
+    };
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Branch" />
             <CustomToast />
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-                <div className="flex justify-between items-center">
+                {/* Header with title, search, and create button */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <h1 className="text-2xl font-bold">Branches</h1>
-                    <Link
-                        href={BranchController.create()}
-                        className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-                    >
-                        + Add Branch
-                    </Link>
+                    
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+                        {/* Search Bar */}
+                        {branches.length > 0 && (
+                            <div className="relative flex-1 sm:flex-initial sm:w-64">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                                <Input
+                                    type="text"
+                                    placeholder="Search branches..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="pl-9 pr-8 w-full"
+                                />
+                                {searchTerm && (
+                                    <button
+                                        onClick={clearSearch}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </button>
+                                )}
+                            </div>
+                        )}
+                        
+                        <Link
+                            href={BranchController.create()}
+                            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 whitespace-nowrap"
+                        >
+                            + Add Branch
+                        </Link>
+                    </div>
                 </div>
 
                 {branches.length === 0 ? (
@@ -82,6 +126,20 @@ export default function Index({ branches }: BranchProps) {
                             </Button>
                         </Link>
                     </div>
+                ) : filteredBranches.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-12 px-4 text-center border rounded-lg bg-gray-50">
+                        <div className="rounded-full bg-gray-100 p-4 mb-4">
+                            <Search className="h-8 w-8 text-gray-400" />
+                        </div>
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">No matching branches</h3>
+                        <p className="text-gray-500 mb-4">
+                            No branches found matching "{searchTerm}"
+                        </p>
+                        <Button variant="outline" onClick={clearSearch} className="gap-2">
+                            <X className="h-4 w-4" />
+                            Clear Search
+                        </Button>
+                    </div>
                 ) : (
                     <Table>
                         <TableCaption>A list of your Branches.</TableCaption>
@@ -94,7 +152,7 @@ export default function Index({ branches }: BranchProps) {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {branches.map((branch) => (
+                            {filteredBranches.map((branch) => (
                                 <TableRow key={branch.id}>
                                     <TableCell className="font-medium">{branch.branch_name}</TableCell>
                                     <TableCell>{branch.branch_address}</TableCell>

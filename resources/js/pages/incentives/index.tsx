@@ -3,7 +3,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Briefcase, Eye, Pencil, Trash2, X } from 'lucide-react';
+import { Briefcase, Eye, Pencil, Trash2, Filter, X } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useState } from 'react';
 import {
@@ -13,9 +13,15 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -59,17 +65,45 @@ interface Incentive {
 
 interface Props {
     incentives: Incentive[];
+    filters?: {
+        payroll_period_id?: string;
+    };
 }
 
-export default function Index({ incentives }: Props) {
+export default function Index({ incentives, filters = {} }: Props) {
     const [selectedIncentive, setSelectedIncentive] = useState<Incentive | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedPeriod, setSelectedPeriod] = useState<string>(filters.payroll_period_id || 'all');
+
+    // Get unique payroll periods for filter dropdown
+    const payrollPeriods = incentives
+        .map(incentive => incentive.payroll_period)
+        .filter((period, index, self) =>
+            period && self.findIndex(p => p?.id === period.id) === index
+        )
+        .sort((a, b) => new Date(b?.start_date || '').getTime() - new Date(a?.start_date || '').getTime());
+
+    // Filter incentives based on selected payroll period
+    const filteredIncentives = selectedPeriod === 'all'
+        ? incentives
+        : incentives.filter(incentive => incentive.payroll_period_id === parseInt(selectedPeriod));
 
     const deleteIncentive = (id: number) => {
         if (confirm('Are you sure you want to delete this incentive?')) {
             router.delete(`/incentives/${id}`);
         }
     }
+
+    const handleFilterChange = (value: string) => {
+        setSelectedPeriod(value);
+
+        // Update URL with filter parameter
+        router.get(
+            '/incentives',
+            { payroll_period_id: value === 'all' ? undefined : value },
+            { preserveState: true, replace: true }
+        );
+    };
 
     const formatDate = (dateString: string) => {
         return new Date(dateString).toLocaleDateString('en-US', {
@@ -93,6 +127,8 @@ export default function Index({ incentives }: Props) {
         setIsModalOpen(true);
     };
 
+    // Get the selected period display tex
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Incentives" />
@@ -112,8 +148,6 @@ export default function Index({ incentives }: Props) {
                         </Button>
                     </Link>
                 </div>
-
-                <Separator />
 
                 {incentives.length === 0 ? (
                     <Card className="border-dashed">
@@ -136,87 +170,127 @@ export default function Index({ incentives }: Props) {
                 ) : (
                     <Card>
                         <CardHeader className="pb-3">
-                            <CardTitle>Incentive List</CardTitle>
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                <CardTitle>Incentive List</CardTitle>
+
+                                {/* Filter inside the card header */}
+                                <div className="flex items-center gap-3">
+                                    <div className="w-full sm:w-auto">
+                                        <Select value={selectedPeriod} onValueChange={handleFilterChange}>
+                                            <SelectTrigger className="w-full bg-background h-9">
+                                                <div className="flex items-center gap-2 truncate">
+                                                    <Filter className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                                    <SelectValue placeholder="Filter by period" className="truncate" />
+                                                </div>
+                                            </SelectTrigger>
+                                            <SelectContent className="min-w-[300px] max-w-[500px]">
+                                                <SelectItem value="all">All Payroll Periods</SelectItem>
+                                                {payrollPeriods.map((period) => period && (
+                                                    <SelectItem key={period.id} value={period.id.toString()} className="truncate">
+                                                        {formatDate(period.start_date)} - {formatDate(period.end_date)}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+                            </div>
+
+
                         </CardHeader>
+
                         <CardContent className="p-0">
-                            <div className="rounded-md border">
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow className="bg-muted/50">
-                                            <TableHead className="w-[250px]">Incentive Name</TableHead>
-                                            <TableHead className="w-[150px]">Amount</TableHead>
-                                            <TableHead className="min-w-[300px]">Payroll Period</TableHead>
-                                            <TableHead className="w-[100px] text-center">Employees</TableHead>
-                                            <TableHead className="w-[200px] text-right">Actions</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {incentives.map((incentive) => (
-                                            <TableRow key={incentive.id} className="hover:bg-muted/50">
-                                                <TableCell className="font-medium">
-                                                    {incentive.incentive_name}
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Badge variant="secondary" className="font-mono">
-                                                        {formatCurrency(incentive.incentive_amount)}
-                                                    </Badge>
-                                                </TableCell>
-                                                <TableCell>
-                                                    {incentive.payroll_period ? (
-                                                        <div className="flex flex-col">
-                                                            <span className="text-sm">
-                                                                {formatDate(incentive.payroll_period.start_date)} - {formatDate(incentive.payroll_period.end_date)}
-                                                            </span>
-                                                            <span className="text-xs text-muted-foreground">
-                                                                Pay date: {formatDate(incentive.payroll_period.pay_date)}
-                                                            </span>
-                                                        </div>
-                                                    ) : (
-                                                        <span className="text-muted-foreground">N/A</span>
-                                                    )}
-                                                </TableCell>
-                                                <TableCell className="text-center">
-                                                    <Badge variant="outline">
-                                                        {incentive.employees?.length || 0}
-                                                    </Badge>
-                                                </TableCell>
-                                                <TableCell className="text-right">
-                                                    <div className="flex items-center justify-end gap-2">
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            onClick={() => viewIncentiveDetails(incentive)}
-                                                            className="hover:bg-primary/10 hover:text-primary"
-                                                        >
-                                                            <Eye className="h-4 w-4" />
-                                                            <span className="sr-only">View</span>
-                                                        </Button>
-                                                        <Link href={`/incentives/${incentive.id}/edit`}>
+                            {filteredIncentives.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
+                                    <div className="rounded-full bg-muted p-6 mb-4">
+                                        <Filter className="h-12 w-12 text-muted-foreground" />
+                                    </div>
+                                    <h3 className="text-xl font-semibold mb-2">No incentives found</h3>
+                                    <p className="text-muted-foreground mb-6 max-w-sm">
+                                        No incentives match the selected payroll period filter.
+                                    </p>
+
+                                </div>
+                            ) : (
+                                <div className="rounded-md border">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow className="bg-muted/50">
+                                                <TableHead className="w-[250px]">Incentive Name</TableHead>
+                                                <TableHead className="w-[150px]">Amount</TableHead>
+                                                <TableHead className="min-w-[300px]">Payroll Period</TableHead>
+                                                <TableHead className="w-[100px] text-center">Employees</TableHead>
+                                                <TableHead className="w-[200px] text-right">Actions</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {filteredIncentives.map((incentive) => (
+                                                <TableRow key={incentive.id} className="hover:bg-muted/50">
+                                                    <TableCell className="font-medium">
+                                                        {incentive.incentive_name}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Badge variant="secondary" className="font-mono">
+                                                            {formatCurrency(incentive.incentive_amount)}
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        {incentive.payroll_period ? (
+                                                            <div className="flex flex-col">
+                                                                <span className="text-sm">
+                                                                    {formatDate(incentive.payroll_period.start_date)} - {formatDate(incentive.payroll_period.end_date)}
+                                                                </span>
+                                                                <span className="text-xs text-muted-foreground">
+                                                                    Pay date: {formatDate(incentive.payroll_period.pay_date)}
+                                                                </span>
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-muted-foreground">N/A</span>
+                                                        )}
+                                                    </TableCell>
+                                                    <TableCell className="text-center">
+                                                        <Badge variant="outline">
+                                                            {incentive.employees?.length || 0}
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        <div className="flex items-center justify-end gap-2">
                                                             <Button
                                                                 variant="ghost"
                                                                 size="sm"
+                                                                onClick={() => viewIncentiveDetails(incentive)}
                                                                 className="hover:bg-primary/10 hover:text-primary"
                                                             >
-                                                                <Pencil className="h-4 w-4" />
-                                                                <span className="sr-only">Edit</span>
+                                                                <Eye className="h-4 w-4" />
+                                                                <span className="sr-only">View</span>
                                                             </Button>
-                                                        </Link>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            onClick={() => deleteIncentive(incentive.id)}
-                                                            className="hover:bg-destructive/10 hover:text-destructive"
-                                                        >
-                                                            <Trash2 className="h-4 w-4" />
-                                                            <span className="sr-only">Delete</span>
-                                                        </Button>
-                                                    </div>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            </div>
+                                                            <Link href={`/incentives/${incentive.id}/edit`}>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    className="hover:bg-primary/10 hover:text-primary"
+                                                                >
+                                                                    <Pencil className="h-4 w-4" />
+                                                                    <span className="sr-only">Edit</span>
+                                                                </Button>
+                                                            </Link>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                onClick={() => deleteIncentive(incentive.id)}
+                                                                className="hover:bg-destructive/10 hover:text-destructive"
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                                <span className="sr-only">Delete</span>
+                                                            </Button>
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                 )}
@@ -253,7 +327,6 @@ export default function Index({ incentives }: Props) {
                                                     <TableHead>Employee Name</TableHead>
                                                     <TableHead>Position</TableHead>
                                                     <TableHead>Branch</TableHead>
-
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>

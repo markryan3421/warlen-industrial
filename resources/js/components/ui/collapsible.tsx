@@ -23,6 +23,7 @@ function CollapsibleContent({
   return (
     <CollapsiblePrimitive.CollapsibleContent
       data-slot="collapsible-content"
+      className="open-sans-medium"
       {...props}
     />
   )

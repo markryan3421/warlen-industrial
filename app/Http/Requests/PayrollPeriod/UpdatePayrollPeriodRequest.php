@@ -25,7 +25,7 @@ class UpdatePayrollPeriodRequest extends FormRequest
         return [
             'start_date' => 'required|date|before_or_equal:end_date',
             'end_date' => 'required|date|after_or_equal:start_date',
-            'pay_date' => 'required|date|after_or_equal:end_date',
+            'pay_date' => 'required|date|after_or_equal:start_date|before_or_equal:end_date',
             'payroll_per_status' => ['required', Rule::in(['open', 'processing', 'completed'])],
         ];
     }
