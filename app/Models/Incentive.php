@@ -2,8 +2,11 @@
 
 namespace App\Models;
 
+use App\Policies\IncentivePolicy;
+use Illuminate\Database\Eloquent\Attributes\UsePolicy;
 use Illuminate\Database\Eloquent\Model;
 
+#[UsePolicy(IncentivePolicy::class)]
 class Incentive extends Model
 {
     protected $fillable = [
@@ -17,8 +20,8 @@ class Incentive extends Model
         return $this->belongsTo(PayrollPeriod::class);
     }
 
-public function employees()
-{
-    return $this->belongsToMany(Employee::class, 'employee_incentives', 'incentive_id', 'employee_id');
-}
+    public function employees()
+    {
+        return $this->belongsToMany(Employee::class, 'employee_incentives', 'incentive_id', 'employee_id');
+    }
 }

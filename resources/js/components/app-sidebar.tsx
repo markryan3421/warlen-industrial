@@ -1,7 +1,10 @@
 import { Link } from '@inertiajs/react';
-import { Airplay, CircleMinus, CircleUser, Flag, Landmark, Lock, UserCog, Clipboard, FileBadge, Folder, ClipboardPlus, Calendar } from 'lucide-react';
+import { Airplay, CircleMinus, CircleUser, Landmark, UserCog, Clipboard, Calendar, Users, Contact, BookUser, UserRoundCog, ChevronDown, FileBadge } from 'lucide-react';
+import ApplicationLeaveController from '@/actions/App/Http/Controllers/ApplicationLeaveController';
 import BranchController from '@/actions/App/Http/Controllers/BranchController';
-import PositionController from '@/actions/App/Http/Controllers/PositionController';
+import ContributionController from '@/actions/App/Http/Controllers/ContributionVersionController';
+import IncentiveController from '@/actions/App/Http/Controllers/IncentiveController';
+// import PositionController from '@/actions/App/Http/Controllers/PositionController';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -9,6 +12,8 @@ import {
     Sidebar,
     SidebarContent,
     SidebarFooter,
+    SidebarGroup,
+    SidebarGroupLabel,
     SidebarHeader,
     SidebarMenu,
     SidebarMenuButton,
@@ -17,11 +22,8 @@ import {
 import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
 import AppLogo from './app-logo';
-import ContributionController from '@/actions/App/Http/Controllers/ContributionVersionController';
-import ApplicationLeaveController from '@/actions/App/Http/Controllers/ApplicationLeaveController';
-import IncentiveController from '@/actions/App/Http/Controllers/IncentiveController';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible';
 import PayrollPeriodController from '@/actions/App/Http/Controllers/PayrollPeriodController';
-
 
 
 const FinanceItems: NavItem[] = [
@@ -36,18 +38,13 @@ const FinanceItems: NavItem[] = [
         icon: Landmark,
     },
     {
-        title: 'Attendance',
-        href: '/coming-soon',
-        icon: Flag,
-    },
-    {
         title: 'Contributions',
         href: ContributionController.index(),
         icon: CircleMinus,
     },
     {
         title: 'Incentives',
-        href: IncentiveController.index(),
+        href: '/incentives',
         icon: FileBadge,
     }
 
@@ -77,10 +74,33 @@ const AccessControlItems: NavItem[] = [
         href: '/positions',
         icon: UserCog,
     },
+];
+
+const AttendanceItems: NavItem[] = [
     {
-        title: 'Permissions',
-        href: '/permissions',
-        icon: Lock,
+        title: 'Attendance',
+        href: '/attendances',
+        icon: Users,
+    },
+    {
+        title: 'Attendance Exception Stats',
+        href: '/attendance-exception-stats',
+        icon: CircleUser,
+    },
+    {
+        title: 'Attendance Logs',
+        href: '/attendance-logs',
+        icon: Contact,
+    },
+    {
+        title: 'Attendance Period Stats',
+        href: '/attendance-period-stats',
+        icon: BookUser,
+    },
+    {
+        title: 'Attendance Schedules',
+        href: '/attendance-schedules',
+        icon: UserRoundCog,
     },
 ];
 
@@ -113,8 +133,50 @@ export function AppSidebar() {
             </SidebarHeader>
 
             <SidebarContent>
-                <NavMain label='Finance' items={FinanceItems} />
-                <NavMain label='Access Control' items={AccessControlItems} />
+                {/* Finance Group */}
+                <Collapsible defaultOpen className="group/collapsible">
+                    <SidebarGroup>
+                        <SidebarGroupLabel asChild>
+                            <CollapsibleTrigger className="text-white">
+                                Finance
+                                <ChevronDown className="ml-auto flex items-center justify-items-center transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                            </CollapsibleTrigger>
+                        </SidebarGroupLabel>
+                        <CollapsibleContent>
+                            <NavMain items={FinanceItems} />
+                        </CollapsibleContent>
+                    </SidebarGroup>
+                </Collapsible>
+
+                {/* Access Control Group */}
+                <Collapsible defaultOpen className="group/collapsible">
+                    <SidebarGroup>
+                        <SidebarGroupLabel asChild>
+                            <CollapsibleTrigger className="text-white">
+                                Access Control
+                                <ChevronDown className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                            </CollapsibleTrigger>
+                        </SidebarGroupLabel>
+                        <CollapsibleContent>
+                            <NavMain items={AccessControlItems} />
+                        </CollapsibleContent>
+                    </SidebarGroup>
+                </Collapsible>
+
+                {/* Attendance Group */}
+                <Collapsible defaultOpen className="group/collapsible">
+                    <SidebarGroup>
+                        <SidebarGroupLabel asChild>
+                            <CollapsibleTrigger className="text-white">
+                                Attendance
+                                <ChevronDown className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                            </CollapsibleTrigger>
+                        </SidebarGroupLabel>
+                        <CollapsibleContent>
+                            <NavMain items={AttendanceItems} />
+                        </CollapsibleContent>
+                    </SidebarGroup>
+                </Collapsible>
             </SidebarContent>
 
             <SidebarFooter>

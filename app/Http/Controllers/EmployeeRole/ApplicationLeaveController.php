@@ -8,6 +8,7 @@ use App\Http\Requests\ApplicationLeave\StoreApplicationLeaveRequest;
 use App\Models\ApplicationLeave;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rules\In;
 use Inertia\Inertia;
 
@@ -18,6 +19,8 @@ class ApplicationLeaveController extends Controller
      */
     public function index(CreateNewApplication $action)
     {
+        Gate::authorize('viewAny',ApplicationLeave::class);
+
         $applicationLeaves = ApplicationLeave::whereHas('employee', function ($query) {
             $query->where('user_id', auth()->id());
         })->latest()->get();
@@ -32,6 +35,7 @@ class ApplicationLeaveController extends Controller
      */
     public function create()
     {
+        Gate::authorize('create', ApplicationLeave::class);
         return  Inertia::render('employee-role/ApplicationLeave/create');
     }
 
@@ -40,6 +44,7 @@ class ApplicationLeaveController extends Controller
      */
     public function store(StoreApplicationLeaveRequest $request, CreateNewApplication $action)
     {
+        Gate::authorize('create', ApplicationLeave::class);
         if ($this->limit('create-application-leave:' . auth()->id(), 60, 20)) {
             return back()->with('error', 'Too many attempts. Please try again later.');
         }
@@ -78,24 +83,24 @@ class ApplicationLeaveController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(string $id)
+    public function edit(ApplicationLeave $applicationLeave)
     {
-        //
+        Gate::authorize('update', $applicationLeave);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, ApplicationLeave $applicationLeave)
     {
-        //
+        Gate::authorize('update', $applicationLeave);
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(ApplicationLeave $applicationLeave)
     {
-        //
+        Gate::authorize('delete', $applicationLeave);
     }
 }

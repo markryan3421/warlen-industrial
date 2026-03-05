@@ -8,6 +8,7 @@ use App\Http\Requests\PayrollPeriod\StorePayrollPeriodRequest;
 use App\Http\Requests\PayrollPeriod\UpdatePayrollPeriodRequest;
 use App\Models\PayrollPeriod;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 
 class PayrollPeriodController extends Controller
@@ -17,10 +18,11 @@ class PayrollPeriodController extends Controller
      */
     public function index()
     {
+        Gate::authorize('viewAny', PayrollPeriod::class);
 
         $payrollPeriods = PayrollPeriod::query()->get();
 
-        return Inertia::render('PayrollPeriod/index',compact('payrollPeriods'));
+        return Inertia::render('PayrollPeriod/index', compact('payrollPeriods'));
     }
 
     /**
@@ -28,6 +30,7 @@ class PayrollPeriodController extends Controller
      */
     public function create()
     {
+        Gate::authorize('create', PayrollPeriod::class);
         return Inertia::render('PayrollPeriod/create');
     }
 
@@ -36,6 +39,12 @@ class PayrollPeriodController extends Controller
      */
     public function store(StorePayrollPeriodRequest $request, CreateNewPayrollPeriod $action)
     {
+        Gate::authorize('create', PayrollPeriod::class);
+
+        if ($this->limit('create-payroll-period:' . auth()->id(), 60, 5)) {
+            return back()->with('error', 'Too many attempts. Please try again later.');
+        }
+
         DB::beginTransaction();
 
         try {
@@ -45,7 +54,6 @@ class PayrollPeriodController extends Controller
 
             return redirect()->route('payroll-periods.index')->with('success', 'Payroll period created successfully.');
         } catch (\Exception $e) {
-            dd($e);
             DB::rollBack();
             return back()->with('error', $e->getMessage());
         }
@@ -56,7 +64,8 @@ class PayrollPeriodController extends Controller
      */
     public function show(PayrollPeriod $payrollPeriod)
     {
-        //
+        Gate::authorize('view', $payrollPeriod);
+        return Inertia::render('PayrollPeriod/show', compact('payrollPeriod'));
     }
 
     /**
@@ -64,6 +73,7 @@ class PayrollPeriodController extends Controller
      */
     public function edit(PayrollPeriod $payrollPeriod)
     {
+        Gate::authorize('update', $payrollPeriod);
         return Inertia::render('PayrollPeriod/edit', compact('payrollPeriod'));
     }
 
@@ -72,6 +82,12 @@ class PayrollPeriodController extends Controller
      */
     public function update(UpdatePayrollPeriodRequest $request, PayrollPeriod $payrollPeriod, UpdatePayrollPeriod $action)
     {
+        Gate::authorize('update', $payrollPeriod);
+
+        if ($this->limit('update-payroll-period:' . auth()->id(), 60, 5)) {
+            return back()->with('error', 'Too many attempts. Please try again later.');
+        }
+
         DB::beginTransaction();
 
         try {
@@ -91,6 +107,10 @@ class PayrollPeriodController extends Controller
      */
     public function destroy(PayrollPeriod $payrollPeriod)
     {
+        Gate::authorize('delete', $payrollPeriod);
+        if ($this->limit('delete-payroll-period:' . auth()->id(), 60, 5)) {
+            return back()->with('error', 'Too many attempts. Please try again later.');
+        }
         $payrollPeriod->delete();
 
         return redirect()->route('payroll-periods.index')->with('success', 'Payroll period deleted successfully.');

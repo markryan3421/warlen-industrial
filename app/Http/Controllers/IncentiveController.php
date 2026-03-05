@@ -10,6 +10,7 @@ use App\Models\Employee;
 use App\Models\Incentive;
 use App\Models\PayrollPeriod;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 
 class IncentiveController extends Controller
@@ -29,6 +30,7 @@ class IncentiveController extends Controller
      */
     public function create()
     {
+        Gate::authorize('create', Incentive::class);
         $payroll_periods = PayrollPeriod::all();
         $employees = Employee::with('user')->where('employee_status', 'active')->get();
         return Inertia::render('incentives/create', compact('payroll_periods','employees' ));
@@ -39,6 +41,7 @@ class IncentiveController extends Controller
      */
     public function store(StoreIncentiveRequest $request, CreateNewIncentive $incentive )
     {
+        Gate::authorize('create', Incentive::class);
         $incentive->create($request->validated());
         DB::commit();
         return redirect()->route('incentives.index');
@@ -57,7 +60,7 @@ class IncentiveController extends Controller
      */
 public function edit(Incentive $incentive)
 {
-    
+    Gate::authorize('update', $incentive);   
     $incentive->load('payroll_period', 'employees');
     $employees = Employee::with('user')->where('employee_status', 'active')->get();
     
@@ -76,6 +79,7 @@ public function edit(Incentive $incentive)
      */
     public function update(UpdateIncentiveRequest $request,Incentive $incentive,  UpdateIncentive $updateincentive)
     {
+        Gate::authorize('update', $incentive);
         $updateincentive->update($request->validated(), $incentive);
         DB::commit();
         return redirect()->route('incentives.index');
@@ -86,6 +90,8 @@ public function edit(Incentive $incentive)
      */
     public function destroy(Incentive $incentive)
     {
+        Gate::authorize('delete', $incentive);
+
         $incentive->delete();
         DB::commit();
         return redirect()->route('incentives.index');

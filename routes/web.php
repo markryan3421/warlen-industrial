@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\ApplicationLeaveController;
+use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\AttendanceImportController;
 use App\Http\Controllers\BranchController;
 use App\Http\Controllers\ContributionVersionController;
 use App\Http\Controllers\EmployeeController;
@@ -23,9 +25,8 @@ Route::get('/', function () {
 //     return Inertia::render('dashboard');
 // })->middleware(['auth', 'verified'])->name('dashboard');
 
-Route::middleware(['auth', 'verified', 'roleBase'])->group(function () {
+Route::middleware(['auth', 'verified', 'throttle:limit-actions'])->group(function () {
 
-    //admin dashboard
     Route::get('dashboard', function () {
         return Inertia::render('dashboard');
     })->name('dashboard');
@@ -40,14 +41,15 @@ Route::middleware(['auth', 'verified', 'roleBase'])->group(function () {
         return Inertia::render('HR/dashboard');
     })->name('hr.dashboard');
 
-    Route::resource('branches', BranchController::class)->except(['show']); // admin only
-    Route::resource('positions', PositionController::class)->except(['show']); // admin only
-    Route::resource('employees', EmployeeController::class)->except(['show']); // admin only
-    Route::resource('permissions', PermissionController::class); 
-    Route::resource('incentives', IncentiveController::class)->except(['show']); // admin only
+    Route::resource('branches', BranchController::class)->except(['show']);
+    Route::resource('positions', PositionController::class)->except(['show']);
+    Route::resource('employees', EmployeeController::class)->except(['show']);
+    Route::resource('permissions', PermissionController::class);
+    Route::resource('incentives', IncentiveController::class)->except(['show']);
 
-    Route::resource('contribution-versions', ContributionVersionController::class)->except(['show']); // admin only
-    Route::resource('application-leave', ApplicationLeaveController::class); //admin only
+    Route::resource('contribution-versions', ContributionVersionController::class)->except(['show']);
+    Route::resource('application-leave', ApplicationLeaveController::class);
+    Route::resource('attendances', AttendanceImportController::class);
 
     Route::resource('employee/application-leave', EmployeeApplicationLeaveController::class)->only(['create', 'index', 'store', 'update', 'edit'])->names([
         'index' => 'employee.application-leave.index',
@@ -57,7 +59,13 @@ Route::middleware(['auth', 'verified', 'roleBase'])->group(function () {
         'update' => 'employee.application-leave.update',
     ]); //employee only
 
-    Route::resource('payroll-periods', PayrollPeriodController::class)->except(['show']); //admin and hr
+    Route::resource('payroll-periods', PayrollPeriodController::class)->except(['show']);
+
+    Route::get('/attendance-schedules', [AttendanceController::class, 'attendanceSchedules']);
+    Route::get('/attendance-period-stats', [AttendanceController::class, 'attendancePeriodStats']);
+    Route::get('/attendance-logs', [AttendanceController::class, 'attendanceLogs']);
+    Route::get('/attendance-exception-stats', [AttendanceController::class, 'attendanceExceptionStats']);
+
 
     Route::get('/coming-soon', function () {
         return Inertia::render('coming-soon');
