@@ -27,9 +27,11 @@ class EmployeeController extends Controller
     {
         Gate::authorize('viewAny', Employee::class);
 
-        $employees = $this->cacheRemember('employees', 60, function () {
-            return $this->employeeRepository->getEmployees();
-        });
+        // $employees = $this->cacheRemember('employees', 60, function () {
+        //     return $this->employeeRepository->getEmployees();
+        // });
+        $employees = $this->employeeRepository->getEmployees();
+
 
         return Inertia::render('employees/index', [
             'employees' => $employees

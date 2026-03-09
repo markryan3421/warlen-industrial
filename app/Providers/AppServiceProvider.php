@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\Employee;
 use Carbon\CarbonImmutable;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -29,6 +30,8 @@ class AppServiceProvider extends ServiceProvider
         $this->configureDefaults();
 
         $this->configureRateLimiting();
+
+        Employee::observe(new \App\Observers\EmployeeObserver());
     }
 
     /**

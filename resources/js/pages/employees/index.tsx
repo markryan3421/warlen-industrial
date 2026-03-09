@@ -30,7 +30,7 @@ interface Employee {
         name: string;
         email: string;
     }
-    slug_emp: string;   
+    slug_emp: string;
     emp_code: string;
     pay_frequency: string;
     contract_start_date: string;
@@ -47,30 +47,13 @@ interface PageProps {
 
 export default function Index({ employees }: PageProps) {
     const { delete: destroy } = useForm();
-    
-    // Function to determine if employee should be inactive based on contract end date
-    const shouldBeInactive = (employee: Employee) => {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        
-        const contractEndDate = new Date(employee.contract_end_date);
-        contractEndDate.setHours(0, 0, 0, 0);
-        
-        // If contract end date is before today, employee should be inactive
-        return contractEndDate < today;
-    };
 
-    // Function to capitalize first letter of status
-    const capitalizeStatus = (status: string) => {
-        if (!status) return status;
-        return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
-    };
 
     const hasValidPosition = (employee: Employee) => {
         return employee.position && !employee.position.deleted_at;
     }
-    
-    const handleDelete = (slug:string) => {
+
+    const handleDelete = (slug: string) => {
         if (confirm("Are you sure you want to delete this employee?")) {
             destroy(EmmployeeController.destroy(slug).url);
         }
@@ -83,12 +66,12 @@ export default function Index({ employees }: PageProps) {
             day: 'numeric'
         });
     };
-    
+
     // Combine start and end date
     const formatContractPeriod = (employee: Employee) => {
         return `${formatDate(employee.contract_start_date)} - ${formatDate(employee.contract_end_date)}`;
     };
-    
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Employees" />
@@ -101,7 +84,7 @@ export default function Index({ employees }: PageProps) {
                         <CustomPieChart />
                     </div>
                 </div>
-                
+
                 <div className="flex justify-between items-center">
                     <h1 className="text-2xl font-bold">Employees</h1>
                     <Link href="/employees/create">
@@ -139,17 +122,15 @@ export default function Index({ employees }: PageProps) {
                             </TableHeader>
                             <TableBody>
                                 {employees.map((employee) => {
-                                    // Determine display status
-                                    const rawStatus = shouldBeInactive(employee) ? 'inactive' : employee.employee_status;
-                                    const displayStatus = capitalizeStatus(rawStatus);
-                                    
+
+
                                     return (
                                         <TableRow key={employee.id}>
                                             <TableCell>{employee.emp_code}</TableCell>
                                             <TableCell>{employee.user.name}</TableCell>
                                             <TableCell>
-                                                {hasValidPosition(employee) ? 
-                                                    employee.position.pos_name : 
+                                                {hasValidPosition(employee) ?
+                                                    employee.position.pos_name :
                                                     <span className="text-gray-400 italic">Not assigned</span>
                                                 }
                                             </TableCell>
@@ -159,12 +140,11 @@ export default function Index({ employees }: PageProps) {
                                             <TableCell>{employee.branch.branch_name}</TableCell>
                                             <TableCell>{formatContractPeriod(employee)}</TableCell>
                                             <TableCell>
-                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                                    ['Active', 'active'].includes(rawStatus)
+                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${employee.employee_status.toLowerCase() === 'active'
                                                         ? 'bg-green-100 text-green-800'
                                                         : 'bg-yellow-100 text-yellow-800'
-                                                }`}>
-                                                    {displayStatus}
+                                                    }`}>
+                                                    {employee.employee_status === 'active' || employee.employee_status === 'Active' ? 'Active' : 'Inactive'}
                                                 </span>
                                             </TableCell>
                                             <TableCell>
