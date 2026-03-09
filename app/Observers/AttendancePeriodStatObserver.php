@@ -12,11 +12,7 @@ class AttendancePeriodStatObserver
      */
     public function created(AttendancePeriodStat $attendancePeriodStat): void
     {
-        PayrollPeriod::firstOrCreate([
-            'start_date' => $attendancePeriodStat->period_start,
-            'end_date' => $attendancePeriodStat->period_end,
-            'pay_date' => $attendancePeriodStat->period_end->addDays(1),
-        ]);
+        $this->createPayrollPeriod($attendancePeriodStat->period_start, $attendancePeriodStat->period_end);
     }
 
     /**
@@ -49,5 +45,14 @@ class AttendancePeriodStatObserver
     public function forceDeleted(AttendancePeriodStat $attendancePeriodStat): void
     {
         //
+    }
+
+    protected function createPayrollPeriod($start_date, $end_date): PayrollPeriod
+    {
+        return PayrollPeriod::firstOrCreate([
+            'start_date' => $start_date,
+            'end_date' => $end_date,
+            'pay_date' => $end_date->addDays(1),
+        ]);
     }
 }

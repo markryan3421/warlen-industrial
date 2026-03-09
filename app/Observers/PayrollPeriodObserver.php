@@ -2,6 +2,7 @@
 
 namespace App\Observers;
 
+use App\Enums\PayrollPeriodStatusEnum;
 use App\Models\PayrollPeriod;
 use App\Services\PayrollProcessingService;
 
@@ -21,7 +22,7 @@ class PayrollPeriodObserver
     {
         // Check if status is being changed to 'processing'
         if ($payrollPeriod->isDirty('payroll_per_status') && 
-            $payrollPeriod->payroll_per_status === 'processing') {
+            $payrollPeriod->payroll_per_status === PayrollPeriodStatusEnum::PROCESSING->value) {
             
             $this->payrollService->processPayrollForPeriod($payrollPeriod);
         }
