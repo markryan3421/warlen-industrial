@@ -11,6 +11,7 @@ use App\Models\Position;
 use App\Models\Site;
 use App\Models\User;
 use Database\Seeders\DeductionSeeder;
+use Database\Seeders\EmployeeSeeder;
 use Database\Seeders\UserSeeder;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -30,6 +31,7 @@ class DatabaseSeeder extends Seeder
            // PositionSeeder::class, // Make sure this runs first
             //DeductionSeeder::class,
             UserSeeder::class,
+            EmployeeSeeder::class
         ]);
     }
 }

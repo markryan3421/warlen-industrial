@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\AttendancePeriodStat;
+use App\Models\Employee;
 use App\Models\PayrollPeriod;
 use App\Observers\AttendancePeriodStatObserver;
 use App\Observers\PayrollPeriodObserver;
@@ -34,9 +35,9 @@ class AppServiceProvider extends ServiceProvider
 
         $this->configureRateLimiting();
 
-        $this->observeAttendancePeriod();
+        Employee::observe(new \App\Observers\EmployeeObserver());
 
-       // $this->observePayroll();
+        $this->observer();
     }
 
     /**
@@ -62,14 +63,12 @@ class AppServiceProvider extends ServiceProvider
         );
     }
 
-    private function observePayroll(): void
-    {
-        PayrollPeriod::observe(PayrollPeriodObserver::class);
-    }
 
-    private function observeAttendancePeriod(): void
+
+    private function observer(): void
     {
         AttendancePeriodStat::observe(AttendancePeriodStatObserver::class);
+        PayrollPeriod::observe(PayrollPeriodObserver::class);
     }
 
     private function configureRateLimiting(): void
