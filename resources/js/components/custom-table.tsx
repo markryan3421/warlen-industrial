@@ -1,5 +1,4 @@
 import * as LucidIcons from "lucide-react";
-import { MoreHorizontalIcon } from "lucide-react";
 import { useRoute } from "ziggy-js";
 import {
     DropdownMenu,
@@ -13,6 +12,8 @@ import { Button } from "./ui/button";
 interface TableColumn {
     label: string;
     key: string;
+    isBadge?: boolean;
+    render?: (row: any) => React.ReactNode;
     isImage?: boolean;
     isAction?: boolean;
     className?: string;
@@ -37,7 +38,7 @@ interface CustomTableProps {
     onDelete: (route: string) => void;
     onView: (row: TableRow) => void;
     onEdit: (row: TableRow) => void;
-    isModal?: boolean;
+    // isModal?: boolean;
 }
 
 // ── Date/time formatter — shared by all views ──────────────────────────────────
@@ -77,7 +78,7 @@ export const CustomTable = ({
     onDelete,
     onView,
     onEdit,
-    isModal,
+    // isModal,
 }: CustomTableProps) => {
     const route = useRoute();
 
@@ -88,7 +89,7 @@ export const CustomTable = ({
                 <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="h-8 w-8 p-0">
                         <span className="sr-only">Open menu</span>
-                        <MoreHorizontalIcon className="h-4 w-4" />
+                        <LucidIcons.EllipsisVertical className="h-4 w-4" />
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="min-w-[180px]">
@@ -150,14 +151,12 @@ export const CustomTable = ({
                 <div className="flex items-center gap-3 px-6 py-[18px] border-b border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-[#0a1628]">
                     <span className="w-2 h-2 rounded-full shrink-0 bg-blue-600 dark:bg-blue-500 ring-4 ring-blue-100 dark:ring-blue-950" />
                     <span className="text-[11px] font-semibold tracking-widest uppercase text-stone-400 dark:text-stone-500">
-                        Attendance Information
+                        Information Table
                     </span>
                 </div>
 
-                {/* ══════════════════════════════════════════════════════════════
-                    MOBILE VIEW  — below md (< 768px)
-                    Each row is a stacked card with label: value pairs.
-                ══════════════════════════════════════════════════════════════ */}
+                {/* MOBILE VIEW  — below md (< 768px)
+                Each row is a stacked card with label: value pairs. */}
                 <div className="block md:hidden">
                     {data.length === 0 ? (
                         emptyState
@@ -309,6 +308,10 @@ export const CustomTable = ({
                                                     />
                                                 ) : col.isAction ? (
                                                     renderActionButtons(row)
+                                                ) : col.isBadge ? (
+                                                    <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                                                        {col.render ? col.render(row) : formatCellValue(col, row)}&nbsp;{col.render(row) === 1 ? "site" : "sites"}
+                                                    </span>
                                                 ) : (
                                                     <span>{formatCellValue(col, row)}</span>
                                                 )}

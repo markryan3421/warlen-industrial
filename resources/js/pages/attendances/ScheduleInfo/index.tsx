@@ -54,7 +54,7 @@ interface IndexProps {
 export default function AttendanceSchedules({ schedules, filters, totalCount, filteredCount }: IndexProps) {
     const { data, setData } = useForm({
         search: filters.search || '',
-        perPage: filters.perPage || '5',
+        perPage: filters.perPage || '10',
     });
 
     // Handle search input change

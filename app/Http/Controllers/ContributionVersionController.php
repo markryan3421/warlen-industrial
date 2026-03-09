@@ -19,6 +19,7 @@ class ContributionVersionController extends Controller
     public function index()
     {
         Gate::authorize('viewAny', ContributionVersion::class);
+        
         return Inertia::render('Contributions/index', [
             'contributionVersions' => ContributionVersion::with('contributionBrackets')->get(),
         ]);
