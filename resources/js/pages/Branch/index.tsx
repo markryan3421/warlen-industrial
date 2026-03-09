@@ -1,11 +1,16 @@
-import AppLayout from '@/layouts/app-layout';
-import { Button } from "@/components/ui/button";
-import { type BreadcrumbItem, type BranchWithSites } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/react';
-import BranchController from "@/actions/App/Http/Controllers/BranchController";
+import { Building2, MapPin } from 'lucide-react';
 import { useState } from 'react';
-import { Building2, PlusCircle, MapPin } from 'lucide-react';
-
+import BranchController from "@/actions/App/Http/Controllers/BranchController";
+import { CustomToast } from '@/components/custom-toast';
+import { Button } from "@/components/ui/button";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
 import {
     Table,
     TableBody,
@@ -15,15 +20,8 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog";
-import { CustomToast } from '@/components/custom-toast';
+import AppLayout from '@/layouts/app-layout';
+import { type BreadcrumbItem, type BranchWithSites } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -40,7 +38,7 @@ export default function Index({ branches }: BranchProps) {
     const { delete: destroy } = useForm();
     const [selectedBranch, setSelectedBranch] = useState<BranchWithSites | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
-   
+
     const handleDelete = (slug: string) => {
         if (confirm("Are you sure you want to delete this branch?")) {
             destroy(BranchController.destroy(slug).url);
