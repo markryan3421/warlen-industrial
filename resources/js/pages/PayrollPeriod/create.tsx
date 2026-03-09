@@ -1,6 +1,6 @@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, useForm, usePage } from '@inertiajs/react';
 import InputError from '@/components/input-error';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,15 @@ interface FormData {
     payroll_per_status: string;
 }
 
+interface PageProps {
+    payroll_period_enums: {
+        statuses: Array<{
+            value: string;
+            label: string;
+        }>;
+    };
+}
+
 export default function Create() {
     const { data, setData, errors, processing, post } = useForm<FormData>({
         start_date: '',
@@ -32,6 +41,8 @@ export default function Create() {
         pay_date: '',
         payroll_per_status: 'open', // Default status
     });
+
+    const { payroll_period_enums } = usePage().props
 
     function submitPayrollPeriod(e: React.FormEvent) {
         e.preventDefault();
@@ -98,9 +109,12 @@ export default function Create() {
                                         onChange={e => setData('payroll_per_status', e.target.value)}
                                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                                     >
-                                        <option value="open">Open</option>
-                                        <option value="processing">Processing</option>
-                                        <option value="completed">Completed</option>
+                                        <option value="" disabled>Select a status</option>
+                                        {payroll_period_enums.map(({value, label}) => (
+                                            <option key={value} value={value}>
+                                                {label}
+                                            </option>
+                                        ))}
                                     </select>
                                     <InputError message={errors.payroll_per_status} />
                                 </div>

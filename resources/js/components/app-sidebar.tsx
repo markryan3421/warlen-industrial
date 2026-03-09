@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { Airplay, CircleMinus, CircleUser, Landmark, UserCog, Clipboard, Calendar, Users, Contact, BookUser, UserRoundCog, ChevronDown, FileBadge } from 'lucide-react';
+import { Airplay, CircleMinus, CircleUser, Landmark, UserCog, Clipboard, Calendar, Users, Contact, BookUser, UserRoundCog, ChevronDown, FileBadge,PhilippinePesoIcon } from 'lucide-react';
 import ApplicationLeaveController from '@/actions/App/Http/Controllers/ApplicationLeaveController';
 import BranchController from '@/actions/App/Http/Controllers/BranchController';
 import ContributionController from '@/actions/App/Http/Controllers/ContributionVersionController';
@@ -24,7 +24,7 @@ import type { NavItem } from '@/types';
 import AppLogo from './app-logo';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible';
 import PayrollPeriodController from '@/actions/App/Http/Controllers/PayrollPeriodController';
-
+import PayrollController from '@/actions/App/Http/Controllers/PayrollController';
 
 const FinanceItems: NavItem[] = [
     {
@@ -68,6 +68,11 @@ const AccessControlItems: NavItem[] = [
         title: 'Payroll Periods',
         href: PayrollPeriodController.index(),
         icon: Calendar,
+    },
+      {
+        title: 'Payroll',
+        href: PayrollController.index(),
+        icon: PhilippinePesoIcon,
     },
     {
         title: 'Positions',

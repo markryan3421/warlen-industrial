@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Actions\PayrollPeriod\CreateNewPayrollPeriod;
 use App\Actions\PayrollPeriod\UpdatePayrollPeriod;
+use App\Enums\PayrollPeriodStatusEnum;
 use App\Http\Requests\PayrollPeriod\StorePayrollPeriodRequest;
 use App\Http\Requests\PayrollPeriod\UpdatePayrollPeriodRequest;
 use App\Models\PayrollPeriod;
@@ -22,7 +23,10 @@ class PayrollPeriodController extends Controller
 
         $payrollPeriods = PayrollPeriod::query()->get();
 
-        return Inertia::render('PayrollPeriod/index', compact('payrollPeriods'));
+        $payroll_period_enums = PayrollPeriodStatusEnum::options();
+
+
+        return Inertia::render('PayrollPeriod/index', compact('payrollPeriods', 'payroll_period_enums'));
     }
 
     /**
@@ -31,7 +35,8 @@ class PayrollPeriodController extends Controller
     public function create()
     {
         Gate::authorize('create', PayrollPeriod::class);
-        return Inertia::render('PayrollPeriod/create');
+        $payroll_period_enums = PayrollPeriodStatusEnum::options();
+        return Inertia::render('PayrollPeriod/create', compact('payroll_period_enums'));
     }
 
     /**
@@ -54,6 +59,7 @@ class PayrollPeriodController extends Controller
 
             return redirect()->route('payroll-periods.index')->with('success', 'Payroll period created successfully.');
         } catch (\Exception $e) {
+            dd($e);
             DB::rollBack();
             return back()->with('error', $e->getMessage());
         }
@@ -74,7 +80,8 @@ class PayrollPeriodController extends Controller
     public function edit(PayrollPeriod $payrollPeriod)
     {
         Gate::authorize('update', $payrollPeriod);
-        return Inertia::render('PayrollPeriod/edit', compact('payrollPeriod'));
+        $payroll_period_enums = PayrollPeriodStatusEnum::options();
+        return Inertia::render('PayrollPeriod/edit', compact('payrollPeriod', 'payroll_period_enums'));
     }
 
     /**

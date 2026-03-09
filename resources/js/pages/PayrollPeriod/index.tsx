@@ -1,7 +1,7 @@
 import AppLayout from '@/layouts/app-layout';
 import { Button } from "@/components/ui/button";
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import PayrollPeriodController from "@/actions/App/Http/Controllers/PayrollPeriodController";
 import { useState, useMemo, useEffect } from 'react';
 import { CalendarDays, PlusCircle, Clock, CheckCircle2, XCircle, AlertCircle, Filter } from 'lucide-react';
@@ -49,6 +49,13 @@ interface PayrollPeriodProps {
     payrollPeriods: PayrollPeriod[];
 }
 
+interface PageProps {
+    payroll_period_enums: Array<{
+        value: string;
+        label: string;
+    }>;
+}
+
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Payroll Periods',
@@ -58,6 +65,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 export default function Index({ payrollPeriods }: PayrollPeriodProps) {
     const { delete: destroy } = useForm();
+    const { payroll_period_enums } = usePage<PageProps>().props;
     const [selectedPeriod, setSelectedPeriod] = useState<PayrollPeriod | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     
@@ -114,6 +122,13 @@ export default function Index({ payrollPeriods }: PayrollPeriodProps) {
         }
     };
 
+    // Format status text using enum
+    const formatStatus = (status: string) => {
+        if (!status) return '';
+        const found = payroll_period_enums?.find(item => item.value.toLowerCase() === status.toLowerCase());
+        return found?.label || status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+    };
+
     // Filter payroll periods based on selected status
     const filteredPayrollPeriods = useMemo(() => {
         if (statusFilter === 'all') {
@@ -167,9 +182,11 @@ export default function Index({ payrollPeriods }: PayrollPeriodProps) {
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="all">All Statuses</SelectItem>
-                                    <SelectItem value="open">Open</SelectItem>
-                                    <SelectItem value="processing">Processing</SelectItem>
-                                    <SelectItem value="completed">Completed</SelectItem>
+                                    {payroll_period_enums?.map(({value, label}) => (
+                                        <SelectItem key={value} value={value}>
+                                            {label}
+                                        </SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                         </div>
@@ -197,7 +214,7 @@ export default function Index({ payrollPeriods }: PayrollPeriodProps) {
                         <Filter className="h-12 w-12 text-gray-400 mb-3" />
                         <h3 className="text-lg font-medium text-gray-900 mb-1">No periods found</h3>
                         <p className="text-gray-500 mb-4">
-                            No payroll periods with status "{statusFilter}" found.
+                            No payroll periods with status "{payroll_period_enums?.find(e => e.value === statusFilter)?.label || statusFilter}" found.
                         </p>
                         <Button variant="outline" onClick={clearFilter}>
                             Clear Filter
@@ -206,7 +223,7 @@ export default function Index({ payrollPeriods }: PayrollPeriodProps) {
                 ) : (
                     <Table>
                         <TableCaption>
-                            A list of your Payroll Periods {statusFilter !== 'all' && `- Filtered by: ${statusFilter}`}
+                            A list of your Payroll Periods {statusFilter !== 'all' && `- Filtered by: ${payroll_period_enums?.find(e => e.value === statusFilter)?.label || statusFilter}`}
                         </TableCaption>
                         <TableHeader>
                             <TableRow>
@@ -226,7 +243,7 @@ export default function Index({ payrollPeriods }: PayrollPeriodProps) {
                                     <TableCell>
                                         <span className={getStatusBadge(period.payroll_per_status)}>
                                             {getStatusIcon(period.payroll_per_status)}
-                                            {period.payroll_per_status.charAt(0).toUpperCase() + period.payroll_per_status.slice(1)}
+                                            {formatStatus(period.payroll_per_status)}
                                         </span>
                                     </TableCell>
                                     <TableCell className="space-x-2">
@@ -300,7 +317,7 @@ export default function Index({ payrollPeriods }: PayrollPeriodProps) {
                                     <div className="flex items-center gap-2">
                                         <span className={getStatusBadge(selectedPeriod.payroll_per_status)}>
                                             {getStatusIcon(selectedPeriod.payroll_per_status)}
-                                            {selectedPeriod.payroll_per_status.charAt(0).toUpperCase() + selectedPeriod.payroll_per_status.slice(1)}
+                                            {formatStatus(selectedPeriod.payroll_per_status)}
                                         </span>
                                     </div>
                                 </div>

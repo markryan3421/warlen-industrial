@@ -4535,6 +4535,10 @@
                 "type": "zip",
                 "url": "https://api.github.com/repos/symfony/css-selector/zipball/2e7c52c647b406e2107dd867db424a4dbac91864",
                 "reference": "2e7c52c647b406e2107dd867db424a4dbac91864",
+<<<<<<< HEAD
+=======
+>>>>>>> 6bbaf508872fa7ffc7313a6a291211a06763ae9a
+>>>>>>> 834c14e6654e37eb90fdc79faddc9783cda0745f
                 "shasum": ""
             },
             "require": {
@@ -4571,6 +4575,10 @@
             "homepage": "https://symfony.com",
             "support": {
                 "source": "https://github.com/symfony/css-selector/tree/v7.4.6"
+<<<<<<< HEAD
+=======
+>>>>>>> 6bbaf508872fa7ffc7313a6a291211a06763ae9a
+>>>>>>> 834c14e6654e37eb90fdc79faddc9783cda0745f
             },
             "funding": [
                 {
@@ -4591,6 +4599,10 @@
                 }
             ],
             "time": "2026-02-17T07:53:42+00:00"
+<<<<<<< HEAD
+=======
+>>>>>>> 6bbaf508872fa7ffc7313a6a291211a06763ae9a
+>>>>>>> 834c14e6654e37eb90fdc79faddc9783cda0745f
         },
         {
             "name": "symfony/deprecation-contracts",
@@ -6422,6 +6434,10 @@
                 "type": "zip",
                 "url": "https://api.github.com/repos/symfony/string/zipball/9f209231affa85aa930a5e46e6eb03381424b30b",
                 "reference": "9f209231affa85aa930a5e46e6eb03381424b30b",
+<<<<<<< HEAD
+=======
+>>>>>>> 6bbaf508872fa7ffc7313a6a291211a06763ae9a
+>>>>>>> 834c14e6654e37eb90fdc79faddc9783cda0745f
                 "shasum": ""
             },
             "require": {
@@ -6480,6 +6496,10 @@
             ],
             "support": {
                 "source": "https://github.com/symfony/string/tree/v7.4.6"
+<<<<<<< HEAD
+=======
+>>>>>>> 6bbaf508872fa7ffc7313a6a291211a06763ae9a
+>>>>>>> 834c14e6654e37eb90fdc79faddc9783cda0745f
             },
             "funding": [
                 {
@@ -6513,6 +6533,10 @@
                 "type": "zip",
                 "url": "https://api.github.com/repos/symfony/translation/zipball/1888cf064399868af3784b9e043240f1d89d25ce",
                 "reference": "1888cf064399868af3784b9e043240f1d89d25ce",
+<<<<<<< HEAD
+=======
+>>>>>>> 6bbaf508872fa7ffc7313a6a291211a06763ae9a
+>>>>>>> 834c14e6654e37eb90fdc79faddc9783cda0745f
                 "shasum": ""
             },
             "require": {
@@ -6580,6 +6604,10 @@
             "homepage": "https://symfony.com",
             "support": {
                 "source": "https://github.com/symfony/translation/tree/v7.4.6"
+<<<<<<< HEAD
+=======
+>>>>>>> 6bbaf508872fa7ffc7313a6a291211a06763ae9a
+>>>>>>> 834c14e6654e37eb90fdc79faddc9783cda0745f
             },
             "funding": [
                 {
@@ -6600,6 +6628,10 @@
                 }
             ],
             "time": "2026-02-17T07:53:42+00:00"
+<<<<<<< HEAD
+=======
+>>>>>>> 6bbaf508872fa7ffc7313a6a291211a06763ae9a
+>>>>>>> 834c14e6654e37eb90fdc79faddc9783cda0745f
         },
         {
             "name": "symfony/translation-contracts",
@@ -10198,6 +10230,10 @@
                 "type": "zip",
                 "url": "https://api.github.com/repos/symfony/yaml/zipball/58751048de17bae71c5aa0d13cb19d79bca26391",
                 "reference": "58751048de17bae71c5aa0d13cb19d79bca26391",
+<<<<<<< HEAD
+=======
+>>>>>>> 6bbaf508872fa7ffc7313a6a291211a06763ae9a
+>>>>>>> 834c14e6654e37eb90fdc79faddc9783cda0745f
                 "shasum": ""
             },
             "require": {
@@ -10241,6 +10277,10 @@
             "homepage": "https://symfony.com",
             "support": {
                 "source": "https://github.com/symfony/yaml/tree/v7.4.6"
+<<<<<<< HEAD
+=======
+>>>>>>> 6bbaf508872fa7ffc7313a6a291211a06763ae9a
+>>>>>>> 834c14e6654e37eb90fdc79faddc9783cda0745f
             },
             "funding": [
                 {
@@ -10261,6 +10301,10 @@
                 }
             ],
             "time": "2026-02-09T09:33:46+00:00"
+<<<<<<< HEAD
+=======
+>>>>>>> 6bbaf508872fa7ffc7313a6a291211a06763ae9a
+>>>>>>> 834c14e6654e37eb90fdc79faddc9783cda0745f
         },
         {
             "name": "ta-tikoma/phpunit-architecture-test",

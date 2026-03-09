@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Actions\Incentive\CreateNewIncentive;
 use App\Actions\Incentive\UpdateIncentive;
+use App\Enums\PayrollPeriodStatusEnum;
 use App\Http\Requests\Incentive\StoreIncentiveRequest;
 use App\Http\Requests\Incentive\UpdateIncentiveRequest;
 use App\Models\Employee;
@@ -20,9 +21,10 @@ class IncentiveController extends Controller
      */
     public function index()
     {
-        $payroll_periods = PayrollPeriod::all();
-        $incentives = Incentive::with(['payroll_period', 'employees','employees.user', 'employees.position', 'employees.branch' ])->get();
-        return Inertia::render('incentives/index', compact('incentives','payroll_periods'));
+        Gate::authorize('viewAny', Incentive::class);
+        $payroll_periods = PayrollPeriod::get();
+        $incentives = Incentive::with(['payroll_period', 'employees', 'employees.user', 'employees.position', 'employees.branch'])->get();
+        return Inertia::render('incentives/index', compact('incentives', 'payroll_periods'));
     }
 
     /**
@@ -31,15 +33,15 @@ class IncentiveController extends Controller
     public function create()
     {
         Gate::authorize('create', Incentive::class);
-        $payroll_periods = PayrollPeriod::all();
+        $payroll_periods = PayrollPeriod::query()->where('payroll_per_status', PayrollPeriodStatusEnum::OPEN->value)->get();
         $employees = Employee::with('user')->where('employee_status', 'active')->get();
-        return Inertia::render('incentives/create', compact('payroll_periods','employees' ));
+        return Inertia::render('incentives/create', compact('payroll_periods', 'employees'));
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StoreIncentiveRequest $request, CreateNewIncentive $incentive )
+    public function store(StoreIncentiveRequest $request, CreateNewIncentive $incentive)
     {
         Gate::authorize('create', Incentive::class);
         $incentive->create($request->validated());
@@ -58,26 +60,26 @@ class IncentiveController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-public function edit(Incentive $incentive)
-{
-    Gate::authorize('update', $incentive);   
-    $incentive->load('payroll_period', 'employees');
-    $employees = Employee::with('user')->where('employee_status', 'active')->get();
-    
+    public function edit(Incentive $incentive)
+    {
+        Gate::authorize('update', $incentive);
+        $incentive->load('payroll_period', 'employees');
+        $employees = Employee::with('user')->where('employee_status', 'active')->get();
 
-    $payroll_periods = PayrollPeriod::all();
-    
-    return Inertia::render('incentives/update', [
-        'incentive' => $incentive,
-        'employees' => $employees,
-        'payroll_periods' => $payroll_periods
-    ]);
-}
+
+        $payroll_periods = PayrollPeriod::query()->where('payroll_per_status', PayrollPeriodStatusEnum::OPEN->value)->get();
+
+        return Inertia::render('incentives/update', [
+            'incentive' => $incentive,
+            'employees' => $employees,
+            'payroll_periods' => $payroll_periods
+        ]);
+    }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateIncentiveRequest $request,Incentive $incentive,  UpdateIncentive $updateincentive)
+    public function update(UpdateIncentiveRequest $request, Incentive $incentive,  UpdateIncentive $updateincentive)
     {
         Gate::authorize('update', $incentive);
         $updateincentive->update($request->validated(), $incentive);

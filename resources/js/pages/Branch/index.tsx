@@ -1,11 +1,16 @@
-import AppLayout from '@/layouts/app-layout';
-import { Button } from "@/components/ui/button";
-import { type BreadcrumbItem, type BranchWithSites } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/react';
+import { Building2, MapPin, Search, X } from 'lucide-react';
+import { useState } from 'react';
 import BranchController from "@/actions/App/Http/Controllers/BranchController";
-import { useState, useMemo } from 'react';
-import { Building2, PlusCircle, MapPin, Search, X } from 'lucide-react';
-
+import { CustomToast } from '@/components/custom-toast';
+import { Button } from "@/components/ui/button";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
 import {
     Table,
     TableBody,
@@ -15,16 +20,8 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog";
-import { CustomToast } from '@/components/custom-toast';
-import { Input } from "@/components/ui/input";
+import AppLayout from '@/layouts/app-layout';
+import { type BreadcrumbItem, type BranchWithSites } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -42,7 +39,14 @@ export default function Index({ branches }: BranchProps) {
     const [selectedBranch, setSelectedBranch] = useState<BranchWithSites | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
-   
+
+    const filteredBranches = branches.filter((branch) =>
+        branch.branch_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        branch.branch_address.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const clearSearch = () => setSearchTerm('');
+
     const handleDelete = (slug: string) => {
         if (confirm("Are you sure you want to delete this branch?")) {
             destroy(BranchController.destroy(slug).url);
@@ -54,22 +58,6 @@ export default function Index({ branches }: BranchProps) {
         setIsModalOpen(true);
     };
 
-    // Filter branches based on search term
-    const filteredBranches = useMemo(() => {
-        if (!searchTerm.trim()) {
-            return branches;
-        }
-        
-        const lowercaseSearch = searchTerm.toLowerCase().trim();
-        return branches.filter(branch => 
-            branch.branch_name.toLowerCase().includes(lowercaseSearch)
-        );
-    }, [branches, searchTerm]);
-
-    const clearSearch = () => {
-        setSearchTerm('');
-    };
-
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Branch" />
@@ -78,37 +66,12 @@ export default function Index({ branches }: BranchProps) {
                 {/* Header with title, search, and create button */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <h1 className="text-2xl font-bold">Branches</h1>
-                    
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
-                        {/* Search Bar */}
-                        {branches.length > 0 && (
-                            <div className="relative flex-1 sm:flex-initial sm:w-64">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                                <Input
-                                    type="text"
-                                    placeholder="Search branches..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="pl-9 pr-8 w-full"
-                                />
-                                {searchTerm && (
-                                    <button
-                                        onClick={clearSearch}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                                    >
-                                        <X className="h-4 w-4" />
-                                    </button>
-                                )}
-                            </div>
-                        )}
-                        
-                        <Link
-                            href={BranchController.create()}
-                            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 whitespace-nowrap"
-                        >
-                            + Add Branch
-                        </Link>
-                    </div>
+                    <Link
+                        href={BranchController.create()}
+                        className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                    >
+                        + Add Branch
+                    </Link>
                 </div>
 
                 {branches.length === 0 ? (
