@@ -1,10 +1,10 @@
 import AppLayout from '@/layouts/app-layout';
 import { Button } from "@/components/ui/button";
 import { type BreadcrumbItem, type BranchWithSites } from '@/types';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import ApplicationLeaveController from "@/actions/App/Http/Controllers/ApplicationLeaveController";
-import { useState } from 'react';
-import { CalendarDays, PlusCircle } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { CalendarDays, PlusCircle, Filter, X } from 'lucide-react';
 
 import {
     Table,
@@ -24,6 +24,14 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Application Leaves',
@@ -35,15 +43,65 @@ interface ApplicationLeaveProps {
     applicationLeaves: any[];
 }
 
+interface PageProps {
+    applicationLeaveEnum: Array<{
+        value: string;
+        label: string;
+    }>;
+}
+
 export default function Index({ applicationLeaves }: ApplicationLeaveProps) {
     const { delete: destroy } = useForm();
+    const { applicationLeaveEnum } = usePage<PageProps>().props;
+    
+    // Initialize filter from localStorage or use default
+    const [statusFilter, setStatusFilter] = useState<string>(() => {
+        const savedFilter = localStorage.getItem('applicationLeaves-statusFilter');
+        return savedFilter || 'all';
+    });
    
+    // Save filter to localStorage whenever it changes
+    useEffect(() => {
+        localStorage.setItem('applicationLeaves-statusFilter', statusFilter);
+    }, [statusFilter]);
 
     const handleDelete = (slug_app: string) => {
         if (confirm("Are you sure you want to delete this application leave?")) {
             destroy(ApplicationLeaveController.destroy(slug_app).url);
         }
     }
+
+    // Filter application leaves based on status
+    const filteredLeaves = useMemo(() => {
+        if (statusFilter === 'all') {
+            return applicationLeaves;
+        }
+        return applicationLeaves.filter(leave => {
+            const status = leave.app_status || 'pending';
+            return status.toLowerCase() === statusFilter.toLowerCase();
+        });
+    }, [applicationLeaves, statusFilter]);
+
+    // Get status badge color
+    const getStatusBadgeClass = (status: string) => {
+        const statusLower = status?.toLowerCase() || 'pending';
+        switch (statusLower) {
+            case 'approved':
+                return 'bg-green-100 text-green-800';
+            case 'rejected':
+                return 'bg-red-100 text-red-800';
+            case 'pending':
+            default:
+                return 'bg-yellow-100 text-yellow-800';
+        }
+    };
+
+    // Format status text using enum
+    const formatStatus = (status: string) => {
+        if (!status) return 'Pending';
+        const found = applicationLeaveEnum?.find(item => item.value.toLowerCase() === status.toLowerCase());
+        return found?.label || status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+    };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -73,55 +131,76 @@ export default function Index({ applicationLeaves }: ApplicationLeaveProps) {
                             </Link>
                         </div>
                     ) : (
-                        <Table>
-                            <TableCaption>A list of your Application Leaves.</TableCaption>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Employee name</TableHead>
-                                    <TableHead>Leave Start</TableHead>
-                                    <TableHead>Leave End</TableHead>
-                                    <TableHead>Is approved</TableHead>
-                                    <TableHead>Actions</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {applicationLeaves.map((applicationLeave) => (
-                                    <TableRow key={applicationLeave.id}>
-                                        <TableCell className="font-medium">{applicationLeave.employee.user.name}</TableCell>
-                                        <TableCell>{applicationLeave.leave_start}</TableCell>
-                                        <TableCell>{applicationLeave.leave_end}</TableCell>
-                                       <TableCell>
-                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                                applicationLeave.app_status === 'approved' 
-                                                    ? 'bg-green-100 text-green-800' 
-                                                    : applicationLeave.app_status === 'rejected'
-                                                    ? 'bg-red-100 text-red-800'
-                                                    : 'bg-yellow-100 text-yellow-800'
-                                            }`}>
-                                                {applicationLeave.app_status ? 
-                                                    applicationLeave.app_status.charAt(0).toUpperCase() + applicationLeave.app_status.slice(1) 
-                                                    : 'Pending'}
-                                            </span>
-                                        </TableCell>
-                                        <TableCell className="space-x-2">
-                                            <Link 
-                                                href={ApplicationLeaveController.edit(applicationLeave.slug_app)}
-                                                className="inline-flex items-center justify-center rounded-md bg-secondary px-3 py-1.5 text-sm font-medium text-secondary-foreground hover:bg-secondary/90"
-                                            >
-                                                Edit
-                                            </Link>
-                                            <Button 
-                                                variant="destructive" 
-                                                size="sm"
-                                                onClick={() => handleDelete(applicationLeave.slug_app)}
-                                            >
-                                                Delete
-                                            </Button>
-                                        </TableCell>
+                        <>
+                            {/* Filter Section - Right aligned */}
+                            <div className="flex justify-end px-4">
+                                <div className="flex items-center gap-2">
+                                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                                        <SelectTrigger className="w-[130px]">
+                                            <SelectValue placeholder="Filter" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All Statuses</SelectItem>
+                                            {applicationLeaveEnum?.map(({value, label}) => (
+                                                <SelectItem key={value} value={value}>
+                                                    {label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+
+                            <Table>
+                                <TableCaption>A list of your Application Leaves.</TableCaption>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Employee name</TableHead>
+                                        <TableHead>Leave Start</TableHead>
+                                        <TableHead>Leave End</TableHead>
+                                        <TableHead>Status</TableHead>
+                                        <TableHead>Actions</TableHead>
                                     </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
+                                </TableHeader>
+                                <TableBody>
+                                    {filteredLeaves.length === 0 ? (
+                                        <TableRow>
+                                            <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                                                No leaves found with the selected filter.
+                                            </TableCell>
+                                        </TableRow>
+                                    ) : (
+                                        filteredLeaves.map((applicationLeave) => (
+                                            <TableRow key={applicationLeave.id}>
+                                                <TableCell className="font-medium">{applicationLeave.employee?.user?.name || 'N/A'}</TableCell>
+                                                <TableCell>{applicationLeave.leave_start}</TableCell>
+                                                <TableCell>{applicationLeave.leave_end}</TableCell>
+                                                <TableCell>
+                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeClass(applicationLeave.app_status)}`}>
+                                                        {formatStatus(applicationLeave.app_status)}
+                                                    </span>
+                                                </TableCell>
+                                                <TableCell className="space-x-2">
+                                                    <Link 
+                                                        href={ApplicationLeaveController.edit(applicationLeave.slug_app)}
+                                                        className="inline-flex items-center justify-center rounded-md bg-secondary px-3 py-1.5 text-sm font-medium text-secondary-foreground hover:bg-secondary/90"
+                                                    >
+                                                        Edit
+                                                    </Link>
+                                                    <Button 
+                                                        variant="destructive" 
+                                                        size="sm"
+                                                        onClick={() => handleDelete(applicationLeave.slug_app)}
+                                                    >
+                                                        Delete
+                                                    </Button>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </>
                     )}
                 </div>
             </div>

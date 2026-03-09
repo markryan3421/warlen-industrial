@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Payroll extends Model
 {
     protected $fillable = [
-        'payroll_perion_id',
+        'payroll_period_id',
         'employee_id',
         'gross_pay',
         'total_deduction',

@@ -1,11 +1,12 @@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, useForm, usePage } from '@inertiajs/react';
 import InputError from '@/components/input-error';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { update } from '@/actions/App/Http/Controllers/PayrollPeriodController';
+import React from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -35,12 +36,23 @@ interface EditProps {
     };
 }
 
+interface PageProps {
+    payroll_period_enums: {
+        statuses: Array<{
+            value: string;
+            label: string;
+        }>;
+    };
+}
+
 export default function Edit({ payrollPeriod }: EditProps) {
+    const { payroll_period_enums } = usePage<{ payroll_period_enums: PageProps['payroll_period_enums'] }>().props;
+
     const { data, setData, errors, processing, put } = useForm<FormData>({
         start_date: payrollPeriod.start_date || '',
         end_date: payrollPeriod.end_date || '',
         pay_date: payrollPeriod.pay_date || '',
-        payroll_per_status: payrollPeriod.payroll_per_status || 'open',
+        payroll_per_status: payrollPeriod.payroll_per_status || '',
     });
 
     function submitPayrollPeriod(e: React.FormEvent) {
@@ -108,9 +120,12 @@ export default function Edit({ payrollPeriod }: EditProps) {
                                         onChange={e => setData('payroll_per_status', e.target.value)}
                                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                                     >
-                                        <option value="open">Open</option>
-                                        <option value="processing">Processing</option>
-                                        <option value="completed">Completed</option>
+                                        <option value="" disabled>Select a status</option>
+                                        {payroll_period_enums.map(({ value, label }) => (
+                                            <option key={value} value={value}>
+                                                {label}
+                                            </option>
+                                        ))}
                                     </select>
                                     <InputError message={errors.payroll_per_status} />
                                 </div>

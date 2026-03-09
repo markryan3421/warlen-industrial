@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Actions\ApplicationLeave\CreateNewApplication;
 use App\Actions\ApplicationLeave\UpdateApplication;
+use App\Enums\ApplicationLeaveEnum;
 use App\Http\Requests\ApplicationLeave\StoreApplicationLeaveRequest;
 use App\Http\Requests\ApplicationLeave\UpdateApplicationLeaveRequest;
 use App\Models\ApplicationLeave;
@@ -18,11 +19,14 @@ class ApplicationLeaveController extends Controller
      */
     public function index()
     {
-        Gate::authorize('viewAny',ApplicationLeave::class);
+        Gate::authorize('viewAny', ApplicationLeave::class);
         $applicationLeaves = ApplicationLeave::with(['employee.user'])->latest()->get();
+
+        $applicationLeaveEnum = ApplicationLeaveEnum::options();
 
         return inertia('ApplicationLeave/index', [
             'applicationLeaves' => $applicationLeaves,
+            'applicationLeaveEnum' => $applicationLeaveEnum
         ]);
     }
 
@@ -44,7 +48,7 @@ class ApplicationLeaveController extends Controller
         if ($this->limit('create-application-leave:' . auth()->id(), 60, 20)) {
             return back()->with('error', 'Too many attempts. Please try again later.');
         }
-           DB::beginTransaction();
+        DB::beginTransaction();
         try {
             $validatedData = $request->validated();
 
@@ -57,7 +61,6 @@ class ApplicationLeaveController extends Controller
             dd($e);
             DB::rollBack();
             return back()->with('error', 'An error occurred while submitting the leave application. Please try again.');
-         
         }
     }
 
@@ -77,9 +80,12 @@ class ApplicationLeaveController extends Controller
     {
         Gate::authorize('update', $applicationLeave);
 
-         $applicationLeave->load('employee.user');
+        $applicationLeave->load('employee.user');
+
+        $applicationLeaveEnum = ApplicationLeaveEnum::options();
         return Inertia::render('ApplicationLeave/edit', [
             'applicationLeave' => $applicationLeave,
+            'applicationLeaveEnum' => $applicationLeaveEnum
         ]);
     }
 
@@ -115,7 +121,7 @@ class ApplicationLeaveController extends Controller
     public function destroy(ApplicationLeave $applicationLeave)
     {
         Gate::authorize('delete', $applicationLeave);
-        
+
         if ($this->limit('delete-application-leave:' . auth()->id(), 60, 20)) {
             return back()->with('error', 'Too many attempts. Please try again later.');
         }

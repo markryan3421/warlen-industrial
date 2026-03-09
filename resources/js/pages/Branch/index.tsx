@@ -1,5 +1,5 @@
 import { Head, Link, useForm } from '@inertiajs/react';
-import { Building2, MapPin } from 'lucide-react';
+import { Building2, MapPin, Search, X } from 'lucide-react';
 import { useState } from 'react';
 import BranchController from "@/actions/App/Http/Controllers/BranchController";
 import { CustomToast } from '@/components/custom-toast';
@@ -38,6 +38,14 @@ export default function Index({ branches }: BranchProps) {
     const { delete: destroy } = useForm();
     const [selectedBranch, setSelectedBranch] = useState<BranchWithSites | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+
+    const filteredBranches = branches.filter((branch) =>
+        branch.branch_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        branch.branch_address.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const clearSearch = () => setSearchTerm('');
 
     const handleDelete = (slug: string) => {
         if (confirm("Are you sure you want to delete this branch?")) {
@@ -55,7 +63,8 @@ export default function Index({ branches }: BranchProps) {
             <Head title="Branch" />
             <CustomToast />
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-                <div className="flex justify-between items-center">
+                {/* Header with title, search, and create button */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <h1 className="text-2xl font-bold">Branches</h1>
                     <Link
                         href={BranchController.create()}
@@ -80,6 +89,20 @@ export default function Index({ branches }: BranchProps) {
                             </Button>
                         </Link>
                     </div>
+                ) : filteredBranches.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-12 px-4 text-center border rounded-lg bg-gray-50">
+                        <div className="rounded-full bg-gray-100 p-4 mb-4">
+                            <Search className="h-8 w-8 text-gray-400" />
+                        </div>
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">No matching branches</h3>
+                        <p className="text-gray-500 mb-4">
+                            No branches found matching "{searchTerm}"
+                        </p>
+                        <Button variant="outline" onClick={clearSearch} className="gap-2">
+                            <X className="h-4 w-4" />
+                            Clear Search
+                        </Button>
+                    </div>
                 ) : (
                     <Table>
                         <TableCaption>A list of your Branches.</TableCaption>
@@ -92,7 +115,7 @@ export default function Index({ branches }: BranchProps) {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {branches.map((branch) => (
+                            {filteredBranches.map((branch) => (
                                 <TableRow key={branch.id}>
                                     <TableCell className="font-medium">{branch.branch_name}</TableCell>
                                     <TableCell>{branch.branch_address}</TableCell>
