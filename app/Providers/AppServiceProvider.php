@@ -36,7 +36,7 @@ class AppServiceProvider extends ServiceProvider
 
         $this->observeAttendancePeriod();
 
-       // $this->observePayroll();
+        $this->observePayroll();
     }
 
     /**
