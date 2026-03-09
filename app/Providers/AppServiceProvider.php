@@ -34,9 +34,7 @@ class AppServiceProvider extends ServiceProvider
 
         $this->configureRateLimiting();
 
-        $this->observeAttendancePeriod();
-
-        $this->observePayroll();
+        $this->observer();
     }
 
     /**
@@ -62,14 +60,12 @@ class AppServiceProvider extends ServiceProvider
         );
     }
 
-    private function observePayroll(): void
-    {
-        PayrollPeriod::observe(PayrollPeriodObserver::class);
-    }
 
-    private function observeAttendancePeriod(): void
+
+    private function observer(): void
     {
         AttendancePeriodStat::observe(AttendancePeriodStatObserver::class);
+        PayrollPeriod::observe(PayrollPeriodObserver::class);
     }
 
     private function configureRateLimiting(): void

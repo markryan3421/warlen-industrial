@@ -228,7 +228,7 @@ class EmployeeSeeder extends Seeder
             'branch_id' => $branch->id,
             'user_id' => $user->id,
             'site_id' => $site?->id,
-            'slug_emp' => Str::slug($user->name),
+            'slug_emp' => Str::slug($user->name.'-'.$empId),
             'emp_code' => $empId,
             'employee_number' => $this->generateEmployeeNumber(),
             'contract_start_date' => now(),

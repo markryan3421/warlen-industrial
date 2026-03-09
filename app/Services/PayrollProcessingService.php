@@ -27,7 +27,6 @@ class PayrollProcessingService
 
             if ($attendanceStats->isEmpty()) {
                 Log::warning("No attendance data found for payroll period: {$payrollPeriod->id}");
-                // Still update status to completed with no data
                 $payrollPeriod->update(['payroll_per_status' => 'completed']);
                 DB::commit();
                 return;
@@ -49,13 +48,12 @@ class PayrollProcessingService
                 }
             }
 
-            // Update payroll period status - use only allowed status values
+            // Update payroll period status
             if ($processedCount > 0) {
                 $payrollPeriod->update(['payroll_per_status' => 'completed']);
                 Log::info("Payroll processed for period: {$payrollPeriod->id}. Processed: {$processedCount}, Skipped: {$skippedCount}");
             } else {
                 Log::warning("No employees were processed for period: {$payrollPeriod->id}. All {$skippedCount} were skipped.");
-                // Use a valid status from your database constraint
                 $payrollPeriod->update(['payroll_per_status' => 'pending']);
             }
 
@@ -64,7 +62,6 @@ class PayrollProcessingService
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error("Payroll processing failed for period {$payrollPeriod->id}: " . $e->getMessage());
-            // Use a valid status
             $payrollPeriod->update(['payroll_per_status' => 'failed']);
             throw $e;
         }
@@ -75,12 +72,13 @@ class PayrollProcessingService
      */
     protected function createPayrollForEmployee(PayrollPeriod $payrollPeriod, AttendancePeriodStat $stats): bool
     {
-        // Get all employees
+        // Get all employees with their positions loaded
         static $employees = null;
         static $employeeMap = [];
         
         if ($employees === null) {
-            $employees = Employee::with('user')->get();
+            // Eager load the position relationship
+            $employees = Employee::with(['user', 'position'])->get();
             
             // Create a more flexible mapping
             foreach ($employees as $emp) {
@@ -168,20 +166,35 @@ class PayrollProcessingService
             return false;
         }
 
-        Log::info("Processing payroll for employee: {$employee->emp_code} (ID: {$employee->id}, Name: " . ($employee->user->name ?? 'N/A') . ")");
+        Log::info("Processing payroll for employee: {$employee->emp_code} (ID: {$employee->id}, Name: " . ($employee->user->name ?? 'N/A') . ", Status: {$employee->employee_status})");
 
-        // Calculate base pay
+        // Check if employee has a position with salary
+        if (!$employee->position) {
+            Log::warning("Employee {$employee->emp_code} has no position assigned. Skipping payroll.");
+            return false;
+        }
+
+        if (!$employee->position->basic_salary || $employee->position->basic_salary <= 0) {
+            Log::warning("Employee {$employee->emp_code} position '{$employee->position->pos_name}' has no valid salary. Skipping payroll.");
+            return false;
+        }
+
+        // Calculate base pay using position salary based on employee status
         $basePay = $this->calculateBasePay($stats, $employee);
+        
+        // Get attendance values with defaults
         $overtimePay = $stats->overtime_pay ?? 0;
         $subsidyPay = $stats->subsidy_pay ?? 0;
         
-        $grossPay = $basePay + $overtimePay + $subsidyPay;
-
-        // Calculate total deductions
-        $lateDeduction = $stats->late_leave_deduction ?? 0;
+        // Calculate late deduction based on employee status
+        $lateMinutes = $stats->late_minutes ?? 0;
+        $lateDeduction = $this->calculateLateDeduction($lateMinutes, $employee);
+        
         $aflDeduction = $stats->afl_deduction ?? 0;
         $cutPayment = $stats->cut_payment ?? 0;
         
+        // Calculate gross and net pay
+        $grossPay = $basePay + $overtimePay + $subsidyPay;
         $totalDeductions = $lateDeduction + $aflDeduction + $cutPayment;
         $netPay = $grossPay - $totalDeductions;
 
@@ -196,29 +209,91 @@ class PayrollProcessingService
 
         // Create payroll items
         $this->createPayrollItems($payroll, $stats, $basePay, $overtimePay, $subsidyPay, 
-                                 $lateDeduction, $aflDeduction, $cutPayment);
+                                 $lateDeduction, $aflDeduction, $cutPayment, $employee, $lateMinutes);
         
         return true;
     }
 
     /**
-     * Calculate base pay based on attendance
+     * Calculate base pay based on attendance using position salary and employee status
      */
     protected function calculateBasePay(AttendancePeriodStat $stats, Employee $employee): float
     {
-        // Get employee's salary from user relationship
-        if ($employee->user && isset($employee->user->salary) && $employee->user->salary > 0) {
-            $monthlySalary = (float)$employee->user->salary;
-        } else {
-            Log::warning("No salary found for employee: {$employee->emp_code}");
+        // Get daily rate from employee's position
+        $dailyRate = (float)$employee->position->basic_salary;
+        
+        if ($dailyRate <= 0) {
+            Log::warning("Invalid daily rate for employee: {$employee->emp_code}, Position: {$employee->position->pos_name}");
             return 0;
         }
 
-        // Calculate daily rate (adjust working days per month as needed)
-        $dailyRate = $monthlySalary / 26;
+        // Get attended days from stats
         $attendedDays = isset($stats->attended_days) ? (float)$stats->attended_days : 0;
         
-        return round($dailyRate * $attendedDays, 2);
+        // Calculate base pay (daily rate × attended days)
+        $basePay = round($dailyRate * $attendedDays, 2);
+        
+        // Get expected working days based on employee status
+        $expectedDays = $this->getExpectedWorkingDays($employee, $stats);
+        
+        Log::info("Base pay calculation for {$employee->emp_code}: Status={$employee->employee_status}, Daily Rate={$dailyRate}, Attended Days={$attendedDays}, Expected Days={$expectedDays}, Base Pay={$basePay}");
+        
+        return $basePay;
+    }
+
+    /**
+     * Get expected working days based on employee status
+     */
+    protected function getExpectedWorkingDays(Employee $employee, AttendancePeriodStat $stats): int
+    {
+        // You can calculate this based on the period length
+        // For now, return appropriate values based on status
+        switch ($employee->employee_status) {
+            case 'weekender':
+                return 6; // Weekenders work 6 days
+            case 'semi-monthly':
+                return 12; // Semi-monthly employees work 12 days per half month
+            case 'monthly':
+                return 24; // Monthly employees work 24 days per month
+            default:
+                return 22; // Default fallback
+        }
+    }
+
+    /**
+     * Calculate late deduction based on employee status
+     * 1 peso per minute late
+     */
+    protected function calculateLateDeduction(int $lateMinutes, Employee $employee): float
+    {
+        if ($lateMinutes <= 0) {
+            return 0;
+        }
+        
+        // Simple calculation: 1 peso per minute late
+        $deduction = (float)$lateMinutes;
+        
+        Log::info("Late deduction for {$employee->emp_code}: {$lateMinutes} minutes late = {$deduction} pesos deduction");
+        
+        return $deduction;
+    }
+
+    /**
+     * Calculate hourly rate from daily rate
+     */
+    protected function calculateHourlyRate(Employee $employee): float
+    {
+        $dailyRate = (float)$employee->position->basic_salary;
+        // Assuming 8 hours per day
+        return round($dailyRate / 8, 2);
+    }
+
+    /**
+     * Calculate daily rate (already stored in position->basic_salary)
+     */
+    protected function getDailyRate(Employee $employee): float
+    {
+        return (float)$employee->position->basic_salary;
     }
 
     /**
@@ -232,13 +307,18 @@ class PayrollProcessingService
         float $subsidyPay,
         float $lateDeduction,
         float $aflDeduction,
-        float $cutPayment
+        float $cutPayment,
+        Employee $employee,
+        int $lateMinutes = 0
     ): void {
-        // Earnings items
+        // Earnings items with descriptions
         $earnings = [
-            ['code' => 'BASE', 'type' => 'earning', 'amount' => $basePay],
-            ['code' => 'OVERTIME', 'type' => 'earning', 'amount' => $overtimePay],
-            ['code' => 'SUBSIDY', 'type' => 'earning', 'amount' => $subsidyPay],
+            ['code' => 'BASE', 'type' => 'earning', 'amount' => $basePay, 
+             'description' => "Basic Pay - {$stats->attended_days} days @ ₱" . number_format($employee->position->basic_salary, 2) . "/day"],
+            ['code' => 'OVERTIME', 'type' => 'earning', 'amount' => $overtimePay, 
+             'description' => 'Overtime Pay'],
+            ['code' => 'SUBSIDY', 'type' => 'earning', 'amount' => $subsidyPay, 
+             'description' => 'Subsidy'],
         ];
 
         foreach ($earnings as $earning) {
@@ -248,15 +328,19 @@ class PayrollProcessingService
                     'code' => $earning['code'],
                     'type' => $earning['type'],
                     'amount' => $earning['amount'],
+                    'description' => $earning['description'] ?? null,
                 ]);
             }
         }
 
-        // Deduction items
+        // Deduction items with descriptions
         $deductions = [
-            ['code' => 'LATE', 'type' => 'deduction', 'amount' => $lateDeduction],
-            ['code' => 'AFL', 'type' => 'deduction', 'amount' => $aflDeduction],
-            ['code' => 'CUT', 'type' => 'deduction', 'amount' => $cutPayment],
+            ['code' => 'LATE', 'type' => 'deduction', 'amount' => $lateDeduction, 
+             'description' => "Late Deduction - {$lateMinutes} minutes @ ₱1.00/minute"],
+            ['code' => 'AFL', 'type' => 'deduction', 'amount' => $aflDeduction, 
+             'description' => 'AFL Deduction'],
+            ['code' => 'CUT', 'type' => 'deduction', 'amount' => $cutPayment, 
+             'description' => 'Cut Payment'],
         ];
 
         foreach ($deductions as $deduction) {
@@ -269,5 +353,9 @@ class PayrollProcessingService
                 ]);
             }
         }
+
+        // Add summary info to log
+        Log::info("Payroll items created for employee {$employee->emp_code} with status {$employee->employee_status}, " .
+                 "position {$employee->position->pos_name} (Daily Rate: ₱{$employee->position->basic_salary})");
     }
 }
