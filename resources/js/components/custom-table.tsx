@@ -40,7 +40,7 @@ interface CustomTableProps {
     isModal?: boolean;
 }
 
-// ── Date/time formatter — shared by both table and card views ──────────────────
+// ── Date/time formatter — shared by all views ──────────────────────────────────
 function formatCellValue(col: TableColumn, row: TableRow): string {
     const val = row[col.key];
 
@@ -81,7 +81,7 @@ export const CustomTable = ({
 }: CustomTableProps) => {
     const route = useRoute();
 
-    // ── Action dropdown — reused in both views ─────────────────────────────────
+    // ── Action dropdown — reused in all views ──────────────────────────────────
     const renderActionButtons = (row: TableRow) => (
         <div className="flex justify-center">
             <DropdownMenu>
@@ -130,12 +130,9 @@ export const CustomTable = ({
     const dataColumns = columns.filter((col) => !col.isAction);
     const hasActions = columns.some((col) => col.isAction);
 
-    // ── Empty state — shared by both views ─────────────────────────────────────
+    // ── Empty state — shared by all views ──────────────────────────────────────
     const emptyState = (
         <div className="py-14 px-6 text-center">
-            {/* <div className="w-12 h-12 mx-auto mb-4 rounded-xl flex items-center justify-center text-xl bg-stone-50 dark:bg-stone-900 border border-dashed border-stone-300 dark:border-stone-700">
-                📭
-            </div> */}
             <p className="text-[15px] font-bold text-stone-800 dark:text-stone-100 mb-1">
                 No records found
             </p>
@@ -158,9 +155,8 @@ export const CustomTable = ({
                 </div>
 
                 {/* ══════════════════════════════════════════════════════════════
-                    MOBILE VIEW  (hidden on md and above)
-                    Each row becomes a stacked card showing label: value pairs.
-                    The action button sits in the top-right corner of each card.
+                    MOBILE VIEW  — below md (< 768px)
+                    Each row is a stacked card with label: value pairs.
                 ══════════════════════════════════════════════════════════════ */}
                 <div className="block md:hidden">
                     {data.length === 0 ? (
@@ -173,7 +169,7 @@ export const CustomTable = ({
                                     className="px-4 py-4 odd:bg-white even:bg-stone-50/60 dark:odd:bg-[#0c1529] dark:even:bg-[#0e1a30] animate-in fade-in slide-in-from-bottom-2"
                                     style={{ animationDelay: `${index * 60}ms`, animationFillMode: "both" }}
                                 >
-                                    {/* ── Card header: row number + actions ─── */}
+                                    {/* Card header: row number + actions */}
                                     <div className="flex items-center justify-between mb-3">
                                         <span className="inline-flex items-center justify-center w-7 h-7 rounded-[7px] bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 text-[11px] font-bold">
                                             {from + index}
@@ -181,15 +177,13 @@ export const CustomTable = ({
                                         {hasActions && renderActionButtons(row)}
                                     </div>
 
-                                    {/* ── Card body: label → value grid ──────── */}
+                                    {/* Card body: label → value grid (2 columns) */}
                                     <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5">
                                         {dataColumns.map((col) => (
                                             <div key={col.key} className="flex flex-col min-w-0">
-                                                {/* Column label */}
                                                 <dt className="text-[10px] font-bold tracking-widest uppercase text-stone-400 dark:text-stone-500 truncate">
                                                     {col.label}
                                                 </dt>
-                                                {/* Column value */}
                                                 <dd className="text-[13px] text-stone-700 dark:text-stone-300 mt-0.5 truncate">
                                                     {col.isImage ? (
                                                         <img
@@ -211,20 +205,69 @@ export const CustomTable = ({
                 </div>
 
                 {/* ══════════════════════════════════════════════════════════════
-                    TABLET / DESKTOP VIEW  (hidden below md)
-                    Full table layout — same as before but with blue theme.
+                    TABLET VIEW  — md to lg (768px–1023px)
+                    Two-column card layout: more breathing room than mobile,
+                    less cramped than forcing a full table on a narrow screen.
                 ══════════════════════════════════════════════════════════════ */}
-                <div className="hidden md:block overflow-x-auto">
+                <div className="hidden md:block lg:hidden">
+                    {data.length === 0 ? (
+                        emptyState
+                    ) : (
+                        <div className="p-4 grid grid-cols-2 gap-3">
+                            {data.map((row, index) => (
+                                <div
+                                    key={index}
+                                    className="rounded-xl border border-stone-200 dark:border-stone-700/60 bg-white dark:bg-[#0d1630] p-4 shadow-sm hover:shadow-md hover:border-blue-300 dark:hover:border-blue-800 transition-all duration-200 animate-in fade-in slide-in-from-bottom-2"
+                                    style={{ animationDelay: `${index * 50}ms`, animationFillMode: "both" }}
+                                >
+                                    {/* Card header: row number + actions */}
+                                    <div className="flex items-center justify-between mb-3 pb-2.5 border-b border-stone-100 dark:border-stone-800">
+                                        <span className="inline-flex items-center justify-center w-7 h-7 rounded-[7px] bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 text-[11px] font-bold">
+                                            {from + index}
+                                        </span>
+                                        {hasActions && renderActionButtons(row)}
+                                    </div>
+
+                                    {/* Card body: label → value list */}
+                                    <dl className="flex flex-col gap-2">
+                                        {dataColumns.map((col) => (
+                                            <div key={col.key} className="flex items-start justify-between gap-2 min-w-0">
+                                                <dt className="text-[10px] font-bold tracking-widest uppercase text-stone-400 dark:text-stone-500 shrink-0 pt-0.5">
+                                                    {col.label}
+                                                </dt>
+                                                <dd className="text-[12.5px] font-medium text-stone-700 dark:text-stone-300 text-right truncate">
+                                                    {col.isImage ? (
+                                                        <img
+                                                            src={row[col.key] as string}
+                                                            alt="Image"
+                                                            className="w-10 h-10 rounded-lg object-cover border border-stone-200 dark:border-stone-700 ml-auto"
+                                                        />
+                                                    ) : (
+                                                        formatCellValue(col, row)
+                                                    )}
+                                                </dd>
+                                            </div>
+                                        ))}
+                                    </dl>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                {/* ══════════════════════════════════════════════════════════════
+                    DESKTOP VIEW  — lg and above (≥ 1024px)
+                    Full table layout.
+                ══════════════════════════════════════════════════════════════ */}
+                <div className="hidden lg:block overflow-x-auto">
                     <table className="w-full border-collapse text-[13.5px] text-stone-800 dark:text-stone-200">
 
-                        {/* ── Head ──────────────────────────────────────────── */}
+                        {/* Head */}
                         <thead className="bg-stone-900 dark:bg-[#080f1e]">
                             <tr>
-                                {/* Index column */}
                                 <th className="w-12 px-6 py-3.5 text-center text-[10px] font-bold tracking-[0.12em] uppercase whitespace-nowrap text-blue-500 dark:text-blue-400 border-none">
                                     #
                                 </th>
-                                {/* Data columns */}
                                 {columns.map((col) => (
                                     <th
                                         key={col.key}
@@ -236,7 +279,7 @@ export const CustomTable = ({
                             </tr>
                         </thead>
 
-                        {/* ── Body ──────────────────────────────────────────── */}
+                        {/* Body */}
                         <tbody className="divide-y divide-stone-100 dark:divide-stone-800/70">
                             {data.length > 0 ? (
                                 data.map((row, index) => (
