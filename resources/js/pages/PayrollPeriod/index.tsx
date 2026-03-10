@@ -1,7 +1,7 @@
 import AppLayout from '@/layouts/app-layout';
 import { Button } from "@/components/ui/button";
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import { Head, Link, useForm, usePage, router } from '@inertiajs/react';
 import PayrollPeriodController from "@/actions/App/Http/Controllers/PayrollPeriodController";
 import { useState, useMemo, useEffect } from 'react';
 import { CalendarDays, PlusCircle, Clock, CheckCircle2, XCircle, AlertCircle, Filter } from 'lucide-react';
@@ -79,6 +79,23 @@ export default function Index({ payrollPeriods }: PayrollPeriodProps) {
     useEffect(() => {
         localStorage.setItem('payrollPeriods-statusFilter', statusFilter);
     }, [statusFilter]);
+
+    // Listen to payroll channel
+    useEffect(() => {
+        if (!window.Echo) return;
+
+        const channel = window.Echo.private('payroll');
+        
+        channel.listen('.payroll.completed', (event: any) => {
+            console.log('Payroll event received:', event);
+            router.reload({ only: ['payrollPeriods'] });
+        });
+
+        return () => {
+            channel.stopListening('.payroll.completed');
+            window.Echo.leave('payroll');
+        };
+    }, []);
 
     const handleDelete = (id: number) => {
         if (confirm("Are you sure you want to delete this payroll period?")) {

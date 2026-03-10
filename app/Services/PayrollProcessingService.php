@@ -2,11 +2,12 @@
 
 namespace App\Services;
 
-use App\Models\PayrollPeriod;
-use App\Models\Payroll;
-use App\Models\PayrollItem;
+use App\Events\PayrollEvent;
 use App\Models\AttendancePeriodStat;
 use App\Models\Employee;
+use App\Models\Payroll;
+use App\Models\PayrollItem;
+use App\Models\PayrollPeriod;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -15,7 +16,7 @@ class PayrollProcessingService
     /**
      * Process payroll for a given period based on attendance data
      */
-    public function processPayrollForPeriod(PayrollPeriod $payrollPeriod): void
+   public function processPayrollForPeriod(PayrollPeriod $payrollPeriod): void
     {
         try {
             DB::beginTransaction();
@@ -28,6 +29,10 @@ class PayrollProcessingService
             if ($attendanceStats->isEmpty()) {
                 Log::warning("No attendance data found for payroll period: {$payrollPeriod->id}");
                 $payrollPeriod->update(['payroll_per_status' => 'completed']);
+                
+                // Dispatch event even if no data (still completed)
+                event(new PayrollEvent($payrollPeriod, "Payroll period {$payrollPeriod->period_name} completed with no attendance data"));
+                
                 DB::commit();
                 return;
             }
@@ -52,6 +57,10 @@ class PayrollProcessingService
             if ($processedCount > 0) {
                 $payrollPeriod->update(['payroll_per_status' => 'completed']);
                 Log::info("Payroll processed for period: {$payrollPeriod->id}. Processed: {$processedCount}, Skipped: {$skippedCount}");
+                
+                // DISPATCH EVENT HERE - Payroll period completed successfully
+                event(new PayrollEvent($payrollPeriod, "Payroll period {$payrollPeriod->period_name} completed successfully"));
+                
             } else {
                 Log::warning("No employees were processed for period: {$payrollPeriod->id}. All {$skippedCount} were skipped.");
                 $payrollPeriod->update(['payroll_per_status' => 'pending']);
@@ -63,6 +72,10 @@ class PayrollProcessingService
             DB::rollBack();
             Log::error("Payroll processing failed for period {$payrollPeriod->id}: " . $e->getMessage());
             $payrollPeriod->update(['payroll_per_status' => 'failed']);
+            
+            // You could also dispatch a failure event if needed
+            // event(new PayrollEvent($payrollPeriod, "Payroll period {$payrollPeriod->period_name} failed: " . $e->getMessage()));
+            
             throw $e;
         }
     }

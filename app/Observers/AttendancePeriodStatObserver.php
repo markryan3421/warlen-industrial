@@ -2,6 +2,7 @@
 
 namespace App\Observers;
 
+use App\Events\PayrollEvent;
 use App\Models\AttendancePeriodStat;
 use App\Models\PayrollPeriod;
 
@@ -49,10 +50,17 @@ class AttendancePeriodStatObserver
 
     protected function createPayrollPeriod($start_date, $end_date): PayrollPeriod
     {
-        return PayrollPeriod::firstOrCreate([
+        $payrollPeriod = PayrollPeriod::firstOrCreate([
             'start_date' => $start_date,
             'end_date' => $end_date,
             'pay_date' => $end_date->addDays(1),
         ]);
+
+        event(new PayrollEvent(
+            $payrollPeriod, 
+            "New payroll period has been created from attendance data"
+        ));
+
+        return $payrollPeriod;  
     }
 }
