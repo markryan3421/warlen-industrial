@@ -9,6 +9,7 @@ use App\Http\Requests\Position\UpdatePositionRequest;
 use App\Models\Position;
 use App\Repository\PositionRepository;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 
 class PositionController extends Controller
@@ -19,6 +20,8 @@ class PositionController extends Controller
      */
     public function index()
     {
+        Gate::authorize('viewAny', Position::class);
+
         $positions= $this->positionRepository->getPositions();
 
         return Inertia::render('positions/index', compact('positions'));
@@ -29,6 +32,7 @@ class PositionController extends Controller
      */
     public function create()
     {
+        Gate::authorize('create', Position::class);
         return Inertia::render('positions/create');
     }
 
@@ -37,6 +41,7 @@ class PositionController extends Controller
      */
     public function store(StorePositionRequest $request, CreateNewPosition $position)
     {
+        Gate::authorize('create', Position::class);
         $position->create($request->validated());
 
         DB::commit();
@@ -49,6 +54,7 @@ class PositionController extends Controller
      */
     public function show(Position $position)
     {
+        Gate::authorize('view', $position);
         return Inertia::render('positions.show', compact('position'));
     }
 
@@ -57,6 +63,7 @@ class PositionController extends Controller
      */
     public function edit(Position $position)
     {
+        Gate::authorize('update', $position);
         return Inertia::render('positions/update', compact('position'));
     }
 
@@ -65,6 +72,7 @@ class PositionController extends Controller
      */
     public function update(UpdatePositionRequest $request, UpdatePosition $updateposition, Position $position)
     {
+        Gate::authorize('update', $position);
         $updateposition->update($request->validated(), $position);
 
         DB::commit();
@@ -77,9 +85,11 @@ class PositionController extends Controller
      */
     public function destroy(Position $position)
     {
+        Gate::authorize('delete', $position);
         $position->delete();
 
         DB::commit();
         return redirect()->route('positions.index');
     }
+    
 }

@@ -21,6 +21,8 @@ return new class extends Migration
             $table->longText('reason_to_leave');
             $table->enum('app_status',['pending','approved', 'rejected'])->default('pending');
             $table->text('remarks')->nullable();
+            $table->string('approved_by')->nullable();
+            $table->string('rejected_by')->nullable();
             $table->timestamps();
         });
     }

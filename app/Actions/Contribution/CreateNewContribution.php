@@ -15,7 +15,7 @@ class CreateNewContribution
         //
     }
 
-    public function createContribution(array $data)
+    public function createContribution(array $data): void
     {
         $contributionVersion = ContributionVersion::create([
             'type' => $data['type'],

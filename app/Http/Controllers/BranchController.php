@@ -2,13 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Actions\Branch\UpdateBranch;
 use App\Actions\Branch\CreateNewBranch;
+use App\Actions\Branch\UpdateBranch;
 use App\Http\Requests\Branch\StoreBranchRequest;
 use App\Http\Requests\Branch\UpdateBranchRequest;
 use App\Models\Branch;
 use App\Repository\BranchRepository;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 // use Inertia\Response;
 
@@ -20,6 +21,8 @@ class BranchController extends Controller
      */
     public function index()
     {
+        Gate::authorize('viewAny', Branch::class);
+
         $branches = $this->cacheRemember('branches', 60, function () {
             return $this->branchRepository->getBranches();
         });
@@ -32,6 +35,8 @@ class BranchController extends Controller
      */
     public function create()
     {
+        Gate::authorize('create', Branch::class);
+
         return Inertia::render('Branch/create');
     }
 
@@ -40,6 +45,8 @@ class BranchController extends Controller
      */
     public function store(StoreBranchRequest $request, CreateNewBranch $action)
     {
+        Gate::authorize('create', Branch::class);
+
         if ($this->limit('create-branch:' . auth()->id(), 60, 15)) {
             return back()->with('error', 'Too many attempts. Please try again later.');
         }
@@ -75,6 +82,8 @@ class BranchController extends Controller
      */
     public function edit(Branch $branch)
     {
+        Gate::authorize('update', $branch);
+
         $branch->load(['sites' => fn($query) => $query->getSiteName()]);
         return Inertia::render('Branch/edit', compact('branch'));
     }
@@ -84,6 +93,8 @@ class BranchController extends Controller
      */
     public function update(UpdateBranchRequest $request, Branch $branch, UpdateBranch $action)
     {
+        Gate::authorize('update', $branch);
+
         if ($this->limit('update-branch:' . auth()->id(), 60, 15)) {
             return back()->with('error', 'Too many attempts. Please try again later.');
         }
@@ -109,6 +120,8 @@ class BranchController extends Controller
      */
     public function destroy(Branch $branch)
     {
+        Gate::authorize('delete', $branch);
+        
         if ($this->limit('delete-branch:' . auth()->id(), 60, 10)) {
             return back()->with('error', 'Too many attempts. Please try again later.');
         }

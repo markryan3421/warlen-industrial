@@ -14,7 +14,7 @@ class UpdateContributionVersion
         //
     }
 
-    public function update(array $data, ContributionVersion $contributionVersion)
+    public function update(array $data, ContributionVersion $contributionVersion): ContributionVersion
     {
         $contributionVersion->update([
             'type' => $data['type'],

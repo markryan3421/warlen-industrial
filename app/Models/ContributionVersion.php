@@ -3,12 +3,15 @@
 namespace App\Models;
 
 use App\Models\ContributionBracket;
+use App\Policies\ContributionVersionPolicy;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Attributes\UsePolicy;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 
+#[UsePolicy(ContributionVersionPolicy::class)]
 class ContributionVersion extends Model
 {
     use HasFactory;

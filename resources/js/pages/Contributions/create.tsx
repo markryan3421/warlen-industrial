@@ -94,7 +94,7 @@ export default function Create() {
                         <CardTitle>Contribution Version Information</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <form onSubmit={submitContributionVersion} className="space-y-6">
+                        <form onSubmit={submitContributionVersion} className="space-x-6 grid grid-cols-2">
                             {/* Contribution Type */}
                             <div className="space-y-2">
                                 <label className="text-sm font-medium">Contribution Type</label>
@@ -138,7 +138,7 @@ export default function Create() {
                             </div>
 
                             {/* Salary Ranges Repeater */}
-                            <div className="space-y-4">
+                            <div className="space-y-4 col-span-2">
                                 <div className="flex items-center justify-between">
                                     <label className="text-sm font-medium">Salary Ranges & Contributions</label>
                                     <Button
@@ -146,6 +146,7 @@ export default function Create() {
                                         variant="outline"
                                         size="sm"
                                         onClick={addSalaryRange}
+                                        className='hover: cursor-pointer'
                                     >
                                         <Plus className="h-4 w-4 mr-2" />
                                         Add Range
@@ -251,10 +252,19 @@ export default function Create() {
                                 ))}
                             </div>
 
-                            <div className="flex justify-end pt-4">
+                            <div className="flex justify-end col-start-2 space-x-3 p-5">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => window.history.back()}
+                                    className='hover:cursor-pointer'
+                                >
+                                    Cancel
+                                </Button>
                                 <Button
                                     type="submit"
                                     disabled={processing}
+                                    className='hover:cursor-pointer'
                                 >
                                     {processing ? 'Creating...' : 'Create Contribution Version'}
                                 </Button>

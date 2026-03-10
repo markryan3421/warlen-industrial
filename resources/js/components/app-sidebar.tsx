@@ -8,16 +8,23 @@ import {
     Sidebar,
     SidebarContent,
     SidebarFooter,
+    SidebarGroup,
+    SidebarGroupLabel,
     SidebarHeader,
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
+    useSidebar
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
 import AppLogo from './app-logo';
-import ContributionController from '@/actions/App/Http/Controllers/ContributionVersionController';
+import PayrollPeriodController from '@/actions/App/Http/Controllers/PayrollPeriodController';
+import { FileBadge, Calendar, UserRoundCog, Contact, BookUser } from 'lucide-react';
+import { Users } from 'lucide-react';
 import ApplicationLeaveController from '@/actions/App/Http/Controllers/ApplicationLeaveController';
+import ContributionVersionController from '@/actions/App/Http/Controllers/ContributionVersionController';
+import { useCurrentUrl } from '@/hooks/use-current-url'; // Add this import
 
 const ExpendituresItems: NavItem[] = [
     {
@@ -31,15 +38,15 @@ const ExpendituresItems: NavItem[] = [
         icon: Landmark,
     },
     {
-        title: 'Attendance',
-        href: '/coming-soon',
-        icon: Flag,
-    },
-    {
         title: 'Contributions',
-        href: ContributionController.index(),
+        href: ContributionVersionController.index(),
         icon: CircleMinus,
     },
+    {
+        title: 'Incentives',
+        href: '/incentives',
+        icon: FileBadge,
+    }
 ];
 
 const AccessControlItems: NavItem[] = [
@@ -59,53 +66,80 @@ const AccessControlItems: NavItem[] = [
         icon: Clipboard,
     },
     {
+        title: 'Payroll Periods',
+        href: PayrollPeriodController.index(),
+        icon: Calendar,
+    },
+    {
         title: 'Positions',
         href: '/positions',
         icon: UserCog,
     },
+];
+
+const AttendanceItems: NavItem[] = [
     {
-        title: 'Permissions',
-        href: '/permissions',
-        icon: Lock,
+        title: 'Attendance',
+        href: '/attendances',
+        icon: Users,
+    },
+    {
+        title: 'Attendance Exception Stats',
+        href: '/attendance-exception-stats',
+        icon: CircleUser,
+    },
+    {
+        title: 'Attendance Logs',
+        href: '/attendance-logs',
+        icon: Contact,
+    },
+    {
+        title: 'Attendance Period Stats',
+        href: '/attendance-period-stats',
+        icon: BookUser,
+    },
+    {
+        title: 'Attendance Schedules',
+        href: '/attendance-schedules',
+        icon: UserRoundCog,
     },
 ];
 
-const footerNavItems: NavItem[] = [
-    // {
-    //     title: 'Repository',
-    //     href: 'https://github.com/laravel/react-starter-kit',
-    //     icon: Folder,
-    // },
-    // {
-    //     title: 'Documentation',
-    //     href: 'https://laravel.com/docs/starter-kits#react',
-    //     icon: BookOpen,
-    // },
-];
+const footerNavItems: NavItem[] = [];
 
 export function AppSidebar() {
+    const { state } = useSidebar();
+    const { isCurrentUrl } = useCurrentUrl(); // Add this hook
+    const isExpanded = state === 'expanded';
+
     return (
-        <Sidebar collapsible="icon"  className ="border-r-1 border-gray-400">
-            <SidebarHeader>
+        <Sidebar collapsible="icon" className="border-r-1 bg-white border-gray-400">
+            <SidebarHeader className="px-5">
                 <SidebarMenu>
                     <SidebarMenuItem>
-                        <SidebarMenuButton className='py-10' asChild>
-                            <Link href={dashboard()} prefetch className='h-8 w-8 '>
-                                <AppLogo/>
-                            </Link>
+                        <SidebarMenuButton 
+                            className="py-10" 
+                            asChild
+                        >
+                            <Link href = {dashboard()} prefetch className="h-8 w-8 hover:bg-white">
+                                <AppLogo />
+                            </Link>     
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 </SidebarMenu>
             </SidebarHeader>
 
-            <SidebarContent>
-                <NavMain label='Expenditures' items={ExpendituresItems} />
-                <NavMain label='Access Control' items={AccessControlItems} />
+            <SidebarContent className={`
+                ${isExpanded ? 'px-5' : '-ml-3 px-5 transition-all duration-200 ease-in-out'}`}
+            >
+                <NavMain items={ExpendituresItems} label="Expenditures" />
+                <NavMain items={AccessControlItems} label="Access Control" />
+                <NavMain items={AttendanceItems} label="Attendance" />
             </SidebarContent>
 
             <SidebarFooter>
-                <NavFooter items={footerNavItems}/>
-                <NavUser/>
+                <NavFooter items={footerNavItems} />
+                <NavUser />
             </SidebarFooter>
         </Sidebar>
     );

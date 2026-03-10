@@ -42,13 +42,13 @@ interface FormData {
 interface EditProps {
     applicationLeave: {
         id: number;
+        employee: Employee;
         leave_start: string;
         leave_end: string;
         reason_to_leave: string;
         app_status: string;
         remarks: string;
         slug_app: string;
-        employee?: Employee;
     };
 }
 
@@ -61,10 +61,16 @@ export default function Edit({ applicationLeave }: EditProps) {
         remarks: applicationLeave.remarks || '',
     });
 
+
     function submitApplication(e: React.FormEvent) {
         e.preventDefault();
         put(update(applicationLeave.slug_app).url);
     }
+
+    // Handle checkbox change explicitly
+    // const handleApprovedChange = (checked: boolean | 'indeterminate') => {
+    //     setData('is_approved', checked === true);
+    // };
 
     // Get today's date in YYYY-MM-DD format for min attribute
     const today = new Date().toISOString().split('T')[0];
@@ -163,47 +169,35 @@ export default function Edit({ applicationLeave }: EditProps) {
                                 {/* Approval Status Section - Editable */}
                                 <div className="border-t pt-4 mt-4">
                                     <CardTitle className="text-lg mb-4">Approval Information</CardTitle>
-                                    
-                                    <div className="space-y-4">
-                                        <div className="space-y-2 w-full md:w-1/2">
-                                            <Label htmlFor="app_status">
-                                                Application Leave Status <span className="text-red-500">*</span>
-                                            </Label>
-                                            <select 
-                                                id="app_status" 
-                                                value={data.app_status} 
-                                                onChange={e => setData('app_status', e.target.value)}
-                                                className="w-full h-10 px-3 rounded-md border border-input bg-background focus:ring-2 focus:ring-primary"
-                                            >
-                                                <option value="">Select a Status</option>
-                                                <option value="pending">Pending</option>
-                                                <option value="approved">Approved</option>
-                                                <option value="rejected">Rejected</option>
-                                            </select>
-                                            <InputError message={errors.app_status} />
-                                        </div>
+                                    <div className="space-y-2 w-1/2">
+                                        <Label htmlFor="pay_frequency">Application Leave Status<span className="text-red-500">*</span></Label>
+                                        <select id="pay_frequency" value={data.app_status} onChange={e => setData('app_status', e.target.value)} className="w-full h-10 px-3 rounded-md border border-input bg-background">
+                                            <option value="">Select a Status</option>
+                                            <option value="pending">Pending</option>
+                                            <option value="approved">Approved</option>
+                                            <option value="rejected">Rejected</option>
+                                        </select>
+                                        <InputError message={errors.app_status} />
+                                    </div>
 
-                                        <div className="mt-4">
-                                            <Label htmlFor="remarks" className="text-sm font-medium mb-2 block">
-                                                Remarks / Comments
-                                            </Label>
-                                            <textarea
-                                                id="remarks"
-                                                value={data.remarks}
-                                                onChange={e => setData('remarks', e.target.value)}
-                                                placeholder="Enter your approval remarks or comments here..."
-                                                className="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                                                maxLength={500}
-                                            />
-                                            <div className="text-sm text-muted-foreground mt-1 flex justify-between">
-                                                <span>{data.remarks.length}/500 characters</span>
-                                                {data.remarks.length > 0 && (
-                                                    <span className={data.remarks.length >= 500 ? 'text-destructive' : ''}>
-                                                        {500 - data.remarks.length} remaining
-                                                    </span>
-                                                )}
-                                            </div>
-                                            <InputError message={errors.remarks} />
+                                    <div className="mt-4">
+                                        <label className="text-sm font-medium mb-2 block">
+                                            Remarks
+                                        </label>
+                                        <textarea
+                                            value={data.remarks}
+                                            onChange={e => setData('remarks', e.target.value)}
+                                            placeholder="Enter any remarks or comments"
+                                            className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                            maxLength={500}
+                                        />
+                                        <div className="text-sm text-muted-foreground mt-1 flex justify-between">
+                                            <span>{data.remarks.length}/500 characters</span>
+                                            {data.remarks.length > 0 && (
+                                                <span className={data.remarks.length >= 500 ? 'text-destructive' : ''}>
+                                                    {500 - data.remarks.length} remaining
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
                                 </div>

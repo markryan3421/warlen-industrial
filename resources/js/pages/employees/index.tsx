@@ -44,17 +44,11 @@ interface Employee {
         name: string;
         email: string;
     }
-    sites: {
-        site_name: string;
-    }
     slug_emp: string;   
     emp_code: string;
-    employee_number: string;
-    site_name: string;
     pay_frequency: string;
     contract_start_date: string;
     contract_end_date: string;
-    emergency_contact_number: string;
     employee_status: string;
 }
 
@@ -65,13 +59,27 @@ interface PageProps {
     sites: any[]
 }
 
-export default function Index({ employees, positions, branches, sites }: PageProps) {
+export default function Index({ employees }: PageProps) {
     const { delete: destroy } = useForm();
-    const [filters, setFilters] = useState({
-        position: '',
-        branch: '',
-        site: ''
-    });
+    
+    // Function to determine if employee should be inactive based on contract end date
+    const shouldBeInactive = (employee: Employee) => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const contractEndDate = new Date(employee.contract_end_date);
+        contractEndDate.setHours(0, 0, 0, 0);
+        
+        // If contract end date is before today, employee should be inactive
+        return contractEndDate < today;
+    };
+
+    // Function to capitalize first letter of status
+    const capitalizeStatus = (status: string) => {
+        if (!status) return status;
+        return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+    };
+
     const hasValidPosition = (employee: Employee) => {
         return employee.position && !employee.position.deleted_at;
     }
@@ -94,18 +102,16 @@ export default function Index({ employees, positions, branches, sites }: PagePro
                 </div>
                 <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
                     {employees.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
+                        <div className="flex flex-col items-center justify-center py-16 text-center">
                             <div className="rounded-full bg-gray-100 p-6 mb-4">
                                 <Users className="h-12 w-12 text-gray-400" />
                             </div>
-                            <h3 className="text-lg font-semib text-gray-900 mb-2">No employees yet</h3>
+                            <h3 className="text-lg font-semibold mb-2">No employees yet</h3>
                             <p className="text-gray-500 mb-6 max-w-sm">
-                                Get started by creating your first employee. You can add their details, assign positions, and set up contracts.
+                                Get started by creating your first employee.
                             </p>
                             <Link href="/employees/create">
-                                <Button className="gap-2">
-                                    Create Your First Employee
-                                </Button>
+                                <Button>Create Your First Employee</Button>
                             </Link>
                         </div>
                     ) : (
@@ -118,8 +124,7 @@ export default function Index({ employees, positions, branches, sites }: PagePro
                                     <TableHead>Position</TableHead>
                                     <TableHead>Pay Frequency</TableHead>
                                     <TableHead>Branch</TableHead>
-                                    <TableHead>Start of Contract</TableHead>
-                                    <TableHead>End of Contract</TableHead>
+                                    <TableHead>Contract Period</TableHead>
                                     <TableHead>Status</TableHead>
                                     <TableHead>Actions</TableHead>
                                 </TableRow>

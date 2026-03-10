@@ -61,9 +61,9 @@ export default function Edit({ branch }: Props) {
                         <CardTitle>Edit Branch</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <form onSubmit={submitBranch} className="space-y-6">
+                        <form onSubmit={submitBranch} className="space-x-6 grid grid-cols-2">
                             {/* Branch Details Section */}
-                            <div className="space-y-4">
+                            <div className="space-x-4">
                                 <div>
                                     <label className="text-sm font-medium mb-2 block">
                                         Branch Name
@@ -76,7 +76,9 @@ export default function Edit({ branch }: Props) {
                                     />
                                     <InputError message={errors.branch_name} />
                                 </div>
-
+                            </div>
+                            
+                            <div>
                                 <div>
                                     <label className="text-sm font-medium mb-2 block">
                                         Branch Address
@@ -92,7 +94,7 @@ export default function Edit({ branch }: Props) {
                             </div>
 
                             {/* Sites Repeater Section */}
-                            <div className="border-t pt-6">
+                            <div className="pt-6 col-span-2">
                                 <SiteRepeater
                                     sites={data.sites}
                                     setSites={setSites}
@@ -100,17 +102,19 @@ export default function Edit({ branch }: Props) {
                                 />
                             </div>
 
-                            <div className="flex justify-end gap-4 pt-4">
+                            <div className="flex justify-end col-start-2 mb-5 px-5 space-x-3">
                                 <Button
                                     type="button"
                                     variant="outline"
                                     onClick={() => window.history.back()}
+                                    className='hover:cursor-pointer'
                                 >
                                     Cancel
                                 </Button>
                                 <Button
                                     type="submit"
                                     disabled={processing}
+                                    className='hover: cursor-pointer hover:bg-blue-600'
                                 >
                                     {processing ? 'Updating...' : 'Update Branch'}
                                 </Button>

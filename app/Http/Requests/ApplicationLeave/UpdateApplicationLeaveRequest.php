@@ -25,7 +25,6 @@ class UpdateApplicationLeaveRequest extends FormRequest
             // 'leave_start' => 'required|date|after_or_equal:today',
             // 'leave_end' => 'required|date|after:leave_start',
             // 'reason_to_leave' => 'required|string|max:1000',
-            // 'is_approved' => 'required|boolean',
             'remarks' => 'nullable|string|max:1000',
             'app_status' => 'required|in:pending,approved,rejected',
         ];

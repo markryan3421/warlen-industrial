@@ -80,36 +80,45 @@ export default function Dashboard() {
                 <div className='md:col-span-2 lg:col-span-3 rounded-lg mt-10'>
                     <div className='rounded-lg text-xs'>
                        {/* Chart Container */}
-<div className=" h-[200px] md:h-[300px] lg:h-[350px]">
-    <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={lineChartData} margin={{ top: 10, right: 40, left: 0, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis 
-                dataKey="month" 
-                tick={{ fontSize: 10 }}
-                tickFormatter={(month) => month.substring(0, 3)}
-                interval={0}
-            />
-            <YAxis 
-                tick={{ fontSize: 10 }}
-                tickFormatter={(value) => value.toLocaleString()}
-                width={35}
-            />
-            <Line 
-                type="monotone" 
-                dataKey="desktop" 
-                stroke={chartConfig.desktop.color} 
-                strokeWidth={2}
-                name="Total Revenue"
-                label={{
-                    position: 'top',
-                    fontSize: 8,
-                    fill: '#666',
-                    formatter: (value) => value
-                }}
-            />
-        </LineChart>
-    </ResponsiveContainer>
+<div className="w-full transition-all duration-300 ease-in-out">
+    <div className="relative h-[200px] md:h-[300px] lg:h-[350px] w-full">
+        <ResponsiveContainer 
+            width="100%" 
+            height="100%" 
+            className="transition-all duration-300 ease-in-out"
+        >
+            <LineChart 
+                data={lineChartData} 
+                margin={{ top: 10, right: 40, left: 0, bottom: 0 }}
+            >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis 
+                    dataKey="month" 
+                    tick={{ fontSize: 10 }}
+                    tickFormatter={(month) => month.substring(0, 3)}
+                    interval={0}
+                />
+                <YAxis 
+                    tick={{ fontSize: 10 }}
+                    tickFormatter={(value) => value.toLocaleString()}
+                    width={35}
+                />
+                <Line 
+                    type="monotone" 
+                    dataKey="desktop" 
+                    stroke={chartConfig.desktop.color} 
+                    strokeWidth={2}
+                    name="Total Revenue"
+                    label={{
+                        position: 'top',
+                        fontSize: 8,
+                        fill: '#666',
+                        formatter: (value) => value
+                    }}
+                />
+            </LineChart>
+        </ResponsiveContainer>
+    </div>
 </div>
                         
                         {/* Footer with Total Revenue text and View Full Analysis link */}

@@ -11,7 +11,7 @@ use Spatie\Permission\Models\Role;
 
 class CreateNewEmployee
 {
-    public function create(array $data) 
+    public function create(array $data): Employee
     {
         return DB::transaction(function () use ($data) {
             $user = User::create([

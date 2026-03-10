@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import SiteRepeater from '@/components/site-repeater';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { store } from '@/actions/App/Http/Controllers/BranchController';
+import { ChevronRight } from "lucide-react";
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -15,7 +16,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
     {
         title: 'Create Branch',
-        href: '/branch/create',
+        href: '/branches/create',
     },
 ];
 
@@ -50,9 +51,9 @@ export default function Create() {
                         <CardTitle>Branch Information</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <form onSubmit={submitBranch} className="space-y-6">
+                        <form onSubmit={submitBranch} className="space-x-6 grid grid-cols-2">
                             {/* Branch Details Section */}
-                            <div className="space-y-4">
+                            <div className="space-x-4">
                                 <div>
                                     <label className="text-sm font-medium mb-2 block">
                                         Branch Name
@@ -65,23 +66,22 @@ export default function Create() {
                                     />
                                     <InputError message={errors.branch_name} />
                                 </div>
-
-                                <div>
-                                    <label className="text-sm font-medium mb-2 block">
-                                        Branch Address
-                                    </label>
-                                    <Input
-                                        type="text"
-                                        value={data.branch_address}
-                                        onChange={e => setData('branch_address', e.target.value)}
-                                        placeholder="Enter branch location"
-                                    />
-                                    <InputError message={errors.branch_address} />
-                                </div>
+                            </div>
+                            <div>
+                                <label className="text-sm font-medium mb-2 block">
+                                    Branch Address
+                                </label>
+                                <Input
+                                    type="text"
+                                    value={data.branch_address}
+                                    onChange={e => setData('branch_address', e.target.value)}
+                                    placeholder="Enter branch location"
+                                />
+                                <InputError message={errors.branch_address} />
                             </div>
 
                             {/* Sites Repeater Section */}
-                            <div className="border-t pt-6">
+                            <div className="pt-6 col-span-2">
                                 <SiteRepeater
                                     sites={data.sites}
                                     setSites={setSites}
@@ -89,10 +89,16 @@ export default function Create() {
                                 />
                             </div>
 
-                            <div className="flex justify-end pt-4">
+                            <div className="flex justify-end col-start-2 mb-5 px-5">
+                                <Button
+                                    className="justify-end"
+                                >
+                                    Cancel
+                                </Button>
                                 <Button
                                     type="submit"
                                     disabled={processing}
+                                    className="justify-end"
                                 >
                                     {processing ? 'Creating...' : 'Create Branch'}
                                 </Button>

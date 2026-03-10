@@ -2,15 +2,15 @@ import AppLogoIcon from './app-logo-icon';
 import "@fontsource/inter/800.css";
 import { useSidebar } from '@/components/ui/sidebar';
 
-export default function AppLogo() {
+export default function     AppLogo() {
     const { state } = useSidebar();
     const isExpanded = state === 'expanded';
 
     return (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 p-5 hover:bg-transparent">
             <div className={`
-                flex items-center justify-center rounded-md 
-                ${isExpanded ? 'size-11 -ml-2 -mt-2 transition-all duration-300 ease-in-out' : 'size-8 -ml-2 transition-all duration-200 ease-in-out'}
+                flex items-center justify-center rounded-md hover:bg-transparent
+                ${isExpanded ? 'size-11 -ml-5 -mt-2 transition-all duration-300 ease-in-out' : 'size-8 -ml-7 transition-all duration-200 ease-in-out'}
             `}>
                 <AppLogoIcon/>
             </div>
@@ -23,11 +23,14 @@ export default function AppLogo() {
                     : 'opacity-0 max-w-0 ml-0'
                 }
             `}>
-                <span className="mb-0.5 -ml-2 leading-tight tracking-tighter font-['Inter'] text-[12px] text-[#05469D]">
+                <span className="mb-0.5 -ml-2 leading-tight tracking-tighter font-['Inter'] text-[13px] text-[#05469D]">
                     Warlen Industrial Sales Corporation
                 </span>
-                <span className="mb-0.5 truncate leading-tight font-['Inter'] text-[12px] -ml-2 tracking-tighter text-[#FD0C0B]">
+                <span className="-mt-1 truncate leading-tight font-['Inter'] text-[12px] -ml-2 tracking-tighter text-[#FD0C0B]">
                     DEKA Sales
+                </span>
+                <span className="truncate leading-tight font-['Inter'] text-[12px] -ml-2 tracking-tighter text-black">
+                    Payroll Management System
                 </span>
             </div>
         </div>

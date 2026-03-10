@@ -2,64 +2,96 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Attendance;
+use App\Http\Controllers\Controller;
+use App\Models\AttendanceExceptionStat;
+use App\Models\AttendanceLog;
+use App\Models\AttendancePeriodStat;
+use App\Models\AttendanceSchedule;
+use App\Services\PaginatedTableService;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class AttendanceController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
-    {
-        //
+    public function attendanceSchedules(Request $request) {
+        $schedules = PaginatedTableService::make(
+            model:         AttendanceSchedule::class,
+            request:       $request,
+            columns:       [
+                'employee_id', 'employee_name', 'department',
+                'date', 'shift_code', 'shift_label',
+            ],
+            searchColumns: ['employee_name', 'department', 'shift_label'],
+        );
+
+        return Inertia::render('attendances/ScheduleInfo/index', [
+            'schedules'         => $schedules,
+            'filters'       => $request->only(['search', 'perPage']),
+            'totalCount'    => $schedules['totalCount'],
+            'filteredCount' => $schedules['filteredCount'],
+        ]);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
+    public function attendancePeriodStats(Request $request) {
+        $stats = PaginatedTableService::make(
+            model:         AttendancePeriodStat::class,
+            request:       $request,
+            columns:       [
+                'employee_id', 'employee_name', 'department',
+                'period_start', 'period_end',
+                'normal_work_hours', 'real_work_hours',
+                'late_times', 'late_minutes',
+                'attended_days', 'absent_days',
+                'real_pay',
+            ],
+            searchColumns: ['employee_name', 'department'],
+        );
+
+        return Inertia::render('attendances/PeriodStat/index', [
+            'stats'         => $stats,
+            'filters'       => $request->only(['search', 'perPage']),
+            'totalCount'    => $stats['totalCount'],
+            'filteredCount' => $stats['filteredCount'],
+        ]);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
+    public function attendanceLogs(Request $request) {
+        $logs = PaginatedTableService::make(
+            model:         AttendanceLog::class,
+            request:       $request,
+            columns:       [
+                'employee_id', 'employee_name', 'department',
+                'date', 'time_in', 'time_out', 'total_hours', 'is_overtime',
+            ],
+            searchColumns: ['employee_name', 'department'],
+        );
+
+        return Inertia::render('attendances/AttendanceLogs/index', [
+            'logs'         => $logs,
+            'filters'       => $request->only(['search', 'perPage']),
+            'totalCount'    => $logs['totalCount'],
+            'filteredCount' => $logs['filteredCount'],
+        ]);
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Attendance $attendance)
-    {
-        //
-    }
+    public function attendanceExceptionStats(Request $request) {
+        $stats = PaginatedTableService::make(
+            model:         AttendanceExceptionStat::class,
+            request:       $request,
+            columns:       [
+                'employee_id', 'employee_name', 'department', 'date',
+                'am_time_in', 'am_time_out', 'pm_time_in', 'pm_time_out',
+                'late_minutes', 'leave_early_minutes', 'absence_minutes',
+                'total_exception_minutes',
+            ],
+            searchColumns: ['employee_name', 'department'],
+        );
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Attendance $attendance)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Attendance $attendance)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Attendance $attendance)
-    {
-        //
+        return Inertia::render('attendances/ExceptionStats/index', [
+            'stats'         => $stats,
+            'filters'       => $request->only(['search', 'perPage']),
+            'totalCount'    => $stats['totalCount'],
+            'filteredCount' => $stats['filteredCount'],
+        ]);
     }
 }
