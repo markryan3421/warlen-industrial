@@ -107,7 +107,8 @@ export const CustomTable = ({
                                     }`}
                                 onClick={() => {
                                     if (isDelete) {
-                                        onDelete(route(action.route, row.id));
+                                        // onDelete(route(action.route, row.id));
+                                        onDelete(row.branch_slug || row.id);
                                     } else if (action.label === "View") {
                                         onView?.(row);
                                     } else if (action.label === "Edit") {

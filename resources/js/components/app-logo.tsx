@@ -1,4 +1,3 @@
-
 export default function AppLogo() {
     return (
         <div className="group relative rounded-lg flex w-full items-center gap-3 overflow-hidden bg-white/5 py-3 transition-all duration-300 hover:bg-white/10 hover:shadow-lg hover:shadow-blue-500/10">

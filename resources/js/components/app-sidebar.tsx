@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { Airplay, CircleMinus, CircleUser, Landmark, UserCog, Clipboard, Calendar, Users, Contact, BookUser, UserRoundCog, ChevronDown, FileBadge,PhilippinePesoIcon } from 'lucide-react';
+import { Airplay, CircleMinus, CircleUser, Landmark, UserCog, Clipboard, Calendar, Users, Contact, BookUser, UserRoundCog, ChevronDown, FileBadge, PhilippinePesoIcon } from 'lucide-react';
 import ApplicationLeaveController from '@/actions/App/Http/Controllers/ApplicationLeaveController';
 import BranchController from '@/actions/App/Http/Controllers/BranchController';
 import ContributionController from '@/actions/App/Http/Controllers/ContributionVersionController';
@@ -69,7 +69,7 @@ const AccessControlItems: NavItem[] = [
         href: PayrollPeriodController.index(),
         icon: Calendar,
     },
-      {
+    {
         title: 'Payroll',
         href: PayrollController.index(),
         icon: PhilippinePesoIcon,
@@ -126,10 +126,10 @@ export function AppSidebar() {
     return (
         <Sidebar collapsible="icon" variant="inset">
             <SidebarHeader>
-                <SidebarMenu>
+                <SidebarMenu className="group-data-[collapsible=icon]:items-center">
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild>
-                            <Link href={dashboard()} prefetch>
+                            <Link href={dashboard()} prefetch preserveScroll={true} preserveState={true}>
                                 <AppLogo />
                             </Link>
                         </SidebarMenuButton>

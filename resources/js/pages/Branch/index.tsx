@@ -1,9 +1,9 @@
-import { Head, Link, router, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import { MapPin } from 'lucide-react';
 import { useState } from 'react';
 import BranchController from "@/actions/App/Http/Controllers/BranchController";
 import { CustomTable } from '@/components/custom-table';
-import { CustomToast } from '@/components/custom-toast';
+import { CustomToast, toast } from '@/components/custom-toast';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -62,18 +62,19 @@ export default function Index({ branches, filters, totalCount, filteredCount }: 
     const { delete: destroy } = useForm();
     const [selectedBranch, setSelectedBranch] = useState<BranchWithSites | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    // const [searchTerm, setSearchTerm] = useState('');
-
-    // const filteredBranches = branches.filter((branch) =>
-    //     branch.branch_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    //     branch.branch_address.toLowerCase().includes(searchTerm.toLowerCase())
-    // );
-
-    // const clearSearch = () => setSearchTerm('');
 
     const handleDelete = (slugOrId: string | number) => {
         if (confirm("Are you sure you want to delete this branch?")) {
-            destroy(BranchController.destroy(String(slugOrId)).url);
+            destroy(BranchController.destroy(String(slugOrId)).url, {
+                onSuccess: (page) => {
+                    const successMessage = page.props.flash?.success || 'Branch created successfully.'
+                    toast.success(successMessage);
+                },
+                onError: (errors) => {
+                    const errorMessage = Object.values(errors).flat()[0] || 'Failed to create branch.';
+                    toast.error(errorMessage);
+                }
+            });
         }
     }
 
@@ -112,7 +113,7 @@ export default function Index({ branches, filters, totalCount, filteredCount }: 
     // Clears the search bar and resets the list
     const handleReset = () => {
         setData('search', '');
-        setData('perPage', '5');
+        setData('perPage', '10');
 
         router.get(BranchController.index.url(), {}, {
             preserveState: true,
