@@ -51,6 +51,7 @@ Route::middleware(['auth', 'verified', 'throttle:limit-actions' , 'roleBase'])->
     })->name('hr.dashboard');
 
     Route::resource('branches', BranchController::class)->except(['show']);
+    Route::delete('/branches/{branch:branch_slug}', [BranchController::class, 'destroy'])->name('branches.destroy');
     Route::resource('positions', PositionController::class)->except(['show']);
     Route::resource('employees', EmployeeController::class)->except(['show']);
     Route::resource('permissions', PermissionController::class);
