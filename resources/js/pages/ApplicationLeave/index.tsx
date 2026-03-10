@@ -1,7 +1,7 @@
 import AppLayout from '@/layouts/app-layout';
 import { Button } from "@/components/ui/button";
 import { type BreadcrumbItem, type BranchWithSites } from '@/types';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import ApplicationLeaveController from "@/actions/App/Http/Controllers/ApplicationLeaveController";
 import { useState, useMemo, useEffect } from 'react';
 import { CalendarDays, PlusCircle, Filter, X } from 'lucide-react';
@@ -43,8 +43,16 @@ interface ApplicationLeaveProps {
     applicationLeaves: any[];
 }
 
+interface PageProps {
+    applicationLeaveEnum: Array<{
+        value: string;
+        label: string;
+    }>;
+}
+
 export default function Index({ applicationLeaves }: ApplicationLeaveProps) {
     const { delete: destroy } = useForm();
+    const { applicationLeaveEnum } = usePage<PageProps>().props;
     
     // Initialize filter from localStorage or use default
     const [statusFilter, setStatusFilter] = useState<string>(() => {
@@ -88,10 +96,11 @@ export default function Index({ applicationLeaves }: ApplicationLeaveProps) {
         }
     };
 
-    // Format status text
+    // Format status text using enum
     const formatStatus = (status: string) => {
         if (!status) return 'Pending';
-        return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+        const found = applicationLeaveEnum?.find(item => item.value.toLowerCase() === status.toLowerCase());
+        return found?.label || status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
     };
 
     return (
@@ -132,9 +141,11 @@ export default function Index({ applicationLeaves }: ApplicationLeaveProps) {
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="all">All Statuses</SelectItem>
-                                            <SelectItem value="pending">Pending</SelectItem>
-                                            <SelectItem value="approved">Approved</SelectItem>
-                                            <SelectItem value="rejected">Rejected</SelectItem>
+                                            {applicationLeaveEnum?.map(({value, label}) => (
+                                                <SelectItem key={value} value={value}>
+                                                    {label}
+                                                </SelectItem>
+                                            ))}
                                         </SelectContent>
                                     </Select>
                                 </div>

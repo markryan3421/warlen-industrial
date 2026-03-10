@@ -8,6 +8,8 @@ use App\Http\Requests\Branch\StoreBranchRequest;
 use App\Http\Requests\Branch\UpdateBranchRequest;
 use App\Models\Branch;
 use App\Repository\BranchRepository;
+use App\Traits\HasPaginatedIndex;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -15,19 +17,40 @@ use Inertia\Inertia;
 
 class BranchController extends Controller
 {
+    use HasPaginatedIndex;
+    
     public function __construct(private BranchRepository $branchRepository) {}
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         Gate::authorize('viewAny', Branch::class);
 
         $branches = $this->cacheRemember('branches', 60, function () {
-            return $this->branchRepository->getBranches();
+            return $this->branchRepository->getBranches()->load('sites');
         });
 
-        return Inertia::render('Branch/index', compact('branches'));
+        // $branches = Branch::withCount('sites')->get();
+
+        $result = $this->paginateCollection(
+            items:         collect($branches), // wrap in Collection if not already
+            request:       $request,
+            searchColumns: ['branch_name', 'branch_address'], // adjust to Branch columns
+        );
+
+        return Inertia::render('Branch/index', [
+            'branches'      => [
+                'data' => $result['data'],
+                'links' => $result['pagination']['links'] ?? [],
+                'from' => $result['pagination']['from'] ?? 0,
+                'to' => $result['pagination']['to'] ?? 0,
+                'total' => $result['totalCount'],
+            ],
+            'filters'       => $result['filters'],
+            'totalCount'    => $result['totalCount'],
+            'filteredCount' => $result['filteredCount'],
+        ]);
     }
 
     /**

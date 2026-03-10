@@ -6,14 +6,15 @@ use App\Http\Controllers\AttendanceImportController;
 use App\Http\Controllers\BranchController;
 use App\Http\Controllers\ContributionVersionController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\EmployeeRole\ApplicationLeaveController as EmployeeApplicationLeaveController;
 use App\Http\Controllers\IncentiveController;
+use App\Http\Controllers\PayrollController;
+use App\Http\Controllers\PayrollPeriodController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\PositionController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
-use App\Http\Controllers\EmployeeRole\ApplicationLeaveController as EmployeeApplicationLeaveController;
-use App\Http\Controllers\PayrollPeriodController;
 
 Route::get('/', function () {
     return Inertia::render('welcome', [
@@ -25,7 +26,7 @@ Route::get('/', function () {
 //     return Inertia::render('dashboard');
 // })->middleware(['auth', 'verified'])->name('dashboard');
 
-Route::middleware(['auth', 'verified', 'throttle:limit-actions'])->group(function () {
+Route::middleware(['auth', 'verified', 'throttle:limit-actions' , 'roleBase'])->group(function () {
 
     Route::get('payroll', function () {
         return Inertia::render('payroll/index');
@@ -68,6 +69,8 @@ Route::middleware(['auth', 'verified', 'throttle:limit-actions'])->group(functio
     ]); //employee only
 
     Route::resource('payroll-periods', PayrollPeriodController::class)->except(['show']);
+
+    Route::resource('payrolls', PayrollController::class)->except(['show']);
 
     Route::get('/attendance-schedules', [AttendanceController::class, 'attendanceSchedules']);
     Route::get('/attendance-period-stats', [AttendanceController::class, 'attendancePeriodStats']);

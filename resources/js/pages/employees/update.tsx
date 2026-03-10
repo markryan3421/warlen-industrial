@@ -35,39 +35,70 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
     const [siteSearch, setSiteSearch] = useState('');
     const [showSiteDropdown, setShowSiteDropdown] = useState(false);
 
+    // Helper function to format date for input field (YYYY-MM-DD)
+    const formatDateForInput = (dateString: string | null | undefined) => {
+        if (!dateString) return '';
+        
+        // If it's already in YYYY-MM-DD format, return as is
+        if (typeof dateString === 'string' && dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+            return dateString;
+        }
+        
+        // Otherwise try to parse and format
+        try {
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return '';
+            
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        } catch {
+            return '';
+        }
+    };
+
     const getStatusFromDates = (start: string, end: string) => {
-        if (!start || !end) return '';
+        if (!start || !end) return 'Inactive';
+        
         const today = new Date();
         const startDate = new Date(start);
         const endDate = new Date(end);
+        
         today.setHours(0, 0, 0, 0);
         startDate.setHours(0, 0, 0, 0);
         endDate.setHours(0, 0, 0, 0);
+        
         return (today >= startDate && today <= endDate) ? 'Active' : 'Inactive';
     };
 
     const { data, setData, put, processing, errors } = useForm({
-        name: employee.user.name,
-        email: employee.user.email,
+        name: employee.user?.name || '',
+        email: employee.user?.email || '',
         password: '',
-        position_id: employee.position_id,
-        branch_id: employee.branch_id,
-        site_id: employee.site_id,
-        emp_code: employee.emp_code,
-        contract_start_date: employee.contract_start_date,
-        contract_end_date: employee.contract_end_date,
-        pay_frequency: employee.pay_frequency,
-        employee_number: employee.employee_number,
-        emergency_contact_number: employee.emergency_contact_number,
-        employee_status: employee.employee_status || 'Active',
+        position_id: employee.position_id?.toString() || '',
+        branch_id: employee.branch_id?.toString() || '',
+        site_id: employee.site_id?.toString() || '',
+        emp_code: employee.emp_code || '',
+        contract_start_date: formatDateForInput(employee.contract_start_date),
+        contract_end_date: formatDateForInput(employee.contract_end_date),
+        pay_frequency: employee.pay_frequency || '',
+        employee_number: employee.employee_number || '',
+        emergency_contact_number: employee.emergency_contact_number || '',
+        employee_status: employee.employee_status || 'Inactive',
     });
 
+    // Update status when dates change
     useEffect(() => {
         if (data.contract_start_date && data.contract_end_date) {
-            setData('employee_status', getStatusFromDates(data.contract_start_date, data.contract_end_date));
+            const status = getStatusFromDates(data.contract_start_date, data.contract_end_date);
+            setData('employee_status', status);
+        } else {
+            setData('employee_status', 'Inactive');
         }
     }, [data.contract_start_date, data.contract_end_date]);
 
+    // Initialize position search
     useEffect(() => {
         const selectedPos = positions?.find(p => p.id === parseInt(data.position_id));
         if (selectedPos) {
@@ -75,6 +106,7 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
         }
     }, []);
 
+    // Update available sites when branch changes
     useEffect(() => {
         if (!data.branch_id) {
             setAvailableSites([]);
@@ -137,6 +169,16 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
         setShowSiteDropdown(false);
     };
 
+    // Debug: Log the dates to see what's being loaded
+    console.log('Employee dates:', {
+        original_start: employee.contract_start_date,
+        original_end: employee.contract_end_date,
+        formatted_start: formatDateForInput(employee.contract_start_date),
+        formatted_end: formatDateForInput(employee.contract_end_date),
+        data_start: data.contract_start_date,
+        data_end: data.contract_end_date
+    });
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Edit Employee" />
@@ -149,17 +191,37 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
                             <div className="space-y-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="name">Name <span className="text-red-500">*</span></Label>
-                                    <Input id="name" value={data.name} onChange={e => setData('name', e.target.value)} className="w-full" placeholder="Enter full name" />
+                                    <Input 
+                                        id="name" 
+                                        value={data.name} 
+                                        onChange={e => setData('name', e.target.value)} 
+                                        className="w-full" 
+                                        placeholder="Enter full name" 
+                                    />
                                     <InputError message={errors.name} />
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="email">Email <span className="text-red-500">*</span></Label>
-                                    <Input id="email" type="email" value={data.email} onChange={e => setData('email', e.target.value)} className="w-full" placeholder="Enter email address" />
+                                    <Input 
+                                        id="email" 
+                                        type="email" 
+                                        value={data.email} 
+                                        onChange={e => setData('email', e.target.value)} 
+                                        className="w-full" 
+                                        placeholder="Enter email address" 
+                                    />
                                     <InputError message={errors.email} />
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="password">Password</Label>
-                                    <Input id="password" type="password" value={data.password} onChange={e => setData('password', e.target.value)} className="w-full" placeholder="Leave blank to keep current" />
+                                    <Input 
+                                        id="password" 
+                                        type="password" 
+                                        value={data.password} 
+                                        onChange={e => setData('password', e.target.value)} 
+                                        className="w-full" 
+                                        placeholder="Leave blank to keep current" 
+                                    />
                                     <p className="text-xs text-gray-500">Leave empty if no change</p>
                                     <InputError message={errors.password} />
                                 </div>
@@ -172,15 +234,28 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
                                     <Label htmlFor="employee_number">Employee Number <span className="text-red-500">*</span></Label>
                                     <div className="flex">
                                         <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm">+63</span>
-                                        <Input id="employee_number" type="text" value={getDisplayValue('employee_number')} onChange={e => handlePhoneChange('employee_number', e.target.value)} className="w-full rounded-l-none" placeholder="XXX XXX XXXX" maxLength={10} />
+                                        <Input 
+                                            id="employee_number" 
+                                            type="text" 
+                                            value={getDisplayValue('employee_number')} 
+                                            onChange={e => handlePhoneChange('employee_number', e.target.value)} 
+                                            className="w-full rounded-l-none" 
+                                            placeholder="XXX XXX XXXX" 
+                                            maxLength={10} 
+                                        />
                                     </div>
                                     <InputError message={errors.employee_number} />
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="position_id">Position <span className="text-red-500">*</span></Label>
                                     <div className="relative">
-                                        <div className="flex items-center border border-input rounded-md cursor-pointer" onClick={() => setShowPositionDropdown(!showPositionDropdown)}>
-                                            <div className="flex-1 px-3 py-2 text-sm">{selectedPosition?.pos_name || 'Select a Position'}</div>
+                                        <div 
+                                            className="flex items-center border border-input rounded-md cursor-pointer" 
+                                            onClick={() => setShowPositionDropdown(!showPositionDropdown)}
+                                        >
+                                            <div className="flex-1 px-3 py-2 text-sm">
+                                                {selectedPosition?.pos_name || 'Select a Position'}
+                                            </div>
                                             <ChevronDown className="h-4 w-4 mr-2 text-muted-foreground" />
                                         </div>
                                         {showPositionDropdown && (
@@ -188,13 +263,26 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
                                                 <div className="p-2 border-b">
                                                     <div className="relative">
                                                         <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                                                        <Input value={positionSearch} onChange={(e) => setPositionSearch(e.target.value)} placeholder="Search positions..." className="pl-8" autoFocus onClick={(e) => e.stopPropagation()} />
+                                                        <Input 
+                                                            value={positionSearch} 
+                                                            onChange={(e) => setPositionSearch(e.target.value)} 
+                                                            placeholder="Search positions..." 
+                                                            className="pl-8" 
+                                                            autoFocus 
+                                                            onClick={(e) => e.stopPropagation()} 
+                                                        />
                                                     </div>
                                                 </div>
                                                 <div className="max-h-60 overflow-auto">
                                                     {filteredPositions.length > 0 ? (
                                                         filteredPositions.map((position) => (
-                                                            <div key={position.id} className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm" onClick={() => selectPosition(position.id.toString(), position.pos_name)}>{position.pos_name}</div>
+                                                            <div 
+                                                                key={position.id} 
+                                                                className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm" 
+                                                                onClick={() => selectPosition(position.id.toString(), position.pos_name)}
+                                                            >
+                                                                {position.pos_name}
+                                                            </div>
                                                         ))
                                                     ) : (
                                                         <div className="px-3 py-2 text-sm text-gray-500">No positions found</div>
@@ -210,7 +298,12 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="pay_frequency">Pay Frequency <span className="text-red-500">*</span></Label>
-                                    <select id="pay_frequency" value={data.pay_frequency} onChange={e => setData('pay_frequency', e.target.value)} className="w-full h-10 px-3 rounded-md border border-input bg-background">
+                                    <select 
+                                        id="pay_frequency" 
+                                        value={data.pay_frequency} 
+                                        onChange={e => setData('pay_frequency', e.target.value)} 
+                                        className="w-full h-10 px-3 rounded-md border border-input bg-background"
+                                    >
                                         <option value="">Select a Pay Frequency</option>
                                         <option value="weekender">Weekender</option>
                                         <option value="monthly">Monthly</option>
@@ -220,14 +313,29 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="employee_status">Status <span className="text-red-500">*</span></Label>
-                                    <Input id="employee_status" type="text" value={data.employee_status} className="w-full h-10 px-3 rounded-md border border-input bg-background" readOnly placeholder="Employee Status" />
+                                    <Input 
+                                        id="employee_status" 
+                                        type="text" 
+                                        value={data.employee_status} 
+                                        className="w-full h-10 px-3 rounded-md border border-input bg-gray-100" 
+                                        readOnly 
+                                        placeholder="Employee Status" 
+                                    />
                                     <InputError message={errors.employee_status} />
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="emergency_contact_number">Emergency Contact</Label>
                                     <div className="flex">
                                         <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm">+63</span>
-                                        <Input id="emergency_contact_number" type="text" value={getDisplayValue('emergency_contact_number')} onChange={e => handlePhoneChange('emergency_contact_number', e.target.value)} className="w-full rounded-l-none" placeholder="XXX XXX XXXX" maxLength={10} />
+                                        <Input 
+                                            id="emergency_contact_number" 
+                                            type="text" 
+                                            value={getDisplayValue('emergency_contact_number')} 
+                                            onChange={e => handlePhoneChange('emergency_contact_number', e.target.value)} 
+                                            className="w-full rounded-l-none" 
+                                            placeholder="XXX XXX XXXX" 
+                                            maxLength={10} 
+                                        />
                                     </div>
                                 </div>
                             </div>
@@ -238,7 +346,15 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="branch_id">Branch <span className="text-red-500">*</span></Label>
-                                <select id="branch_id" value={data.branch_id} onChange={e => { setData('branch_id', e.target.value); setData('site_id', ''); }} className="w-full h-10 px-3 rounded-md border border-input bg-background">
+                                <select 
+                                    id="branch_id" 
+                                    value={data.branch_id} 
+                                    onChange={e => { 
+                                        setData('branch_id', e.target.value); 
+                                        setData('site_id', ''); 
+                                    }} 
+                                    className="w-full h-10 px-3 rounded-md border border-input bg-background"
+                                >
                                     <option value="">Select a Branch</option>
                                     {branches?.map((branch) => (
                                         <option key={branch.id} value={branch.id}>{branch.branch_name}</option>
@@ -250,8 +366,13 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
                                 <div className="space-y-2">
                                     <Label htmlFor="site_id">Site <span className="text-red-500">*</span></Label>
                                     <div className="relative">
-                                        <div className="flex items-center border border-input rounded-md cursor-pointer" onClick={() => setShowSiteDropdown(!showSiteDropdown)}>
-                                            <div className="flex-1 px-3 py-2 text-sm">{selectedSite?.site_name || selectedSite?.name || 'Select a Site'}</div>
+                                        <div 
+                                            className="flex items-center border border-input rounded-md cursor-pointer" 
+                                            onClick={() => setShowSiteDropdown(!showSiteDropdown)}
+                                        >
+                                            <div className="flex-1 px-3 py-2 text-sm">
+                                                {selectedSite?.site_name || selectedSite?.name || 'Select a Site'}
+                                            </div>
                                             <ChevronDown className="h-4 w-4 mr-2 text-muted-foreground" />
                                         </div>
                                         {showSiteDropdown && (
@@ -259,7 +380,14 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
                                                 <div className="p-2 border-b">
                                                     <div className="relative">
                                                         <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                                                        <Input value={siteSearch} onChange={(e) => setSiteSearch(e.target.value)} placeholder="Search sites..." className="pl-8" autoFocus onClick={(e) => e.stopPropagation()} />
+                                                        <Input 
+                                                            value={siteSearch} 
+                                                            onChange={(e) => setSiteSearch(e.target.value)} 
+                                                            placeholder="Search sites..." 
+                                                            className="pl-8" 
+                                                            autoFocus 
+                                                            onClick={(e) => e.stopPropagation()} 
+                                                        />
                                                     </div>
                                                 </div>
                                                 <div className="max-h-60 overflow-auto">
@@ -267,7 +395,13 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
                                                         filteredSites.map((site) => {
                                                             const siteName = site.site_name || site.name || '';
                                                             return (
-                                                                <div key={site.id} className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm" onClick={() => selectSite(site.id.toString(), siteName)}>{siteName}</div>
+                                                                <div 
+                                                                    key={site.id} 
+                                                                    className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm" 
+                                                                    onClick={() => selectSite(site.id.toString(), siteName)}
+                                                                >
+                                                                    {siteName}
+                                                                </div>
                                                             );
                                                         })
                                                     ) : (
@@ -289,28 +423,55 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
                         </div>
                     </div>
                     <div className="space-y-4">
-                        <h2 className="text-lg font-semibold border-b pb-2">Date of Contract</h2>
+                        <h2 className="text-lg font-semibold border-b pb-2">Contract Period</h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label htmlFor="start_date">Start Date <span className="text-red-500">*</span></Label>
-                                <Input id="start_date" type="date" value={data.contract_start_date} onChange={e => setData('contract_start_date', e.target.value)} className="w-full h-10 px-3 rounded-md border border-input bg-background" />
+                                <Label htmlFor="contract_start_date">Start Date <span className="text-red-500">*</span></Label>
+                                <Input 
+                                    id="contract_start_date" 
+                                    type="date" 
+                                    value={data.contract_start_date} 
+                                    onChange={e => setData('contract_start_date', e.target.value)} 
+                                    className="w-full h-10 px-3 rounded-md border border-input bg-background" 
+                                />
                                 <InputError message={errors.contract_start_date} />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="end_date">End Date <span className="text-red-500">*</span></Label>
-                                <Input id="end_date" type="date" value={data.contract_end_date} onChange={e => setData('contract_end_date', e.target.value)} className="w-full h-10 px-3 rounded-md border border-input bg-background" min={data.contract_start_date} />
+                                <Label htmlFor="contract_end_date">End Date <span className="text-red-500">*</span></Label>
+                                <Input 
+                                    id="contract_end_date" 
+                                    type="date" 
+                                    value={data.contract_end_date} 
+                                    onChange={e => setData('contract_end_date', e.target.value)} 
+                                    className="w-full h-10 px-3 rounded-md border border-input bg-background" 
+                                    min={data.contract_start_date} 
+                                />
                                 <InputError message={errors.contract_end_date} />
                             </div>
                         </div>
+                        {/* Display formatted dates for debugging - remove in production */}
+                        {/* <div className="text-xs text-gray-400 mt-1">
+                            <p>Debug: Start: {data.contract_start_date || 'not set'} | End: {data.contract_end_date || 'not set'}</p>
+                        </div> */}
                     </div>
                     <div className="flex gap-3 pt-4">
-                        <Button type="submit" disabled={processing}>{processing ? 'Updating...' : 'Update Employee'}</Button>
-                        <Button type="button" variant="outline" onClick={() => window.history.back()}>Cancel</Button>
+                        <Button type="submit" disabled={processing}>
+                            {processing ? 'Updating...' : 'Update Employee'}
+                        </Button>
+                        <Button type="button" variant="outline" onClick={() => window.history.back()}>
+                            Cancel
+                        </Button>
                     </div>
                 </form>
             </div>
             {(showPositionDropdown || showSiteDropdown) && (
-                <div className="fixed inset-0 z-0" onClick={() => { setShowPositionDropdown(false); setShowSiteDropdown(false); }} />
+                <div 
+                    className="fixed inset-0 z-0" 
+                    onClick={() => { 
+                        setShowPositionDropdown(false); 
+                        setShowSiteDropdown(false); 
+                    }} 
+                />
             )}
         </AppLayout>
     );

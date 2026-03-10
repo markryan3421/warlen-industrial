@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Spatie\Permission\Traits\HasRoles;
 
@@ -39,6 +40,70 @@ class Employee extends Model
         'pay_frequency',
         'employee_status',
     ];
+
+       protected $casts = [
+        'contract_start_date' => 'date',
+        'contract_end_date' => 'date',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'deleted_at' => 'datetime',
+    ];
+
+    /**
+     * Get status badge color for UI
+     */
+    public function getStatusColorAttribute(): string
+    {
+        return $this->employee_status === 'active' ? 'green' : 'gray';
+    }
+
+    /**
+     * Scope active employees
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('employee_status', 'active');
+    }
+
+    /**
+     * Scope inactive employees
+     */
+    public function scopeInactive($query)
+    {
+        return $query->where('employee_status', 'inactive');
+    }
+
+    /**
+     * Check if employee is active
+     */
+    public function isActive(): bool
+    {
+        return $this->employee_status === 'active';
+    }
+
+    /**
+     * Check if employee is inactive
+     */
+    public function isInactive(): bool
+    {
+        return $this->employee_status === 'inactive';
+    }
+
+    /**
+ * Manually check if employee should be active based on current date
+ */
+public function shouldBeActive(): bool
+{
+    $today = Carbon::today();
+    
+    if (!$this->contract_start_date || !$this->contract_end_date) {
+        return false;
+    }
+    
+    return $today->gte($this->contract_start_date) && 
+           $today->lte($this->contract_end_date) &&
+           $this->contract_start_date->lte($this->contract_end_date);
+}
 
     public function position(): BelongsTo
     {

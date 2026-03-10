@@ -23,6 +23,6 @@ class UpdatePayrollPeriod
             'payroll_per_status' => $data['payroll_per_status']
         ]);
 
-        return $payrollPeriod;
+        return $payrollPeriod;  
     }
 }

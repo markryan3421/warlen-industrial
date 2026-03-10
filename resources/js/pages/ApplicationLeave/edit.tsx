@@ -1,13 +1,12 @@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, useForm, usePage } from '@inertiajs/react';
 import InputError from '@/components/input-error';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { update } from '@/actions/App/Http/Controllers/ApplicationLeaveController';
-import { useEffect } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -52,6 +51,13 @@ interface EditProps {
     };
 }
 
+interface PageProps {
+    applicationLeaveEnum: Array<{
+        value: string;
+        label: string;
+    }>;
+}
+
 export default function Edit({ applicationLeave }: EditProps) {
     const { data, setData, errors, processing, put } = useForm<FormData>({
         leave_start: applicationLeave.leave_start || '',
@@ -61,16 +67,12 @@ export default function Edit({ applicationLeave }: EditProps) {
         remarks: applicationLeave.remarks || '',
     });
 
+    const { applicationLeaveEnum } = usePage().props;
 
     function submitApplication(e: React.FormEvent) {
         e.preventDefault();
         put(update(applicationLeave.slug_app).url);
     }
-
-    // Handle checkbox change explicitly
-    // const handleApprovedChange = (checked: boolean | 'indeterminate') => {
-    //     setData('is_approved', checked === true);
-    // };
 
     // Get today's date in YYYY-MM-DD format for min attribute
     const today = new Date().toISOString().split('T')[0];
@@ -170,12 +172,19 @@ export default function Edit({ applicationLeave }: EditProps) {
                                 <div className="border-t pt-4 mt-4">
                                     <CardTitle className="text-lg mb-4">Approval Information</CardTitle>
                                     <div className="space-y-2 w-1/2">
-                                        <Label htmlFor="pay_frequency">Application Leave Status<span className="text-red-500">*</span></Label>
-                                        <select id="pay_frequency" value={data.app_status} onChange={e => setData('app_status', e.target.value)} className="w-full h-10 px-3 rounded-md border border-input bg-background">
-                                            <option value="">Select a Status</option>
-                                            <option value="pending">Pending</option>
-                                            <option value="approved">Approved</option>
-                                            <option value="rejected">Rejected</option>
+                                        <Label htmlFor="app_status">Application Leave Status<span className="text-red-500">*</span></Label>
+                                        <select 
+                                            id="app_status" 
+                                            value={data.app_status} 
+                                            onChange={e => setData('app_status', e.target.value)} 
+                                            className="w-full h-10 px-3 rounded-md border border-input bg-background"
+                                        >
+                                            <option value="" disabled>Select a Status</option>
+                                            {applicationLeaveEnum.map(({value, label}) => (
+                                                <option key={value} value={value}>
+                                                    {label}
+                                                </option>
+                                            ))}
                                         </select>
                                         <InputError message={errors.app_status} />
                                     </div>
