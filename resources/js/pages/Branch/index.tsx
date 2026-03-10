@@ -1,27 +1,18 @@
-import { Head, Link, useForm } from '@inertiajs/react';
-import { Building2, MapPin, Search, X } from 'lucide-react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
+import { MapPin } from 'lucide-react';
 import { useState } from 'react';
 import BranchController from "@/actions/App/Http/Controllers/BranchController";
+import { CustomTable } from '@/components/custom-table';
 import { CustomToast } from '@/components/custom-toast';
 import { Button } from "@/components/ui/button";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog";
-import {
-    Table,
-    TableBody,
-    TableCaption,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Pagination } from '@/components/ui/pagination';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { BranchesTableConfig } from '@/config/tables/branch-table';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type BranchWithSites } from '@/types';
+
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -30,33 +21,123 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-interface BranchProps {
-    branches: BranchWithSites[];
+interface Branches {
+    id: number;
+    branch_name: string;
+    branch_slug: string;
+    branch_address: string;
+    sites?: {
+        id: number;
+        site_name: string;
+    }[];
 }
 
-export default function Index({ branches }: BranchProps) {
+interface LinkProps {
+    active: boolean;
+    label: string;
+    url: string | null;
+}
+
+interface BranchesPagination {
+    data: Branches[];
+    links: LinkProps[];
+    from: number;
+    to: number;
+    total: number;
+}
+
+interface FilterProps {
+    search: string;
+    perPage: string;
+}
+
+interface IndexProps {
+    branches: BranchesPagination;
+    filters: FilterProps;
+    totalCount: number;
+    filteredCount: number;
+}
+
+export default function Index({ branches, filters, totalCount, filteredCount }: IndexProps) {
     const { delete: destroy } = useForm();
     const [selectedBranch, setSelectedBranch] = useState<BranchWithSites | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [searchTerm, setSearchTerm] = useState('');
+    // const [searchTerm, setSearchTerm] = useState('');
 
-    const filteredBranches = branches.filter((branch) =>
-        branch.branch_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        branch.branch_address.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    // const filteredBranches = branches.filter((branch) =>
+    //     branch.branch_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    //     branch.branch_address.toLowerCase().includes(searchTerm.toLowerCase())
+    // );
 
-    const clearSearch = () => setSearchTerm('');
+    // const clearSearch = () => setSearchTerm('');
 
-    const handleDelete = (slug: string) => {
+    const handleDelete = (slugOrId: string | number) => {
         if (confirm("Are you sure you want to delete this branch?")) {
-            destroy(BranchController.destroy(slug).url);
+            destroy(BranchController.destroy(String(slugOrId)).url);
         }
+    }
+
+    const editBranch = (branch: Branches) => {
+        router.get(BranchController.edit(branch.branch_slug).url);
     }
 
     const viewBranchSites = (branch: BranchWithSites) => {
         setSelectedBranch(branch);
         setIsModalOpen(true);
     };
+
+    const { data, setData } = useForm({
+        search: filters.search || '',
+        perPage: filters.perPage || '10',
+    });
+
+    // Handle search input change
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setData('search', value);
+
+        // Update the URL with the search query value
+        const queryString = {
+            ...(value && { search: value }),
+            ...(data.perPage && { perPage: data.perPage }),
+        };
+
+        // Pass the search query to the backend to filter permissions
+        router.get(BranchController.index.url(), queryString, {
+            preserveState: true,
+            preserveScroll: true,
+        });
+    };
+
+    // Clears the search bar and resets the list
+    const handleReset = () => {
+        setData('search', '');
+        setData('perPage', '5');
+
+        router.get(BranchController.index.url(), {}, {
+            preserveState: true,
+            preserveScroll: true,
+        });
+    }
+
+    // Handle number of permissions to display per page
+    const handlePerPageChange = (value: string) => {
+        setData('perPage', value);
+
+        // Update the URL with the per page value
+        const queryString = {
+            ...(data.search && { search: data.search }),
+            ...(value && { perPage: value }),
+        };
+
+        router.get(BranchController.index.url(), queryString, {
+            preserveState: true,
+            preserveScroll: true,
+        });
+    }
+
+    console.log('branches:', branches);
+    console.log('branches.data:', branches?.data);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -65,135 +146,171 @@ export default function Index({ branches }: BranchProps) {
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
                 {/* Header with title, search, and create button */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <h1 className="text-2xl font-bold">Branches</h1>
+                    {/* Left side with title and search */}
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
+                        <h1 className="text-2xl font-bold whitespace-nowrap"></h1>
+
+                        {/* Search Bar */}
+                        <div className="flex items-center gap-2 w-full sm:w-auto">
+                            <Input
+                                type="text"
+                                value={data.search}
+                                onChange={handleChange}
+                                placeholder='Search branches...'
+                                name="search"
+                                className='w-full sm:w-80 h-10'
+                            />
+
+                            <Button
+                                onClick={handleReset}
+                                variant="outline"
+                                className="h-10 px-4 cursor-pointer whitespace-nowrap"
+                            >
+                                Clear
+                            </Button>
+                        </div>
+                    </div>
+
+                    {/* Right side with Add button */}
                     <Link
                         href={BranchController.create()}
-                        className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                        className="me-4 inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 whitespace-nowrap"
                     >
                         + Add Branch
                     </Link>
                 </div>
 
-                {branches.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-                        <div className="rounded-full bg-gray-100 p-6 mb-4">
-                            <Building2 className="h-12 w-12 text-gray-400" />
-                        </div>
-                        <h3 className="text-lg font-semib text-gray-900 mb-2">No branches yet</h3>
-                        <p className="text-gray-500 mb-6 max-w-sm">
-                            Get started by creating your first branch. Branches help you organize your business locations and their associated sites.
-                        </p>
-                        <Link href={BranchController.create()}>
-                            <Button className="gap-2">
-                                Create Your First Branch
-                            </Button>
-                        </Link>
-                    </div>
-                ) : filteredBranches.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-12 px-4 text-center border rounded-lg bg-gray-50">
-                        <div className="rounded-full bg-gray-100 p-4 mb-4">
-                            <Search className="h-8 w-8 text-gray-400" />
-                        </div>
-                        <h3 className="text-lg font-medium text-gray-900 mb-2">No matching branches</h3>
-                        <p className="text-gray-500 mb-4">
-                            No branches found matching "{searchTerm}"
-                        </p>
-                        <Button variant="outline" onClick={clearSearch} className="gap-2">
-                            <X className="h-4 w-4" />
-                            Clear Search
-                        </Button>
-                    </div>
-                ) : (
-                    <Table>
-                        <TableCaption>A list of your Branches.</TableCaption>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Branch Name</TableHead>
-                                <TableHead>Branch Address</TableHead>
-                                <TableHead>Number of Sites</TableHead>
-                                <TableHead>Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {filteredBranches.map((branch) => (
-                                <TableRow key={branch.id}>
-                                    <TableCell className="font-medium">{branch.branch_name}</TableCell>
-                                    <TableCell>{branch.branch_address}</TableCell>
-                                    <TableCell>
-                                        <span className="inline-flex items-center justify-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
-                                            {branch.sites?.length || 0} sites
-                                        </span>
-                                    </TableCell>
-                                    <TableCell className="space-x-2">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => viewBranchSites(branch)}
-                                        >
-                                            View Sites
-                                        </Button>
-                                        <Link
-                                            href={BranchController.edit(branch.branch_slug)}
-                                            className="inline-flex items-center justify-center rounded-md bg-secondary px-3 py-1.5 text-sm font-medium text-secondary-foreground hover:bg-secondary/90"
-                                        >
-                                            Edit
-                                        </Link>
-                                        <Button
-                                            variant="destructive"
-                                            size="sm"
-                                            onClick={() => handleDelete(branch.branch_slug)}
-                                        >
-                                            Delete
-                                        </Button>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                )}
+                {/* Custom Table */}
+                <CustomTable
+                    columns={BranchesTableConfig.columns}
+                    actions={BranchesTableConfig.actions}
+                    data={branches.data}
+                    from={branches.from}
+                    onDelete={handleDelete}
+                    onView={viewBranchSites}
+                    onEdit={editBranch}
+                />
+
+                <Pagination
+                    pagination={branches}
+                    perPage={data.perPage}
+                    onPerPageChange={handlePerPageChange}
+                    totalCount={totalCount}
+                    filteredCount={filteredCount}
+                    search={data.search}
+                    resourceName='schedules'
+                />
 
                 {/* Modal for displaying branch sites */}
                 <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-                    <DialogContent className="sm:max-w-[600px]">
-                        <DialogHeader>
-                            <DialogTitle>
-                                Sites under {selectedBranch?.branch_name || 'Branch'}
-                            </DialogTitle>
-                            <DialogDescription>
-                                List of all sites belonging to this branch.
-                            </DialogDescription>
+                    <DialogContent className="sm:max-w-[600px] p-0 gap-0 overflow-hidden">
+                        {/* Header with gradient background */}
+                        <DialogHeader className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-6 border-b">
+                            <div className="flex items-center gap-3">
+                                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                                    <MapPin className="h-5 w-5 text-primary" />
+                                </div>
+                                <div>
+                                    <DialogTitle className="text-xl font-semibold">
+                                        Sites under <span className="text-primary">{selectedBranch?.branch_name || 'Branch'}</span>
+                                    </DialogTitle>
+                                    <DialogDescription className="text-sm text-muted-foreground mt-0.5">
+                                        Manage and view all sites associated with this branch
+                                    </DialogDescription>
+                                </div>
+                            </div>
                         </DialogHeader>
 
-                        <div className="mt-4 max-h-[400px] overflow-y-auto">
+                        {/* Content area with proper spacing */}
+                        <div className="p-6">
                             {selectedBranch?.sites && selectedBranch.sites.length > 0 ? (
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Site Name</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {selectedBranch.sites.map((site) => (
-                                            <TableRow key={site.id}>
-                                                <TableCell className="font-medium flex items-center gap-2">
-                                                    <MapPin className="h-4 w-4 text-gray-400" />
-                                                    {site.site_name}
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            ) : (
-                                <div className="flex flex-col items-center justify-center py-12 text-center">
-                                    <div className="rounded-full bg-gray-100 p-4 mb-4">
-                                        <MapPin className="h-8 w-8 text-gray-400" />
+                                <>
+                                    {/* Header with count */}
+                                    <div className="flex items-center justify-between mb-4">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-sm font-medium text-muted-foreground">Total Sites:</span>
+                                            <span className="inline-flex items-center justify-center rounded-full bg-primary/10 px-2.5 py-0.5 text-sm font-medium text-primary">
+                                                {selectedBranch.sites.length}
+                                            </span>
+                                        </div>
+
+                                        {/* Optional: Add search or filter here if needed */}
                                     </div>
-                                    <p className="text-muted-foreground font-medium mb-1">No sites found</p>
-                                    <p className="text-sm text-gray-500">
-                                        This branch doesn't have any sites assigned yet.
+
+                                    {/* Sites table with better styling */}
+                                    <div className="rounded-lg border bg-card">
+                                        <Table>
+                                            <TableHeader className="bg-muted/50">
+                                                <TableRow className="hover:bg-transparent">
+                                                    <TableHead className="w-full py-3 font-semibold">Site Name</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {selectedBranch.sites.map((site) => (
+                                                    <TableRow
+                                                        key={site.id}
+                                                        className="group hover:bg-muted/50 transition-colors cursor-default"
+                                                    >
+                                                        <TableCell className="py-3">
+                                                            <div className="flex items-center gap-3">
+                                                                {/* Icon with dynamic background */}
+                                                                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/5 group-hover:bg-primary/10 transition-colors">
+                                                                    <MapPin className="h-4 w-4 text-primary" />
+                                                                </div>
+
+                                                                {/* Site name with subtle hover effect */}
+                                                                <span className="font-medium text-foreground group-hover:text-primary transition-colors">
+                                                                    {site.site_name}
+                                                                </span>
+                                                            </div>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+                                </>
+                            ) : (
+                                /* Empty state with improved design */
+                                <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
+                                    <div className="relative mb-6">
+                                        {/* Background glow effect */}
+                                        <div className="absolute inset-0 rounded-full bg-primary/5 blur-xl" />
+
+                                        {/* Icon container */}
+                                        <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/10">
+                                            <MapPin className="h-8 w-8 text-primary/60" />
+                                        </div>
+                                    </div>
+
+                                    <h3 className="text-lg font-semibold text-foreground mb-2">
+                                        No sites found
+                                    </h3>
+
+                                    <p className="text-sm text-muted-foreground max-w-[250px] mb-6">
+                                        This branch doesn't have any sites assigned yet. Sites will appear here once added.
                                     </p>
+
+                                    {/* Optional: Add a button here if you want to add sites directly */}
+                                    {/*
+                    <Button size="sm" className="gap-2">
+                        <Plus className="h-4 w-4" />
+                        Add First Site
+                    </Button>
+                    */}
                                 </div>
                             )}
+                        </div>
+
+                        {/* Footer with close button */}
+                        <div className="border-t bg-muted/5 p-4 flex justify-end">
+                            <Button
+                                variant="outline"
+                                onClick={() => setIsModalOpen(false)}
+                                className="min-w-[100px]"
+                            >
+                                Close
+                            </Button>
                         </div>
                     </DialogContent>
                 </Dialog>
