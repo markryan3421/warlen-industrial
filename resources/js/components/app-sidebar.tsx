@@ -25,6 +25,7 @@ import { Users } from 'lucide-react';
 import ApplicationLeaveController from '@/actions/App/Http/Controllers/ApplicationLeaveController';
 import ContributionVersionController from '@/actions/App/Http/Controllers/ContributionVersionController';
 import { useCurrentUrl } from '@/hooks/use-current-url'; // Add this import
+import PayrollController from '@/actions/App/Http/Controllers/PayrollController';
 
 const ExpendituresItems: NavItem[] = [
     {
@@ -52,7 +53,7 @@ const ExpendituresItems: NavItem[] = [
 const AccessControlItems: NavItem[] = [
     {
         title: 'Run Payroll',
-        href: '/payroll',
+        href: PayrollController.index(),
         icon: Banknote,
     },
     {
