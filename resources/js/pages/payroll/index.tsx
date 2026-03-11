@@ -242,9 +242,9 @@ export default function Index({ payrolls }: PageProps) {
                 
                 <div className="flex justify-between items-center">
                     <h1 className="text-2xl font-bold">Payroll</h1>
-                    <Link href="/payroll/create">
+                    {/* <Link href="/payroll/create">
                         <Button size="sm">+ Generate Payroll</Button>
-                    </Link>
+                    </Link> */}
                 </div>
 
                 <div className="py-4">
@@ -257,9 +257,9 @@ export default function Index({ payrolls }: PageProps) {
                             <p className="text-gray-500 mb-6 max-w-sm">
                                 Get started by generating your first payroll.
                             </p>
-                            <Link href="/payroll/create">
+                            {/* <Link href="/payroll/create">
                                 <Button>Generate Your First Payroll</Button>
-                            </Link>
+                            </Link> */}
                         </div>
                     ) : (
                         <Table>
@@ -316,7 +316,7 @@ export default function Index({ payrolls }: PageProps) {
                                                         onClick={() => handleViewItems(payroll)}
                                                     >
                                                         <Eye className="h-4 w-4 mr-1" />
-                                                        View Items
+                                                        View Deductions
                                                     </Button>
                                                     {/* <Link href={PayrollController.edit(payroll.id)}>
                                                         <Button variant="outline" size="sm">Edit</Button>

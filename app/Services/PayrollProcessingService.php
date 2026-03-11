@@ -31,7 +31,7 @@ class PayrollProcessingService
                 $payrollPeriod->update(['payroll_per_status' => 'completed']);
                 
                 // Dispatch event even if no data (still completed)
-                event(new PayrollEvent($payrollPeriod, "Payroll period {$payrollPeriod->period_name} completed with no attendance data"));
+                broadcast(new PayrollEvent($payrollPeriod, "Payroll period {$payrollPeriod->period_name} completed with no attendance data"));
                 
                 DB::commit();
                 return;
@@ -59,7 +59,7 @@ class PayrollProcessingService
                 Log::info("Payroll processed for period: {$payrollPeriod->id}. Processed: {$processedCount}, Skipped: {$skippedCount}");
                 
                 // DISPATCH EVENT HERE - Payroll period completed successfully
-                event(new PayrollEvent($payrollPeriod, "Payroll period {$payrollPeriod->period_name} completed successfully"));
+                broadcast(new PayrollEvent($payrollPeriod, "Payroll period {$payrollPeriod->period_name} completed successfully"));
                 
             } else {
                 Log::warning("No employees were processed for period: {$payrollPeriod->id}. All {$skippedCount} were skipped.");

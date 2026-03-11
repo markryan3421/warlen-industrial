@@ -56,7 +56,7 @@ class AttendancePeriodStatObserver
             'pay_date' => $end_date->addDays(1),
         ]);
 
-        event(new PayrollEvent(
+        broadcast(new PayrollEvent(
             $payrollPeriod, 
             "New payroll period has been created from attendance data"
         ));

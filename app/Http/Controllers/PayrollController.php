@@ -41,12 +41,12 @@ class PayrollController extends Controller
      */
     public function show(Payroll $payroll)
     {
-        $payroll->load([
-            'payrollPeriod',
-            'employee.user',
-            'employee.position',
-            'payrollItems'
-        ]);
+        // $payroll->load([
+        //     'payrollPeriod',
+        //     'employee.user',
+        //     'employee.position',
+        //     'payrollItems'
+        // ]);
 
         return Inertia::render('Payroll/Show', [
             'payroll' => $payroll
