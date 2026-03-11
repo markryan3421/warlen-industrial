@@ -1,17 +1,20 @@
-import { Head, Link } from '@inertiajs/react';
+import { ArrowUpRight, Circle, Minus } from 'lucide-react';
+import { useState } from 'react';
+import {
+    CartesianGrid, Cell, Legend, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip,
+    XAxis, YAxis
+} from 'recharts';
+
+import Footer from '@/components/footer';
 import { SectionCards } from '@/components/section-cards';
+import SystemAlert from '@/components/system-alert';
+import { ChartConfig, type } from '@/components/ui/chart';
 import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes';
-import Footer from '@/components/footer';
-import type { BreadcrumbItem } from '@/types';
-import { type ChartConfig } from "@/components/ui/chart"
+import { Head, Link } from '@inertiajs/react';
 import { RechartsDevtools } from '@recharts/devtools';
-import { Line, LineChart, CartesianGrid, XAxis, YAxis, Legend, ResponsiveContainer, Pie, PieChart, Tooltip, Cell } from "recharts"
-import { Minus, Circle, ArrowUpRight } from 'lucide-react'
-import { useState } from 'react'
-import "@fontsource/inter/800.css";
-import SystemAlert from '@/components/system-alert';
 
+import type { BreadcrumbItem } from '@/types';
 // Line chart data
 const lineChartData = [
     { month: "January", desktop: 186, mobile: 80 },

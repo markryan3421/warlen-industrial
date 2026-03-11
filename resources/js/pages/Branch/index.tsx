@@ -303,14 +303,6 @@ export default function Index({ branches, filters, totalCount, filteredCount }: 
                                     <p className="text-sm text-muted-foreground max-w-[250px] mb-6">
                                         This branch doesn't have any sites assigned yet. Sites will appear here once added.
                                     </p>
-
-                                    {/* Optional: Add a button here if you want to add sites directly */}
-                                    {/*
-                    <Button size="sm" className="gap-2">
-                        <Plus className="h-4 w-4" />
-                        Add First Site
-                    </Button>
-                    */}
                                 </div>
                             )}
                         </div>
