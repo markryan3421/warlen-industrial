@@ -28,6 +28,14 @@ Route::get('/', function () {
 
 Route::middleware(['auth', 'verified', 'throttle:limit-actions' , 'roleBase'])->group(function () {
 
+    Route::get('payroll', function () {
+        return Inertia::render('payroll/index');
+    });
+
+    Route::get('multipletables', function () {
+        return Inertia::render('multipletables/index');
+    });
+    //admin dashboard
     Route::get('dashboard', function () {
         return Inertia::render('dashboard');
     })->name('dashboard');

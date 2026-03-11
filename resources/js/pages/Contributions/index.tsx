@@ -4,7 +4,7 @@ import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/react';
 import ContributionVersionController from "@/actions/App/Http/Controllers/ContributionVersionController";
 import { useState, useMemo, useEffect } from 'react';
-import { Calculator, PlusCircle, Percent, Filter } from 'lucide-react';
+import { Calculator, ListFilter, Percent, MoreHorizontalIcon } from 'lucide-react';
 
 import {
     Table,
@@ -23,14 +23,12 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card";
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuTrigger,
+    DropdownMenuItem
+} from "@/components/ui/dropdown-menu";
 
 import {
     Select,
@@ -158,7 +156,7 @@ export default function Index({ contributionVersions }: ContributionsProps) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Contributions" />
-            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
+            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4 px-10  ">
                 <div className="flex justify-between items-center mb-4">
                     <h1 className="text-2xl font-bold">Contribution Versions</h1>
                     <Link 
@@ -189,9 +187,10 @@ export default function Index({ contributionVersions }: ContributionsProps) {
                         {/* Filter Section - Right aligned */}
                         <div className="flex justify-end px-4">
                             <div className="flex items-center gap-2">
+                                <ListFilter className='text-gray-'/>
                                 <Select value={typeFilter} onValueChange={setTypeFilter}>
                                     <SelectTrigger className="w-[130px]">
-                                        <SelectValue placeholder="Filter" />
+                                        <SelectValue placeholder = "All Types" />
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="all">All Types</SelectItem>
@@ -202,61 +201,57 @@ export default function Index({ contributionVersions }: ContributionsProps) {
                                 </Select>
                             </div>
                         </div>
-
-                        <Table>
-                            <TableCaption>A list of all contribution versions.</TableCaption>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Type</TableHead>
-                                    <TableHead>Effective From</TableHead>
-                                    <TableHead>Effective To</TableHead>
-                                    <TableHead>Actions</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {filteredVersions.length === 0 ? (
+                        
+                        <div className='rounded-lg border-1 overflow-hidden'>
+                            <Table> 
+                                <TableHeader>
                                     <TableRow>
-                                        <TableCell colSpan={4} className="text-center py-8 text-gray-500">
-                                            No contribution versions found with the selected filter.
-                                        </TableCell>
+                                        <TableHead>Type</TableHead>
+                                        <TableHead>Effective From</TableHead>
+                                        <TableHead>Effective To</TableHead>
+                                        <TableHead>Actions</TableHead>
                                     </TableRow>
-                                ) : (
-                                    filteredVersions.map((version) => (
-                                        <TableRow key={version.id}>
-                                            <TableCell>
-                                                <Badge className={getContributionTypeColor(version.type)}>
-                                                    {getContributionTypeLabel(version.type)}
-                                                </Badge>
-                                            </TableCell>
-                                            <TableCell>{formatDate(version.effective_from)}</TableCell>
-                                            <TableCell>{formatDate(version.effective_to)}</TableCell>
-                                            <TableCell className="space-x-2">
-                                                <Button 
-                                                    variant="outline" 
-                                                    size="sm"
-                                                    onClick={() => viewContributionBrackets(version)}
-                                                >
-                                                    View Brackets
-                                                </Button>
-                                                <Link 
-                                                    href={ContributionVersionController.edit(version.id)}
-                                                    className="inline-flex items-center justify-center rounded-md bg-secondary px-3 py-1.5 text-sm font-medium text-secondary-foreground hover:bg-secondary/90"
-                                                >
-                                                    Edit
-                                                </Link>
-                                                <Button 
-                                                    variant="destructive" 
-                                                    size="sm"
-                                                    onClick={() => handleDelete(version.id)}
-                                                >
-                                                    Delete
-                                                </Button>
+                                </TableHeader>
+                                <TableBody>
+                                    {filteredVersions.length === 0 ? (
+                                        <TableRow>
+                                            <TableCell colSpan={4} className="text-center py-8 text-gray-500">
+                                                No contribution versions found with the selected filter.
                                             </TableCell>
                                         </TableRow>
-                                    ))
-                                )}
-                            </TableBody>
-                        </Table>
+                                    ) : (
+                                        filteredVersions.map((version) => (
+                                            <TableRow key={version.id} onClick={() => viewContributionBrackets(version)}>
+                                                <TableCell>
+                                                    <Badge className={getContributionTypeColor(version.type)}>
+                                                        {getContributionTypeLabel(version.type)}
+                                                    </Badge>
+                                                </TableCell>
+                                                <TableCell>{formatDate(version.effective_from)}</TableCell>
+                                                <TableCell>{formatDate(version.effective_to)}</TableCell>
+                                                <TableCell className="space-x-2">
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger>
+                                                            <Button variant="ghost" size = "icon" className='size-8'>
+                                                                <MoreHorizontalIcon />
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent>
+                                                            <DropdownMenuItem>
+                                                                <Link href={ContributionVersionController.edit(version.id)}>Edit</Link>
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem className = 'p-0'>
+                                                                <Link onClick={() => handleDelete(version.id)} className='px-2 py-1.5 rounded-sm bg-red-50 text-red-500 w-full h-full hover:bg-red-100'>Delete</Link>
+                                                            </DropdownMenuItem>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </div>  
                     </>
                 )}
 
@@ -268,16 +263,16 @@ export default function Index({ contributionVersions }: ContributionsProps) {
                                 Contribution Brackets - {selectedVersion && getContributionTypeLabel(selectedVersion.type)}
                             </DialogTitle>
                             <DialogDescription>
-                                <div className="mt-2 space-y-1">
-                                    <p><span className="font-medium">Effective Period:</span> {selectedVersion && formatDate(selectedVersion.effective_from)} to {selectedVersion && formatDate(selectedVersion.effective_to)}</p>
+                                <div className="-mt-1 space-y-1">
+                                    <p><span className="font-bold text-black">Effective Period:</span> {selectedVersion && formatDate(selectedVersion.effective_from)} to {selectedVersion && formatDate(selectedVersion.effective_to)}</p>
                                 </div>
                             </DialogDescription>
                         </DialogHeader>
                         
                         <div className="mt-4">
                             {selectedVersion?.contribution_brackets && selectedVersion.contribution_brackets.length > 0 ? (
-                                <div className="space-y-4">
-                                    <Table>
+                                <div className="space-y-4 -mt-5">
+                                    <Table className='border-2 rounded-lg'>
                                         <TableHeader>
                                             <TableRow>
                                                 <TableHead>Salary Range</TableHead>

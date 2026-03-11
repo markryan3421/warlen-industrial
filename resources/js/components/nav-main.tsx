@@ -4,17 +4,22 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
+    SidebarGroupLabel
 } from '@/components/ui/sidebar';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import type { NavItem } from '@/types';
+import { cn } from '@/lib/utils';
 
-export function NavMain({ items = [] }: { items: NavItem[] }) {
+export function NavMain({ items = [], label }: { items: NavItem[], label: string }) {
     const { isCurrentUrl } = useCurrentUrl();
 
     return (
         <>
-            <SidebarGroup className="px-2 py-0">
-                <SidebarMenu className="group-data-[collapsible=icon]:items-center">
+            <SidebarGroup className="px-2 py-1">
+                <SidebarGroupLabel className="px-2 pb-1 text-xs font-regular text-muted-foreground tracking-wider">
+                    {label}
+                </SidebarGroupLabel>
+                <SidebarMenu>
                     {items.map((item) => (
                         <SidebarMenuItem key={item.title}>
                             <SidebarMenuButton

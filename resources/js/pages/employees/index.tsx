@@ -7,7 +7,21 @@ import AppLayout from '@/layouts/app-layout';
 import { useState } from 'react';
 import type { BreadcrumbItem } from '@/types';
 import EmmployeeController from '@/actions/App/Http/Controllers/EmployeeController';
-import { Users } from 'lucide-react';
+import { Users, Ellipsis, MoreHorizontalIcon } from 'lucide-react';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuGroup,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuPortal,
+    DropdownMenuSeparator,
+    DropdownMenuShortcut,
+    DropdownMenuSub,
+    DropdownMenuSubContent,
+    DropdownMenuSubTrigger,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -30,7 +44,7 @@ interface Employee {
         name: string;
         email: string;
     }
-    slug_emp: string;
+    slug_emp: string;   
     emp_code: string;
     pay_frequency: string;
     contract_start_date: string;
@@ -47,52 +61,46 @@ interface PageProps {
 
 export default function Index({ employees }: PageProps) {
     const { delete: destroy } = useForm();
+    
+    // Function to determine if employee should be inactive based on contract end date
+    const shouldBeInactive = (employee: Employee) => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const contractEndDate = new Date(employee.contract_end_date);
+        contractEndDate.setHours(0, 0, 0, 0);
+        
+        // If contract end date is before today, employee should be inactive
+        return contractEndDate < today;
+    };
 
+    // Function to capitalize first letter of status
+    const capitalizeStatus = (status: string) => {
+        if (!status) return status;
+        return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+    };
 
     const hasValidPosition = (employee: Employee) => {
         return employee.position && !employee.position.deleted_at;
     }
-
-    const handleDelete = (slug: string) => {
+    const handleDelete = (id: number) => {
         if (confirm("Are you sure you want to delete this employee?")) {
-            destroy(EmmployeeController.destroy(slug).url);
+            destroy(EmmployeeController.destroy(id).url);
         }
     }
-
-    const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric'
-        });
-    };
-
-    // Combine start and end date
-    const formatContractPeriod = (employee: Employee) => {
-        return `${formatDate(employee.contract_start_date)} - ${formatDate(employee.contract_end_date)}`;
-    };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Employees" />
-            <div className="flex flex-1 flex-col gap-2 p-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                    <div className="md:col-span-2 rounded-xl border">
-                        <ChartAreaInteractive />
-                    </div>
-                    <div className="md:col-span-1 rounded-xl border">
-                        <CustomPieChart />
-                    </div>
-                </div>
-
-                <div className="flex justify-between items-center">
-                    <h1 className="text-2xl font-bold">Employees</h1>
+            <div className="@container/main flex flex-1 flex-col gap-2">
+                <div className="@container/main flex flex-1 flex-col gap-2">         
+                <div className="flex justify-between items-center p-4">
+                    <h1 className="text-2xl font-bold"></h1>
                     <Link href="/employees/create">
-                        <Button size="sm">+ Create Employee</Button>
+                        <Button size="sm" className='hover:cursor-pointer mr-7'>+ Create Employee</Button>
                     </Link>
                 </div>
-
-                <div className="py-4">
+                <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
                     {employees.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-16 text-center">
                             <div className="rounded-full bg-gray-100 p-6 mb-4">
@@ -107,8 +115,9 @@ export default function Index({ employees }: PageProps) {
                             </Link>
                         </div>
                     ) : (
+                        <div className='mx-10 rounded-lg border-2 overflow-hidden'>
                         <Table>
-                            <TableHeader>
+                            <TableHeader className="bg-gray-100 font-black">
                                 <TableRow>
                                     <TableHead>Code</TableHead>
                                     <TableHead>Name</TableHead>
@@ -120,50 +129,63 @@ export default function Index({ employees }: PageProps) {
                                     <TableHead>Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
-                            <TableBody>
-                                {employees.map((employee) => {
-
-
-                                    return (
-                                        <TableRow key={employee.id}>
-                                            <TableCell>{employee.emp_code}</TableCell>
-                                            <TableCell>{employee.user.name}</TableCell>
-                                            <TableCell>
-                                                {hasValidPosition(employee) ?
-                                                    employee.position.pos_name :
-                                                    <span className="text-gray-400 italic">Not assigned</span>
-                                                }
-                                            </TableCell>
-                                            <TableCell className="capitalize">
-                                                {employee.pay_frequency.replace('_', ' ')}
-                                            </TableCell>
-                                            <TableCell>{employee.branch.branch_name}</TableCell>
-                                            <TableCell>{formatContractPeriod(employee)}</TableCell>
-                                            <TableCell>
-                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${employee.employee_status.toLowerCase() === 'active'
-                                                        ? 'bg-green-100 text-green-800'
-                                                        : 'bg-yellow-100 text-yellow-800'
-                                                    }`}>
-                                                    {employee.employee_status === 'active' || employee.employee_status === 'Active' ? 'Active' : 'Inactive'}
-                                                </span>
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="flex gap-2">
-                                                    <Link href={EmmployeeController.edit(employee.slug_emp)}>
-                                                        <Button variant="outline" size="sm">Edit</Button>
-                                                    </Link>
-                                                    <Button size="sm" variant="destructive" onClick={() => handleDelete(employee.slug_emp)}>
-                                                        Delete
+                            <TableBody className='text-[13px]'>
+                                {employees.map((employee) => (
+                                    <TableRow key={employee.id}>
+                                        <TableCell>{employee.emp_code}</TableCell>
+                                        <TableCell>{employee.user.name}</TableCell>
+                                        <TableCell>
+                                            {hasValidPosition(employee) ? (
+                                                employee.position.pos_name
+                                            ) : (
+                                                <span className="text-gray-500 italic text-xs">Not assigned</span>
+                                            )}
+                                        </TableCell>
+                                        <TableCell className="capitalize first-letter">
+                                            {employee.pay_frequency.replace('_', ' ')}
+                                        </TableCell>
+                                        <TableCell>{employee.branch.branch_name}</TableCell>
+                                        <TableCell>{employee.contract_start_date}</TableCell>
+                                        <TableCell>{employee.contract_end_date}</TableCell>
+                                        <TableCell>
+                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${['active', 'Active', 'ACTIVE'].includes(employee.employee_status)
+                                                    ? 'bg-green-100 text-green-800'
+                                                    : 'bg-yellow-100 text-yellow-800'
+                                                }`}>
+                                                {employee.employee_status}
+                                            </span>
+                                        </TableCell>
+                                        <TableCell className = "text-center">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button size="icon" className="size-8 bg-transparent hover:cursor-pointer hover:bg-transparent text-black">
+                                                        <MoreHorizontalIcon />
                                                     </Button>
-                                                </div>
-                                            </TableCell>
-                                        </TableRow>
-                                    );
-                                })}
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="start">
+                                                    <DropdownMenuGroup>
+                                                    <DropdownMenuItem>
+                                                        <Link href={EmmployeeController.edit(employee.slug_emp)}>
+                                                        Edit
+                                                        </Link>
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem className='hover:!bg-red-100 hover:!text-red-800 hover:cursor-pointer' >
+                                                        <Link onClick={() => handleDelete(employee.id)} >
+                                                        Delete
+                                                        </Link>
+                                                    </DropdownMenuItem>
+                                                    </DropdownMenuGroup>
+                                                </DropdownMenuContent>
+                                                </DropdownMenu>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
                             </TableBody>
                         </Table>
+                    </div>
                     )}
                 </div>
+            </div>
             </div>
         </AppLayout>
     );
