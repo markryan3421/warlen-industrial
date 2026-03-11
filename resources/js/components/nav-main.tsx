@@ -21,7 +21,7 @@ export function NavMain({ items = [] }: { items: NavItem[] }) {
                                 asChild
                                 isActive={isCurrentUrl(item.href)}
                                 tooltip={{ children: item.title }}
-                            // className="group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:!px-0"
+                                className="group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:!px-0"
                             >
                                 <Link
                                     href={item.href}
@@ -29,8 +29,12 @@ export function NavMain({ items = [] }: { items: NavItem[] }) {
                                     preserveScroll={true}
                                     preserveState={true}
                                 >
-                                    {item.icon && <item.icon />}
-                                    <span>{item.title}</span>
+                                    {item.icon && (
+                                        <item.icon className="shrink-0 transition-transform duration-200 group-data-[collapsible=icon]:scale-110" />
+                                    )}
+                                    <span className="transition-all duration-200 ease-in-out group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:overflow-hidden group-data-[collapsible=icon]:opacity-0">
+                                        {item.title}
+                                    </span>
                                 </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
