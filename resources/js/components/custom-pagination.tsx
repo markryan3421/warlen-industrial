@@ -42,6 +42,12 @@ export const CustomPagination = ({
     const currentIndex = pageLinks.findIndex(link => link.active);
     const start = Math.floor(currentIndex / windowSize) * windowSize;
     const visiblePages = pageLinks.slice(start, start + windowSize);
+    // const perPageNum = perPage === "-1" ? Infinity : Number(perPage);
+    // const hasMultiplePages = pagination.total > perPageNum;
+
+    // if (!hasMultiplePages) {
+    //     return null;
+    // }
 
     // ── Info text ─────────────────────────────────────────────────────────────
     const infoText = search ? (

@@ -2,9 +2,11 @@
 
 namespace App\Providers;
 
+use App\Models\ApplicationLeave;
 use App\Models\AttendancePeriodStat;
 use App\Models\Employee;
 use App\Models\PayrollPeriod;
+use App\Observers\ApplicationLeaveObserver;
 use App\Observers\AttendancePeriodStatObserver;
 use App\Observers\PayrollPeriodObserver;
 use Carbon\CarbonImmutable;
@@ -69,6 +71,8 @@ class AppServiceProvider extends ServiceProvider
     {
         AttendancePeriodStat::observe(AttendancePeriodStatObserver::class);
         PayrollPeriod::observe(PayrollPeriodObserver::class);
+
+        ApplicationLeave::observe(ApplicationLeaveObserver::class);
     }
 
     private function configureRateLimiting(): void

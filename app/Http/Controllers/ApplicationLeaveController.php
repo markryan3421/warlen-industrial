@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Actions\ApplicationLeave\CreateNewApplication;
 use App\Actions\ApplicationLeave\UpdateApplication;
 use App\Enums\ApplicationLeaveEnum;
+use App\Events\ApplicationLeaveEvent;
+use App\Events\ApplicationLeaveUpdated;
 use App\Http\Requests\ApplicationLeave\StoreApplicationLeaveRequest;
 use App\Http\Requests\ApplicationLeave\UpdateApplicationLeaveRequest;
 use App\Models\ApplicationLeave;
@@ -103,9 +105,10 @@ class ApplicationLeaveController extends Controller
         try {
             $validatedData = $request->validated();
 
-            $updateApplication->updateApplicationLeave($validatedData, $applicationLeave);
-
+            $applicationLeave = $updateApplication->updateApplicationLeave($validatedData, $applicationLeave);
             DB::commit();
+            // broadcast(new ApplicationLeaveEvent($applicationLeave));
+
 
             return redirect()->route('application-leave.index')->with('success', 'Leave application updated successfully.');
         } catch (\Exception $e) {

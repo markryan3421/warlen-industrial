@@ -19,6 +19,7 @@ import type { BreadcrumbItem } from '@/types';
 import { CustomModalView } from '@/components/custom-modal-view';
 import { ContributionModalConfig } from '@/config/forms/contribution-modal-view';
 import { CustomPagination } from '@/components/custom-pagination';
+import { CustomToast, toast } from '@/components/custom-toast';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Contributions', href: '/contributions' },
@@ -126,9 +127,18 @@ export default function Index({
     };
 
     // ── Delete ─────────────────────────────────────────────────────────────────
-    const handleDelete = (route: string) => {
+    const handleDelete = (id: number | string) => {
         if (confirm('Are you sure you want to delete this contribution version?')) {
-            destroy(route);
+            destroy(ContributionVersionController.destroy(id).url, {
+                onSuccess: (page) => {
+                    const successMessage = page.props.flash?.success || 'Branch created successfully.'
+                    toast.success(successMessage);
+                },
+                onError: (errors) => {
+                    const errorMessage = Object.values(errors).flat()[0] || 'Failed to create branch.';
+                    toast.error(errorMessage);
+                }
+            });
         }
     };
 
@@ -162,7 +172,7 @@ export default function Index({
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Contributions" />
-
+            <CustomToast />
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
 
                 {/* ── Page header ─────────────────────────────────────────── */}
@@ -180,7 +190,7 @@ export default function Index({
 
                 {/* ── Toolbar ─────────────────────────────────────────────── */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <div className="flex items-center gap-2 w-full sm:w-auto ms-4">
                         <Input
                             type="text"
                             value={data.search}
@@ -221,7 +231,7 @@ export default function Index({
                         <Link href={ContributionVersionController.create()}>
                             <Button>Create Your First Version</Button>
                         </Link>
-                    </div>
+                    </div >
 
                 ) : (
                     <>
@@ -248,8 +258,9 @@ export default function Index({
                             resourceName="contribution version"
                         />
                     </>
-                )}
-            </div>
+                )
+                }
+            </div >
 
             <CustomModalView
                 open={isModalOpen}
@@ -261,6 +272,6 @@ export default function Index({
                 headerIcon={<Percent className="h-6 w-6 text-primary" />}
             />
 
-        </AppLayout>
+        </AppLayout >
     );
 }

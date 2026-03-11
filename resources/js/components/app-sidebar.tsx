@@ -25,8 +25,7 @@ import { Users } from 'lucide-react';
 import ApplicationLeaveController from '@/actions/App/Http/Controllers/ApplicationLeaveController';
 import ContributionVersionController from '@/actions/App/Http/Controllers/ContributionVersionController';
 import { useCurrentUrl } from '@/hooks/use-current-url'; // Add this import
-import PayrollController from '@/actions/App/Http/Controllers/PayrollController';
-
+import PayrollController from "@/actions/App/Http/Controllers/PayrollController";
 const ExpendituresItems: NavItem[] = [
     {
         title: 'Dashboard',
