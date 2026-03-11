@@ -7,21 +7,43 @@ use App\Actions\Contribution\UpdateContribution;
 use App\Http\Requests\Contribution\StoreContributionRequest;
 use App\Http\Requests\Contribution\UpdateContributionRequest;
 use App\Models\ContributionVersion;
+use App\Traits\HasPaginatedIndex;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 
 class ContributionVersionController extends Controller
 {
+    use HasPaginatedIndex;
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         Gate::authorize('viewAny', ContributionVersion::class);
-        
+
+        $contributions = $this->cacheRemember('contribution_versions', 60, function () {
+            return ContributionVersion::with('contributionBrackets')->get();
+        });
+
+        $contributionVersions = $this->paginateCollection(
+            items: collect($contributions),
+            request: $request,
+            searchColumns: ['type', 'effective_from', 'effective_to'],
+        );
+
         return Inertia::render('Contributions/index', [
-            'contributionVersions' => ContributionVersion::with('contributionBrackets')->get(),
+            'contributionVersions' => [
+                'data' => $contributionVersions['data'],
+                'links' => $contributionVersions['pagination']['links'] ?? [],
+                'from' => $contributionVersions['pagination']['from'] ?? 0,
+                'to' => $contributionVersions['pagination']['to'] ?? 0,
+                'total' => $contributionVersions['totalCount'],
+            ],
+            'filters' => $contributionVersions['filters'],
+            'totalCount' => $contributionVersions['totalCount'],
+            'filteredCount' => $contributionVersions['filteredCount'],
         ]);
     }
 
