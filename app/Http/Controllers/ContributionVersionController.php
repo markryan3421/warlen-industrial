@@ -70,6 +70,7 @@ class ContributionVersionController extends Controller
 
         try {
             $action->createContribution($request->validated());
+            $this->cacheForget('contribution_versions'); // Clear cache after creation
 
             DB::commit();
 
@@ -113,6 +114,7 @@ class ContributionVersionController extends Controller
 
         try {
             $action->updateContribution($request->validated(), $contributionVersion);
+            $this->cacheForget('contribution_versions');
 
             DB::commit();
 
@@ -131,6 +133,7 @@ class ContributionVersionController extends Controller
     {
         Gate::authorize('delete', $contributionVersion);
         $contributionVersion->delete();
+        $this->cacheForget('contribution_versions'); // Clear cache after deletion
 
         return to_route('contribution-versions.index')->with('success', 'Contribution deleted successfully.');
     }

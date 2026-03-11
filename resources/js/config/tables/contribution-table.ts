@@ -8,6 +8,6 @@ export const ContributionTableConfig = {
   actions: [
     { label: 'View', icon: 'Eye', className: 'bg-transparent hover:bg-transparent text-gray-600 hover:text-gray-900 cursor-pointer' },
     { label: 'Edit', icon: 'Pencil', route: 'ContributionVersionController.edit(version.id)', className: 'bg-transparent hover:bg-transparent text-gray-600 hover:text-gray-900 cursor-pointer' },
-    { label: 'Delete', icon: 'Trash', route: 'ContributionVersionController.destroy(version.id)', className: 'bg-transparent hover:bg-transparent text-gray-600 hover:text-gray-900 cursor-pointer' },
+    { label: 'Delete', icon: 'Trash', route: 'contribution-versions/destroy', className: 'bg-transparent hover:bg-transparent text-gray-600 hover:text-gray-900 cursor-pointer' },
   ],
 }
