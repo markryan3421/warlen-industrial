@@ -1,13 +1,13 @@
 import { Head, useForm } from '@inertiajs/react';
 import { Building2, MapPin, Pencil, PlusCircle } from 'lucide-react';
-
+import { toast } from '@/components/custom-toast';
 import InputError from '@/components/input-error';
 import SiteRepeater from '@/components/site-repeater';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import AppLayout from '@/layouts/app-layout';
-import type { BreadcrumbItem} from '@/types';
+import type { BreadcrumbItem } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -45,7 +45,16 @@ export default function Edit({ branch }: Props) {
 
     function submitBranch(e: React.FormEvent) {
         e.preventDefault();
-        put(`/branches/${branch.branch_slug}`);
+        put(`/branches/${branch.branch_slug}`, {
+            onSuccess: (page) => {
+                const successMessage = page.props.flash?.success || 'Branch created successfully.'
+                toast.success(successMessage);
+            },
+            onError: (errors) => {
+                const errorMessage = Object.values(errors).flat()[0] || 'Failed to create branch.';
+                toast.error(errorMessage);
+            }
+        });
     }
 
     const setSites = (sites: Array<{ id?: number; site_name: string }>) => {

@@ -4,7 +4,7 @@ import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/react';
 import ContributionVersionController from "@/actions/App/Http/Controllers/ContributionVersionController";
 import { useState, useMemo, useEffect } from 'react';
-import { Calculator, PlusCircle, Percent, Filter, CalendarDays,X } from 'lucide-react';
+import { Calculator, PlusCircle, Percent, Filter, CalendarDays, X } from 'lucide-react';
 
 import {
     Table,
@@ -23,14 +23,12 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card";
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuTrigger,
+    DropdownMenuItem
+} from "@/components/ui/dropdown-menu";
 
 import {
     Select,
@@ -52,6 +50,7 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -314,7 +313,7 @@ export default function Index({ contributionVersions }: ContributionsProps) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Contributions" />
-            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
+            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4 px-10  ">
                 <div className="flex justify-between items-center mb-4">
                     <h1 className="text-2xl font-bold">Contribution Versions</h1>
                     <div className="flex items-center gap-2">
@@ -639,16 +638,16 @@ export default function Index({ contributionVersions }: ContributionsProps) {
                                 Contribution Brackets - {selectedVersion && getContributionTypeLabel(selectedVersion.type)}
                             </DialogTitle>
                             <DialogDescription>
-                                <div className="mt-2 space-y-1">
-                                    <p><span className="font-medium">Effective Period:</span> {selectedVersion && formatDate(selectedVersion.effective_from)} to {selectedVersion && formatDate(selectedVersion.effective_to)}</p>
+                                <div className="-mt-1 space-y-1">
+                                    <p><span className="font-bold text-black">Effective Period:</span> {selectedVersion && formatDate(selectedVersion.effective_from)} to {selectedVersion && formatDate(selectedVersion.effective_to)}</p>
                                 </div>
                             </DialogDescription>
                         </DialogHeader>
                         
                         <div className="mt-4">
                             {selectedVersion?.contribution_brackets && selectedVersion.contribution_brackets.length > 0 ? (
-                                <div className="space-y-4">
-                                    <Table>
+                                <div className="space-y-4 -mt-5">
+                                    <Table className='border-2 rounded-lg'>
                                         <TableHeader>
                                             <TableRow>
                                                 <TableHead>Salary Range</TableHead>

@@ -10,6 +10,7 @@ use App\Models\Branch;
 use App\Repository\BranchRepository;
 use App\Traits\HasPaginatedIndex;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -82,7 +83,7 @@ class BranchController extends Controller
 
             DB::commit();
 
-            return to_route('branches.index')->with('success', 'Branch or Site created successfully.');
+            return to_route('branches.index')->with('success', 'Branch and site created successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -130,7 +131,7 @@ class BranchController extends Controller
 
             DB::commit();
 
-            return to_route('branches.index')->with('success', 'Branch or Site updated successfully.');
+            return to_route('branches.index')->with('success', 'Branch and sites updated successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -145,13 +146,13 @@ class BranchController extends Controller
     {
         Gate::authorize('delete', $branch);
         
-        if ($this->limit('delete-branch:' . auth()->id(), 60, 10)) {
+        if ($this->limit('delete-branch:' . Auth::id(), 60, 10)) {
             return back()->with('error', 'Too many attempts. Please try again later.');
         }
         $branch->delete();
 
         $this->cacheForget('branches');
 
-        return to_route('branches.index')->with('success', 'Branch or Site deleted successfully.');
+        return to_route('branches.index')->with('success', 'Branch and site deleted successfully.');
     }
 }
