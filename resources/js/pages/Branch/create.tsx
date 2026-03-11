@@ -1,5 +1,7 @@
 import { Head, useForm } from '@inertiajs/react';
 import { Building2, MapPin, PlusCircle } from 'lucide-react';
+import { toast } from 'sonner';
+
 import { store } from '@/actions/App/Http/Controllers/BranchController';
 import InputError from '@/components/input-error';
 import SiteRepeater from '@/components/site-repeater';
@@ -26,6 +28,13 @@ interface FormData {
     sites: Array<{ site_name: string }>;
 }
 
+// interface FlashProps {
+//     flash?: {
+//         success?: string;
+//         error?: string;
+//     };
+// }
+
 export default function Create() {
     const { data, setData, errors, processing, post } = useForm<FormData>({
         branch_name: '',
@@ -35,7 +44,16 @@ export default function Create() {
 
     function submitBranch(e: React.FormEvent) {
         e.preventDefault();
-        post(store().url);
+        post(store().url, {
+            onSuccess: (page) => {
+                const successMessage = page.props.flash?.success || 'Branch created successfully.'
+                toast.success(successMessage);
+            },
+            onError: (errors) => {
+                const errorMessage = Object.values(errors).flat()[0] || 'Failed to create branch.';
+                toast.error(errorMessage);
+            }
+        });
     }
 
     const setSites = (sites: Array<{ site_name: string }>) => {

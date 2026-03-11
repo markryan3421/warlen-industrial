@@ -10,6 +10,7 @@ import Echo from 'laravel-echo';
 // IMPORTANT: For Reverb, we need to import Pusher with a different name
 // Reverb uses the Pusher protocol but connects to your Reverb server
 import Pusher from 'pusher-js';
+import PayrollProcessingCards from '@/components/payroll-processing-cards';
 
 // Declare global window interface for Echo
 declare global {
@@ -220,6 +221,7 @@ export default function Index({ payrolls }: PageProps) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Payroll" />
             <div className="flex flex-1 flex-col gap-2 p-4">
+                <PayrollProcessingCards />
                 
                 {/* Notification Toast */}
                 {showNotification && notification && (

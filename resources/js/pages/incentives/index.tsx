@@ -1,9 +1,8 @@
-// resources/js/Pages/incentives/index.tsx
 import { Head, Link, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Briefcase, Eye, Pencil, Trash2, Filter, X, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Calendar } from 'lucide-react';
+import { Briefcase, Eye, Pencil, Trash2, X, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Calendar } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useState, useMemo, useEffect } from 'react';
 import {
@@ -230,12 +229,12 @@ export default function Index({ incentives, filters = {} }: Props) {
     const goToPreviousPage = () => goToPage(currentPage - 1);
     const goToNextPage = () => goToPage(currentPage + 1);
 
-    // Generate page numbers for pagination controls
-    const getPageNumbers = () => {
+    // Generate page numbers for pagination controls - FIXED TYPES
+    const getPageNumbers = (): (number | string)[] => {
         const delta = 2;
-        const range = [];
-        const rangeWithDots = [];
-        let l;
+        const range: number[] = [];
+        const rangeWithDots: (number | string)[] = [];
+        let l: number | undefined;
 
         for (let i = 1; i <= totalPages; i++) {
             if (i === 1 || i === totalPages || (i >= currentPage - delta && i <= currentPage + delta)) {
@@ -350,7 +349,7 @@ export default function Index({ incentives, filters = {} }: Props) {
                                             </PopoverTrigger>
                                             <PopoverContent className="w-auto p-0" align="end">
                                                 <div className="flex">
-                                                    {/* Left Calendar */}
+                                                    {/* Left Calendar - FIXED: removed captionLayout */}
                                                     <div className="border-r">
                                                         <CalendarComponent
                                                             mode="range"
@@ -366,13 +365,10 @@ export default function Index({ incentives, filters = {} }: Props) {
                                                             onMonthChange={setLeftCalendarMonth}
                                                             numberOfMonths={1}
                                                             initialFocus
-                                                            captionLayout="dropdown-buttons"
-                                                            fromYear={2020}
-                                                            toYear={new Date().getFullYear() + 1}
                                                         />
                                                     </div>
 
-                                                    {/* Right Calendar */}
+                                                    {/* Right Calendar - FIXED: removed captionLayout */}
                                                     <div>
                                                         <CalendarComponent
                                                             mode="range"
@@ -387,9 +383,6 @@ export default function Index({ incentives, filters = {} }: Props) {
                                                             month={rightCalendarMonth}
                                                             onMonthChange={setRightCalendarMonth}
                                                             numberOfMonths={1}
-                                                            captionLayout="dropdown-buttons"
-                                                            fromYear={2020}
-                                                            toYear={new Date().getFullYear() + 1}
                                                         />
                                                     </div>
                                                 </div>
@@ -429,7 +422,6 @@ export default function Index({ incentives, filters = {} }: Props) {
                                             ? `No incentives matching "${searchTerm}" found.`
                                             : 'No incentives match the selected date range.'}
                                     </p>
-
                                 </div>
                             ) : (
                                 <>

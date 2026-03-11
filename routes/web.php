@@ -28,6 +28,14 @@ Route::get('/', function () {
 
 Route::middleware(['auth', 'verified', 'throttle:limit-actions' , 'roleBase'])->group(function () {
 
+    Route::get('payroll', function () {
+        return Inertia::render('payroll/index');
+    });
+
+    Route::get('multipletables', function () {
+        return Inertia::render('multipletables/index');
+    });
+    //admin dashboard
     Route::get('dashboard', function () {
         return Inertia::render('dashboard');
     })->name('dashboard');
@@ -43,6 +51,7 @@ Route::middleware(['auth', 'verified', 'throttle:limit-actions' , 'roleBase'])->
     })->name('hr.dashboard');
 
     Route::resource('branches', BranchController::class)->except(['show']);
+    Route::delete('/branches/{branch:branch_slug}', [BranchController::class, 'destroy'])->name('branches.destroy');
     Route::resource('positions', PositionController::class)->except(['show']);
     Route::resource('employees', EmployeeController::class)->except(['show']);
     Route::resource('permissions', PermissionController::class);

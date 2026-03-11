@@ -43,39 +43,48 @@ export default function SiteRepeater({ sites, setSites, errors }: SiteRepeaterPr
                     onClick={addSite} 
                     variant="outline" 
                     size="sm"
+                    className = "cursor-pointer"
                 >
                     <Plus className="h-4 w-4 mr-2" />
                     Add Site
                 </Button>
             </div>
 
-            {sites.map((site, index) => (
-                <div key={index} className="flex gap-2 items-start">
-                    <div className="flex-1">
-                        <Input
-                            type="text"
-                            value={site.site_name}
-                            onChange={(e) => updateSite(index, e.target.value)}
-                            placeholder={`Site ${index + 1} name`}
-                        />
-                        {errors?.[`sites.${index}.site_name`] && (
-                            <InputError message={errors[`sites.${index}.site_name`]} />
-                        )}
+            {/* Only show border when there are sites */}
+            {sites.length > 0 && (
+                <div className="border mb-4 rounded-lg p-4">
+                    {/* Grid container for sites */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {sites.map((site, index) => (
+                            <div key={index} className="flex gap-2 items-start">
+                                <div className="flex-1">
+                                    <Input
+                                        type="text"
+                                        value={site.site_name}
+                                        onChange={(e) => updateSite(index, e.target.value)}
+                                        placeholder={`Site ${index + 1} name`}
+                                    />
+                                    {errors?.[`sites.${index}.site_name`] && (
+                                        <InputError message={errors[`sites.${index}.site_name`]} />
+                                    )}
+                                </div>
+                                <Button
+                                    type="button"
+                                    onClick={() => removeSite(index)}
+                                    variant="ghost"
+                                    size="icon"
+                                    className="text-red-500 hover:text-red-700 shrink-0"
+                                >
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        ))}
                     </div>
-                    <Button
-                        type="button"
-                        onClick={() => removeSite(index)}
-                        variant="ghost"
-                        size="icon"
-                        className="text-red-500 hover:text-red-700"
-                    >
-                        <X className="h-4 w-4" />
-                    </Button>
                 </div>
-            ))}
+            )}
 
             {sites.length === 0 && (
-                <p className="text-sm text-gray-500 text-center py-4">
+                <p className="text-sm text-gray-500 text-center py-4 border-0">
                     No sites added yet. Click "Add Site" to create one.
                 </p>
             )}

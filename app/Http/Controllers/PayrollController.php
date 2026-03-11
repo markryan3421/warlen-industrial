@@ -15,7 +15,7 @@ class PayrollController extends Controller
     {
         $payrolls = Payroll::query()->with(['payrollPeriod', 'employee.user', 'employee.position', 'payrollItems'])->latest()->get();
 
-        return Inertia::render('Payroll/index', [
+        return Inertia::render('payroll/index', [
             'payrolls' => $payrolls
         ]);
     }

@@ -1,10 +1,6 @@
 import { Link } from '@inertiajs/react';
-import { Airplay, CircleMinus, CircleUser, Landmark, UserCog, Clipboard, Calendar, Users, Contact, BookUser, UserRoundCog, ChevronDown, FileBadge,PhilippinePesoIcon } from 'lucide-react';
-import ApplicationLeaveController from '@/actions/App/Http/Controllers/ApplicationLeaveController';
+import { Airplay, CircleMinus, CircleUser, Flag, Landmark, Lock, UserCog, Clipboard, Banknote } from 'lucide-react';
 import BranchController from '@/actions/App/Http/Controllers/BranchController';
-import ContributionController from '@/actions/App/Http/Controllers/ContributionVersionController';
-import IncentiveController from '@/actions/App/Http/Controllers/IncentiveController';
-// import PositionController from '@/actions/App/Http/Controllers/PositionController';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -18,15 +14,19 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
+    useSidebar
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
 import AppLogo from './app-logo';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible';
 import PayrollPeriodController from '@/actions/App/Http/Controllers/PayrollPeriodController';
-import PayrollController from '@/actions/App/Http/Controllers/PayrollController';
-
-const FinanceItems: NavItem[] = [
+import { FileBadge, Calendar, UserRoundCog, Contact, BookUser } from 'lucide-react';
+import { Users } from 'lucide-react';
+import ApplicationLeaveController from '@/actions/App/Http/Controllers/ApplicationLeaveController';
+import ContributionVersionController from '@/actions/App/Http/Controllers/ContributionVersionController';
+import { useCurrentUrl } from '@/hooks/use-current-url'; // Add this import
+import PayrollController from "@/actions/App/Http/Controllers/PayrollController";
+const ExpendituresItems: NavItem[] = [
     {
         title: 'Dashboard',
         href: '/dashboard',
@@ -39,7 +39,7 @@ const FinanceItems: NavItem[] = [
     },
     {
         title: 'Contributions',
-        href: ContributionController.index(),
+        href: ContributionVersionController.index(),
         icon: CircleMinus,
     },
     {
@@ -47,13 +47,14 @@ const FinanceItems: NavItem[] = [
         href: '/incentives',
         icon: FileBadge,
     }
-
-
-
 ];
 
 const AccessControlItems: NavItem[] = [
-
+    {
+        title: 'Run Payroll',
+        href: PayrollController.index(),
+        icon: Banknote,
+    },
     {
         title: 'Employees',
         href: '/employees',
@@ -68,11 +69,6 @@ const AccessControlItems: NavItem[] = [
         title: 'Payroll Periods',
         href: PayrollPeriodController.index(),
         icon: Calendar,
-    },
-      {
-        title: 'Payroll',
-        href: PayrollController.index(),
-        icon: PhilippinePesoIcon,
     },
     {
         title: 'Positions',
@@ -109,83 +105,40 @@ const AttendanceItems: NavItem[] = [
     },
 ];
 
-const footerNavItems: NavItem[] = [
-    // {
-    //     title: 'Repository',
-    //     href: 'https://github.com/laravel/react-starter-kit',
-    //     icon: Folder,
-    // },
-    // {
-    //     title: 'Documentation',
-    //     href: 'https://laravel.com/docs/starter-kits#react',
-    //     icon: BookOpen,
-    // },
-];
+const footerNavItems: NavItem[] = [];
 
 export function AppSidebar() {
+    const { state } = useSidebar();
+    const { isCurrentUrl } = useCurrentUrl(); // Add this hook
+    const isExpanded = state === 'expanded';
+
     return (
-        <Sidebar collapsible="icon" variant="inset">
-            <SidebarHeader>
+        <Sidebar collapsible="icon" className="border-r-1 bg-white border-gray-400">
+            <SidebarHeader className="px-5">
                 <SidebarMenu>
                     <SidebarMenuItem>
-                        <SidebarMenuButton size="lg" asChild>
-                            <Link href={dashboard()} prefetch>
+                        <SidebarMenuButton 
+                            className="py-10" 
+                            asChild
+                        >
+                            <Link href = {dashboard()} prefetch className="h-8 w-8 hover:bg-white">
                                 <AppLogo />
-                            </Link>
+                            </Link>     
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 </SidebarMenu>
             </SidebarHeader>
 
-            <SidebarContent>
-                {/* Finance Group */}
-                <Collapsible defaultOpen className="group/collapsible">
-                    <SidebarGroup>
-                        <SidebarGroupLabel asChild>
-                            <CollapsibleTrigger className="text-white">
-                                Finance
-                                <ChevronDown className="ml-auto flex items-center justify-items-center transition-transform group-data-[state=open]/collapsible:rotate-180" />
-                            </CollapsibleTrigger>
-                        </SidebarGroupLabel>
-                        <CollapsibleContent>
-                            <NavMain items={FinanceItems} />
-                        </CollapsibleContent>
-                    </SidebarGroup>
-                </Collapsible>
-
-                {/* Access Control Group */}
-                <Collapsible defaultOpen className="group/collapsible">
-                    <SidebarGroup>
-                        <SidebarGroupLabel asChild>
-                            <CollapsibleTrigger className="text-white">
-                                Access Control
-                                <ChevronDown className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
-                            </CollapsibleTrigger>
-                        </SidebarGroupLabel>
-                        <CollapsibleContent>
-                            <NavMain items={AccessControlItems} />
-                        </CollapsibleContent>
-                    </SidebarGroup>
-                </Collapsible>
-
-                {/* Attendance Group */}
-                <Collapsible defaultOpen className="group/collapsible">
-                    <SidebarGroup>
-                        <SidebarGroupLabel asChild>
-                            <CollapsibleTrigger className="text-white">
-                                Attendance
-                                <ChevronDown className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
-                            </CollapsibleTrigger>
-                        </SidebarGroupLabel>
-                        <CollapsibleContent>
-                            <NavMain items={AttendanceItems} />
-                        </CollapsibleContent>
-                    </SidebarGroup>
-                </Collapsible>
+            <SidebarContent className={`
+                ${isExpanded ? 'px-5' : '-ml-3 px-5 transition-all duration-200 ease-in-out'}`}
+            >
+                <NavMain items={ExpendituresItems} label="Expenditures" />
+                <NavMain items={AccessControlItems} label="Access Control" />
+                <NavMain items={AttendanceItems} label="Attendance" />
             </SidebarContent>
 
             <SidebarFooter>
-                <NavFooter items={footerNavItems} className="mt-auto" />
+                <NavFooter items={footerNavItems} />
                 <NavUser />
             </SidebarFooter>
         </Sidebar>
