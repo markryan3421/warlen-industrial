@@ -8,6 +8,6 @@ use Inertia\Inertia;
 class PayrollController extends Controller
 {
     public function index() {
-        return Inertia::render("payroll/Index");
+        return Inertia::render("payroll/index");
     }
 }
