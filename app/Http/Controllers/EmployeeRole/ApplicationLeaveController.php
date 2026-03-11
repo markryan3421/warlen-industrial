@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\EmployeeRole;
 
 use App\Actions\ApplicationLeave\CreateNewApplication;
+use App\Events\ApplicationLeaveEvent;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ApplicationLeave\StoreApplicationLeaveRequest;
 use App\Models\ApplicationLeave;
@@ -19,7 +20,7 @@ class ApplicationLeaveController extends Controller
      */
     public function index(CreateNewApplication $action)
     {
-        Gate::authorize('viewAny',ApplicationLeave::class);
+        Gate::authorize('viewAny', ApplicationLeave::class);
 
         $applicationLeaves = ApplicationLeave::whereHas('employee', function ($query) {
             $query->where('user_id', auth()->id());
@@ -60,9 +61,11 @@ class ApplicationLeaveController extends Controller
                 return back()->with('error', 'You have reached the maximum limit of 5 approved leaves for this year.');
             }
 
-            $action->createNewApplicationLeave($validatedData);
+            $application_leave = $action->createNewApplicationLeave($validatedData);
 
             DB::commit();
+            // broadcast(new ApplicationLeaveEvent($application_leave))->toOthers();
+
 
             return redirect()->route('employee.application-leave.index')->with('success', 'Leave application submitted successfully.');
         } catch (\Exception $e) {

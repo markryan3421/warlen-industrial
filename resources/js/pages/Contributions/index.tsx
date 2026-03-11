@@ -172,7 +172,11 @@ export default function Index({
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Contributions" />
+<<<<<<< HEAD
             <CustomToast />
+=======
+
+>>>>>>> 82782d14da319bed83b7f6f8b3959042dbfe1ffe
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
 
                 {/* ── Page header ─────────────────────────────────────────── */}
