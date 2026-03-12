@@ -51,6 +51,11 @@ trait BranchValidationRules
                 'max:255',
             ],
             'sites' => 'sometimes|array',
+            'sites.*.id' => [
+                'sometimes',
+                'integer',
+                'exists:sites,id' // Make sure the site ID exists in the database
+            ],
             'sites.*.site_name' => [
                 'required_with:sites',
                 'string',

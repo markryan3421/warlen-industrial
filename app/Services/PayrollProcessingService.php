@@ -16,7 +16,7 @@ class PayrollProcessingService
     /**
      * Process payroll for a given period based on attendance data
      */
-   public function processPayrollForPeriod(PayrollPeriod $payrollPeriod): void
+    public function processPayrollForPeriod(PayrollPeriod $payrollPeriod): void
     {
         try {
             DB::beginTransaction();
@@ -195,8 +195,9 @@ class PayrollProcessingService
         // Calculate base pay using position salary based on employee status
         $basePay = $this->calculateBasePay($stats, $employee);
         
-        // Get attendance values with defaults
-        $overtimePay = $stats->overtime_pay ?? 0;
+        // Calculate overtime pay (25% additional rate) - handles decimal values correctly
+        $overtimePay = $this->calculateOvertimePay($stats, $employee);
+        
         $subsidyPay = $stats->subsidy_pay ?? 0;
         
         // Calculate late deduction based on employee status
@@ -243,15 +244,57 @@ class PayrollProcessingService
         // Get attended days from stats
         $attendedDays = isset($stats->attended_days) ? (float)$stats->attended_days : 0;
         
-        // Calculate base pay (daily rate × attended days)
-        $basePay = round($dailyRate * $attendedDays, 2);
+        // Get overtime days (as decimal, e.g., 0.02 = 2% of a day)
+        $overtimeDecimal = isset($stats->overtime_work_day) ? (float)$stats->overtime_work_day : 0;
         
-        // Get expected working days based on employee status
-        $expectedDays = $this->getExpectedWorkingDays($employee, $stats);
+        // Regular days are the attended days minus the overtime decimal portion
+        // If overtime is 0.02, that means 2% of a day was overtime, so regular days = attended days - 0.02
+        $regularDays = max(0, $attendedDays - $overtimeDecimal);
         
-        Log::info("Base pay calculation for {$employee->emp_code}: Status={$employee->employee_status}, Daily Rate={$dailyRate}, Attended Days={$attendedDays}, Expected Days={$expectedDays}, Base Pay={$basePay}");
+        // Calculate base pay (daily rate × regular attended days)
+        $basePay = round($dailyRate * $regularDays, 2);
+        
+        Log::info("Base pay calculation for {$employee->emp_code}: Status={$employee->employee_status}, " .
+                 "Daily Rate={$dailyRate}, Total Attended Days={$attendedDays}, " .
+                 "Overtime Decimal={$overtimeDecimal}, Regular Days={$regularDays}, Base Pay={$basePay}");
         
         return $basePay;
+    }
+
+    /**
+     * Calculate overtime pay with 25% additional rate
+     * Handles decimal values (e.g., 0.02 = 2% of a day) and multiplies by 1.25
+     */
+    protected function calculateOvertimePay(AttendancePeriodStat $stats, Employee $employee): float
+    {
+        // Get overtime as decimal (e.g., 0.02, 0.03 from your database)
+        $overtimeDecimal = isset($stats->overtime_work_day) ? (float)$stats->overtime_work_day : 0;
+        
+        // if ($overtimeDecimal <= 0) {
+        //     return 0;
+        // }
+
+        // Get daily rate from employee's position
+        $dailyRate = (float)$employee->position->basic_salary;
+        
+        // if ($dailyRate <= 0) {
+        //     Log::warning("Invalid daily rate for overtime calculation: {$employee->emp_code}");
+        //     return 0;
+        // }
+
+        // Calculate overtime pay:
+        // 1. Convert decimal to actual day portion (0.02 = 2% of a day)
+        // 2. Multiply by daily rate to get base overtime pay
+        // 3. Multiply by 1.25 for the 25% additional rate
+        $overtimePay = round($dailyRate * $overtimeDecimal * 1.25, 2);
+        
+        // For display purposes, calculate the percentage
+        $overtimePercentage = $overtimeDecimal * 100;
+        
+        Log::info("Overtime pay calculation for {$employee->emp_code}: " .
+                 "Daily Rate={$dailyRate}, Overtime Decimal={$overtimeDecimal} ({$overtimePercentage}% of a day), " .
+                 "Overtime Pay (with 25% additional)={$overtimePay}");
+        return $overtimePay;
     }
 
     /**
@@ -324,12 +367,22 @@ class PayrollProcessingService
         Employee $employee,
         int $lateMinutes = 0
     ): void {
+        $overtimeDecimal = isset($stats->overtime_work_day) ? (float)$stats->overtime_work_day : 0;
+        $attendedDays = isset($stats->attended_days) ? (float)$stats->attended_days : 0;
+        $regularDays = max(0, $attendedDays - $overtimeDecimal);
+        
+        // Calculate overtime percentage for display
+        $overtimePercentage = $overtimeDecimal * 100;
+        
+        // Calculate overtime rate with 25% additional
+        $overtimeRate = $employee->position->basic_salary * 1.25;
+        
         // Earnings items with descriptions
         $earnings = [
             ['code' => 'BASE', 'type' => 'earning', 'amount' => $basePay, 
-             'description' => "Basic Pay - {$stats->attended_days} days @ ₱" . number_format($employee->position->basic_salary, 2) . "/day"],
+             'description' => "Basic Pay - " . number_format($regularDays, 3) . " days @ ₱" . number_format($employee->position->basic_salary, 2) . "/day"],
             ['code' => 'OVERTIME', 'type' => 'earning', 'amount' => $overtimePay, 
-             'description' => 'Overtime Pay'],
+             'description' => "Overtime Pay - " . number_format($overtimeDecimal, 3) . " days ({$overtimePercentage}% of a day) @ ₱" . number_format($overtimeRate, 2) . "/day (includes 25% additional)"],
             ['code' => 'SUBSIDY', 'type' => 'earning', 'amount' => $subsidyPay, 
              'description' => 'Subsidy'],
         ];
@@ -363,6 +416,7 @@ class PayrollProcessingService
                     'code' => $deduction['code'],
                     'type' => $deduction['type'],
                     'amount' => $deduction['amount'],
+                    'description' => $deduction['description'] ?? null,
                 ]);
             }
         }

@@ -48,7 +48,7 @@ class EmployeeSeeder extends Seeder
         return Position::create([
             'pos_name' => 'Regular employee',
             'pos_slug' => Str::slug('Regular employee'),
-            'basic_salary' => 1000
+            'basic_salary' => 550
         ]);
     }
 
