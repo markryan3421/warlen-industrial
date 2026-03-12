@@ -167,6 +167,9 @@ export default function Index({
         router.get(ContributionVersionController.edit(version.id).url);
     };
 
+    // Check if there are any records at all (not just filtered)
+    const hasRecords = totalCount > 0;
+
     // ==========================================================================
 
     return (
@@ -189,34 +192,37 @@ export default function Index({
                 </div>
 
                 {/* ── Toolbar ─────────────────────────────────────────────── */}
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <div className="flex items-center gap-2 w-full sm:w-auto ms-4">
-                        <Input
-                            type="text"
-                            value={data.search}
-                            onChange={handleChange}
-                            placeholder="Search contributions..."
-                            className="w-full sm:w-80 h-10"
-                        />
-                        <Button
-                            onClick={handleReset}
-                            variant="outline"
-                            className="h-10 px-4 cursor-pointer whitespace-nowrap"
-                        >
-                            Clear
-                        </Button>
-                    </div>
+                {/* Only show search bar and create button if there are records */}
+                {hasRecords && (
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div className="flex items-center gap-2 w-full sm:w-auto ms-4">
+                            <Input
+                                type="text"
+                                value={data.search}
+                                onChange={handleChange}
+                                placeholder="Search contributions..."
+                                className="w-full sm:w-80 h-10"
+                            />
+                            <Button
+                                onClick={handleReset}
+                                variant="outline"
+                                className="h-10 px-4 cursor-pointer whitespace-nowrap"
+                            >
+                                Clear
+                            </Button>
+                        </div>
 
-                    <Link
-                        href={ContributionVersionController.create()}
-                        className="me-4 inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 whitespace-nowrap"
-                    >
-                        + Create Contribution Version
-                    </Link>
-                </div>
+                        <Link
+                            href={ContributionVersionController.create()}
+                            className="me-4 inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 whitespace-nowrap"
+                        >
+                            + Create Contribution Version
+                        </Link>
+                    </div>
+                )}
 
                 {/* ── Empty state (no data at all, not a search miss) ──────── */}
-                {contributionVersions.data.length === 0 && !data.search ? (
+                {!hasRecords ? (
                     <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
                         <div className="rounded-full bg-gray-100 p-6 mb-4">
                             <Calculator className="h-12 w-12 text-gray-400" />
@@ -231,36 +237,51 @@ export default function Index({
                         <Link href={ContributionVersionController.create()}>
                             <Button>Create Your First Version</Button>
                         </Link>
-                    </div >
-
+                    </div>
                 ) : (
                     <>
-                        {/* Custom Table */}
-                        <CustomTable
-                            columns={ContributionTableConfig.columns}
-                            actions={ContributionTableConfig.actions}
-                            data={contributionVersions.data}
-                            from={contributionVersions.from}
-                            onDelete={handleDelete}
-                            onView={viewBrackets}
-                            onEdit={editBracket}
-                        />
+                        {/* Show "no results" message when search returns nothing */}
+                        {contributionVersions.data.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-12 px-4 text-center border rounded-lg bg-gray-50">
+                                <Calculator className="h-12 w-12 text-gray-400 mb-4" />
+                                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                                    No results found
+                                </h3>
+                                <p className="text-gray-500 mb-4">
+                                    No contribution versions match your search criteria.
+                                </p>
+                                <Button onClick={handleReset} variant="outline">
+                                    Clear Search
+                                </Button>
+                            </div>
+                        ) : (
+                            <>
+                                {/* Custom Table */}
+                                <CustomTable
+                                    columns={ContributionTableConfig.columns}
+                                    actions={ContributionTableConfig.actions}
+                                    data={contributionVersions.data}
+                                    from={contributionVersions.from}
+                                    onDelete={handleDelete}
+                                    onView={viewBrackets}
+                                    onEdit={editBracket}
+                                />
 
-
-                        {/* ── Pagination ───────────────────────────────────── */}
-                        <CustomPagination
-                            pagination={contributionVersions}
-                            perPage={data.perPage}
-                            onPerPageChange={handlePerPageChange}
-                            totalCount={totalCount}
-                            filteredCount={filteredCount}
-                            search={data.search}
-                            resourceName="contribution version"
-                        />
+                                {/* ── Pagination ───────────────────────────────────── */}
+                                <CustomPagination
+                                    pagination={contributionVersions}
+                                    perPage={data.perPage}
+                                    onPerPageChange={handlePerPageChange}
+                                    totalCount={totalCount}
+                                    filteredCount={filteredCount}
+                                    search={data.search}
+                                    resourceName="contribution version"
+                                />
+                            </>
+                        )}
                     </>
-                )
-                }
-            </div >
+                )}
+            </div>
 
             <CustomModalView
                 open={isModalOpen}
@@ -271,7 +292,6 @@ export default function Index({
                 data={selectedVersion}
                 headerIcon={<Percent className="h-6 w-6 text-primary" />}
             />
-
-        </AppLayout >
+        </AppLayout>
     );
 }
