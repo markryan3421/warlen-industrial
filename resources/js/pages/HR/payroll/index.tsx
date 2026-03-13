@@ -1,7 +1,7 @@
 import { Head, Link, useForm, usePage, router } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import AppLayout from '@/layouts/app-layout';
+import HrLayout from '@/layouts/hr-layout'; // Changed from AppLayout to HrLayout
 import { useState, useEffect } from 'react';
 import type { BreadcrumbItem } from '@/types';
 import { CreditCard, Eye, X, Bell } from 'lucide-react';
@@ -240,7 +240,7 @@ export default function Index({
     };
     
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <HrLayout breadcrumbs={breadcrumbs} title="Payroll"> {/* Changed from AppLayout to HrLayout */}
             <Head title="Payroll" />
             <div className="flex flex-1 flex-col gap-2 p-4">
                 <PayrollProcessingCards 
@@ -472,6 +472,6 @@ export default function Index({
                     </div>
                 </div>
             )}
-        </AppLayout>
+        </HrLayout>
     );
 }

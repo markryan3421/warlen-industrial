@@ -1,27 +1,23 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\HrRole;
 
-use App\Models\Payroll;
+use App\Http\Controllers\Controller;
 use App\Services\PayrollService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 
 class PayrollController extends Controller
 {
-
     public function __construct(protected PayrollService $payrollService) {}
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        Gate::authorize('viewAny', Payroll::class);
+          $payrolls = $this->payrollService->getPayroll();
 
-        $payrolls = $this->payrollService->getPayroll();
-
-        return Inertia::render('payroll/index', [
+        return Inertia::render('HR/payroll/index', [
             'payrolls' => $payrolls,
             'totalOvertimePay' => $this->payrollService->calculateTotalOvertimePay($payrolls),
             'totalOvertimeHours' => $this->payrollService->calculateTotalOvertimeHours($payrolls),
@@ -51,24 +47,15 @@ class PayrollController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Payroll $payroll)
+    public function show(string $id)
     {
-        // $payroll->load([
-        //     'payrollPeriod',
-        //     'employee.user',
-        //     'employee.position',
-        //     'payrollItems'
-        // ]);
-
-        return Inertia::render('Payroll/Show', [
-            'payroll' => $payroll
-        ]);
+        //
     }
 
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Payroll $payroll)
+    public function edit(string $id)
     {
         //
     }
@@ -76,7 +63,7 @@ class PayrollController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Payroll $payroll)
+    public function update(Request $request, string $id)
     {
         //
     }
@@ -84,7 +71,7 @@ class PayrollController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Payroll $payroll)
+    public function destroy(string $id)
     {
         //
     }

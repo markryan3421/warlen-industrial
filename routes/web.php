@@ -8,10 +8,13 @@ use App\Http\Controllers\ContributionVersionController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\EmployeeRole\ApplicationLeaveController as EmployeeApplicationLeaveController;
 use App\Http\Controllers\IncentiveController;
+use App\Http\Controllers\HrRole\PayrollController as HrPayrollController;
+use App\Http\Controllers\HrRole\PayrollPeriodController as HrPayrollPeriodController;
 use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\PayrollPeriodController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\PositionController;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -26,7 +29,7 @@ Route::get('/', function () {
 //     return Inertia::render('dashboard');
 // })->middleware(['auth', 'verified'])->name('dashboard');
 
-Route::middleware(['auth', 'verified', 'throttle:limit-actions' , 'roleBase'])->group(function () {
+Route::middleware(['auth', 'verified', 'throttle:limit-actions', 'roleBase'])->group(function () {
 
     Route::get('payroll', function () {
         return Inertia::render('payroll/index');
@@ -78,10 +81,27 @@ Route::middleware(['auth', 'verified', 'throttle:limit-actions' , 'roleBase'])->
     Route::get('/attendance-logs', [AttendanceController::class, 'attendanceLogs']);
     Route::get('/attendance-exception-stats', [AttendanceController::class, 'attendanceExceptionStats']);
 
-
     Route::get('/coming-soon', function () {
         return Inertia::render('coming-soon');
     });
+
+
+
+    Route::resource('/hr/payroll', HrPayrollController::class)->names([
+        'index' => 'hr.payroll.index',
+        'create' => 'hr.payroll.create',
+        'store' => 'hr.payroll.store',
+        'edit' => 'hr.payroll.edit',
+        'update' => 'hr.payroll.update',
+    ]);
+    Route::resource('/hr/payroll-periods', HrPayrollPeriodController::class)->names([
+        'index' => 'hr.payroll-periods.index',
+        'create' => 'hr.payroll-periods.create',
+        'store' => 'hr.payroll-periods.store',
+        'edit' => 'hr.payroll-periods.edit',
+        'update' => 'hr.payroll-periods.update',
+        'destroy' => 'hr.payroll-periods.destroy',
+    ]);
 });
 
 

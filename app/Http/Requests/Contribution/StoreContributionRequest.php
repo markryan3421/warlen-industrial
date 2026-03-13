@@ -23,8 +23,8 @@ class StoreContributionRequest extends FormRequest
     {
         return [
             'type' => 'required|string',
-            'effective_from' => 'required|date',
-            'effective_to' => 'required|date|after:effective_from',
+            // 'effective_from' => 'required|date',
+            // 'effective_to' => 'required|date|after:effective_from',
             'salary_ranges' => 'required|array|min:1',
             'salary_ranges.*.salary_from' => 'required|numeric|min:0',
             'salary_ranges.*.salary_to' => 'required|numeric|min:0|gt:salary_ranges.*.salary_from',
