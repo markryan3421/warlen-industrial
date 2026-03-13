@@ -170,3 +170,13 @@
         @apply bg-background text-foreground;
     }
 }
+
+.badge-warning {
+    background-color: #fbbf24;
+    color: #1e293b;
+}
+
+[data-badge-variant="warning"] {
+    background-color: #fbbf24;
+    color: #1e293b;
+}

@@ -4,10 +4,15 @@ import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
-    DropdownMenuLabel,
+    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "./ui/button";
+
+// ─── Brand tokens (60-30-10) ──────────────────────────────────────────────────
+// 60% → slate/stone neutrals  — surfaces, text, borders, dividers
+// 30% → #1d4791  navy          — header, index badges, primary hover accents
+// 10% → #d85e39  burnt orange  — delete action, destructive states only
 
 interface TableColumn {
     label: string;
@@ -42,10 +47,9 @@ interface CustomTableProps {
     title?: string;
 }
 
-// ── Date/time formatter — shared by all views ──────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 function formatCellValue(col: TableColumn, row: TableRow): string {
     const val = row[col.key];
-
     if (val === null || val === undefined) return "—";
 
     const dateTimeKeys = ["time_in", "time_out"];
@@ -53,24 +57,172 @@ function formatCellValue(col: TableColumn, row: TableRow): string {
 
     if (dateTimeKeys.includes(col.key)) {
         return new Date(val).toLocaleTimeString("en-US", {
-            hour: "numeric",
-            minute: "2-digit",
-            hour12: true,
-            timeZone: "UTC",
+            hour: "numeric", minute: "2-digit", hour12: true, timeZone: "UTC",
         });
     }
-
     if (dateOnlyKeys.includes(col.key)) {
         return new Date(val).toLocaleDateString("en-US", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
+            day: "2-digit", month: "short", year: "numeric",
         });
     }
-
     return String(val);
 }
 
+// Row-number badge — 30% navy
+function IndexBadge({ value }: { value: number }) {
+    return (
+        <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-[#1d4791]/10 dark:bg-[#1d4791]/25 text-[#1d4791] dark:text-blue-300 text-[11px] font-black tabular-nums">
+            {value}
+        </span>
+    );
+}
+
+// Cell value — handles all display types
+function CellValue({ col, row }: { col: TableColumn; row: TableRow }) {
+    if (col.isImage) {
+        return (
+            <div className="flex justify-center">
+                <img
+                    src={row[col.key] as string}
+                    alt=""
+                    className="w-10 h-10 rounded-lg object-cover border border-slate-200 dark:border-slate-700 transition-all duration-300 ease-[cubic-bezier(.34,1.56,.64,1)] hover:scale-125 hover:shadow-lg hover:z-10 relative"
+                />
+            </div>
+        );
+    }
+    if (col.isBadge) {
+        const rendered = col.render ? col.render(row) : formatCellValue(col, row);
+        return (
+            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold bg-[#1d4791]/10 dark:bg-[#1d4791]/20 text-[#1d4791] dark:text-blue-300 border border-[#1d4791]/15 dark:border-[#1d4791]/30 whitespace-nowrap">
+                {rendered}
+            </span>
+        );
+    }
+    if (col.isDate) {
+        return (
+            <span className="text-[13px] font-medium text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                {new Date(row[col.key]).toLocaleDateString("en-US", {
+                    year: "numeric", month: "short", day: "numeric",
+                })}
+            </span>
+        );
+    }
+    return (
+        <span className="block truncate max-w-[220px]">
+            {formatCellValue(col, row)}
+        </span>
+    );
+}
+
+// ─── Empty state ──────────────────────────────────────────────────────────────
+function EmptyState() {
+    return (
+        <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
+            <div className="w-14 h-14 rounded-2xl bg-[#1d4791]/8 dark:bg-[#1d4791]/15 border border-[#1d4791]/12 dark:border-[#1d4791]/25 flex items-center justify-center mb-4">
+                <LucidIcons.Inbox className="w-6 h-6 text-[#1d4791]/40 dark:text-blue-400/40" strokeWidth={1.5} />
+            </div>
+            <p className="text-[14px] font-bold text-slate-700 dark:text-slate-200 mb-1">
+                No records found
+            </p>
+            <p className="text-[12px] text-slate-400 dark:text-slate-500">
+                There is no data to display right now.
+            </p>
+        </div>
+    );
+}
+
+// ─── Action dropdown ──────────────────────────────────────────────────────────
+function ActionDropdown({
+    row,
+    actions,
+    onDelete,
+    onView,
+    onEdit,
+    route,
+}: {
+    row: TableRow;
+    actions: ActionConfig[];
+    onDelete: (v: string) => void;
+    onView: (r: TableRow) => void;
+    onEdit: (r: TableRow) => void;
+    route: ReturnType<typeof useRoute>;
+}) {
+    const nonDestructive = actions.filter(a => a.label !== "Delete");
+    const destructive = actions.filter(a => a.label === "Delete");
+
+    const handleAction = (action: ActionConfig) => {
+        if (action.label === "Delete") {
+            onDelete(row.branch_slug || row.id);
+        } else if (action.label === "View") {
+            onView?.(row);
+        } else if (action.label === "Edit") {
+            onEdit?.(row);
+        } else {
+            window.location.href = route(action.route, row.id);
+        }
+    };
+
+    return (
+        <div className="flex justify-center">
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <button className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 dark:text-slate-500 hover:bg-[#1d4791]/8 dark:hover:bg-[#1d4791]/20 hover:text-[#1d4791] dark:hover:text-blue-300 transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1d4791]/40">
+                        <span className="sr-only">Open menu</span>
+                        <LucidIcons.EllipsisVertical className="w-4 h-4" />
+                    </button>
+                </DropdownMenuTrigger>
+
+                <DropdownMenuContent
+                    align="end"
+                    className="min-w-[160px] rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl shadow-slate-900/10 dark:shadow-slate-950/40 p-1"
+                    style={{ animation: "dropdownIn 0.14s cubic-bezier(0.16,1,0.3,1) both" }}
+                >
+                    <style>{`
+                        @keyframes dropdownIn {
+                            from { opacity: 0; transform: scale(0.95) translateY(-4px); }
+                            to   { opacity: 1; transform: scale(1)    translateY(0);    }
+                        }
+                    `}</style>
+
+                    {/* Non-destructive actions */}
+                    {nonDestructive.map((action, i) => {
+                        const Icon = LucidIcons[action.icon] as React.ElementType;
+                        return (
+                            <DropdownMenuItem
+                                key={i}
+                                onClick={() => handleAction(action)}
+                                className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium text-slate-700 dark:text-slate-300 hover:bg-[#1d4791]/8 dark:hover:bg-[#1d4791]/20 hover:text-[#1d4791] dark:hover:text-blue-300 cursor-pointer transition-colors focus:bg-[#1d4791]/8 focus:text-[#1d4791]"
+                            >
+                                <Icon className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.75} />
+                                {action.label}
+                            </DropdownMenuItem>
+                        );
+                    })}
+
+                    {/* Separator + destructive */}
+                    {destructive.length > 0 && nonDestructive.length > 0 && (
+                        <DropdownMenuSeparator className="my-1 border-slate-100 dark:border-slate-800" />
+                    )}
+                    {destructive.map((action, i) => {
+                        const Icon = LucidIcons[action.icon] as React.ElementType;
+                        return (
+                            <DropdownMenuItem
+                                key={i}
+                                onClick={() => handleAction(action)}
+                                className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium text-[#d85e39] dark:text-orange-400 hover:bg-[#d85e39]/8 dark:hover:bg-[#d85e39]/15 cursor-pointer transition-colors focus:bg-[#d85e39]/8 focus:text-[#d85e39]"
+                            >
+                                <Icon className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.75} />
+                                {action.label}
+                            </DropdownMenuItem>
+                        );
+                    })}
+                </DropdownMenuContent>
+            </DropdownMenu>
+        </div>
+    );
+}
+
+// ─── Main component ────────────────────────────────────────────────────────────
 export const CustomTable = ({
     columns,
     actions,
@@ -83,121 +235,67 @@ export const CustomTable = ({
 }: CustomTableProps) => {
     const route = useRoute();
 
-    // ── Action dropdown — reused in all views ──────────────────────────────────
-    const renderActionButtons = (row: TableRow) => (
-        <div className="flex justify-center">
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="h-8 w-8 p-0">
-                        <span className="sr-only">Open menu</span>
-                        <LucidIcons.EllipsisVertical className="h-4 w-4" />
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="min-w-[180px]">
-                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                    {actions.map((action, index) => {
-                        const IconComponent = LucidIcons[action.icon] as React.ElementType;
-                        const isDelete = action.label === "Delete";
-                        return (
-                            <DropdownMenuItem
-                                key={index}
-                                className={`flex items-center gap-2 px-4 py-2 text-sm cursor-pointer transition-colors
-                                    ${isDelete
-                                        ? "text-red-600 focus:text-red-600"
-                                        : "text-white-700 hover:text-white-900"
-                                    }`}
-                                onClick={() => {
-                                    if (isDelete) {
-                                        // onDelete(route(action.route, row.id));
-                                        onDelete(row.branch_slug || row.id);
-                                    } else if (action.label === "View") {
-                                        onView?.(row);
-                                    } else if (action.label === "Edit") {
-                                        onEdit?.(row);
-                                    } else {
-                                        window.location.href = route(action.route, row.id);
-                                    }
-                                }}
-                            >
-                                <IconComponent strokeWidth={1} className="h-4 w-4" />
-                                <span>{action.label}</span>
-                            </DropdownMenuItem>
-                        );
-                    })}
-                </DropdownMenuContent>
-            </DropdownMenu>
-        </div>
-    );
+    const dataColumns = columns.filter(col => !col.isAction);
+    const hasActions = columns.some(col => col.isAction);
 
-    // ── Data columns only (excludes the action column) ─────────────────────────
-    const dataColumns = columns.filter((col) => !col.isAction);
-    const hasActions = columns.some((col) => col.isAction);
-
-    // ── Empty state — shared by all views ──────────────────────────────────────
-    const emptyState = (
-        <div className="py-14 px-6 text-center">
-            <p className="text-[15px] font-bold text-stone-800 dark:text-stone-100 mb-1">
-                No records found
-            </p>
-            <p className="text-[13px] text-stone-400 dark:text-stone-500">
-                There is no data to display right now.
-            </p>
-        </div>
-    );
+    const actionProps = { row: {} as TableRow, actions, onDelete, onView, onEdit, route };
 
     return (
         <div className="w-full font-sans">
-            <div className="mx-4 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-[#0c1529] shadow-sm dark:shadow-[0_4px_16px_rgba(0,0,0,0.4)] overflow-hidden">
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
 
-                {/* ── Caption bar ───────────────────────────────────────────── */}
-                <div className="flex items-center gap-3 px-6 py-[18px] border-b border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-[#0a1628]">
-                    <span className="w-2 h-2 rounded-full shrink-0 bg-blue-600 dark:bg-blue-500 ring-4 ring-blue-100 dark:ring-blue-950" />
-                    <span className="text-[11px] font-semibold tracking-widest uppercase text-stone-400 dark:text-stone-500">
-                        {title}
-                    </span>
+                {/* ── Header bar — 30% navy ─────────────────────────────────── */}
+                <div className="flex items-center gap-3 px-5 py-4 bg-[#1d4791] dark:bg-[#1d4791]">
+                    <div className="w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center flex-shrink-0">
+                        <LucidIcons.Table2 className="w-4 h-4 text-white" strokeWidth={1.75} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <p className="text-[13px] font-bold text-white leading-tight truncate">
+                            {title ?? "Data Table"}
+                        </p>
+                        <p className="text-[11px] text-blue-200/60 mt-0.5">
+                            {data.length} {data.length === 1 ? "record" : "records"}
+                        </p>
+                    </div>
                 </div>
 
-                {/* MOBILE VIEW  — below md (< 768px) */}
-                <div className="block md:hidden overflow-hidden">
+                {/* ══════════════════════════════════════════════════════════════
+                    MOBILE  (< 768px) — stacked field cards
+                ══════════════════════════════════════════════════════════════ */}
+                <div className="block md:hidden">
                     {data.length === 0 ? (
-                        emptyState
+                        <EmptyState />
                     ) : (
-                        <div className="divide-y divide-stone-100 dark:divide-stone-800/70">
+                        <div className="divide-y divide-slate-100 dark:divide-slate-800">
                             {data.map((row, index) => (
                                 <div
                                     key={index}
-                                    className="px-4 py-4 odd:bg-white even:bg-stone-50/60 dark:odd:bg-[#0c1529] dark:even:bg-[#0e1a30] animate-in fade-in slide-in-from-bottom-2 duration-500"
-                                    style={{ animationDelay: `${index * 60}ms`, animationFillMode: "both" }}
+                                    className="px-4 py-4 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors duration-150"
+                                    style={{
+                                        animation: "rowIn 0.35s cubic-bezier(0.16,1,0.3,1) both",
+                                        animationDelay: `${index * 45}ms`,
+                                    }}
                                 >
-                                    {/* Card header: row number + actions */}
+                                    {/* Card header */}
                                     <div className="flex items-center justify-between mb-3">
-                                        <span className="inline-flex items-center justify-center w-7 h-7 rounded-[7px] bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 text-[11px] font-bold">
-                                            {from + index}
-                                        </span>
-                                        {hasActions && renderActionButtons(row)}
+                                        <IndexBadge value={from + index} />
+                                        {hasActions && (
+                                            <ActionDropdown
+                                                {...actionProps}
+                                                row={row}
+                                            />
+                                        )}
                                     </div>
 
-                                    {/* Card body: label → value grid (2 columns) */}
-                                    <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5">
-                                        {dataColumns.map((col) => (
-                                            <div key={col.key} className="flex flex-col min-w-0 overflow-hidden">
-                                                <dt className="text-[10px] font-bold tracking-widest uppercase text-stone-400 dark:text-stone-500 truncate">
+                                    {/* Field grid */}
+                                    <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
+                                        {dataColumns.map(col => (
+                                            <div key={col.key} className="flex flex-col min-w-0">
+                                                <dt className="text-[10px] font-bold tracking-widest uppercase text-slate-400 dark:text-slate-500 mb-0.5 truncate">
                                                     {col.label}
                                                 </dt>
-                                                <dd className="text-[13px] text-stone-700 dark:text-stone-300 mt-0.5 overflow-hidden">
-                                                    {col.isImage ? (
-                                                        <div className="overflow-hidden rounded-lg w-10 h-10">
-                                                            <img
-                                                                src={row[col.key] as string}
-                                                                alt="Image"
-                                                                className="w-10 h-10 rounded-lg object-cover border border-stone-200 dark:border-stone-700"
-                                                            />
-                                                        </div>
-                                                    ) : (
-                                                        <span className="block truncate">
-                                                            {formatCellValue(col, row)}
-                                                        </span>
-                                                    )}
+                                                <dd className="text-[13px] text-slate-700 dark:text-slate-300 overflow-hidden">
+                                                    <CellValue col={col} row={row} />
                                                 </dd>
                                             </div>
                                         ))}
@@ -208,47 +306,43 @@ export const CustomTable = ({
                     )}
                 </div>
 
-                {/* TABLET VIEW  — md to lg (768px–1023px) */}
-                <div className="hidden md:block lg:hidden overflow-hidden">
+                {/* ══════════════════════════════════════════════════════════════
+                    TABLET  (768px – 1023px) — 2-col card grid
+                ══════════════════════════════════════════════════════════════ */}
+                <div className="hidden md:block lg:hidden">
                     {data.length === 0 ? (
-                        emptyState
+                        <EmptyState />
                     ) : (
                         <div className="p-4 grid grid-cols-2 gap-3">
                             {data.map((row, index) => (
                                 <div
                                     key={index}
-                                    className="rounded-xl border border-stone-200 dark:border-stone-700/60 bg-white dark:bg-[#0d1630] p-4 shadow-sm hover:shadow-md hover:border-blue-300 dark:hover:border-blue-800 transition-all duration-200 animate-in fade-in slide-in-from-bottom-2 duration-500"
-                                    style={{ animationDelay: `${index * 50}ms`, animationFillMode: "both" }}
+                                    className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/60 p-4 hover:border-[#1d4791]/40 dark:hover:border-[#1d4791]/50 hover:shadow-md transition-all duration-200 group"
+                                    style={{
+                                        animation: "rowIn 0.35s cubic-bezier(0.16,1,0.3,1) both",
+                                        animationDelay: `${index * 40}ms`,
+                                    }}
                                 >
-                                    {/* Card header: row number + actions */}
-                                    <div className="flex items-center justify-between mb-3 pb-2.5 border-b border-stone-100 dark:border-stone-800">
-                                        <span className="inline-flex items-center justify-center w-7 h-7 rounded-[7px] bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 text-[11px] font-bold">
-                                            {from + index}
-                                        </span>
-                                        {hasActions && renderActionButtons(row)}
+                                    {/* Card header */}
+                                    <div className="flex items-center justify-between mb-3 pb-3 border-b border-slate-100 dark:border-slate-700/60">
+                                        <IndexBadge value={from + index} />
+                                        {hasActions && (
+                                            <ActionDropdown
+                                                {...actionProps}
+                                                row={row}
+                                            />
+                                        )}
                                     </div>
 
-                                    {/* Card body: label → value list */}
-                                    <dl className="flex flex-col gap-2">
-                                        {dataColumns.map((col) => (
-                                            <div key={col.key} className="flex items-start justify-between gap-2 min-w-0 overflow-hidden">
-                                                <dt className="text-[10px] font-bold tracking-widest uppercase text-stone-400 dark:text-stone-500 shrink-0 pt-0.5">
+                                    {/* Field list */}
+                                    <dl className="space-y-2">
+                                        {dataColumns.map(col => (
+                                            <div key={col.key} className="flex items-start justify-between gap-3 min-w-0">
+                                                <dt className="text-[10px] font-bold tracking-widest uppercase text-slate-400 dark:text-slate-500 shrink-0 pt-0.5">
                                                     {col.label}
                                                 </dt>
-                                                <dd className="text-[12.5px] font-medium text-stone-700 dark:text-stone-300 text-right overflow-hidden">
-                                                    {col.isImage ? (
-                                                        <div className="overflow-hidden rounded-lg ml-auto w-10 h-10">
-                                                            <img
-                                                                src={row[col.key] as string}
-                                                                alt="Image"
-                                                                className="w-10 h-10 rounded-lg object-cover border border-stone-200 dark:border-stone-700"
-                                                            />
-                                                        </div>
-                                                    ) : (
-                                                        <span className="block truncate max-w-[150px]">
-                                                            {formatCellValue(col, row)}
-                                                        </span>
-                                                    )}
+                                                <dd className="text-[12.5px] font-medium text-slate-700 dark:text-slate-300 text-right overflow-hidden max-w-[55%]">
+                                                    <CellValue col={col} row={row} />
                                                 </dd>
                                             </div>
                                         ))}
@@ -259,20 +353,24 @@ export const CustomTable = ({
                     )}
                 </div>
 
-                {/* DESKTOP VIEW  — lg and above (≥ 1024px) */}
-                <div className="hidden lg:block overflow-x-auto overflow-y-hidden">
-                    <table className="w-full border-collapse text-[13.5px] text-stone-800 dark:text-stone-200">
+                {/* ══════════════════════════════════════════════════════════════
+                    DESKTOP  (≥ 1024px) — full data table
+                ══════════════════════════════════════════════════════════════ */}
+                <div className="hidden lg:block overflow-x-auto">
+                    <table className="w-full border-collapse text-[13px] text-slate-700 dark:text-slate-300">
 
-                        {/* Head - sticky for better UX when scrolling horizontally */}
-                        <thead className="bg-stone-900 dark:bg-[#080f1e] sticky top-0 z-10">
-                            <tr>
-                                <th className="w-12 px-6 py-3.5 text-center text-[10px] font-bold tracking-[0.12em] uppercase whitespace-nowrap text-blue-500 dark:text-blue-400 border-none">
-                                    id
+                        {/* Column headers — neutral bg, NOT dark navy (avoid the clashing header-on-header look) */}
+                        <thead>
+                            <tr className="border-b border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-800/80">
+                                {/* # column */}
+                                <th className="w-14 px-5 py-3 text-center text-[10px] font-black tracking-widest uppercase text-[#1d4791] dark:text-blue-400 whitespace-nowrap">
+                                    #
                                 </th>
-                                {columns.map((col) => (
+
+                                {columns.map(col => (
                                     <th
                                         key={col.key}
-                                        className={`px-[18px] py-3.5 last:pr-6 text-center text-[10px] font-bold tracking-[0.1em] uppercase whitespace-nowrap text-stone-100 dark:text-stone-200 border-none ${col.className ?? ""}`}
+                                        className={`px-4 py-3 text-left text-[10px] font-black tracking-widest uppercase whitespace-nowrap text-slate-500 dark:text-slate-400 ${col.className ?? ""}`}
                                     >
                                         {col.label}
                                     </th>
@@ -280,54 +378,35 @@ export const CustomTable = ({
                             </tr>
                         </thead>
 
-                        {/* Body */}
-                        <tbody className="divide-y divide-stone-100 dark:divide-stone-800/70">
+                        <tbody>
                             {data.length > 0 ? (
                                 data.map((row, index) => (
                                     <tr
                                         key={index}
-                                        className="group odd:bg-white even:bg-stone-50/60 dark:odd:bg-[#0c1529] dark:even:bg-[#0e1a30] hover:bg-blue-50/60 dark:hover:bg-[#0f1e3a] transition-colors duration-200 animate-in fade-in slide-in-from-bottom-2 duration-500"
-                                        style={{ animationDelay: `${index * 60}ms`, animationFillMode: "both" }}
+                                        className="group border-b border-slate-100 dark:border-slate-800 last:border-0 bg-white dark:bg-slate-900 hover:bg-[#1d4791]/[0.03] dark:hover:bg-[#1d4791]/10 transition-colors duration-150"
+                                        style={{
+                                            animation: "rowIn 0.4s cubic-bezier(0.16,1,0.3,1) both",
+                                            animationDelay: `${index * 40}ms`,
+                                        }}
                                     >
-                                        {/* Row index badge */}
-                                        <td className="px-6 py-3.5 text-center align-middle border-none">
-                                            <span className="inline-flex items-center justify-center w-7 h-7 rounded-[7px] bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 text-[11px] font-bold">
-                                                {from + index}
-                                            </span>
+                                        {/* Row index */}
+                                        <td className="px-5 py-3.5 text-center align-middle">
+                                            <IndexBadge value={from + index} />
                                         </td>
 
                                         {/* Data cells */}
-                                        {columns.map((col) => (
+                                        {columns.map(col => (
                                             <td
                                                 key={col.key}
-                                                className={`px-[18px] py-3.5 last:pr-6 text-center align-middle text-stone-700 dark:text-stone-300 border-none overflow-hidden ${col.className ?? ""}`}
+                                                className={`px-4 py-3.5 align-middle text-left text-slate-700 dark:text-slate-300 overflow-hidden ${col.className ?? ""}`}
                                             >
-                                                {col.isImage ? (
-                                                    <div className="flex justify-center overflow-hidden rounded-xl">
-                                                        <img
-                                                            src={row[col.key] as string}
-                                                            alt="Image"
-                                                            className="w-[72px] h-[72px] rounded-xl object-cover border-2 border-stone-200 dark:border-stone-700 transition-transform duration-300 ease-[cubic-bezier(.34,1.56,.64,1)] hover:scale-110 hover:-rotate-1 hover:shadow-xl"
-                                                        />
-                                                    </div>
-                                                ) : col.isAction ? (
-                                                    renderActionButtons(row)
-                                                ) : col.isBadge ? (
-                                                    <span className="inline-block bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap">
-                                                        {col.render ? col.render(row) : formatCellValue(col, row)}&nbsp;{col.render && col.render(row) === 1 ? "site" : "sites"}
-                                                    </span>
-                                                ) : col.isDate ? (
-                                                    <span className="text-sm font-medium text-foreground">
-                                                        {new Date(row[col.key]).toLocaleDateString('en-US', {
-                                                            year: 'numeric',
-                                                            month: 'long',
-                                                            day: 'numeric',
-                                                        })}
-                                                    </span>
+                                                {col.isAction ? (
+                                                    <ActionDropdown
+                                                        {...actionProps}
+                                                        row={row}
+                                                    />
                                                 ) : (
-                                                    <span className="block truncate max-w-[200px] mx-auto">
-                                                        {formatCellValue(col, row)}
-                                                    </span>
+                                                    <CellValue col={col} row={row} />
                                                 )}
                                             </td>
                                         ))}
@@ -335,8 +414,8 @@ export const CustomTable = ({
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan={columns.length + 1} className="border-none">
-                                        {emptyState}
+                                    <td colSpan={columns.length + 1}>
+                                        <EmptyState />
                                     </td>
                                 </tr>
                             )}
@@ -346,18 +425,32 @@ export const CustomTable = ({
 
                 {/* ── Footer ────────────────────────────────────────────────── */}
                 {data.length > 0 && (
-                    <div className="flex items-center justify-end gap-2 px-6 py-3 border-t border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-[#0a1628]">
-                        <p className="text-xs font-medium text-stone-400 dark:text-stone-500">
-                            Showing{" "}
-                            <span className="font-bold text-blue-600 dark:text-blue-400">
-                                {data.length}
-                            </span>{" "}
-                            record{data.length !== 1 ? "s" : ""}
+                    <div className="flex items-center justify-between gap-2 px-5 py-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40">
+                        <div className="flex items-center gap-1.5">
+                            {/* 10% orange accent on the record count */}
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#d85e39]" />
+                            <p className="text-[11px] font-medium text-slate-400 dark:text-slate-500">
+                                Showing{" "}
+                                <span className="font-black text-slate-600 dark:text-slate-300">
+                                    {data.length}
+                                </span>{" "}
+                                {data.length === 1 ? "record" : "records"}
+                            </p>
+                        </div>
+                        <p className="text-[11px] text-slate-300 dark:text-slate-600">
+                            Row {from} – {from + data.length - 1}
                         </p>
                     </div>
                 )}
-
             </div>
+
+            {/* Global keyframes — injected once */}
+            <style>{`
+                @keyframes rowIn {
+                    from { opacity: 0; transform: translateY(6px); }
+                    to   { opacity: 1; transform: translateY(0);   }
+                }
+            `}</style>
         </div>
     );
 };
