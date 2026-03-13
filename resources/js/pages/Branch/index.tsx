@@ -190,6 +190,7 @@ export default function Index({ branches, filters, totalCount, filteredCount }: 
                     onDelete={handleDelete}
                     onView={viewBranchSites}
                     onEdit={editBranch}
+                    title = "Branch"
                 />
 
                 <Pagination

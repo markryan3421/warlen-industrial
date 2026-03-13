@@ -9,27 +9,32 @@ import {
 } from "@/components/ui/card"
 import { ScrollText, CalendarDays, UserRoundPlus, CalendarClock, ArrowRight, Info } from 'lucide-react'
 import { Button } from "@headlessui/react";
+import { Link } from "@inertiajs/react";
 
 const cardArrayItems = [
     {
         icon: UserRoundPlus,
         title: "Newly Registered",
-        subtitle: "8 employees added"
+        subtitle: "8 employees added",
+        link: "/dashboard"
     },
     {
         icon: CalendarDays,
         title: "Schedule Deviation",
-        subtitle: "4 early timeouts . 2 missing punches"
+        subtitle: "4 early timeouts . 2 missing punches",
+        link: "/dashboard"
     },
     {
         icon: CalendarClock,
         title: "Pending Requests",
-        subtitle: "Marky Bigote requested a leave."
+        subtitle: "Marky Bigote requested a leave.",
+        link: "/dashboard"
     },
     {
         icon: ScrollText,
         title: "Payroll Activity",
-        subtitle: "You haven't run your payroll for a while now"
+        subtitle: "You haven't run your payroll for a while now",
+        link: "/dashboard"
     },
 ]
 
@@ -45,19 +50,22 @@ export default function SystemAlert() {
                 <div className='grid grid-cols-1 gap-3'> 
                     {cardArrayItems.map((item, index) => (
                         <Button key={index} className="group animate-fade-in-out">
-                            <Card className="w-full transition-all duration-300 group-hover:shadow-lg group-hover:border-blue-500">
-                                <CardHeader className='py-2 flex justify-between items-center'>
-                                    <div>
-                                        <item.icon className='absolute md:h-4 md:w-4'/>
-                                        <CardTitle className='pl-8 text-xs lg:pl-10 lg:text-base text-left'>{item.title}</CardTitle>
-                                        <CardDescription className='pl-8 md:text-[10px] lg:pl-10 lg:text-xs pb-2 text-left'>{item.subtitle}</CardDescription>
-                                    </div>
-                                    <div>
-                                        <ArrowRight className='md:h-4 md:w-4 lg:-mt-3 transition-all duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:text-blue-600 animate-[wiggle_1s_ease-in-out_infinite] group-hover:animate-[wiggle_1s_ease-in-out_infinite]'/>
-                                    </div>
-                                </CardHeader>
-                            </Card>
+                            <Link href={item.link}>
+                                <Card className="w-full transition-all duration-300 group-hover:shadow-lg group-hover:border-blue-500">
+                                    <CardHeader className='py-2 flex justify-between items-center'>
+                                        <div>
+                                            <item.icon className='absolute md:h-4 md:w-4 lg:h-6 lg:w-6 lg:mt-1'/>
+                                            <CardTitle className='pl-8 text-xs lg:pl-10 lg:text-base text-left'>{item.title}</CardTitle>
+                                            <CardDescription className='pl-8 md:text-[10px] lg:pl-10 lg:text-xs pb-2 text-left'>{item.subtitle}</CardDescription>
+                                        </div>
+                                        <div>
+                                            <ArrowRight className='md:h-4 md:w-4 lg:-mt-3 transition-all duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:text-blue-600 animate-[wiggle_1s_ease-in-out_infinite] group-hover:animate-[wiggle_1s_ease-in-out_infinite]'/>
+                                        </div>
+                                    </CardHeader>
+                                </Card>
+                            </Link>
                         </Button>
+
                     ))}
                 </div>
             </div>

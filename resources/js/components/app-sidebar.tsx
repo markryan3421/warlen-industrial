@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { Airplay, CircleMinus, CircleUser, Flag, Landmark, Lock, UserCog, Clipboard, Banknote } from 'lucide-react';
+import { LayoutDashboard, CircleMinus, CircleUser, Building2, Handshake, Coins  , UserCog, Clipboard, Banknote, LayoutDashboardIcon, HandCoins } from 'lucide-react';
 import BranchController from '@/actions/App/Http/Controllers/BranchController';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -30,22 +30,22 @@ const ExpendituresItems: NavItem[] = [
     {
         title: 'Dashboard',
         href: '/dashboard',
-        icon: Airplay,
+        icon: LayoutDashboard,
     },
     {
         title: 'Branches',
         href: BranchController.index(),
-        icon: Landmark,
+        icon: Building2,
     },
     {
         title: 'Contributions',
         href: ContributionVersionController.index(),
-        icon: CircleMinus,
+        icon: Handshake,
     },
     {
         title: 'Incentives',
         href: '/incentives',
-        icon: FileBadge,
+        icon: Coins,
     }
 ];
 

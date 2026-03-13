@@ -1,310 +1,167 @@
-import { useState, useEffect } from 'react';
-import type { BreadcrumbItem } from '@/types';
-import { Head } from '@inertiajs/react';
+import { Head, useForm, router } from '@inertiajs/react';
+import BiometricImport from '@/components/biometric-import';
 import AppLayout from '@/layouts/app-layout';
+import type { BreadcrumbItem } from '@/types';
+import { AttendanceLogsTableConfig } from '@/config/tables/attendace-logs';
+import AttendanceController from '@/actions/App/Http/Controllers/AttendanceController';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Pagination } from '@/components/ui/pagination';
+import { CustomTable    } from '@/components/custom-table';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'Fitness Dashboard',
-        href: '/multipletables',
+        title: 'Attendances',
+        href: '/attendances',
     },
 ];
 
-export default function Index() {
-    // State for active tab
-    const [activeTab, setActiveTab] = useState('workouts');
+
+ interface Logs {
+    id: number;
+    employee_id: string;
+    employee_name: string;
+    department: string;
+    date: string;   // "YYYY-MM-DD"
+    time_in: string | null;   // "HH:MM:SS" or null
+    time_out: string | null;  // "HH:MM:SS" or null
+    total_hours: number | null;
+    is_overtime: boolean;
+  }
+
+  interface LinkProps {
+    active: boolean;
+    label: string;
+    url: string | null;
+  }
+
+  interface LogsPagination {
+    data: Logs[];
+    links: LinkProps[];
+    from: number;
+    to: number;
+    total: number;
+  }
+
+  interface FilterProps {
+    search: string;
+    perPage: string;
+  }
+
+  interface IndexProps {
+    logs: LogsPagination;
+    filters: FilterProps;
+    totalCount: number;
+    filteredCount: number;
+  }
+
+export default function Index({ 
+  logs = { data: [], links: [], from: 0, to: 0, total: 0 }, 
+  filters = { search: '', perPage: '5' }, 
+  totalCount = 0, 
+  filteredCount = 0 
+}: IndexProps) {
+  
+  const { data, setData } = useForm({
+    search: filters.search || '',
+    perPage: filters.perPage || '5',
+  });
     
-    // State for different data tables
-    const [workouts, setWorkouts] = useState([]);
-    const [exercises, setExercises] = useState([]);
-    const [users, setUsers] = useState([]);
+  // Handle search input change
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setData('search', value);
     
-    // Loading states
-    const [loading, setLoading] = useState({
-        workouts: true,
-        exercises: true,
-        users: true
+    // Update the URL with the search query value
+    const queryString = {
+      ...(value && { search: value }),
+      ...(data.perPage && { perPage: data.perPage }),
+    };
+    
+    // Pass the search query to the backend to filter permissions
+    router.get(AttendanceController.attendanceLogs.url(), queryString, {
+      preserveState: true,
+      preserveScroll: true,
     });
-
-    // Form state
-    const [formData, setFormData] = useState({
-        title: '',
-        load: '',
-        reps: ''
+  };
+    
+  // Clears the search bar and resets the list
+  const handleReset = () => {
+    setData('search', '');
+    setData('perPage', '5');
+    
+    router.get(AttendanceController.attendanceLogs.url(), {}, {
+      preserveState: true,
+      preserveScroll: true,
+    }); 
+  }
+    
+  // Handle number of permissions to display per page
+  const handlePerPageChange = (value: string) => {
+    setData('perPage', value);
+    
+    // Update the URL with the per page value
+    const queryString = {
+      ...(data.search && { search: data.search }),
+      ...(value && { perPage: value }),
+    };
+    
+    router.get(AttendanceController.attendanceLogs.url(), queryString, {
+      preserveState: true,
+      preserveScroll: true,
     });
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [formError, setFormError] = useState('');
+  }
+  
+  return (
+    <AppLayout breadcrumbs={breadcrumbs}>
+      <Head title="Attendances" />
+      <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
+        <BiometricImport />
+      </div>
 
-    // Fetch all data when component mounts
-    useEffect(() => {
-        fetchWorkouts();
-        fetchExercises();
-        fetchUsers();
-    }, []);
+      <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4 overflow-hidden">
 
-    // Fetch workouts from backend
-    const fetchWorkouts = async () => {
-        try {
-            const response = await fetch('/api/workouts');
-            const data = await response.json();
-            setWorkouts(data);
-        } catch (error) {
-            console.error('Error fetching workouts:', error);
-        } finally {
-            setLoading(prev => ({ ...prev, workouts: false }));
-        }
-    };
+        {/* Search Bar */}
+        <div className="flex items-center justify-items-start gap-4 w-full ms-4">
+          <Input
+            type="text"
+            value={data.search}
+            onChange={handleChange}
+            placeholder='Search employee...'
+            name="search"
+            className='max-w-sm h-10 w-1/3'
+          />
 
-    // Fetch exercises (mock data)
-    const fetchExercises = async () => {
-        try {
-            setTimeout(() => {
-                const mockExercises = [
-                    { _id: '1', name: 'Push-ups', muscleGroup: 'Chest', difficulty: 'Beginner', equipment: 'None' },
-                    { _id: '2', name: 'Pull-ups', muscleGroup: 'Back', difficulty: 'Intermediate', equipment: 'Bar' },
-                    { _id: '3', name: 'Squats', muscleGroup: 'Legs', difficulty: 'Beginner', equipment: 'None' },
-                    { _id: '4', name: 'Deadlifts', muscleGroup: 'Back', difficulty: 'Advanced', equipment: 'Barbell' },
-                    { _id: '5', name: 'Bench Press', muscleGroup: 'Chest', difficulty: 'Intermediate', equipment: 'Barbell' },
-                ];
-                setExercises(mockExercises);
-                setLoading(prev => ({ ...prev, exercises: false }));
-            }, 1000);
-        } catch (error) {
-            console.error('Error fetching exercises:', error);
-            setLoading(prev => ({ ...prev, exercises: false }));
-        }
-    };
+          <Button onClick={handleReset} className="bg-primary ml-2 h-10 px-5 cursor-pointer">
+            clear
+          </Button>
+        </div>
 
-    // Fetch users (mock data)
-    const fetchUsers = async () => {
-        try {
-            setTimeout(() => {
-                const mockUsers = [
-                    { _id: '1', name: 'John Doe', email: 'john@example.com', role: 'Admin' },
-                    { _id: '2', name: 'Jane Smith', email: 'jane@example.com', role: 'User' },
-                    { _id: '3', name: 'Bob Johnson', email: 'bob@example.com', role: 'User' },
-                    { _id: '4', name: 'Alice Brown', email: 'alice@example.com', role: 'Trainer' },
-                    { _id: '5', name: 'Mike Wilson', email: 'mike@example.com', role: 'User' },
-                ];
-                setUsers(mockUsers);
-                setLoading(prev => ({ ...prev, users: false }));
-            }, 1500);
-        } catch (error) {
-            console.error('Error fetching users:', error);
-            setLoading(prev => ({ ...prev, users: false }));
-        }
-    };
+        <div>
+        </div>
 
-    // Handle form input changes
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
-    };
+        {/* Custom Table */}
+        <CustomTable
+          columns={AttendanceLogsTableConfig.columns}
+          actions={AttendanceLogsTableConfig.actions}
+          data={logs.data}
+          from={logs.from}
+          onDelete={() => { }}   // no delete for attendance records
+          onView={() => { }}  // wire up a modal here later if needed
+          onEdit={() => { }}     // no edit for attendance records
+        />
 
-    // Handle form submission
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setIsSubmitting(true);
-        setFormError('');
-
-        try {
-            const response = await fetch('/api/workouts', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData)
-            });
-            
-            if (!response.ok) {
-                throw new Error('Failed to add workout');
-            }
-            
-            const newWorkout = await response.json();
-            setWorkouts(prev => [...prev, newWorkout]);
-            
-            // Reset form
-            setFormData({ title: '', load: '', reps: '' });
-            
-            // Switch to workouts tab to show the new entry
-            setActiveTab('workouts');
-        } catch (error) {
-            setFormError('Failed to add workout. Please try again.');
-            console.error('Error adding workout:', error);
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    // Table component
-    const DataTable = ({ title, data, columns, isLoading, accentColor = '#4CAF50' }) => {
-        if (isLoading) {
-            return (
-                <div className="table-wrapper">
-                    <h2 style={{ borderBottomColor: accentColor }}>{title}</h2>
-                    <div className="loading-container">
-                        <div className="loading-spinner"></div>
-                        <p>Loading {title.toLowerCase()}...</p>
-                    </div>
-                </div>
-            );
-        }
-
-        if (!data || data.length === 0) {
-            return (
-                <div className="table-wrapper">
-                    <h2 style={{ borderBottomColor: accentColor }}>{title}</h2>
-                    <div className="empty-state">
-                        <p>No {title.toLowerCase()} found</p>
-                    </div>
-                </div>
-            );
-        }
-
-        return (
-            <div className="table-wrapper">
-                <h2 style={{ borderBottomColor: accentColor }}>{title}</h2>
-                <div className="table-responsive">
-                    <table>
-                        <thead>
-                            <tr>
-                                {columns.map(col => (
-                                    <th key={col.key}>{col.label}</th>
-                                ))}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {data.map((item) => (
-                                <tr key={item._id}>
-                                    {columns.map(col => (
-                                        <td key={col.key}>
-                                            {col.render ? col.render(item[col.key]) : item[col.key]}
-                                        </td>
-                                    ))}
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        );
-    };
-
-    // Column definitions
-    const workoutColumns = [
-        { key: 'title', label: 'Workout Name' },
-        { key: 'load', label: 'Load (kg)' },
-        { key: 'reps', label: 'Reps' },
-    ];
-
-    const exerciseColumns = [
-        { key: 'name', label: 'Exercise' },
-        { key: 'muscleGroup', label: 'Muscle Group' },
-        { key: 'difficulty', label: 'Difficulty' },
-        { key: 'equipment', label: 'Equipment' }
-    ];
-
-    const userColumns = [
-        { key: 'name', label: 'Name' },
-        { key: 'email', label: 'Email' },
-        { 
-            key: 'role', 
-            label: 'Role',
-            render: (value) => (
-                <span className={`role-badge ${value.toLowerCase()}`}>
-                    {value}
-                </span>
-            )
-        }
-    ];
-
-    // Render the active table based on selected tab
-    const renderActiveTable = () => {
-        switch(activeTab) {
-            case 'workouts':
-                return (
-                    <DataTable 
-                        title="Workouts"
-                        data={workouts}
-                        columns={workoutColumns}
-                        isLoading={loading.workouts}
-                        accentColor="#4CAF50"
-                    />
-                );
-            case 'exercises':
-                return (
-                    <DataTable 
-                        title="Exercises"
-                        data={exercises}
-                        columns={exerciseColumns}
-                        isLoading={loading.exercises}
-                        accentColor="#FF9800"
-                    />
-                );
-            case 'users':
-                return (
-                    <DataTable 
-                        title="Users"
-                        data={users}
-                        columns={userColumns}
-                        isLoading={loading.users}
-                        accentColor="#f44336"
-                    />
-                );
-            default:
-                return null;
-        }
-    };
-
-    return (
-        <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Fitness Dashboard" />
-            <div className="@container/main flex flex-1 flex-col gap-4 p-4">
-                {/* Tabs Navigation */}
-                <div className="tabs-container">
-                    <div className="tabs-header">
-                        <button
-                            className={`tab-button ${activeTab === 'workouts' ? 'active' : ''}`}
-                            onClick={() => setActiveTab('workouts')}
-                        >
-                            <span className="tab-icon">💪</span>
-                            Workouts
-                            {workouts.length > 0 && (
-                                <span className="tab-count">{workouts.length}</span>
-                            )}
-                        </button>
-                        <button
-                            className={`tab-button ${activeTab === 'exercises' ? 'active' : ''}`}
-                            onClick={() => setActiveTab('exercises')}
-                        >
-                            <span className="tab-icon">🏋️</span>
-                            Exercises
-                            {exercises.length > 0 && (
-                                <span className="tab-count">{exercises.length}</span>
-                            )}
-                        </button>
-                        <button
-                            className={`tab-button ${activeTab === 'users' ? 'active' : ''}`}
-                            onClick={() => setActiveTab('users')}
-                        >
-                            <span className="tab-icon">👥</span>
-                            Users
-                            {users.length > 0 && (
-                                <span className="tab-count">{users.length}</span>
-                            )}
-                        </button>
-                    </div>
-                    <div className="tab-indicator" style={{
-                        transform: `translateX(${activeTab === 'workouts' ? '0' : activeTab === 'exercises' ? '100%' : '200%'})`
-                    }} />
-                </div>
-
-                {/* Active Table Content */}
-                <div className="tab-content">
-                    {renderActiveTable()}
-                </div>
-            </div>
-        </AppLayout>
-    );
+        {/* Fixed Pagination props - wrap in an object or check Pagination component props */}
+        <Pagination 
+          pagination={logs}
+          perPage={data.perPage}
+          onPerPageChange={handlePerPageChange}
+          totalCount={totalCount}
+          filteredCount={filteredCount}
+          search={data.search}
+          resourceName="logs"
+        />
+      </div>
+    </AppLayout>
+  );
 }

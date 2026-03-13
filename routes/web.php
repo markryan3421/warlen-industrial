@@ -22,9 +22,6 @@ Route::get('/', function () {
     ]);
 })->name('home');
 
-// Route::get('dashboard', function () {
-//     return Inertia::render('dashboard');
-// })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware(['auth', 'verified', 'throttle:limit-actions' , 'roleBase'])->group(function () {
 
@@ -73,6 +70,7 @@ Route::middleware(['auth', 'verified', 'throttle:limit-actions' , 'roleBase'])->
 
     Route::resource('payrolls', PayrollController::class)->except(['show']);
 
+    Route::get('/attendances', [AttendanceController::class, ]);
     Route::get('/attendance-schedules', [AttendanceController::class, 'attendanceSchedules']);
     Route::get('/attendance-period-stats', [AttendanceController::class, 'attendancePeriodStats']);
     Route::get('/attendance-logs', [AttendanceController::class, 'attendanceLogs']);

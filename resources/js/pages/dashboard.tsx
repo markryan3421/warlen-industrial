@@ -80,46 +80,46 @@ export default function Dashboard() {
                 <div className='md:col-span-2 lg:col-span-3 rounded-lg mt-10'>
                     <div className='rounded-lg text-xs'>
                        {/* Chart Container */}
-<div className="w-full transition-all duration-300 ease-in-out">
-    <div className="relative h-[200px] md:h-[300px] lg:h-[350px] w-full">
-        <ResponsiveContainer 
-            width="100%" 
-            height="100%" 
-            className="transition-all duration-300 ease-in-out"
-        >
-            <LineChart 
-                data={lineChartData} 
-                margin={{ top: 10, right: 40, left: 0, bottom: 0 }}
-            >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis 
-                    dataKey="month" 
-                    tick={{ fontSize: 10 }}
-                    tickFormatter={(month) => month.substring(0, 3)}
-                    interval={0}
-                />
-                <YAxis 
-                    tick={{ fontSize: 10 }}
-                    tickFormatter={(value) => value.toLocaleString()}
-                    width={35}
-                />
-                <Line 
-                    type="monotone" 
-                    dataKey="desktop" 
-                    stroke={chartConfig.desktop.color} 
-                    strokeWidth={2}
-                    name="Total Revenue"
-                    label={{
-                        position: 'top',
-                        fontSize: 8,
-                        fill: '#666',
-                        formatter: (value) => value
-                    }}
-                />
-            </LineChart>
-        </ResponsiveContainer>
-    </div>
-</div>
+                        <div className="w-full transition-all duration-300 ease-in-out">
+                            <div className="relative h-[200px] md:h-[300px] lg:h-[350px] w-full">
+                                <ResponsiveContainer 
+                                    width="100%" 
+                                    height="100%" 
+                                    className="transition-all duration-300 ease-in-out"
+                                >
+                                    <LineChart 
+                                        data={lineChartData} 
+                                        margin={{ top: 10, right: 40, left: 0, bottom: 0 }}
+                                    >
+                                        <CartesianGrid strokeDasharray="3 3" />
+                                        <XAxis 
+                                            dataKey="month" 
+                                            tick={{ fontSize: 10 }}
+                                            tickFormatter={(month) => month.substring(0, 3)}
+                                            interval={0}
+                                        />
+                                        <YAxis 
+                                            tick={{ fontSize: 10 }}
+                                            tickFormatter={(value) => value.toLocaleString()}
+                                            width={35}
+                                        />
+                                        <Line 
+                                            type="monotone" 
+                                            dataKey="desktop" 
+                                            stroke={chartConfig.desktop.color} 
+                                            strokeWidth={2}
+                                            name="Total Revenue"
+                                            label={{
+                                                position: 'top',
+                                                fontSize: 8,
+                                                fill: '#666',
+                                                formatter: (value) => value
+                                            }}
+                                        />
+                                    </LineChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
                         
                         {/* Footer with Total Revenue text and View Full Analysis link */}
                         <div className="flex items-center justify-between px-10">
@@ -144,8 +144,8 @@ export default function Dashboard() {
                 </div>
                                                 
                         {/* Pie Chart Column */}
-                                <div style={{ width: 220, height: 300 }} className=' p-1 rounded-md border-1 flex flex-col justify-center my-auto -ml-5'>
-                                    <header className='flex justify-center mt-3 font-bold'>Employees</header>
+                                {/* <div style={{ width: 220, height: 300 }} className=' p-1 rounded-md border-1 my-auto justify-center my-auto -ml-5'> */}
+                                    {/* <header className='flex justify-center mt-3 font-bold'>Employees</header>
                                     <ResponsiveContainer width="100%" height="100%">
                                         <PieChart>
                                             <Pie
@@ -181,10 +181,13 @@ export default function Dashboard() {
                                             />
                                             <RechartsDevtools />
                                         </PieChart>
-                                    </ResponsiveContainer>
-                                    <p className="text-[10px] font-medium w-35 flex mx-auto text-center pb-10">
+                                    </ResponsiveContainer> */}
+                                    {/* <p className="text-[10px] font-medium w-35 flex mx-auto text-center pb-10">
                                             2% added on the employee count this month
                                     </p>
+                                </div> */}
+                                <div className='border-1 w-4'>
+
                                 </div>
                             </div>
                         </div>

@@ -146,15 +146,7 @@ export const CustomTable = ({
 
     return (
         <div className="w-full font-sans">
-            <div className="mx-4 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-[#0c1529] shadow-sm dark:shadow-[0_4px_16px_rgba(0,0,0,0.4)] overflow-hidden">
-
-                {/* ── Caption bar ───────────────────────────────────────────── */}
-                <div className="flex items-center gap-3 px-6 py-[18px] border-b border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-[#0a1628]">
-                    <span className="w-2 h-2 rounded-full shrink-0 bg-blue-600 dark:bg-blue-500 ring-4 ring-blue-100 dark:ring-blue-950" />
-                    <span className="text-[11px] font-semibold tracking-widest uppercase text-stone-400 dark:text-stone-500">
-                        {title}
-                    </span>
-                </div>
+            <div className="mx-0 rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-[#0c1529] shadow-sm dark:shadow-[0_4px_16px_rgba(0,0,0,0.4)] overflow-hidden">
 
                 {/* MOBILE VIEW  — below md (< 768px) */}
                 <div className="block md:hidden overflow-hidden">
@@ -263,15 +255,12 @@ export const CustomTable = ({
                     <table className="w-full border-collapse text-[13.5px] text-stone-800 dark:text-stone-200">
                         
                         {/* Head - sticky for better UX when scrolling horizontally */}
-                        <thead className="bg-stone-900 dark:bg-[#080f1e] sticky top-0 z-10">
+                        <thead className="bg-white dark:bg-[#080f1e] border-1 sticky top-0 z-10">
                             <tr>
-                                <th className="w-12 px-6 py-3.5 text-center text-[10px] font-bold tracking-[0.12em] uppercase whitespace-nowrap text-blue-500 dark:text-blue-400 border-none">
-                                    id
-                                </th>
                                 {columns.map((col) => (
                                     <th
                                         key={col.key}
-                                        className={`px-[18px] py-3.5 last:pr-6 text-center text-[10px] font-bold tracking-[0.1em] uppercase whitespace-nowrap text-stone-100 dark:text-stone-200 border-none ${col.className ?? ""}`}
+                                        className={`px-[18px] py-3.5 last:pr-6 text-center text-[13px] font-bold border-black tracking-[0.1em] whitespace-nowrap text-black dark:text-stone-200 border-none ${col.className ?? ""}`}
                                     >
                                         {col.label}
                                     </th>
@@ -288,13 +277,6 @@ export const CustomTable = ({
                                         className="group odd:bg-white even:bg-stone-50/60 dark:odd:bg-[#0c1529] dark:even:bg-[#0e1a30] hover:bg-blue-50/60 dark:hover:bg-[#0f1e3a] transition-colors duration-200 animate-in fade-in slide-in-from-bottom-2 duration-500"
                                         style={{ animationDelay: `${index * 60}ms`, animationFillMode: "both" }}
                                     >
-                                        {/* Row index badge */}
-                                        <td className="px-6 py-3.5 text-center align-middle border-none">
-                                            <span className="inline-flex items-center justify-center w-7 h-7 rounded-[7px] bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 text-[11px] font-bold">
-                                                {from + index}
-                                            </span>
-                                        </td>
-
                                         {/* Data cells */}
                                         {columns.map((col) => (
                                             <td
