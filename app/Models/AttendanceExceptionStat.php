@@ -18,10 +18,10 @@ class AttendanceExceptionStat extends Model
 
     protected $casts = [
         'date'                    => 'date',
-        'am_time_in'              => 'datetime',
-        'am_time_out'             => 'datetime',
-        'pm_time_in'              => 'datetime',
-        'pm_time_out'             => 'datetime',
+        'am_time_in'              => 'string',
+        'am_time_out'             => 'string',
+        'pm_time_in'              => 'string',
+        'pm_time_out'             => 'string',
         'late_minutes'            => 'integer',
         'leave_early_minutes'     => 'integer',
         'absence_minutes'         => 'integer',

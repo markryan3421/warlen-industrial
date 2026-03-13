@@ -81,7 +81,6 @@ Route::middleware(['auth', 'verified', 'throttle:limit-actions', 'roleBase'])->g
     Route::get('/attendance-logs', [AttendanceController::class, 'attendanceLogs']);
     Route::get('/attendance-exception-stats', [AttendanceController::class, 'attendanceExceptionStats']);
 
-
     Route::get('/coming-soon', function () {
         return Inertia::render('coming-soon');
     });
