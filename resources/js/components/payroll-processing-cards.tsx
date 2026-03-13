@@ -17,7 +17,8 @@ import {
     CardTitle,
 } from "@/components/ui/card"
 import { RefreshCcw, ListFilter, CalendarIcon, Banknote, TrendingUp, TrendingDown, Wallet, SquareUserRound, PhilippinePeso, Newspaper } from "lucide-react"
-import { Select,
+import {
+    Select,
     SelectContent,
     SelectGroup,
     SelectItem,
@@ -27,6 +28,60 @@ import { Select,
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
 import { useEffect, useState, useRef } from "react"
+
+// Define the Payroll interface to match the one from the index page
+interface PayrollItem {
+    id: number;
+    payroll_id: number;
+    code: string;
+    type: 'earning' | 'deduction';
+    amount: number;
+    description: string | null;
+    created_at: string;
+    updated_at: string;
+}
+
+interface Payroll {
+    id: number;
+    payroll_period_id: number;
+    employee_id: number;
+    gross_pay: number;
+    total_deduction: number;
+    net_pay: number;
+    payroll_items?: PayrollItem[];
+    payroll_period?: {
+        id: number;
+        period_name: string;
+        start_date: string;
+        end_date: string;
+        is_closed: boolean;
+    };
+    employee?: {
+        id: number;
+        emp_code: string;
+        user: {
+            name: string;
+            email: string;
+        };
+        position: {
+            pos_name: string;
+            deleted_at: string;
+        };
+    };
+    created_at: string;
+    updated_at: string;
+}
+
+interface PayrollProcessingCardsProps {
+    payrolls: Payroll[];
+    totalOvertimePay: number;
+    totalOvertimeHours: number;
+    totalDeductions: number;
+    totalNetPay: number;
+    activeEmployee: number;
+    formatCurrency: (amount: number) => string;
+    formatNumber: (amount: number) => string;
+}
 
 // Custom hook for counting animation
 function useCountAnimation(end: number | string, duration: number = 1000, startOnMount: boolean = true) {
@@ -84,7 +139,7 @@ function useCountAnimation(end: number | string, duration: number = 1000, startO
                 cancelAnimationFrame(animationRef.current)
             }
         }
-    }, [])
+    }, [numericEnd, startOnMount])
     
     return { count, isAnimating, startAnimation }
 }
@@ -126,13 +181,31 @@ function AnimatedValue({
 }
 
 
-const hours = 1000;
-export default function PayrollProcessingCards () {
+export default function PayrollProcessingCards({ 
+    payrolls = [], 
+    totalOvertimePay = 0, 
+    totalOvertimeHours = 0,
+    totalDeductions = 0,
+    totalNetPay = 0,
+    activeEmployee = 0,  // Add this line with default value
+    formatCurrency,
+    formatNumber 
+}: PayrollProcessingCardsProps) {
     // Date range state
     const [dateRange, setDateRange] = React.useState<DateRange | undefined>({
         from: new Date(new Date().getFullYear(), new Date().getMonth(), 1), // First day of current month
         to: new Date() // Today
     })
+
+    // Remove the local employeeCount calculation since we're using activeEmployee from props
+    // const employeeCount = payrolls.length;  // DELETE THIS LINE
+
+    // Calculate percentage changes (you can implement actual calculations later)
+    // For now, keeping the static percentages as placeholders
+    const netPayPercentage = "+12.5%";
+    const deductionsPercentage = "-12.5%";
+    const overtimePercentage = "+12.5%";
+    const employeePercentage = "+12.5%";
 
     return (
         <>
@@ -142,6 +215,7 @@ export default function PayrollProcessingCards () {
         </div>
 
         <section className="grid grid-cols-4 gap-4 px-7 py-5 pb-9 mx-7 border-1 border-gray-300 rounded-lg">
+            {/* Your filter section - unchanged */}
             <div className="">
                 <Label htmlFor="terms">Payroll Date Period</Label>
                 <Popover>
@@ -234,16 +308,16 @@ export default function PayrollProcessingCards () {
                         </CardDescription>
                     </div>
                     <CardTitle className="text-xl font-semibold tabular-nums @[250px]/card:text-xl -mb-4 flex mt-6">
-                        {/* Show peso sign since showPeso is true */}
+                        {/* Show peso sign */}
                         <PhilippinePeso className="h-7 w-5" />
                         <AnimatedValue
-                        value="100,000.00"
-                        duration={1000}
+                            value={formatNumber(totalNetPay)}
+                            duration={1000}
                         />
                     </CardTitle>
                     <div className="flex justify-start gap-2 py-3">
                         {/* Percentage of difference compare to previous month */}
-                        <span className="text-xs">+12.5%</span>
+                        <span className="text-xs">{netPayPercentage}</span>
                         <TrendingUp className="h-4 w-4 text-green-600" />
                     </div>
                 </CardHeader>
@@ -266,16 +340,16 @@ export default function PayrollProcessingCards () {
                         </CardDescription>
                     </div>
                     <CardTitle className="text-xl font-semibold tabular-nums @[250px]/card:text-xl -mb-4 flex mt-6">
-                        {/* Show peso sign since showPeso is true */}
+                        {/* Show peso sign */}
                         <PhilippinePeso className="h-7 w-5" />
                         <AnimatedValue
-                        value="100,000.00"
-                        duration={1000}
+                            value={formatNumber(totalDeductions)}
+                            duration={1000}
                         />
                     </CardTitle>
                     <div className="flex justify-start gap-2 py-3">
                         {/* Percentage of difference compare to previous month */}
-                        <span className="text-xs">-12.5%</span>
+                        <span className="text-xs">{deductionsPercentage}</span>
                         <TrendingDown className="h-4 w-4 text-red-600" />
                     </div>
                 </CardHeader>
@@ -298,21 +372,21 @@ export default function PayrollProcessingCards () {
                         </CardDescription>
                     </div>
                     <CardTitle className="text-xl font-semibold tabular-nums @[250px]/card:text-xl -mb-4 flex mt-6">
-                        {/* Show peso sign since showPeso is true */}
+                        {/* Show peso sign */}
                         <PhilippinePeso className="h-7 w-5" />
                         <AnimatedValue
-                        value="100,000.00"
-                        duration={1000}
+                            value={formatNumber(totalOvertimePay)}
+                            duration={1000}
                         />
                     </CardTitle>
                     <div className="flex justify-start gap-2 py-3">
                         {/* Percentage of difference compare to previous month */}
-                        <span className="text-xs">+12.5%</span>
+                        <span className="text-xs">{overtimePercentage}</span>
                         <TrendingUp className="h-4 w-4 text-green-600" />
                     </div>
                 </CardHeader>
                 <CardFooter className="-mt-8 pb-3 text">
-                    <span className="text-gray-600 text-sm">Total Hours: {hours} hrs</span>
+                    <span className="text-gray-600 text-sm">Total Hours: {totalOvertimeHours} hrs</span>
                 </CardFooter>
             </Card>
 
@@ -324,26 +398,26 @@ export default function PayrollProcessingCards () {
             ">
                 <CardHeader>
                     <div className="flex justify-between">
-                        <CardDescription className="font-extrabold text-base">Employee Count</CardDescription>
+                        <CardDescription className="font-extrabold text-base">Active Employees</CardDescription>
                         <CardDescription>
                             <SquareUserRound className="w-9 h-13 -mt-3 -mb-10 text-blue-800" />
                         </CardDescription>
                     </div>
                     <CardTitle className="text-xl font-semibold tabular-nums @[250px]/card:text-xl -mb-4 flex mt-6">
-                        {/* Don't show peso sign since showPeso is false */}
+                        {/* Don't show peso sign */}
                         <AnimatedValue
-                        value="1,203"
-                        duration={1000}
+                            value={activeEmployee} 
+                            duration={1000}
                         />
                     </CardTitle>
                     <div className="flex justify-start gap-2 py-3">
                         {/* Percentage of difference compare to previous month */}
-                        <span className="text-xs">+12.5%</span>
+                        <span className="text-xs">{employeePercentage}</span>
                         <TrendingUp className="h-4 w-4 text-green-600" />
                     </div>
                 </CardHeader>
                 <CardFooter className="-mt-8 pb-3 text">
-                    <span className="text-gray-600 text-sm">Newly Hires</span>
+                    <span className="text-gray-600 text-sm">Active Status</span>  {/* Changed from "Newly Hires" to "Active Status" */}
                 </CardFooter>
             </Card>
         </div>

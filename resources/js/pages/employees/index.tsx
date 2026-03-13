@@ -44,7 +44,7 @@ interface Employee {
         name: string;
         email: string;
     }
-    slug_emp: string;   
+    slug_emp: string;
     emp_code: string;
     pay_frequency: string;
     contract_start_date: string;
@@ -61,15 +61,15 @@ interface PageProps {
 
 export default function Index({ employees }: PageProps) {
     const { delete: destroy } = useForm();
-    
+
     // Function to determine if employee should be inactive based on contract end date
     const shouldBeInactive = (employee: Employee) => {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        
+
         const contractEndDate = new Date(employee.contract_end_date);
         contractEndDate.setHours(0, 0, 0, 0);
-        
+
         // If contract end date is before today, employee should be inactive
         return contractEndDate < today;
     };
@@ -89,103 +89,122 @@ export default function Index({ employees }: PageProps) {
         }
     }
 
+    const formatDate = (dateString: string | undefined | null) => {
+        if (!dateString) return '';
+        try {
+            return new Date(dateString).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+        } catch (error) {
+            return '';
+        }
+    };
+
+    const formatContractRange = (employee: Employee) => {
+        if (employee.contract_start_date && employee.contract_end_date) {
+            return `${formatDate(employee.contract_start_date)} - ${formatDate(employee.contract_end_date)}`;
+        }
+        return 'No contract period';
+    };
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Employees" />
             <div className="@container/main flex flex-1 flex-col gap-2">
-                <div className="@container/main flex flex-1 flex-col gap-2">         
-                <div className="flex justify-between items-center p-4">
-                    <h1 className="text-2xl font-bold"></h1>
-                    <Link href="/employees/create">
-                        <Button size="sm" className='hover:cursor-pointer mr-7'>+ Create Employee</Button>
-                    </Link>
-                </div>
-                <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-                    {employees.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-16 text-center">
-                            <div className="rounded-full bg-gray-100 p-6 mb-4">
-                                <Users className="h-12 w-12 text-gray-400" />
-                            </div>
-                            <h3 className="text-lg font-semibold mb-2">No employees yet</h3>
-                            <p className="text-gray-500 mb-6 max-w-sm">
-                                Get started by creating your first employee.
-                            </p>
-                            <Link href="/employees/create">
-                                <Button>Create Your First Employee</Button>
-                            </Link>
-                        </div>
-                    ) : (
-                        <div className='mx-10 rounded-lg border-2 overflow-hidden'>
-                        <Table>
-                            <TableHeader className="bg-gray-100 font-black">
-                                <TableRow>
-                                    <TableHead>Code</TableHead>
-                                    <TableHead>Name</TableHead>
-                                    <TableHead>Position</TableHead>
-                                    <TableHead>Pay Frequency</TableHead>
-                                    <TableHead>Branch</TableHead>
-                                    <TableHead>Contract Period</TableHead>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead>Actions</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody className='text-[13px]'>
-                                {employees.map((employee) => (
-                                    <TableRow key={employee.id}>
-                                        <TableCell>{employee.emp_code}</TableCell>
-                                        <TableCell>{employee.user.name}</TableCell>
-                                        <TableCell>
-                                            {hasValidPosition(employee) ? (
-                                                employee.position.pos_name
-                                            ) : (
-                                                <span className="text-gray-500 italic text-xs">Not assigned</span>
-                                            )}
-                                        </TableCell>
-                                        <TableCell className="capitalize first-letter">
-                                            {employee.pay_frequency.replace('_', ' ')}
-                                        </TableCell>
-                                        <TableCell>{employee.branch.branch_name}</TableCell>
-                                        <TableCell>{employee.contract_start_date}</TableCell>
-                                        <TableCell>{employee.contract_end_date}</TableCell>
-                                        <TableCell>
-                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${['active', 'Active', 'ACTIVE'].includes(employee.employee_status)
-                                                    ? 'bg-green-100 text-green-800'
-                                                    : 'bg-yellow-100 text-yellow-800'
-                                                }`}>
-                                                {employee.employee_status}
-                                            </span>
-                                        </TableCell>
-                                        <TableCell className = "text-center">
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button size="icon" className="size-8 bg-transparent hover:cursor-pointer hover:bg-transparent text-black">
-                                                        <MoreHorizontalIcon />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="start">
-                                                    <DropdownMenuGroup>
-                                                    <DropdownMenuItem>
-                                                        <Link href={EmmployeeController.edit(employee.slug_emp)}>
-                                                        Edit
-                                                        </Link>
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem className='hover:!bg-red-100 hover:!text-red-800 hover:cursor-pointer' >
-                                                        <Link onClick={() => handleDelete(employee.id)} >
-                                                        Delete
-                                                        </Link>
-                                                    </DropdownMenuItem>
-                                                    </DropdownMenuGroup>
-                                                </DropdownMenuContent>
-                                                </DropdownMenu>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
+                <div className="@container/main flex flex-1 flex-col gap-2">
+                    <div className="flex justify-between items-center p-4">
+                        <h1 className="text-2xl font-bold"></h1>
+                        <Link href="/employees/create">
+                            <Button size="sm" className='hover:cursor-pointer mr-7'>+ Create Employee</Button>
+                        </Link>
                     </div>
-                    )}
+                    <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+                        {employees.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-16 text-center">
+                                <div className="rounded-full bg-gray-100 p-6 mb-4">
+                                    <Users className="h-12 w-12 text-gray-400" />
+                                </div>
+                                <h3 className="text-lg font-semibold mb-2">No employees yet</h3>
+                                <p className="text-gray-500 mb-6 max-w-sm">
+                                    Get started by creating your first employee.
+                                </p>
+                                <Link href="/employees/create">
+                                    <Button>Create Your First Employee</Button>
+                                </Link>
+                            </div>
+                        ) : (
+                            <div className='mx-10 rounded-lg border-2 overflow-hidden'>
+                                <Table>
+                                    <TableHeader className="bg-gray-100 font-black">
+                                        <TableRow>
+                                            <TableHead>Code</TableHead>
+                                            <TableHead>Name</TableHead>
+                                            <TableHead>Position</TableHead>
+                                            <TableHead>Pay Frequency</TableHead>
+                                            <TableHead>Branch</TableHead>
+                                            <TableHead>Contract Period</TableHead>
+                                            <TableHead>Status</TableHead>
+                                            <TableHead>Actions</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody className='text-[13px]'>
+                                        {employees.map((employee) => (
+                                            <TableRow key={employee.id}>
+                                                <TableCell>{employee.emp_code}</TableCell>
+                                                <TableCell>{employee.user.name}</TableCell>
+                                                <TableCell>
+                                                    {hasValidPosition(employee) ? (
+                                                        employee.position.pos_name
+                                                    ) : (
+                                                        <span className="text-gray-500 italic text-xs">Not assigned</span>
+                                                    )}
+                                                </TableCell>
+                                                <TableCell className="capitalize first-letter">
+                                                    {employee.pay_frequency.replace('_', ' ')}
+                                                </TableCell>
+                                                <TableCell>{employee.branch.branch_name}</TableCell>
+                                                <TableCell>{formatContractRange(employee)}</TableCell>
+                                                <TableCell>
+                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${['active', 'Active', 'ACTIVE'].includes(employee.employee_status)
+                                                        ? 'bg-green-100 text-green-800'
+                                                        : 'bg-yellow-100 text-yellow-800'
+                                                        }`}>
+                                                        {employee.employee_status}
+                                                    </span>
+                                                </TableCell>
+                                                <TableCell className="text-center">
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button size="icon" className="size-8 bg-transparent hover:cursor-pointer hover:bg-transparent text-black">
+                                                                <MoreHorizontalIcon />
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="start">
+                                                            <DropdownMenuGroup>
+                                                                <DropdownMenuItem>
+                                                                    <Link href={EmmployeeController.edit(employee.slug_emp)}>
+                                                                        Edit
+                                                                    </Link>
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem className='hover:!bg-red-100 hover:!text-red-800 hover:cursor-pointer' >
+                                                                    <Link onClick={() => handleDelete(employee.id)} >
+                                                                        Delete
+                                                                    </Link>
+                                                                </DropdownMenuItem>
+                                                            </DropdownMenuGroup>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        )}
+                    </div>
                 </div>
-            </div>
             </div>
         </AppLayout>
     );
