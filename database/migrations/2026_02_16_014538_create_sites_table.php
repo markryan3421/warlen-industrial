@@ -14,7 +14,7 @@ return new class extends Migration
     {
         Schema::create('sites', function (Blueprint $table) {
             $table->id();
-            $table->foreignIdFor(Branch::class,'branch_id')->constrained('branches')->cascadeOnDelete();
+            $table->foreignIdFor(Branch::class,'branch_id')->constrained('branches')->cascadeOnDelete()->cascadeOnUpdate();
             $table->string('site_name')->unique();
             $table->timestamps();
         });

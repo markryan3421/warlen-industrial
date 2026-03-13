@@ -1,16 +1,20 @@
-import { Head, Link } from '@inertiajs/react';
+import { ArrowUpRight, Circle, Minus } from 'lucide-react';
+import { useState } from 'react';
+import {
+    CartesianGrid, Cell, Legend, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip,
+    XAxis, YAxis
+} from 'recharts';
+
+import Footer from '@/components/footer';
 import { SectionCards } from '@/components/section-cards';
+import SystemAlert from '@/components/system-alert';
+import { ChartConfig, type } from '@/components/ui/chart';
 import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes';
-import Footer from '@/components/footer';
-import type { BreadcrumbItem } from '@/types';
-import { type ChartConfig } from "@/components/ui/chart"
+import { Head, Link } from '@inertiajs/react';
 import { RechartsDevtools } from '@recharts/devtools';
-import { Line, LineChart, CartesianGrid, XAxis, YAxis, Legend, ResponsiveContainer, Pie, PieChart, Tooltip, Cell } from "recharts"
-import { Minus, Circle, ArrowUpRight } from 'lucide-react'
-import { useState } from 'react'
-import SystemAlert from '@/components/system-alert';
 
+import type { BreadcrumbItem } from '@/types';
 // Line chart data
 const lineChartData = [
     { month: "January", desktop: 186, mobile: 80 },
@@ -36,10 +40,10 @@ type PieDataItem = {
 
 // ✅ Create pie chart data with the correct structure
 const pieChartData: PieDataItem[] = [
-    { 
-        name: "Desktop Total", 
+    {
+        name: "Desktop Total",
         value: lineChartData.reduce((sum, item) => sum + item.desktop, 0),
-        color: "#2563eb" 
+        color: "#2563eb"
     },
 ];
 
@@ -52,7 +56,7 @@ const chartConfig = {
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title:'Dashboard',
+        title: 'Dashboard',
         href: dashboard().url,
     },
 ];
@@ -130,15 +134,50 @@ export default function Dashboard() {
                                     <span className="text-xs text-gray-600 font-medium">Total Revenue</span>
                                 </div>
                             </div>
-                            
-                            {/* View Full Analysis Link */}
-                            <Link 
-                                href="/reports/analysis" 
-                                className="inline-flex items-center text-xs text-blue-600 hover:text-blue-800 hover:underline hover:decoration-blue-800 font-medium transition-colors duration-200 group"
-                            >
-                                <span>View Full Analysis</span>
-                            <ArrowUpRight className = "w-4 h-4 ml-1 transition-transform duration-200 group-hover:translate-x-[2px] group-hover:translate-y-[-2px]"/>
-                            </Link>
+                        </div>
+
+                        {/* Pie Chart Column */}
+                        <div style={{ width: 220, height: 300 }} className=' p-1 rounded-md border-1 flex flex-col justify-center my-auto -ml-5'>
+                            <header className='flex justify-center mt-3 font-bold'>Employees</header>
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie
+                                        data={pieChartData}
+                                        dataKey="value"
+                                        nameKey="name"
+                                        cx="50%"
+                                        cy="50%"
+                                        innerRadius="0%"
+                                        outerRadius={70} // Reduced from 100 to 70
+                                        labelLine={true}
+                                        isAnimationActive={isAnimationActive}
+                                    >
+                                        {pieChartData.map((entry, index) => (
+                                            <Cell
+                                                key={`cell-${index}`}
+                                                fill={entry.color}
+                                                className="text-xs"
+                                            />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip
+                                        formatter={(value) => [`${value}`, 'Employee Count']}
+                                        contentStyle={{
+                                            fontSize: '12px',
+                                            padding: '4px 8px',
+                                            backgroundColor: 'white',
+                                            border: '1px solid #ccc',
+                                            borderRadius: '4px'
+                                        }}
+                                        itemStyle={{ fontSize: '12px' }} // specifically for the value items
+                                        labelStyle={{ fontSize: '12px', fontWeight: 'bold' }} // for the label if needed
+                                    />
+                                    <RechartsDevtools />
+                                </PieChart>
+                            </ResponsiveContainer>
+                            <p className="text-[10px] font-medium w-35 flex mx-auto text-center pb-10">
+                                2% added on the employee count this month
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -193,7 +232,7 @@ export default function Dashboard() {
                         </div>
                     </div>
 
-            <Footer/>
+            <Footer />
         </AppLayout>
     );
 }

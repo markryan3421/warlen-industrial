@@ -6,8 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Percent } from "lucide-react";
+import { Plus, Trash2, Percent, LoaderCircle } from "lucide-react";
 import { update } from '@/actions/App/Http/Controllers/ContributionVersionController';
+import { CustomDatePicker } from '@/components/ui/custom-date-picker';
+import { toast } from 'sonner';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -73,7 +75,16 @@ export default function Edit({ contributionVersion }: EditProps) {
 
     function submitContributionVersion(e: React.FormEvent) {
         e.preventDefault();
-        put(update(contributionVersion.id).url); 
+        put(update(contributionVersion.id).url, {
+            onSuccess: (page) => {
+                const successMessage = page.props.flash?.success || 'Branch created successfully.'
+                toast.success(successMessage);
+            },
+            onError: (errors) => {
+                const errorMessage = Object.values(errors).flat()[0] || 'Failed to create branch.';
+                toast.error(errorMessage);
+            }
+        });
     }
 
     const addSalaryRange = () => {
@@ -140,25 +151,18 @@ export default function Edit({ contributionVersion }: EditProps) {
 
                             {/* Effective Dates */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-5">
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium">Effective From</label>
-                                    <Input
-                                        type="date"
-                                        value={data.effective_from}
-                                        onChange={e => setData('effective_from', e.target.value)}
-                                    />
-                                    <InputError message={errors.effective_from} />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium">Effective To</label>
-                                    <Input
-                                        type="date"
-                                        value={data.effective_to}
-                                        onChange={e => setData('effective_to', e.target.value)}
-                                    />
-                                    <InputError message={errors.effective_to} />
-                                </div>
+                                <CustomDatePicker
+                                    value={data.effective_from}
+                                    onChange={(val) => setData('effective_from', val)}
+                                    error={errors.effective_from}
+                                    label="Effective From"
+                                />
+                                <CustomDatePicker
+                                    value={data.effective_to}
+                                    onChange={(val) => setData('effective_to', val)}
+                                    error={errors.effective_to}
+                                    label="Effective To"
+                                />
                             </div>
 
                             {/* Salary Ranges Repeater */}
@@ -197,7 +201,7 @@ export default function Edit({ contributionVersion }: EditProps) {
                                                 <Trash2 className="h-4 w-4 text-destructive" />
                                             </Button>
                                         )}
-                                        
+
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 ">
                                             <div className="space-y-2">
                                                 <label className="text-sm font-medium">Salary From (₱)</label>
@@ -286,6 +290,7 @@ export default function Edit({ contributionVersion }: EditProps) {
                                     disabled={processing}
                                     className='hover:cursor-pointer'
                                 >
+                                    {processing && <LoaderCircle className='h-4 w-4 animate-spin' />}
                                     {processing ? 'Updating...' : 'Update Contribution Version'}
                                 </Button>
                             </div>

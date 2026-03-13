@@ -17,6 +17,7 @@ interface TableColumn {
     isImage?: boolean;
     isAction?: boolean;
     className?: string;
+    isDate?: boolean;
 }
 
 interface ActionConfig {
@@ -253,7 +254,7 @@ export const CustomTable = ({
                 {/* DESKTOP VIEW  — lg and above (≥ 1024px) */}
                 <div className="hidden lg:block overflow-x-auto overflow-y-hidden">
                     <table className="w-full border-collapse text-[13.5px] text-stone-800 dark:text-stone-200">
-                        
+
                         {/* Head - sticky for better UX when scrolling horizontally */}
                         <thead className="bg-white dark:bg-[#080f1e] border-1 sticky top-0 z-10">
                             <tr>
@@ -296,6 +297,14 @@ export const CustomTable = ({
                                                 ) : col.isBadge ? (
                                                     <span className="inline-block bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap">
                                                         {col.render ? col.render(row) : formatCellValue(col, row)}&nbsp;{col.render && col.render(row) === 1 ? "site" : "sites"}
+                                                    </span>
+                                                ) : col.isDate ? (
+                                                    <span className="text-sm font-medium text-foreground">
+                                                        {new Date(row[col.key]).toLocaleDateString('en-US', {
+                                                            year: 'numeric',
+                                                            month: 'long',
+                                                            day: 'numeric',
+                                                        })}
                                                     </span>
                                                 ) : (
                                                     <span className="block truncate max-w-[200px] mx-auto">

@@ -4,13 +4,13 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import '../css/app.css';
 import { initializeTheme } from './hooks/use-appearance';
-import { configureEcho } from '@laravel/echo-react';
-
-
+import { configureEcho } from "@laravel/echo-react";
 
 configureEcho({
-    broadcaster: 'reverb',
+    broadcaster: "reverb",  // or "pusher", "socket.io"
+    // other options will use default values from your .env
 });
+
 
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';

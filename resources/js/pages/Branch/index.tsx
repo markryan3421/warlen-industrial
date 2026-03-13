@@ -1,5 +1,5 @@
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
-import { MapPin } from 'lucide-react';
+import { Building2, MapPin } from 'lucide-react';
 import { useState } from 'react';
 import BranchController from "@/actions/App/Http/Controllers/BranchController";
 import { CustomTable } from '@/components/custom-table';
@@ -145,7 +145,19 @@ export default function Index({ branches, filters, totalCount, filteredCount }: 
             <Head title="Branch" />
             <CustomToast />
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-                {/* Header with title, search, and create button */}
+                {/* Page Header */}
+                <div className="flex items-center gap-4 ms-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+                        <Building2 className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl font-bold tracking-tight">Branch Module</h1>
+                        <p className="text-sm text-muted-foreground mt-1">
+                            Manage and organize your branches effectively
+                        </p>
+                    </div>
+                </div>
+
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     {/* Left side with title and search */}
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
@@ -200,7 +212,7 @@ export default function Index({ branches, filters, totalCount, filteredCount }: 
                     totalCount={totalCount}
                     filteredCount={filteredCount}
                     search={data.search}
-                    resourceName='schedules'
+                    resourceName='branche'
                 />
 
                 {/* Modal for displaying branch sites */}
@@ -292,14 +304,6 @@ export default function Index({ branches, filters, totalCount, filteredCount }: 
                                     <p className="text-sm text-muted-foreground max-w-[250px] mb-6">
                                         This branch doesn't have any sites assigned yet. Sites will appear here once added.
                                     </p>
-
-                                    {/* Optional: Add a button here if you want to add sites directly */}
-                                    {/*
-                    <Button size="sm" className="gap-2">
-                        <Plus className="h-4 w-4" />
-                        Add First Site
-                    </Button>
-                    */}
                                 </div>
                             )}
                         </div>

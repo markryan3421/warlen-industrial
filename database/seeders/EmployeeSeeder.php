@@ -48,7 +48,7 @@ class EmployeeSeeder extends Seeder
         return Position::create([
             'pos_name' => 'Regular employee',
             'pos_slug' => Str::slug('Regular employee'),
-            'basic_salary' => 1000
+            'basic_salary' => 550
         ]);
     }
 
@@ -66,155 +66,224 @@ class EmployeeSeeder extends Seeder
     /**
      * Create users data
      */
+    /**
+     * Create users data
+     */
     private function createUsers(): array
     {
         $users = [
-            // ID: 1100
+            // Original users
             [
                 'name' => 'Jolisa',
                 'email' => 'jolisa@example.com',
                 'password' => Hash::make('12345678'),
                 'emp_id' => 1100
             ],
-            // ID: 244
             [
                 'name' => 'John Eric Dumala',
                 'email' => 'john.eric@example.com',
                 'password' => Hash::make('12345678'),
                 'emp_id' => 244
             ],
-            // ID: 1080
             [
                 'name' => 'Arman',
                 'email' => 'arman@example.com',
                 'password' => Hash::make('12345678'),
                 'emp_id' => 1080
             ],
-            // ID: 1077
             [
                 'name' => 'Lloyd',
                 'email' => 'lloyd@example.com',
                 'password' => Hash::make('12345678'),
                 'emp_id' => 1077
             ],
-            // ID: 1079
             [
                 'name' => 'Allan',
                 'email' => 'allan@example.com',
                 'password' => Hash::make('12345678'),
                 'emp_id' => 1079
             ],
-            // ID: 1031
             [
                 'name' => 'Marlon',
                 'email' => 'marlon@example.com',
                 'password' => Hash::make('12345678'),
                 'emp_id' => 1031
             ],
-            // ID: 1028
             [
                 'name' => 'Joven',
                 'email' => 'joven@example.com',
                 'password' => Hash::make('12345678'),
                 'emp_id' => 1028
             ],
-            // ID: 309
             [
                 'name' => 'Francis',
                 'email' => 'francis@example.com',
                 'password' => Hash::make('12345678'),
                 'emp_id' => 309
             ],
-            // ID: 670
             [
                 'name' => 'Ana',
                 'email' => 'ana@example.com',
                 'password' => Hash::make('12345678'),
                 'emp_id' => 670
             ],
-            // ID: 1211
             [
                 'name' => 'Rey',
                 'email' => 'rey@example.com',
                 'password' => Hash::make('12345678'),
                 'emp_id' => 1211
             ],
-            // ID: 1082
             [
                 'name' => 'Jonas',
                 'email' => 'jonas@example.com',
                 'password' => Hash::make('12345678'),
                 'emp_id' => 1082
             ],
-            // ID: 1209
             [
                 'name' => 'Eugenio',
                 'email' => 'eugenio@example.com',
                 'password' => Hash::make('12345678'),
                 'emp_id' => 1209
             ],
-            // ID: 1210
             [
                 'name' => 'Ferdinand',
                 'email' => 'ferdinand@example.com',
                 'password' => Hash::make('12345678'),
                 'emp_id' => 1210
             ],
-            // ID: 1174
             [
                 'name' => 'Jury',
                 'email' => 'jury@example.com',
                 'password' => Hash::make('12345678'),
                 'emp_id' => 1174
             ],
-            // ID: 1234
             [
                 'name' => 'Ruth',
                 'email' => 'ruth@example.com',
                 'password' => Hash::make('12345678'),
                 'emp_id' => 1234
             ],
-            // ID: 1212
             [
                 'name' => 'Ryan',
                 'email' => 'ryan@example.com',
                 'password' => Hash::make('12345678'),
                 'emp_id' => 1212
             ],
-            // ID: 1047
             [
                 'name' => 'Aubrey',
                 'email' => 'aubrey@example.com',
                 'password' => Hash::make('12345678'),
                 'emp_id' => 1047
             ],
-            // ID: 787
             [
                 'name' => 'Arnel',
                 'email' => 'arnel@example.com',
                 'password' => Hash::make('12345678'),
                 'emp_id' => 787
             ],
-            // ID: 1297
             [
                 'name' => 'Christoval',
                 'email' => 'christoval@example.com',
                 'password' => Hash::make('12345678'),
                 'emp_id' => 1297
             ],
-            // ID: 1120
             [
                 'name' => 'Philippe',
                 'email' => 'philippe@example.com',
                 'password' => Hash::make('12345678'),
                 'emp_id' => 1120
             ],
-            // ID: 789
             [
                 'name' => 'Harold',
                 'email' => 'harold@example.com',
                 'password' => Hash::make('12345678'),
                 'emp_id' => 789
+            ],
+
+            // New employees from the ridge
+            [
+                'name' => 'AllanB',
+                'email' => 'allanb@example.com',
+                'password' => Hash::make('12345678'),
+                'emp_id' => 1444
+            ],
+            [
+                'name' => 'BenedictoG',
+                'email' => 'benedictog@example.com',
+                'password' => Hash::make('12345678'),
+                'emp_id' => 1333
+            ],
+            [
+                'name' => 'ErenioC',
+                'email' => 'erenioc@example.com',
+                'password' => Hash::make('12345678'),
+                'emp_id' => 1222
+            ],
+            [
+                'name' => 'RyanJayT',
+                'email' => 'ryanjayt@example.com',
+                'password' => Hash::make('12345678'),
+                'emp_id' => 1111
+            ],
+            [
+                'name' => 'DanteM',
+                'email' => 'dantem@example.com',
+                'password' => Hash::make('12345678'),
+                'emp_id' => 1191
+            ],
+            [
+                'name' => 'EdwinJ',
+                'email' => 'edwinj@example.com',
+                'password' => Hash::make('12345678'),
+                'emp_id' => 1262
+            ],
+            [
+                'name' => 'PauloJ',
+                'email' => 'pauloj@example.com',
+                'password' => Hash::make('12345678'),
+                'emp_id' => 1269
+            ],
+            [
+                'name' => 'JohRobertL',
+                'email' => 'johrobertl@example.com',
+                'password' => Hash::make('12345678'),
+                'emp_id' => 1266
+            ],
+            [
+                'name' => 'RichardG',
+                'email' => 'richardg@example.com',
+                'password' => Hash::make('12345678'),
+                'emp_id' => 1284
+            ],
+            [
+                'name' => 'DaniloG',
+                'email' => 'danilog@example.com',
+                'password' => Hash::make('12345678'),
+                'emp_id' => 1034
+            ],
+            [
+                'name' => 'JoebertD',
+                'email' => 'joebertd@example.com',
+                'password' => Hash::make('12345678'),
+                'emp_id' => 857
+            ],
+            [
+                'name' => 'JuluwieV',
+                'email' => 'juluwiev@example.com',
+                'password' => Hash::make('12345678'),
+                'emp_id' => 754
+            ],
+            [
+                'name' => 'LhenieJaneS',
+                'email' => 'lheniejanes@example.com',
+                'password' => Hash::make('12345678'),
+                'emp_id' => 1272
+            ],
+            [
+                'name' => 'IrishSandraB',
+                'email' => 'irishsandrab@example.com',
+                'password' => Hash::make('12345678'),
+                'emp_id' => 1264
             ],
         ];
 
@@ -228,7 +297,7 @@ class EmployeeSeeder extends Seeder
             'branch_id' => $branch->id,
             'user_id' => $user->id,
             'site_id' => $site?->id,
-            'slug_emp' => Str::slug($user->name.'-'.$empId),
+            'slug_emp' => Str::slug($user->name . '-' . $empId),
             'emp_code' => $empId,
             'employee_number' => $this->generateEmployeeNumber(),
             'contract_start_date' => now(),

@@ -15,8 +15,8 @@ class PayrollEvent implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $payrollPeriod;
-    public $message;
+    protected $payrollPeriod;
+    protected $message;
 
     /**
      * Create a new event instance.

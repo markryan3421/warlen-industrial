@@ -9,7 +9,6 @@ import InputError from '@/components/input-error';
 import { store } from '@/actions/App/Http/Controllers/EmployeeController';
 import { useEffect, useState } from 'react';
 import { Search, ChevronDown } from 'lucide-react';
-import { Select } from '@/components/ui/select';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -28,9 +27,15 @@ interface Site {
     branch_id: number;
 }
 
+interface Branch {
+    id: number;
+    branch_name: string;
+    branch_address?: string;
+}
+
 interface Props {
     positions: any[];
-    branches: any[];
+    branches: Branch[];
     site: Site[];
 }
 
@@ -40,6 +45,8 @@ export default function Create({ positions, branches, site = [] }: Props) {
     const [showPositionDropdown, setShowPositionDropdown] = useState(false);
     const [siteSearch, setSiteSearch] = useState('');
     const [showSiteDropdown, setShowSiteDropdown] = useState(false);
+    const [branchSearch, setBranchSearch] = useState('');
+    const [showBranchDropdown, setShowBranchDropdown] = useState(false);
 
     const getStatusFromDates = (start: string, end: string) => {
         if (!start || !end) return '';
@@ -94,6 +101,13 @@ export default function Create({ positions, branches, site = [] }: Props) {
         )
         .slice(0, 5);
 
+    // Filter branches based on search, limit to 5
+    const filteredBranches = branches
+        ?.filter(branch =>
+            branch.branch_name.toLowerCase().includes(branchSearch.toLowerCase())
+        )
+        .slice(0, 5);
+
     // Filter sites based on search, limit to 5
     const filteredSites = availableSites
         ?.filter(site => {
@@ -103,6 +117,7 @@ export default function Create({ positions, branches, site = [] }: Props) {
         .slice(0, 5);
 
     const selectedPosition = positions?.find(p => p.id === parseInt(data.position_id));
+    const selectedBranch = branches?.find(b => b.id === parseInt(data.branch_id));
     const selectedSite = availableSites?.find(s => s.id === parseInt(data.site_id));
 
     const handlePhoneChange = (field: 'employee_number' | 'emergency_contact_number', value: string) => {
@@ -123,6 +138,14 @@ export default function Create({ positions, branches, site = [] }: Props) {
         setData('position_id', positionId);
         setPositionSearch(positionName);
         setShowPositionDropdown(false);
+    };
+
+    const selectBranch = (branchId: string, branchName: string) => {
+        setData('branch_id', branchId);
+        setBranchSearch(branchName);
+        setShowBranchDropdown(false);
+        setData('site_id', '');
+        setSiteSearch('');
     };
 
     const selectSite = (siteId: string, siteName: string) => {
@@ -167,7 +190,7 @@ export default function Create({ positions, branches, site = [] }: Props) {
                             <h2 className="text-lg font-semibold pb-2 border-b">Employee Details</h2>
                             <div className="space-y-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="employee_number">Employee Number <span className="text-red-500">*</span></Label>
+                                    <Label htmlFor="employee_number">Contact Number <span className="text-red-500">*</span></Label>
                                     <div className="flex">
                                         <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm">+63</span>
                                         <Input id="employee_number" type="text" value={getDisplayValue('employee_number')} onChange={e => handlePhoneChange('employee_number', e.target.value)} className="w-full rounded-l-none" placeholder="XXX XXX XXXX" maxLength={10} />
@@ -197,7 +220,7 @@ export default function Create({ positions, branches, site = [] }: Props) {
                                                     ) : (
                                                         <div className="px-3 py-2 text-sm text-gray-500">No positions found</div>
                                                     )}
-                                                    {filteredPositions.length === 5 && (
+                                                    {filteredPositions.length === 5 && positions.length > 5 && (
                                                         <div className="px-3 py-2 text-xs text-gray-400 border-t">Showing top 5 results</div>
                                                     )}
                                                 </div>
@@ -236,12 +259,47 @@ export default function Create({ positions, branches, site = [] }: Props) {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="branch_id">Branch <span className="text-red-500">*</span></Label>
-                                <select id="branch_id" value={data.branch_id} onChange={e => { setData('branch_id', e.target.value); setData('site_id', ''); }} className="w-full h-10 px-3 rounded-md border border-input bg-background">
-                                    <option value="">Select a Branch</option>
-                                    {branches?.map((branch) => (
-                                        <option key={branch.id} value={branch.id}>{branch.branch_name}</option>
-                                    ))}
-                                </select>
+                                <div className="relative">
+                                    <div className="flex items-center border border-input rounded-md cursor-pointer" onClick={() => setShowBranchDropdown(!showBranchDropdown)}>
+                                        <div className="flex-1 px-3 py-2 text-sm">{selectedBranch?.branch_name || 'Select a Branch'}</div>
+                                        <ChevronDown className="h-4 w-4 mr-2 text-muted-foreground" />
+                                    </div>
+                                    {showBranchDropdown && (
+                                        <div className="absolute z-10 w-full mt-1 bg-white border border-input rounded-md shadow-lg">
+                                            <div className="p-2 border-b">
+                                                <div className="relative">
+                                                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                                                    <Input 
+                                                        value={branchSearch} 
+                                                        onChange={(e) => setBranchSearch(e.target.value)} 
+                                                        placeholder="Search branches..." 
+                                                        className="pl-8" 
+                                                        autoFocus 
+                                                        onClick={(e) => e.stopPropagation()} 
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="max-h-60 overflow-auto">
+                                                {filteredBranches.length > 0 ? (
+                                                    filteredBranches.map((branch) => (
+                                                        <div 
+                                                            key={branch.id} 
+                                                            className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm" 
+                                                            onClick={() => selectBranch(branch.id.toString(), branch.branch_name)}
+                                                        >
+                                                            {branch.branch_name}
+                                                        </div>
+                                                    ))
+                                                ) : (
+                                                    <div className="px-3 py-2 text-sm text-gray-500">No branches found</div>
+                                                )}
+                                                {filteredBranches.length === 5 && branches.length > 5 && (
+                                                    <div className="px-3 py-2 text-xs text-gray-400 border-t">Showing top 5 results</div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                                 <InputError message={errors.branch_id} />
                             </div>
                             {data.branch_id && (
@@ -307,8 +365,12 @@ export default function Create({ positions, branches, site = [] }: Props) {
                     </div>
                 </form>
             </div>
-            {(showPositionDropdown || showSiteDropdown) && (
-                <div className="fixed inset-0 z-0" onClick={() => { setShowPositionDropdown(false); setShowSiteDropdown(false); }} />
+            {(showPositionDropdown || showSiteDropdown || showBranchDropdown) && (
+                <div className="fixed inset-0 z-0" onClick={() => { 
+                    setShowPositionDropdown(false); 
+                    setShowSiteDropdown(false);
+                    setShowBranchDropdown(false);
+                }} />
             )}
         </AppLayout>
     );

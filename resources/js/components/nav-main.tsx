@@ -17,7 +17,7 @@ export function NavMain({ items = [], label }: { items: NavItem[], label: string
         <>
             <SidebarGroup className="px-2 py-1">
                 <SidebarGroupLabel className="px-2 pb-1 text-xs font-regular text-muted-foreground tracking-wider">
-                {label}
+                    {label}
                 </SidebarGroupLabel>
                 <SidebarMenu>
                     {items.map((item) => (
@@ -26,16 +26,20 @@ export function NavMain({ items = [], label }: { items: NavItem[], label: string
                                 asChild
                                 isActive={isCurrentUrl(item.href)}
                                 tooltip={{ children: item.title }}
-                                className={cn(
-                                    "transition-colors duration-100",
-                                    isCurrentUrl(item.href) && "bg-black text-white border-1 rounded-sm border-white hover:bg-white"
-                                )}
+                                className="group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:!px-0"
                             >
-                                <Link href={item.href} prefetch>
-                                    {item.icon && <item.icon className={cn(
-                                        isCurrentUrl(item.href) && "text-white active:text-white",
-                                    )} />}
-                                    <span>{item.title}</span>
+                                <Link
+                                    href={item.href}
+                                    prefetch
+                                    preserveScroll={true}
+                                    preserveState={true}
+                                >
+                                    {item.icon && (
+                                        <item.icon className="shrink-0 transition-transform duration-200 group-data-[collapsible=icon]:scale-110" />
+                                    )}
+                                    <span className="transition-all duration-200 ease-in-out group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:overflow-hidden group-data-[collapsible=icon]:opacity-0">
+                                        {item.title}
+                                    </span>
                                 </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>

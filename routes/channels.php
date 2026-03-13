@@ -7,9 +7,12 @@ Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
 });
 
 Broadcast::channel('payroll', function ($user) {
-    return !is_null($user);
+    return $user->hasAnyRole(['admin', 'hr_head']);
 });
 
 Broadcast::channel('payroll-period', function ($user) {
-    return !is_null($user);
+    return $user->hasAnyRole(['admin', 'hr_head']);
+});
+Broadcast::channel('application-leave', function ($user) {
+    return $user->hasAnyRole(['admin', 'employee']);
 });

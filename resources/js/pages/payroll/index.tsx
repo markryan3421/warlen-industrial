@@ -10,6 +10,10 @@ import Echo from 'laravel-echo';
 // IMPORTANT: For Reverb, we need to import Pusher with a different name
 // Reverb uses the Pusher protocol but connects to your Reverb server
 import Pusher from 'pusher-js';
+<<<<<<< HEAD
+=======
+import PayrollProcessingCards from '@/components/payroll-processing-cards';
+>>>>>>> 80d1f0fea0a0b8662fd02f90a70da54f702cee86
 
 // Declare global window interface for Echo
 declare global {
@@ -220,6 +224,10 @@ export default function Index({ payrolls }: PageProps) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Payroll" />
             <div className="flex flex-1 flex-col gap-2 p-4">
+<<<<<<< HEAD
+=======
+                <PayrollProcessingCards />
+>>>>>>> 80d1f0fea0a0b8662fd02f90a70da54f702cee86
                 
                 {/* Notification Toast */}
                 {showNotification && notification && (
@@ -242,9 +250,15 @@ export default function Index({ payrolls }: PageProps) {
                 
                 <div className="flex justify-between items-center">
                     <h1 className="text-2xl font-bold">Payroll</h1>
+<<<<<<< HEAD
                     <Link href="/payroll/create">
                         <Button size="sm">+ Generate Payroll</Button>
                     </Link>
+=======
+                    {/* <Link href="/payroll/create">
+                        <Button size="sm">+ Generate Payroll</Button>
+                    </Link> */}
+>>>>>>> 80d1f0fea0a0b8662fd02f90a70da54f702cee86
                 </div>
 
                 <div className="py-4">
@@ -257,9 +271,15 @@ export default function Index({ payrolls }: PageProps) {
                             <p className="text-gray-500 mb-6 max-w-sm">
                                 Get started by generating your first payroll.
                             </p>
+<<<<<<< HEAD
                             <Link href="/payroll/create">
                                 <Button>Generate Your First Payroll</Button>
                             </Link>
+=======
+                            {/* <Link href="/payroll/create">
+                                <Button>Generate Your First Payroll</Button>
+                            </Link> */}
+>>>>>>> 80d1f0fea0a0b8662fd02f90a70da54f702cee86
                         </div>
                     ) : (
                         <Table>
@@ -316,7 +336,11 @@ export default function Index({ payrolls }: PageProps) {
                                                         onClick={() => handleViewItems(payroll)}
                                                     >
                                                         <Eye className="h-4 w-4 mr-1" />
+<<<<<<< HEAD
                                                         View Items
+=======
+                                                        View Deductions
+>>>>>>> 80d1f0fea0a0b8662fd02f90a70da54f702cee86
                                                     </Button>
                                                     {/* <Link href={PayrollController.edit(payroll.id)}>
                                                         <Button variant="outline" size="sm">Edit</Button>

@@ -27,7 +27,7 @@ class PayrollPeriodObserver
             $this->payrollService->processPayrollForPeriod($payrollPeriod);
         }
     }
-
+    
     /**
      * Handle the PayrollPeriod "created" event.
      */

@@ -180,20 +180,6 @@ export default function Create({ payroll_periods = [], employees = [] }: CreateP
                                     <h2 className="text-lg font-semibold mb-2">Employee Selection</h2>
                                 </div>
 
-                                <Combobox>
-                                    <ComboboxInput placeholder="Select a framework" />
-                                    <ComboboxContent>
-                                        <ComboboxEmpty>No items found.</ComboboxEmpty>
-                                        <ComboboxList>
-                                        {(item) => (
-                                            <ComboboxItem key={item} value={item}>
-                                            {item}
-                                            </ComboboxItem>
-                                        )}
-                                        </ComboboxList>
-                                    </ComboboxContent>
-                                </Combobox>
-
                                 {/* Selected Tags - Only show first 10, rest in modal */}
                                 {selectedEmployees.length > 0 && (
                                     <div className="mb-3">
