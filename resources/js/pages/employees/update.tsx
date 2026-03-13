@@ -34,6 +34,8 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
     const [showPositionDropdown, setShowPositionDropdown] = useState(false);
     const [siteSearch, setSiteSearch] = useState('');
     const [showSiteDropdown, setShowSiteDropdown] = useState(false);
+    const [branchSearch, setBranchSearch] = useState('');
+    const [showBranchDropdown, setShowBranchDropdown] = useState(false);
 
     // Helper function to format date for input field (YYYY-MM-DD)
     const formatDateForInput = (dateString: string | null | undefined) => {
@@ -106,6 +108,14 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
         }
     }, []);
 
+    // Initialize branch search
+    useEffect(() => {
+        const selectedBranch = branches?.find(b => b.id === parseInt(data.branch_id));
+        if (selectedBranch) {
+            setBranchSearch(selectedBranch.branch_name);
+        }
+    }, []);
+
     // Update available sites when branch changes
     useEffect(() => {
         if (!data.branch_id) {
@@ -127,12 +137,21 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
         }
     }, [data.branch_id, data.site_id]);
 
+    // Filter positions based on search, limit to 5
     const filteredPositions = positions
         ?.filter(position =>
             position.pos_name.toLowerCase().includes(positionSearch.toLowerCase())
         )
         .slice(0, 5);
 
+    // Filter branches based on search, limit to 5
+    const filteredBranches = branches
+        ?.filter(branch =>
+            branch.branch_name.toLowerCase().includes(branchSearch.toLowerCase())
+        )
+        .slice(0, 5);
+
+    // Filter sites based on search, limit to 5
     const filteredSites = availableSites
         ?.filter(site => {
             const siteName = site.site_name || site.name || '';
@@ -141,6 +160,7 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
         .slice(0, 5);
 
     const selectedPosition = positions?.find(p => p.id === parseInt(data.position_id));
+    const selectedBranch = branches?.find(b => b.id === parseInt(data.branch_id));
     const selectedSite = availableSites?.find(s => s.id === parseInt(data.site_id));
 
     const handlePhoneChange = (field: 'employee_number' | 'emergency_contact_number', value: string) => {
@@ -161,6 +181,14 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
         setData('position_id', positionId);
         setPositionSearch(positionName);
         setShowPositionDropdown(false);
+    };
+
+    const selectBranch = (branchId: string, branchName: string) => {
+        setData('branch_id', branchId);
+        setBranchSearch(branchName);
+        setShowBranchDropdown(false);
+        setData('site_id', '');
+        setSiteSearch('');
     };
 
     const selectSite = (siteId: string, siteName: string) => {
@@ -189,6 +217,17 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
                         <div className="space-y-4">
                             <h2 className="text-lg font-semibold border-b pb-2">User Details</h2>
                             <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="emp_code">Employee Code <span className="text-red-500">*</span></Label>
+                                    <Input 
+                                        id="emp_code" 
+                                        value={data.emp_code} 
+                                        onChange={e => setData('emp_code', e.target.value)} 
+                                        className="w-full" 
+                                        placeholder="Enter employee code" 
+                                    />
+                                    <InputError message={errors.emp_code} />
+                                </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="name">Name <span className="text-red-500">*</span></Label>
                                     <Input 
@@ -231,7 +270,7 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
                             <h2 className="text-lg font-semibold border-b pb-2">Employee Details</h2>
                             <div className="space-y-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="employee_number">Employee Number <span className="text-red-500">*</span></Label>
+                                    <Label htmlFor="employee_number">Contact Number <span className="text-red-500">*</span></Label>
                                     <div className="flex">
                                         <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm">+63</span>
                                         <Input 
@@ -287,7 +326,7 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
                                                     ) : (
                                                         <div className="px-3 py-2 text-sm text-gray-500">No positions found</div>
                                                     )}
-                                                    {filteredPositions.length === 5 && (
+                                                    {filteredPositions.length === 5 && positions.length > 5 && (
                                                         <div className="px-3 py-2 text-xs text-gray-400 border-t">Showing top 5 results</div>
                                                     )}
                                                 </div>
@@ -346,20 +385,52 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="branch_id">Branch <span className="text-red-500">*</span></Label>
-                                <select 
-                                    id="branch_id" 
-                                    value={data.branch_id} 
-                                    onChange={e => { 
-                                        setData('branch_id', e.target.value); 
-                                        setData('site_id', ''); 
-                                    }} 
-                                    className="w-full h-10 px-3 rounded-md border border-input bg-background"
-                                >
-                                    <option value="">Select a Branch</option>
-                                    {branches?.map((branch) => (
-                                        <option key={branch.id} value={branch.id}>{branch.branch_name}</option>
-                                    ))}
-                                </select>
+                                <div className="relative">
+                                    <div 
+                                        className="flex items-center border border-input rounded-md cursor-pointer" 
+                                        onClick={() => setShowBranchDropdown(!showBranchDropdown)}
+                                    >
+                                        <div className="flex-1 px-3 py-2 text-sm">
+                                            {selectedBranch?.branch_name || 'Select a Branch'}
+                                        </div>
+                                        <ChevronDown className="h-4 w-4 mr-2 text-muted-foreground" />
+                                    </div>
+                                    {showBranchDropdown && (
+                                        <div className="absolute z-10 w-full mt-1 bg-white border border-input rounded-md shadow-lg">
+                                            <div className="p-2 border-b">
+                                                <div className="relative">
+                                                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                                                    <Input 
+                                                        value={branchSearch} 
+                                                        onChange={(e) => setBranchSearch(e.target.value)} 
+                                                        placeholder="Search branches..." 
+                                                        className="pl-8" 
+                                                        autoFocus 
+                                                        onClick={(e) => e.stopPropagation()} 
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="max-h-60 overflow-auto">
+                                                {filteredBranches.length > 0 ? (
+                                                    filteredBranches.map((branch) => (
+                                                        <div 
+                                                            key={branch.id} 
+                                                            className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm" 
+                                                            onClick={() => selectBranch(branch.id.toString(), branch.branch_name)}
+                                                        >
+                                                            {branch.branch_name}
+                                                        </div>
+                                                    ))
+                                                ) : (
+                                                    <div className="px-3 py-2 text-sm text-gray-500">No branches found</div>
+                                                )}
+                                                {filteredBranches.length === 5 && branches.length > 5 && (
+                                                    <div className="px-3 py-2 text-xs text-gray-400 border-t">Showing top 5 results</div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                                 <InputError message={errors.branch_id} />
                             </div>
                             {data.branch_id && (
@@ -449,10 +520,6 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
                                 <InputError message={errors.contract_end_date} />
                             </div>
                         </div>
-                        {/* Display formatted dates for debugging - remove in production */}
-                        {/* <div className="text-xs text-gray-400 mt-1">
-                            <p>Debug: Start: {data.contract_start_date || 'not set'} | End: {data.contract_end_date || 'not set'}</p>
-                        </div> */}
                     </div>
                     <div className="flex gap-3 pt-4">
                         <Button type="submit" disabled={processing}>
@@ -464,12 +531,13 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
                     </div>
                 </form>
             </div>
-            {(showPositionDropdown || showSiteDropdown) && (
+            {(showPositionDropdown || showSiteDropdown || showBranchDropdown) && (
                 <div 
                     className="fixed inset-0 z-0" 
                     onClick={() => { 
                         setShowPositionDropdown(false); 
-                        setShowSiteDropdown(false); 
+                        setShowSiteDropdown(false);
+                        setShowBranchDropdown(false);
                     }} 
                 />
             )}
