@@ -71,9 +71,23 @@ interface Payroll {
 
 interface PageProps {
     payrolls: Payroll[];
+    totalOvertimePay: number;
+    totalOvertimeHours: number;
+    totalDeductions: number;
+    totalNetPay: number;
+    totalGrossPay: number;
+    activeEmployee: number; 
 }
 
-export default function Index({ payrolls }: PageProps) {
+export default function Index({ 
+    payrolls, 
+    totalOvertimePay, 
+    totalOvertimeHours,
+    totalDeductions,
+    totalNetPay,
+    totalGrossPay ,
+    activeEmployee
+}: PageProps) {
     const { delete: destroy } = useForm();
     const [selectedPayroll, setSelectedPayroll] = useState<Payroll | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -151,7 +165,7 @@ export default function Index({ payrolls }: PageProps) {
             }, 5000);
             
             // Refresh the payroll list using Inertia
-            router.reload({ only: ['payrolls'] });
+            router.reload({ only: ['payrolls', 'totalOvertimePay', 'totalOvertimeHours', 'totalDeductions', 'totalNetPay', 'totalGrossPay'] });
         });
 
         // Optional: Listen for connection events
@@ -179,6 +193,14 @@ export default function Index({ payrolls }: PageProps) {
         return new Intl.NumberFormat('en-PH', {
             style: 'currency',
             currency: 'PHP',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(amount);
+    };
+
+    // Function to format number with commas
+    const formatNumber = (amount: number) => {
+        return new Intl.NumberFormat('en-PH', {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
         }).format(amount);
@@ -221,7 +243,16 @@ export default function Index({ payrolls }: PageProps) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Payroll" />
             <div className="flex flex-1 flex-col gap-2 p-4">
-                <PayrollProcessingCards />
+                <PayrollProcessingCards 
+                    payrolls={payrolls}
+                    totalOvertimePay={totalOvertimePay}
+                    totalOvertimeHours={totalOvertimeHours}
+                    totalDeductions={totalDeductions}
+                    totalNetPay={totalNetPay}
+                    activeEmployee={activeEmployee}
+                    formatCurrency={formatCurrency}
+                    formatNumber={formatNumber}
+                />
                 
                 {/* Notification Toast */}
                 {showNotification && notification && (
@@ -334,7 +365,7 @@ export default function Index({ payrolls }: PageProps) {
                 </div>
             </div>
 
-            {/* Payroll Items Modal - Same as before */}
+            {/* Payroll Items Modal */}
             {isModalOpen && selectedPayroll && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center">
                     {/* Backdrop */}

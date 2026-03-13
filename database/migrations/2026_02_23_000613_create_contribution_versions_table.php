@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('contribution_versions', function (Blueprint $table) {
             $table->id();
             $table->enum('type', ['sss', 'philhealth', 'pagibig']);
-            $table->date('effective_from');
+            $table->date('effective_from')->nullable();
             $table->date('effective_to')->nullable();
             $table->timestamps();
         });

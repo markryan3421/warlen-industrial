@@ -29,6 +29,7 @@ class PayrollPeriodController extends Controller
         return Inertia::render('PayrollPeriod/index', compact('payrollPeriods', 'payroll_period_enums'));
     }
 
+
     /**
      * Show the form for creating a new resource.
      */
