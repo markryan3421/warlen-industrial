@@ -9,6 +9,7 @@ use App\Models\Payroll;
 use App\Models\PayrollItem;
 use App\Models\PayrollPeriod;
 use App\Models\ContributionVersion;
+use App\Models\Incentive; // Add this import
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -209,11 +210,15 @@ class PayrollProcessingService
         $aflDeduction = $stats->afl_deduction ?? 0;
         $cutPayment = $stats->cut_payment ?? 0;
 
-        // Calculate gross and net pay (include holiday overtime)
-        $grossPay = $basePay + $overtimePay + $holidayOvertimePay + $subsidyPay;
+        // Get incentives for this employee in the current payroll period
+        $incentives = $this->getEmployeeIncentives($payrollPeriod->id, $employee->id);
+        $totalIncentives = array_sum(array_column($incentives, 'amount'));
+
+        // Calculate gross and net pay (include holiday overtime and incentives)
+        $grossPay = $basePay + $overtimePay + $holidayOvertimePay + $subsidyPay + $totalIncentives;
         
         // Calculate government contributions based on gross pay
-        $contributions = $this->calculateGovernmentContributions($grossPay, $payrollPeriod);
+        $contributions = $this->calculateGovernmentContributions($grossPay);
         
         $totalDeductions = $lateDeduction + $aflDeduction + $cutPayment + 
                           $contributions['sss']['employee'] + 
@@ -244,158 +249,189 @@ class PayrollProcessingService
             $cutPayment,
             $employee,
             $lateMinutes,
-            $contributions // Pass contributions to payroll items
+            $contributions,
+            $incentives // Pass incentives to payroll items
         );
 
         return true;
     }
 
     /**
- * Calculate government contributions (SSS, Pag-IBIG, PhilHealth) based on salary range
- */
-protected function calculateGovernmentContributions(float $grossPay, PayrollPeriod $payrollPeriod): array
-{
-    // Initialize contributions array
-    $contributions = [
-        'sss' => ['employee' => 0, 'employer' => 0],
-        'pagibig' => ['employee' => 0, 'employer' => 0],
-        'philhealth' => ['employee' => 0, 'employer' => 0],
-    ];
-
-    try {
-        // Get the latest contribution versions (without date filtering)
-        $sssVersion = ContributionVersion::where('type', 'sss')
-            // ->latest('effective_from')
-            ->first();
-
-        $pagibigVersion = ContributionVersion::where('type', 'pagibig')
-            // ->latest('effective_from')
-            ->first();
-
-        $philhealthVersion = ContributionVersion::where('type', 'philhealth')
-            // ->latest('effective_from')
-            ->first();
-
-        // Calculate SSS (percentage based)
-        if ($sssVersion) {
-            $sssBracket = $sssVersion->contributionBrackets()
-                ->where('salary_from', '<=', $grossPay)
-                ->where('salary_to', '>=', $grossPay)
-                ->first();
+     * Get incentives for an employee in a specific payroll period
+     */
+    protected function getEmployeeIncentives(int $payrollPeriodId, int $employeeId): array
+    {
+        $incentives = [];
+        
+        try {
+            // Get all incentives for this payroll period that are assigned to the employee
+            $incentiveRecords = Incentive::where('payroll_period_id', $payrollPeriodId)
+                ->whereHas('employees', function($query) use ($employeeId) {
+                    $query->where('employee_id', $employeeId);
+                })
+                ->get();
             
-            if ($sssBracket) {
-                // Convert percentage to actual amount
-                $employeePercentage = (float) $sssBracket->employee_share;
-                $employerPercentage = (float) $sssBracket->employer_share;
-                
-                $contributions['sss'] = [
-                    'employee' => round($grossPay * ($employeePercentage / 100), 2),
-                    'employer' => round($grossPay * ($employerPercentage / 100), 2),
+            foreach ($incentiveRecords as $incentive) {
+                $incentives[] = [
+                    'id' => $incentive->id,
+                    'name' => $incentive->incentive_name,
+                    'amount' => (float) $incentive->incentive_amount,
                 ];
-            } else {
-                // If salary is outside all brackets, use the nearest bracket
-                $nearestBracket = $this->findNearestBracket($sssVersion, $grossPay);
-                if ($nearestBracket) {
-                    $employeePercentage = (float) $nearestBracket->employee_share;
-                    $employerPercentage = (float) $nearestBracket->employer_share;
+                
+                Log::info("Found incentive for employee {$employeeId}: {$incentive->incentive_name} - ₱{$incentive->incentive_amount}");
+            }
+            
+        } catch (\Exception $e) {
+            Log::error("Error fetching incentives for employee {$employeeId}: " . $e->getMessage());
+        }
+        
+        return $incentives;
+    }
+
+    /**
+     * Calculate government contributions (SSS, Pag-IBIG, PhilHealth) based on salary range
+     */
+    protected function calculateGovernmentContributions(float $grossPay): array
+    {
+        // Initialize contributions array
+        $contributions = [
+            'sss' => ['employee' => 0, 'employer' => 0],
+            'pagibig' => ['employee' => 0, 'employer' => 0],
+            'philhealth' => ['employee' => 0, 'employer' => 0],
+        ];
+
+        try {
+            // Get the latest contribution versions (without date filtering)
+            $sssVersion = ContributionVersion::where('type', 'sss')
+                ->first();
+
+            $pagibigVersion = ContributionVersion::where('type', 'pagibig')
+                ->first();
+
+            $philhealthVersion = ContributionVersion::where('type', 'philhealth')
+                ->first();
+
+            // Calculate SSS (percentage based)
+            if ($sssVersion) {
+                $sssBracket = $sssVersion->contributionBrackets()
+                    ->where('salary_from', '<=', $grossPay)
+                    ->where('salary_to', '>=', $grossPay)
+                    ->first();
+                
+                if ($sssBracket) {
+                    // Convert percentage to actual amount
+                    $employeePercentage = (float) $sssBracket->employee_share;
+                    $employerPercentage = (float) $sssBracket->employer_share;
                     
                     $contributions['sss'] = [
                         'employee' => round($grossPay * ($employeePercentage / 100), 2),
                         'employer' => round($grossPay * ($employerPercentage / 100), 2),
                     ];
+                } else {
+                    // If salary is outside all brackets, use the nearest bracket
+                    $nearestBracket = $this->findNearestBracket($sssVersion, $grossPay);
+                    if ($nearestBracket) {
+                        $employeePercentage = (float) $nearestBracket->employee_share;
+                        $employerPercentage = (float) $nearestBracket->employer_share;
+                        
+                        $contributions['sss'] = [
+                            'employee' => round($grossPay * ($employeePercentage / 100), 2),
+                            'employer' => round($grossPay * ($employerPercentage / 100), 2),
+                        ];
+                    }
                 }
-            }
-            
-            Log::info("SSS Calculation:", [
-                'gross_pay' => $grossPay,
-                'employee_percentage' => $employeePercentage ?? 0,
-                'employee_amount' => $contributions['sss']['employee'],
-                'employer_amount' => $contributions['sss']['employer']
-            ]);
-        }
-
-        // Calculate Pag-IBIG (percentage based - same as SSS and PhilHealth)
-        if ($pagibigVersion) {
-            $pagibigBracket = $pagibigVersion->contributionBrackets()
-                ->where('salary_from', '<=', $grossPay)
-                ->where('salary_to', '>=', $grossPay)
-                ->first();
-            
-            if ($pagibigBracket) {
-                // Convert percentage to actual amount
-                $employeePercentage = (float) $pagibigBracket->employee_share;
-                $employerPercentage = (float) $pagibigBracket->employer_share;
                 
-                $contributions['pagibig'] = [
-                    'employee' => round($grossPay * ($employeePercentage / 100), 2),
-                    'employer' => round($grossPay * ($employerPercentage / 100), 2),
-                ];
-            } else {
-                // If salary is outside all brackets, use the nearest bracket
-                $nearestBracket = $this->findNearestBracket($pagibigVersion, $grossPay);
-                if ($nearestBracket) {
-                    $employeePercentage = (float) $nearestBracket->employee_share;
-                    $employerPercentage = (float) $nearestBracket->employer_share;
+                Log::info("SSS Calculation:", [
+                    'gross_pay' => $grossPay,
+                    'employee_percentage' => $employeePercentage ?? 0,
+                    'employee_amount' => $contributions['sss']['employee'],
+                    'employer_amount' => $contributions['sss']['employer']
+                ]);
+            }
+
+            // Calculate Pag-IBIG (percentage based - same as SSS and PhilHealth)
+            if ($pagibigVersion) {
+                $pagibigBracket = $pagibigVersion->contributionBrackets()
+                    ->where('salary_from', '<=', $grossPay)
+                    ->where('salary_to', '>=', $grossPay)
+                    ->first();
+                
+                if ($pagibigBracket) {
+                    // Convert percentage to actual amount
+                    $employeePercentage = (float) $pagibigBracket->employee_share;
+                    $employerPercentage = (float) $pagibigBracket->employer_share;
                     
                     $contributions['pagibig'] = [
                         'employee' => round($grossPay * ($employeePercentage / 100), 2),
                         'employer' => round($grossPay * ($employerPercentage / 100), 2),
                     ];
+                } else {
+                    // If salary is outside all brackets, use the nearest bracket
+                    $nearestBracket = $this->findNearestBracket($pagibigVersion, $grossPay);
+                    if ($nearestBracket) {
+                        $employeePercentage = (float) $nearestBracket->employee_share;
+                        $employerPercentage = (float) $nearestBracket->employer_share;
+                        
+                        $contributions['pagibig'] = [
+                            'employee' => round($grossPay * ($employeePercentage / 100), 2),
+                            'employer' => round($grossPay * ($employerPercentage / 100), 2),
+                        ];
+                    }
                 }
-            }
-            
-            Log::info("Pag-IBIG Calculation:", [
-                'gross_pay' => $grossPay,
-                'employee_percentage' => $employeePercentage ?? 0,
-                'employee_amount' => $contributions['pagibig']['employee'],
-                'employer_amount' => $contributions['pagibig']['employer']
-            ]);
-        }
-
-        // Calculate PhilHealth (percentage based)
-        if ($philhealthVersion) {
-            $philhealthBracket = $philhealthVersion->contributionBrackets()
-                ->where('salary_from', '<=', $grossPay)
-                ->where('salary_to', '>=', $grossPay)
-                ->first();
-            
-            if ($philhealthBracket) {
-                // Convert percentage to actual amount
-                $employeePercentage = (float) $philhealthBracket->employee_share;
-                $employerPercentage = (float) $philhealthBracket->employer_share;
                 
-                $contributions['philhealth'] = [
-                    'employee' => round($grossPay * ($employeePercentage / 100), 2),
-                    'employer' => round($grossPay * ($employerPercentage / 100), 2),
-                ];
-            } else {
-                // If salary is outside all brackets, use the nearest bracket
-                $nearestBracket = $this->findNearestBracket($philhealthVersion, $grossPay);
-                if ($nearestBracket) {
-                    $employeePercentage = (float) $nearestBracket->employee_share;
-                    $employerPercentage = (float) $nearestBracket->employer_share;
+                Log::info("Pag-IBIG Calculation:", [
+                    'gross_pay' => $grossPay,
+                    'employee_percentage' => $employeePercentage ?? 0,
+                    'employee_amount' => $contributions['pagibig']['employee'],
+                    'employer_amount' => $contributions['pagibig']['employer']
+                ]);
+            }
+
+            // Calculate PhilHealth (percentage based)
+            if ($philhealthVersion) {
+                $philhealthBracket = $philhealthVersion->contributionBrackets()
+                    ->where('salary_from', '<=', $grossPay)
+                    ->where('salary_to', '>=', $grossPay)
+                    ->first();
+                
+                if ($philhealthBracket) {
+                    // Convert percentage to actual amount
+                    $employeePercentage = (float) $philhealthBracket->employee_share;
+                    $employerPercentage = (float) $philhealthBracket->employer_share;
                     
                     $contributions['philhealth'] = [
                         'employee' => round($grossPay * ($employeePercentage / 100), 2),
                         'employer' => round($grossPay * ($employerPercentage / 100), 2),
                     ];
+                } else {
+                    // If salary is outside all brackets, use the nearest bracket
+                    $nearestBracket = $this->findNearestBracket($philhealthVersion, $grossPay);
+                    if ($nearestBracket) {
+                        $employeePercentage = (float) $nearestBracket->employee_share;
+                        $employerPercentage = (float) $nearestBracket->employer_share;
+                        
+                        $contributions['philhealth'] = [
+                            'employee' => round($grossPay * ($employeePercentage / 100), 2),
+                            'employer' => round($grossPay * ($employerPercentage / 100), 2),
+                        ];
+                    }
                 }
+                
+                Log::info("PhilHealth Calculation:", [
+                    'gross_pay' => $grossPay,
+                    'employee_percentage' => $employeePercentage ?? 0,
+                    'employee_amount' => $contributions['philhealth']['employee'],
+                    'employer_amount' => $contributions['philhealth']['employer']
+                ]);
             }
-            
-            Log::info("PhilHealth Calculation:", [
-                'gross_pay' => $grossPay,
-                'employee_percentage' => $employeePercentage ?? 0,
-                'employee_amount' => $contributions['philhealth']['employee'],
-                'employer_amount' => $contributions['philhealth']['employer']
-            ]);
+
+        } catch (\Exception $e) {
+            Log::error("Error calculating government contributions: " . $e->getMessage());
         }
 
-    } catch (\Exception $e) {
-        Log::error("Error calculating government contributions: " . $e->getMessage());
+        return $contributions;
     }
 
-    return $contributions;
-}
     /**
      * Find the nearest contribution bracket for a given salary
      */
@@ -633,7 +669,8 @@ protected function calculateGovernmentContributions(float $grossPay, PayrollPeri
         float $cutPayment,
         Employee $employee,
         int $lateMinutes = 0,
-        array $contributions = [] // New parameter for contributions
+        array $contributions = [],
+        array $incentives = [] // New parameter for incentives
     ): void {
         $overtimeDecimal = isset($stats->overtime_work_day) ? (float)$stats->overtime_work_day : 0;
         $attendedDays = isset($stats->attended_days) ? (float)$stats->attended_days : 0;
@@ -661,7 +698,7 @@ protected function calculateGovernmentContributions(float $grossPay, PayrollPeri
         }
         $holidayPercentage = $holidayDecimal * 100;
 
-        // Earnings items with descriptions
+        // Earnings items with descriptions (including incentives)
         $earnings = [
             [
                 'code' => 'BASE',
@@ -688,6 +725,16 @@ protected function calculateGovernmentContributions(float $grossPay, PayrollPeri
                 'description' => 'Subsidy'
             ],
         ];
+
+        // Add incentives to earnings
+        foreach ($incentives as $incentive) {
+            $earnings[] = [
+                'code' => 'INCENTIVE - '. $incentive['name'],
+                'type' => 'earning',
+                'amount' => $incentive['amount'],
+                'description' => $incentive['name'] . ' - Incentive'
+            ];
+        }
 
         foreach ($earnings as $earning) {
             if ($earning['amount'] > 0) {
@@ -731,7 +778,7 @@ protected function calculateGovernmentContributions(float $grossPay, PayrollPeri
                     'type' => 'deduction',
                     'amount' => $contributions['sss']['employee'],
                     'description' => 'SSS Contribution (Employee Share) - ' . 
-                        number_format(($contributions['sss']['employee'] / ($grossPay ?? 1) * 100), 2) . '% of gross pay'
+                        number_format(($contributions['sss']['employee'] / ($payroll->gross_pay ?? 1) * 100), 2) . '% of gross pay'
                 ];
             }
             
@@ -750,7 +797,7 @@ protected function calculateGovernmentContributions(float $grossPay, PayrollPeri
                     'type' => 'deduction',
                     'amount' => $contributions['philhealth']['employee'],
                     'description' => 'PhilHealth Contribution (Employee Share) - ' . 
-                        number_format(($contributions['philhealth']['employee'] / ($grossPay ?? 1) * 100), 2) . '% of gross pay'
+                        number_format(($contributions['philhealth']['employee'] / ($payroll->gross_pay ?? 1) * 100), 2) . '% of gross pay'
                 ];
             }
         }
@@ -770,6 +817,12 @@ protected function calculateGovernmentContributions(float $grossPay, PayrollPeri
         // Add summary info to log
         Log::info("Payroll items created for employee {$employee->emp_code} with status {$employee->employee_status}, " .
             "position {$employee->position->pos_name} (Daily Rate: ₱{$employee->position->basic_salary})");
+        
+        // Log incentive totals
+        if (!empty($incentives)) {
+            $totalIncentives = array_sum(array_column($incentives, 'amount'));
+            Log::info("Incentives for {$employee->emp_code}: Total ₱{$totalIncentives}");
+        }
         
         // Log contribution totals
         if (!empty($contributions)) {
