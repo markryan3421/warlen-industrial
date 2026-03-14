@@ -66,8 +66,17 @@ class AttendanceController extends Controller
             searchColumns: ['employee_name', 'department'],
         );
 
+        $timelineData = AttendanceLog::query()
+            ->select([
+                'employee_id', 'employee_name', 'department', 'date',
+                'time_in', 'time_out', 'total_hours', 'is_overtime',
+            ])
+            ->orderBy('date')
+            ->get();
+
         return Inertia::render('attendances/AttendanceLogs/index', [
             'logs'         => $logs,
+            'timelineData' => $timelineData,
             'filters'       => $request->only(['search', 'perPage']),
             'totalCount'    => $logs['totalCount'],
             'filteredCount' => $logs['filteredCount'],
