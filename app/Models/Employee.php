@@ -16,13 +16,15 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Permission\Traits\HasRoles;
 
 #[UsePolicy(EmployeePolicy::class)]
 class Employee extends Model
 {
-    use HasRoles, HasFactory, SoftDeletes;
-    
+    use HasRoles, HasFactory, SoftDeletes,  LogsActivity;
+
     protected $table = 'employees';
 
 
@@ -41,13 +43,33 @@ class Employee extends Model
         'employee_status',
     ];
 
-       protected $casts = [
+    protected $casts = [
         'contract_start_date' => 'date',
         'contract_end_date' => 'date',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
     ];
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly([
+                'position_id',
+                'branch_id',
+                'user_id',
+                'site_id',
+                'slug_emp',
+                'emp_code',
+                'employee_number',
+                'contract_start_date',
+                'contract_end_date',
+                'emergency_contact_number',
+                'pay_frequency',
+                'employee_status',
+            ])
+            ->logOnlyDirty();
+    }
 
     /**
      * Get status badge color for UI
@@ -90,20 +112,20 @@ class Employee extends Model
     }
 
     /**
- * Manually check if employee should be active based on current date
- */
-public function shouldBeActive(): bool
-{
-    $today = Carbon::today();
-    
-    if (!$this->contract_start_date || !$this->contract_end_date) {
-        return false;
+     * Manually check if employee should be active based on current date
+     */
+    public function shouldBeActive(): bool
+    {
+        $today = Carbon::today();
+
+        if (!$this->contract_start_date || !$this->contract_end_date) {
+            return false;
+        }
+
+        return $today->gte($this->contract_start_date) &&
+            $today->lte($this->contract_end_date) &&
+            $this->contract_start_date->lte($this->contract_end_date);
     }
-    
-    return $today->gte($this->contract_start_date) && 
-           $today->lte($this->contract_end_date) &&
-           $this->contract_start_date->lte($this->contract_end_date);
-}
 
     public function position(): BelongsTo
     {
@@ -146,12 +168,12 @@ public function shouldBeActive(): bool
     }
 
 
-    
+
     // Accessors and Mutators
     protected function employeeStatus(): Attribute
     {
         return Attribute::make(
-           get: fn($value) => Str::title($value),
+            get: fn($value) => Str::title($value),
             set: fn($value) => strtolower(strip_tags($value)),
         );
     }
@@ -173,7 +195,7 @@ public function shouldBeActive(): bool
     protected function payFrequency(): Attribute
     {
         return Attribute::make(
-           // get: fn($value) => preg_replace('/[^a-zA-Z0-9\s]/', '-', Str::title($value)),
+            // get: fn($value) => preg_replace('/[^a-zA-Z0-9\s]/', '-', Str::title($value)),
             set: fn($value) => strtolower(strip_tags($value)),
         );
     }
@@ -186,5 +208,5 @@ public function shouldBeActive(): bool
     public function getRouteKeyName()
     {
         return 'slug_emp';
-    } 
+    }
 }
