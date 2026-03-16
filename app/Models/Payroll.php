@@ -3,10 +3,13 @@
 namespace App\Models;
 
 use App\Models\PayrollItem;
+use App\Policies\PayrollPolicy;
+use Illuminate\Database\Eloquent\Attributes\UsePolicy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+#[UsePolicy(PayrollPolicy::class)]
 class Payroll extends Model
 {
     protected $fillable = [

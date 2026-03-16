@@ -1,9 +1,9 @@
+// components/employee-payroll-table.tsx
 import { Button } from "@/components/ui/button"
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
-    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
@@ -14,7 +14,7 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table"
-import { MoreHorizontalIcon } from "lucide-react"
+import { MoreHorizontalIcon, Eye } from "lucide-react"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
     Dialog,
@@ -23,275 +23,523 @@ import {
     DialogHeader,
     DialogTitle,
     DialogFooter,
-    DialogTrigger,
 } from "@/components/ui/dialog"
-import React from 'react';
+import React, { useRef, useState } from 'react';
 
-const dataTables = [
-    {
-        empID: 'EMP-001',
-        empName: 'Juan Dela Cruz',
-        empRole: 'Senior Engineer',
-        empType:'Full-Time',
-        regPay: 100,
-        otPay: 200,
-        holidayPay: 300,
-        incentives: 400,
-        loans: 500,
-        netPay: 600,
-        status: 'Active'
-    },
-    {
-        empID: 'EMP-002',
-        empName: 'John Doe',
-        empRole: 'Junior Engineer',
-        empType:'Part-Time',
-        regPay: 100,
-        otPay: 200,
-        holidayPay: 300,
-        incentives: 400,
-        loans: 500,
-        netPay: 600,
-        status: 'Inactive'
-    }
-]
+interface PayrollItem {
+    id: number;
+    payroll_id: number;
+    code: string;
+    type: 'earning' | 'deduction';
+    amount: number;
+    description: string | null;
+    created_at: string;
+    updated_at: string;
+}
 
-export default function EmployeePayrollTable() {
-    const PrintRef = React.useRef<HTMLDivElement>(null);
+// Update this interface to match your actual payroll data structure
+interface PayrollData {
+    id: number;
+    payroll_period_id: number;
+    employee_id: number;
+    gross_pay: number;
+    total_deduction: number;
+    net_pay: number;
+    payroll_items?: PayrollItem[];
+    payroll_period?: {
+        id: number;
+        period_name: string;
+        start_date: string;
+        end_date: string;
+        is_closed: boolean;
+    };
+    employee?: {
+        id: number;
+        emp_code: string;
+        user: {
+            name: string;
+            email: string;
+        };
+        position: {
+            pos_name: string;
+            deleted_at: string;
+        };
+    };
+    created_at: string;
+    updated_at: string;
+}
 
-    // Alternative method that modifies content before printing
-   // Alternative simpler method using iframe
-const handlePrintIframe = () => {
-    if (!PrintRef.current) return;
+interface EmployeePayrollTableProps {
+    data: PayrollData[];  // Changed from EmployeePayroll to PayrollData
+    onView?: (payroll: PayrollData) => void;
+    onEdit?: (payroll: PayrollData) => void;
+    onDelete?: (payroll: PayrollData) => void;
+    onViewItems?: (payroll: PayrollData) => void; // Added for viewing payroll items
+}
 
-    const iframe = document.createElement('iframe');
-    iframe.style.position = 'absolute';
-    iframe.style.width = '0';
-    iframe.style.height = '0';
-    iframe.style.border = 'none';
-    
-    document.body.appendChild(iframe);
+export default function EmployeePayrollTable({
+    data = [],
+    onView,
+    onEdit,
+    onDelete,
+    onViewItems
+}: EmployeePayrollTableProps) {
+    const PrintRef = useRef<HTMLDivElement>(null);
+    const [selectedPayroll, setSelectedPayroll] = useState<PayrollData | null>(null);
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-    const iframeDoc = iframe.contentWindow?.document;
-    if (!iframeDoc) return;
+    // Helper function to safely format currency values
+    const formatCurrency = (amount: any): string => {
+        const numAmount = typeof amount === 'string' ? parseFloat(amount) || 0 : amount || 0;
 
-    // Get styles
-    const styles = document.querySelectorAll('style, link[rel="stylesheet"]');
-    
-    iframeDoc.open();
-    iframeDoc.write(`
-        <!DOCTYPE html>
-        <html>
-            <head>
-                <title>Print Receipt</title>
-                ${Array.from(styles).map(style => style.outerHTML).join('')}
-                <style>
-                    /* Remove browser's default header and footer when printing */
-                    @page {
-                        size: auto;   /* auto is the initial value */
-                        margin: 0mm;  /* this affects the margin in the printer settings */
-                    } 
-                </style>
-            </head>
-            <body>
-                <div class="receipt-container">
-                    ${PrintRef.current.outerHTML}
-                </div>
-                <script>
-                    window.onload = function() {
-                        setTimeout(() => {
-                            window.print();
-                        }, 500);
-                    };
-                </script>
-            </body>
-        </html>
-    `);
-    iframeDoc.close();
-};
+        return new Intl.NumberFormat('en-PH', {
+            style: 'currency',
+            currency: 'PHP',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(numAmount);
+    };
+
+    // Helper function to safely format number without currency symbol
+    const formatNumber = (amount: any): string => {
+        const numAmount = typeof amount === 'string' ? parseFloat(amount) || 0 : amount || 0;
+        return numAmount.toFixed(2);
+    };
+
+    // Format date
+    const formatDate = (dateString: string) => {
+        if (!dateString) return 'N/A';
+        return new Date(dateString).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+    };
+
+    // Format period range
+    const formatPeriodRange = (payroll: PayrollData) => {
+        if (payroll.payroll_period) {
+            return `${formatDate(payroll.payroll_period.start_date)} - ${formatDate(payroll.payroll_period.end_date)}`;
+        }
+        return 'N/A';
+    };
+
+    // Check if position is valid
+    const hasValidPosition = (payroll: PayrollData) => {
+        return payroll.employee?.position && !payroll.employee.position.deleted_at;
+    };
+
+    const handlePrintIframe = () => {
+        if (!PrintRef.current) return;
+
+        const iframe = document.createElement('iframe');
+        iframe.style.position = 'absolute';
+        iframe.style.width = '0';
+        iframe.style.height = '0';
+        iframe.style.border = 'none';
+
+        document.body.appendChild(iframe);
+
+        const iframeDoc = iframe.contentWindow?.document;
+        if (!iframeDoc) return;
+
+        const styles = document.querySelectorAll('style, link[rel="stylesheet"]');
+
+        iframeDoc.open();
+        iframeDoc.write(`
+            <!DOCTYPE html>
+            <html>
+                <head>
+                    <title>Print Receipt</title>
+                    ${Array.from(styles).map(style => style.outerHTML).join('')}
+                    <style>
+                        @page { size: auto; margin: 0mm; }
+                        body { padding: 20px; font-family: system-ui, sans-serif; }
+                        .receipt-container { max-width: 800px; margin: 0 auto; }
+                    </style>
+                </head>
+                <body>
+                    <div class="receipt-container">
+                        ${PrintRef.current.outerHTML}
+                    </div>
+                    <script>
+                        window.onload = function() {
+                            setTimeout(() => {
+                                window.print();
+                                setTimeout(() => window.close(), 100);
+                            }, 500);
+                        };
+                    </script>
+                </body>
+            </html>
+        `);
+        iframeDoc.close();
+    };
+
+    const handleViewReceipt = (payroll: PayrollData) => {
+        setSelectedPayroll(payroll);
+        setIsDialogOpen(true);
+        if (onView) onView(payroll);
+    };
+
+    const handleViewItems = (payroll: PayrollData) => {
+        if (onViewItems) onViewItems(payroll);
+    };
+
+    const renderActionButtons = (payroll: PayrollData) => (
+        <div className="flex justify-center gap-2">
+            {onViewItems && (
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleViewItems(payroll)}
+                    className="transition-all duration-200 hover:scale-105"
+                >
+                    <Eye className="h-4 w-4 mr-1" />
+                    Items
+                </Button>
+            )}
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="size-8">
+                        <MoreHorizontalIcon />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <button
+                        className="w-full text-left px-2 py-1.5 text-sm hover:bg-accent rounded-sm flex items-center gap-2"
+                        onClick={() => handleViewReceipt(payroll)}
+                    >
+                        <Eye className="h-4 w-4" />
+                        View Receipt
+                    </button>
+                    <DropdownMenuItem onClick={() => onEdit?.(payroll)}>
+                        Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                        className="text-red-600"
+                        onClick={() => onDelete?.(payroll)}
+                    >
+                        Delete
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+        </div>
+    );
 
     return (
-        <div className='px-7 py-3'>
-            <div className="rounded-lg border-2 border-gray-200 overflow-hidden">
-                <Table>
-                    <TableHeader className="bg-white">
-                        <TableRow>
-                            <TableHead className='text-center py-4'><Checkbox className='bg-white border-gray-400 mr-3'/>Employee ID</TableHead>
-                            <TableHead className='text-center py-4'>Employee Name</TableHead>
-                            <TableHead className='text-center py-4'>Regular Pay</TableHead>
-                            <TableHead className='text-center py-4'>OT Pay <span>(hrs/pay)</span></TableHead>
-                            <TableHead className='text-center py-4'>Holiday Pay</TableHead>
-                            <TableHead className='text-center py-4'>Incentives</TableHead>
-                            <TableHead className='text-center py-4'>Loans</TableHead>
-                            <TableHead className='text-center py-4'>Net Pay</TableHead>
-                            <TableHead className='text-center py-4'>Status</TableHead>
-                            <TableHead className="text-center py-4">Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {dataTables.map((item, index) => (
-                            <TableRow key={index} className='hover:bg-gray-100'>
-                                <TableCell className="text-center text-medium">
-                                    <Checkbox className='bg-white border-gray-400 -ml-5 mr-3'/>
-                                    {item.empID}
-                                </TableCell>
-                                <TableCell className="text-center">{item.empName}</TableCell>
-                                <TableCell className="text-center"><span className="font-semibold">₱</span> {item.regPay}</TableCell>
-                                <TableCell className="text-center">₱ {item.otPay}</TableCell>
-                                <TableCell className="text-center">₱ {item.holidayPay}</TableCell>
-                                <TableCell className="text-center">₱ {item.incentives}</TableCell>
-                                <TableCell className="text-center">₱ {item.loans}</TableCell>
-                                <TableCell className="text-center">₱ {item.netPay}</TableCell>
-                                <TableCell className="text-center">
-                                    <span 
-                                        className={`
-                                            border px-1 text-xs rounded-xl 
-                                            ${item.status === 'Active' 
-                                                ? 'border-green-500 bg-green-100 text-green-700' 
-                                                : 'border-red-500 bg-red-100 text-red-700'
-                                            }
-                                        `}
-                                    >
-                                        {item.status}
-                                    </span>
-                                </TableCell>
-                                <TableCell className="text-center">
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="size-8">
-                                                <MoreHorizontalIcon />
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                            <Dialog>
-                                                <DialogTrigger className="p-1 px-2 text-sm text-left hover:bg-accent w-full hover:text-accent-foreground ">
-                                                    Open
-                                                </DialogTrigger>
-                                                <DialogContent className="lg:max-w-lg overflow-auto">
-                                                    <DialogHeader className="items-center">
-                                                        <DialogTitle>Receipt</DialogTitle>
-                                                        <DialogDescription className="-mt-3">
-                                                            View and print receipt
-                                                        </DialogDescription>
-                                                    </DialogHeader>
-                                                    
-                                                    <div ref={PrintRef} className="p-6 md:p-8 border border-gray-200 rounded-lg bg-white print:max-w-full print:p-4 h-full overflow-auto">
-                                                    {/* Employee Details */}
-                                                    <div className="flex justify-between mb-4">
-                                                        <div className = "flex gap-2">
-                                                            <img src="/images/dekalogo.png" alt="" height= "50px" width="50px" />
-                                                            <span className="font-bold text-muted-background">{item.empName} <br /> 
-                                                            <span className="font-normal text-xs text-gray-500 mb-3"> {item.empRole || 'Role'} - (ID: {item.empID})</span>
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                    
-                                                    {/* Payment Date Details and Employee Type */}
-                                                    <div className="text-sm">
-                                                        <div className="grid grid-cols-2 mb-4">
-                                                            <div className="text-gray-600">
-                                                                Payment Period: <br/> 
-                                                                <span className="text-black font-semibold">
-                                                                    {new Date().toLocaleDateString('en-US', { 
-                                                                        year: 'numeric', 
-                                                                        month: 'long', 
-                                                                        day: 'numeric' 
-                                                                    })} - &nbsp;
-                                                                    {new Date().toLocaleDateString('en-US', { 
-                                                                        year: 'numeric', 
-                                                                        month: 'long', 
-                                                                        day: 'numeric' 
-                                                                    })}
-                                                                </span>
-                                                            </div>
-                                                            <div className="text-gray-600">
-                                                                Payment Date: <br/> 
-                                                                <span className="text-black font-semibold">
-                                                                    {new Date().toLocaleDateString('en-US', { 
-                                                                        year: 'numeric', 
-                                                                        month: 'long', 
-                                                                        day: 'numeric' 
-                                                                    })}
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                        <div className="grid grid-cols-3">
-                                                            <div className="text-gray-600">
-                                                                Employee Type: <br/> <span className="text-black font-semibold">{item.empType}</span>
-                                                            </div>
-                                                            <div className="text-gray-600">
-                                                                Total Hours: <br/> <span className="text-black font-semibold">400 hrs</span>
-                                                            </div>
-                                                            <div className="text-gray-600">
-                                                                Total Hours: <br/> <span className="text-black font-semibold">400 hrs</span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    
-                                                    {/* Earning Breakdown */}
-                                                    <div className="my-4">
-                                                        <h1 className="font-bold mt-5">Earnings Breakdown</h1>
-                                                        
-                                                        <div className="flex justify-between font-medium py-2">
-                                                            <span className="text-gray-600 text-sm">Regular Pay</span>
-                                                            <span className="text-gray-600 text-sm">PHP {item.regPay}</span>
-                                                        </div>
-                                                        <div className="flex justify-between font-medium py-2">
-                                                            <span className="text-gray-600 text-sm">Overtime Pay</span>
-                                                            <span className="text-gray-600 text-sm">PHP 1,000.00</span>
-                                                        </div>
-                                                        <div className="flex justify-between font-medium py-2">
-                                                            <span className="text-gray-600 text-sm">Bonus</span>
-                                                            <span className="text-gray-600 text-sm">PHP 1,000.00</span>
-                                                        </div>
-                                                    </div>
-                                                    
-                                                    
-                                                    {/* Earning Breakdown */}
-                                                    <div className="my-4">
-                                                        <h1 className="font-bold mt-5">Deductions</h1>
-                                                        <div className="flex justify-between font-medium py-2">
-                                                            <span className="text-gray-600 text-sm">PhilHealth</span>
-                                                            <span className="text-gray-600 text-sm">PHP 1,000.00</span>
-                                                        </div>
-                                                        <div className="flex justify-between font-medium py-2">
-                                                            <span className="text-gray-600 text-sm">Overtime</span>
-                                                            <span className="text-gray-600 text-sm">PHP 1,000.00</span>
-                                                        </div>
-                                                        <div className="flex justify-between font-medium py-2">
-                                                            <span className="text-gray-600 text-sm">Bonus</span>
-                                                            <span className="text-gray-600 text-sm">PHP 1,000.00</span>
-                                                        </div>
-                                                    </div>
-                                                    
-                                                    {/* Total */}
-                                                    <div className="border-t border-gray-300 pt-3">
-                                                        <div className="flex justify-between text-lg font-bold">
-                                                            <span className="text-gray-600">TOTAL</span>
-                                                            <span className="text-gray-600">$49.99</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                    
-                                                    <DialogFooter className="mt-4 flex gap-2">
-                                                        <Button variant="outline" onClick={handlePrintIframe} className="flex-1 hover:cursor-pointer">
-                                                            🖨️ Print (Iframe)
-                                                        </Button>
-                                                    </DialogFooter>
-                                                </DialogContent>
-                                            </Dialog>
-                                            <DropdownMenuItem>Edit</DropdownMenuItem>
-                                            <DropdownMenuItem variant="destructive">
-                                                Delete
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                </TableCell>
+        <>
+            {/* Desktop View - lg and above */}
+            <div className="hidden lg:block">
+                <div className="rounded-lg border-2 border-gray-200 overflow-hidden">
+                    <Table>
+                        <TableHeader className="bg-white">
+                            <TableRow>
+                                <TableHead className='text-center py-4'>Period</TableHead>
+                                <TableHead className='text-center py-4'>Employee Code</TableHead>
+                                <TableHead className='text-center py-4'>Employee Name</TableHead>
+                                <TableHead className='text-center py-4'>Position</TableHead>
+                                <TableHead className='text-center py-4'>Gross Pay</TableHead>
+                                <TableHead className='text-center py-4'>Total Deduction</TableHead>
+                                <TableHead className='text-center py-4'>Net Pay</TableHead>
+                                <TableHead className='text-center py-4'>Status</TableHead>
+                                <TableHead className="text-center py-4">Actions</TableHead>
                             </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
+                        </TableHeader>
+                        <TableBody>
+                            {data.map((item, index) => (
+                                <TableRow
+                                    key={item.id || index}
+                                    className="text-center odd:bg-white even:bg-stone-50/60 hover:bg-blue-50/60 transition-colors duration-200 animate-in fade-in slide-in-from-bottom-2 duration-500"
+                                    style={{ animationDelay: `${index * 60}ms`, animationFillMode: "both" }}
+                                >
+                                    <TableCell className="text-center">
+                                        {item.payroll_period ? (
+                                            <div>
+                                                <div className="font-medium">{item.payroll_period.period_name}</div>
+                                                <div className="text-xs text-gray-500">
+                                                    {formatPeriodRange(item)}
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <span className="text-gray-400 italic">No period</span>
+                                        )}
+                                    </TableCell>
+                                    <TableCell className="text-center">{item.employee?.emp_code || 'N/A'}</TableCell>
+                                    <TableCell className="text-center">{item.employee?.user.name || 'N/A'}</TableCell>
+                                    <TableCell className="text-center">
+                                        {hasValidPosition(item) ?
+                                            item.employee?.position.pos_name :
+                                            <span className="text-gray-400 italic">Not assigned</span>
+                                        }
+                                    </TableCell>
+                                    <TableCell className="text-center font-medium">
+                                        {formatCurrency(item.gross_pay)}
+                                    </TableCell>
+                                    <TableCell className="text-center text-red-600">
+                                        -{formatCurrency(item.total_deduction)}
+                                    </TableCell>
+                                    <TableCell className="text-center font-semibold text-green-600">
+                                        {formatCurrency(item.net_pay)}
+
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                        <span
+                                            className={`
+                                                border px-2 py-1 text-xs rounded-full inline-block
+                                                ${item.payroll_period?.is_closed
+                                                    ? 'border-gray-500 bg-gray-100 text-gray-700'
+                                                    : 'border-green-500 bg-green-100 text-green-700'
+                                                }
+                                            `}
+                                        >
+                                            {item.payroll_period?.is_closed ? 'Closed' : 'Active'}
+                                        </span>
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                        {renderActionButtons(item)}
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+
+                    {/* Footer with record count */}
+                    {data.length > 0 && (
+                        <div className="flex items-center justify-end gap-2 px-6 py-3 border-t border-gray-200 bg-stone-50">
+                            <p className="text-xs font-medium text-stone-500">
+                                Showing{" "}
+                                <span className="font-bold text-blue-600">
+                                    {data.length}
+                                </span>{" "}
+                                record{data.length !== 1 ? "s" : ""}
+                            </p>
+                        </div>
+                    )}
+                </div>
             </div>
-        </div>
-    )
+
+            {/* Tablet View - md to lg */}
+            <div className="hidden md:block lg:hidden">
+                <div className="rounded-xl border border-stone-200 bg-white shadow-sm overflow-hidden">
+                    <div className="p-4 grid grid-cols-2 gap-3">
+                        {data.map((item, index) => (
+                            <div
+                                key={item.id || index}
+                                className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm hover:shadow-md hover:border-blue-300 transition-all duration-200 animate-in fade-in slide-in-from-bottom-2 duration-500"
+                                style={{ animationDelay: `${index * 50}ms`, animationFillMode: "both" }}
+                            >
+                                <div className="flex items-center justify-between mb-3 pb-2.5 border-b">
+                                    <span className="inline-flex items-center justify-center w-7 h-7 rounded-[7px] bg-blue-100 text-blue-600 text-[11px] font-bold">
+                                        {index + 1}
+                                    </span>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handleViewItems(item)}
+                                        className="transition-all duration-200 hover:scale-105"
+                                    >
+                                        <Eye className="h-4 w-4 mr-1" />
+                                        View
+                                    </Button>
+                                </div>
+
+                                <dl className="flex flex-col gap-2">
+                                    <div className="flex items-start justify-between">
+                                        <dt className="text-[10px] font-bold uppercase text-stone-400">Period</dt>
+                                        <dd className="text-[12.5px] font-medium text-right">
+                                            {item.payroll_period?.period_name || 'N/A'}
+                                        </dd>
+                                    </div>
+                                    <div className="flex items-start justify-between">
+                                        <dt className="text-[10px] font-bold uppercase text-stone-400">Employee</dt>
+                                        <dd className="text-[12.5px] font-medium text-right">
+                                            {item.employee?.emp_code} - {item.employee?.user.name}
+                                        </dd>
+                                    </div>
+                                    <div className="flex items-start justify-between">
+                                        <dt className="text-[10px] font-bold uppercase text-stone-400">Position</dt>
+                                        <dd className="text-[12.5px] font-medium text-right">
+                                            {hasValidPosition(item) ? item.employee?.position.pos_name : 'N/A'}
+                                        </dd>
+                                    </div>
+                                    <div className="flex items-start justify-between">
+                                        <dt className="text-[10px] font-bold uppercase text-stone-400">Gross Pay</dt>
+                                        <dd className="text-[12.5px] font-medium text-right text-green-600">
+                                            {formatCurrency(item.gross_pay)}
+                                        </dd>
+                                    </div>
+                                    <div className="flex items-start justify-between">
+                                        <dt className="text-[10px] font-bold uppercase text-stone-400">Net Pay</dt>
+                                        <dd className="text-[12.5px] font-medium text-right font-semibold text-green-600">
+                                            {formatCurrency(item.net_pay)}
+                                        </dd>
+                                    </div>
+                                </dl>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Footer */}
+                    {data.length > 0 && (
+                        <div className="flex items-center justify-end gap-2 px-6 py-3 border-t bg-stone-50">
+                            <p className="text-xs font-medium text-stone-500">
+                                Showing <span className="font-bold text-blue-600">{data.length}</span> records
+                            </p>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Mobile View - below md */}
+            <div className="block md:hidden">
+                <div className="rounded-xl border border-stone-200 bg-white shadow-sm overflow-hidden">
+                    <div className="divide-y">
+                        {data.map((item, index) => (
+                            <div
+                                key={item.id || index}
+                                className="px-4 py-4 odd:bg-white even:bg-stone-50 animate-in fade-in slide-in-from-bottom-2 duration-500"
+                                style={{ animationDelay: `${index * 60}ms`, animationFillMode: "both" }}
+                            >
+                                <div className="flex items-center justify-between mb-3">
+                                    <span className="inline-flex items-center justify-center w-7 h-7 rounded-[7px] bg-blue-100 text-blue-600 text-[11px] font-bold">
+                                        {index + 1}
+                                    </span>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handleViewItems(item)}
+                                        className="transition-all duration-200 hover:scale-105"
+                                    >
+                                        <Eye className="h-4 w-4 mr-1" />
+                                        View
+                                    </Button>
+                                </div>
+
+                                <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5">
+                                    <div>
+                                        <dt className="text-[10px] font-bold uppercase text-stone-400">Period</dt>
+                                        <dd className="text-[13px] mt-0.5">{item.payroll_period?.period_name || 'N/A'}</dd>
+                                    </div>
+                                    <div>
+                                        <dt className="text-[10px] font-bold uppercase text-stone-400">Emp Code</dt>
+                                        <dd className="text-[13px] mt-0.5">{item.employee?.emp_code || 'N/A'}</dd>
+                                    </div>
+                                    <div>
+                                        <dt className="text-[10px] font-bold uppercase text-stone-400">Name</dt>
+                                        <dd className="text-[13px] mt-0.5">{item.employee?.user.name || 'N/A'}</dd>
+                                    </div>
+                                    <div>
+                                        <dt className="text-[10px] font-bold uppercase text-stone-400">Position</dt>
+                                        <dd className="text-[13px] mt-0.5">
+                                            {hasValidPosition(item) ? item.employee?.position.pos_name : 'N/A'}
+                                        </dd>
+                                    </div>
+                                    <div>
+                                        <dt className="text-[10px] font-bold uppercase text-stone-400">Gross Pay</dt>
+                                        <dd className="text-[13px] text-green-600 mt-0.5">{formatCurrency(item.gross_pay)}</dd>
+                                    </div>
+                                    <div>
+                                        <dt className="text-[10px] font-bold uppercase text-stone-400">Net Pay</dt>
+                                        <dd className="text-[13px] font-semibold text-green-600 mt-0.5">{formatCurrency(item.net_pay)}</dd>
+                                    </div>
+                                </dl>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+
+            {/* Receipt Dialog */}
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogContent className="lg:max-w-lg max-h-[90vh] overflow-y-auto">
+                    <DialogHeader className="items-center">
+                        <DialogTitle>Payslip</DialogTitle>
+                        <DialogDescription className="-mt-3">
+                            View and print employee payslip
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    {selectedPayroll && (
+                        <div ref={PrintRef} className="p-6 border border-gray-200 rounded-lg bg-white">
+                            <div className="flex items-center gap-4 mb-6">
+                                <div>
+                                    <h3 className="font-bold text-lg">{selectedPayroll.employee?.user.name}</h3>
+                                    <p className="text-sm text-gray-500">
+                                        {selectedPayroll.employee?.position?.pos_name} • ID: {selectedPayroll.employee?.emp_code}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4 mb-6 text-sm">
+                                <div>
+                                    <p className="text-gray-600">Pay Period:</p>
+                                    <p className="font-semibold">
+                                        {selectedPayroll.payroll_period?.period_name || 'N/A'}
+                                    </p>
+                                </div>
+                                <div>
+                                    <p className="text-gray-600">Period Date:</p>
+                                    <p className="font-semibold">
+                                        {formatPeriodRange(selectedPayroll)}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div>
+                                <h4 className="font-bold mb-2">Earnings</h4>
+                                {selectedPayroll.payroll_items
+                                    ?.filter(item => item.type === 'earning')
+                                    .map((item) => (
+                                        <div key={item.id} className="flex justify-between items-center py-2 border-b last:border-0">
+                                            <div>
+                                                <span className="font-medium">
+                                                    {item.code.split('_')
+                                                        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                                                        .join(' ')}
+                                                </span>
+                                                {item.description && (
+                                                    <p className="text-xs text-gray-500">
+                                                        {item.description.charAt(0).toUpperCase() + item.description.slice(1).toLowerCase()}
+                                                    </p>
+                                                )}
+                                            </div>
+                                            <span className="font-medium">{formatCurrency(item.amount)}</span>
+                                        </div>
+                                    ))}
+                            </div>
+
+                            <div className="mb-4">
+                                <h4 className="font-bold mb-2">Deductions</h4>
+                                <div className="space-y-2">
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-gray-600">Total Deductions</span>
+                                        <span className="text-red-600">-{formatCurrency(selectedPayroll.total_deduction)}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="border-t pt-3">
+                                <div className="flex justify-between font-bold">
+                                    <span>NET PAY</span>
+                                    <span className="text-green-600">{formatCurrency(selectedPayroll.net_pay)}</span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+
+
+                    <DialogFooter className="mt-4">
+                        <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                            Close
+                        </Button>
+                        <Button onClick={handlePrintIframe}>
+                            🖨️ Print
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </>
+    );
 }

@@ -8,6 +8,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "./ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 
 interface TableColumn {
     label: string;
@@ -252,78 +253,56 @@ export const CustomTable = ({
                 </div>
 
                 {/* DESKTOP VIEW  — lg and above (≥ 1024px) */}
+                // In custom-table.tsx - Desktop View Section
                 <div className="hidden lg:block overflow-x-auto overflow-y-hidden">
-                    <table className="w-full border-collapse text-[13.5px] text-stone-800 dark:text-stone-200">
-
-                        {/* Head - sticky for better UX when scrolling horizontally */}
-                        <thead className="bg-white dark:bg-[#080f1e] border-1 sticky top-0 z-10">
-                            <tr>
+                    <Table>
+                        <TableHeader className="bg-white dark:bg-[#080f1e]">
+                            <TableRow>
                                 {columns.map((col) => (
-                                    <th
+                                    <TableHead
                                         key={col.key}
-                                        className={`px-[18px] py-3.5 last:pr-6 text-center text-[13px] font-bold border-black tracking-[0.1em] whitespace-nowrap text-black dark:text-stone-200 border-none ${col.className ?? ""}`}
+                                        className={`px-[18px] py-3.5 text-center text-[13px] font-bold tracking-[0.1em] whitespace-nowrap ${col.className ?? ""}`}
                                     >
                                         {col.label}
-                                    </th>
+                                    </TableHead>
                                 ))}
-                            </tr>
-                        </thead>
-
-                        {/* Body */}
-                        <tbody className="divide-y divide-stone-100 dark:divide-stone-800/70">
-                            {data.length > 0 ? (
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {data && data.length > 0 ? (
                                 data.map((row, index) => (
-                                    <tr
-                                        key={index}
-                                        className="group odd:bg-white even:bg-stone-50/60 dark:odd:bg-[#0c1529] dark:even:bg-[#0e1a30] hover:bg-blue-50/60 dark:hover:bg-[#0f1e3a] transition-colors duration-200 animate-in fade-in slide-in-from-bottom-2 duration-500"
+                                    <TableRow
+                                        key={row.id || index}
+                                        className="text-center odd:bg-white even:bg-stone-50/60 dark:odd:bg-[#0c1529] dark:even:bg-[#0e1a30] hover:bg-blue-50/60 dark:hover:bg-[#0f1e3a] transition-colors duration-200 animate-in fade-in slide-in-from-bottom-2 duration-500"
                                         style={{ animationDelay: `${index * 60}ms`, animationFillMode: "both" }}
                                     >
-                                        {/* Data cells */}
                                         {columns.map((col) => (
-                                            <td
-                                                key={col.key}
-                                                className={`px-[18px] py-3.5 last:pr-6 text-center align-middle text-stone-700 dark:text-stone-300 border-none overflow-hidden ${col.className ?? ""}`}
+                                            <TableCell
+                                                key={`${row.id}-${col.key}`}
+                                                className={`px-[18px] py-3.5 align-middle border-none overflow-hidden ${col.className ?? ""}`}
                                             >
-                                                {col.isImage ? (
-                                                    <div className="flex justify-center overflow-hidden rounded-xl">
-                                                        <img
-                                                            src={row[col.key] as string}
-                                                            alt="Image"
-                                                            className="w-[72px] h-[72px] rounded-xl object-cover border-2 border-stone-200 dark:border-stone-700 transition-transform duration-300 ease-[cubic-bezier(.34,1.56,.64,1)] hover:scale-110 hover:-rotate-1 hover:shadow-xl"
-                                                        />
-                                                    </div>
-                                                ) : col.isAction ? (
+                                                {col.isAction ? (
                                                     renderActionButtons(row)
-                                                ) : col.isBadge ? (
-                                                    <span className="inline-block bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap">
-                                                        {col.render ? col.render(row) : formatCellValue(col, row)}&nbsp;{col.render && col.render(row) === 1 ? "site" : "sites"}
-                                                    </span>
-                                                ) : col.isDate ? (
-                                                    <span className="text-sm font-medium text-foreground">
-                                                        {new Date(row[col.key]).toLocaleDateString('en-US', {
-                                                            year: 'numeric',
-                                                            month: 'long',
-                                                            day: 'numeric',
-                                                        })}
-                                                    </span>
+                                                ) : col.render ? (
+                                                    col.render(row)
                                                 ) : (
                                                     <span className="block truncate max-w-[200px] mx-auto">
                                                         {formatCellValue(col, row)}
                                                     </span>
                                                 )}
-                                            </td>
+                                            </TableCell>
                                         ))}
-                                    </tr>
+                                    </TableRow>
                                 ))
                             ) : (
-                                <tr>
-                                    <td colSpan={columns.length + 1} className="border-none">
+                                <TableRow>
+                                    <TableCell colSpan={columns.length} className="border-none">
                                         {emptyState}
-                                    </td>
-                                </tr>
+                                    </TableCell>
+                                </TableRow>
                             )}
-                        </tbody>
-                    </table>
+                        </TableBody>
+                    </Table>
                 </div>
 
                 {/* ── Footer ────────────────────────────────────────────────── */}
