@@ -31,10 +31,12 @@ class EmployeeController extends Controller
         //     return $this->employeeRepository->getEmployees();
         // });
         $employees = $this->employeeRepository->getEmployees();
+        $branchesWithSites = $this->employeeRepository->getBranchesWithSites();
 
 
         return Inertia::render('employees/index', [
-            'employees' => $employees
+            'employees' => $employees,
+            'branchesData' => $branchesWithSites
         ]);
     }
 
