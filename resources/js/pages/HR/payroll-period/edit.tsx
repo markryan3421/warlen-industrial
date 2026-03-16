@@ -1,4 +1,4 @@
-import AppLayout from '@/layouts/app-layout';
+import HrLayout from '@/layouts/hr-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, useForm, usePage } from '@inertiajs/react';
 import InputError from '@/components/input-error';
@@ -61,7 +61,7 @@ export default function Edit({ payrollPeriod }: EditProps) {
     }
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <HrLayout breadcrumbs={breadcrumbs}>
             <Head title="Edit Payroll Period" />
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
                 <Card>
@@ -143,6 +143,6 @@ export default function Edit({ payrollPeriod }: EditProps) {
                     </CardContent>
                 </Card>
             </div>
-        </AppLayout>
+        </HrLayout>
     );
 }

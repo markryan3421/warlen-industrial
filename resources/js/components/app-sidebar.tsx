@@ -130,7 +130,7 @@ export function AppSidebar() {
             </SidebarHeader>
 
             <SidebarContent className={`
-                ${isExpanded ? 'px-5' : '-ml-3 px-5 transition-all duration-200 ease-in-out'}`}
+                ${isExpanded ? 'px-5' : 'px-3 transition-all duration-200 ease-in-out'}`}
             >
                 <NavMain items={ExpendituresItems} label="Expenditures" />
                 <NavMain items={AccessControlItems} label="Access Control" />

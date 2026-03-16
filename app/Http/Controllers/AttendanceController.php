@@ -79,6 +79,14 @@ class AttendanceController extends Controller
             searchColumns: ['employee_name', 'department'],
         );
 
+        $timelineData = AttendanceLog::query()
+            ->select([
+                'employee_id', 'employee_name', 'department', 'date',
+                'time_in', 'time_out', 'total_hours', 'is_overtime',
+            ])
+            ->orderBy('date')
+            ->get();
+
         return Inertia::render('attendances/AttendanceLogs/index', [
             'logs' => $logs,
             'stats' => $exceptionStats,
@@ -90,7 +98,9 @@ class AttendanceController extends Controller
         ]);
     }
 
-    public function attendanceExceptionStats(Request $request) {
+    public function attendanceExceptionStats(Request $request)
+    {
+        // Paginated data — for the table view
         $stats = PaginatedTableService::make(
             model:         AttendanceExceptionStat::class,
             request:       $request,
@@ -102,6 +112,17 @@ class AttendanceController extends Controller
             ],
             searchColumns: ['employee_name', 'department'],
         );
+
+
+        // Only fetch the columns the calendar actually needs
+        $calendarData = AttendanceExceptionStat::query()
+            ->select([
+                'employee_id', 'employee_name', 'department', 'date',
+                'am_time_in', 'am_time_out', 'pm_time_in', 'pm_time_out',
+                'absence_minutes', 'total_exception_minutes',
+            ])
+            ->orderBy('date')
+            ->get();
 
         return Inertia::render('attendances/ExceptionStats/index', [
             'stats' => $stats,

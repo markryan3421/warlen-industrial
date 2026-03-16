@@ -25,7 +25,13 @@ class RolaBaseMiddleware
         $user = Auth::user();
 
         // Admin should not access employee routes and hr head routes
-        if ($user->hasRole('admin') && ($request->routeIs('employee.dashboard', 'hr.dashboard', 'employee.application-leave.*'))) {
+        if ($user->hasRole('admin') && ($request->routeIs(
+            'employee.dashboard',
+            'hr.dashboard',
+            'employee.application-leave.*',
+            'hr.payroll.*',
+            'hr.payroll-periods.*'
+        ))) {
             // return redirect()->intended(route('dashboard'));
             abort(401);
         }
@@ -42,7 +48,9 @@ class RolaBaseMiddleware
                 'permissions.*',
                 'contribution-versions.*',
                 'application-leave.*',
-                'payroll-periods.*'
+                'payroll-periods.*',
+                'hr.payroll.*',
+                'hr.payroll-periods.*'
             )
         ) {
             // return redirect()->intended(route('employee.dashboard'));
@@ -60,11 +68,12 @@ class RolaBaseMiddleware
                 'employees.*',
                 'permissions.*',
                 'contribution-versions.*',
-                'employee.application-leave.*'
+                'employee.application-leave.*',
+                'payroll-periods.*',
             )
         ) {
             // return redirect()->intended(route('hr.dashboard'));
-               abort(401);
+            abort(401);
         }
 
         return $next($request);

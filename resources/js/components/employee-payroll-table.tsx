@@ -201,28 +201,10 @@ export default function EmployeePayrollTable({
             )}
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="size-8">
-                        <MoreHorizontalIcon />
+                    <Button variant="ghost" size="icon" className="size-8 hover:bg-transparent hover:cursor-pointer hover:text-gray-500" onClick={() => handleViewReceipt(payroll)}>
+                        <Eye />
                     </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                    <button
-                        className="w-full text-left px-2 py-1.5 text-sm hover:bg-accent rounded-sm flex items-center gap-2"
-                        onClick={() => handleViewReceipt(payroll)}
-                    >
-                        <Eye className="h-4 w-4" />
-                        View Receipt
-                    </button>
-                    <DropdownMenuItem onClick={() => onEdit?.(payroll)}>
-                        Edit
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                        className="text-red-600"
-                        onClick={() => onDelete?.(payroll)}
-                    >
-                        Delete
-                    </DropdownMenuItem>
-                </DropdownMenuContent>
             </DropdownMenu>
         </div>
     );
@@ -490,24 +472,49 @@ export default function EmployeePayrollTable({
                                 <h4 className="font-bold mb-2">Earnings</h4>
                                 {selectedPayroll.payroll_items
                                     ?.filter(item => item.type === 'earning')
-                                    .map((item) => (
-                                        <div key={item.id} className="flex justify-between items-center py-2 border-b last:border-0">
-                                            <div>
-                                                <span className="font-medium">
-                                                    {item.code.split('_')
-                                                        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-                                                        .join(' ')}
-                                                </span>
-                                                {item.description && (
-                                                    <p className="text-xs text-gray-500">
-                                                        {item.description.charAt(0).toUpperCase() + item.description.slice(1).toLowerCase()}
-                                                    </p>
-                                                )}
+                                    .map((item) => {
+                                        // Check if the code is "HOLIDAY OT" (case insensitive)
+                                        const isHolidayOT = item.code.toUpperCase() === 'HOLIDAY OT' ||
+                                            item.code.toUpperCase().includes('HOLIDAY') &&
+                                            item.code.toUpperCase().includes('OT');
+
+                                        const isBaseSalary = item.code.toUpperCase() === 'BASE';
+
+                                        const isOvertime = item.code.toUpperCase() === 'OVERTIME';
+
+                                        // Determine the display name
+                                        let displayName;
+                                        if (isHolidayOT) {
+                                            displayName = 'Holiday Overtime Pay';
+                                        } else if (isBaseSalary) {
+                                            displayName = 'Base Pay';
+                                        } else if (isOvertime) {
+                                            displayName = 'Overtime Pay';
+                                        }
+                                        else {
+                                            displayName = item.code.split('_')
+                                                .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                                                .join(' ');
+                                        }
+
+                                        return (
+                                            <div key={item.id} className="flex justify-between items-center py-2 border-b last:border-0">
+                                                <div>
+                                                    <span className="font-medium">
+                                                        {displayName}
+                                                    </span>
+                                                    {item.description && (
+                                                        <p className="text-xs text-gray-500">
+                                                            {item.description.charAt(0).toUpperCase() + item.description.slice(1).toLowerCase()}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                                <span className="font-medium">{formatCurrency(item.amount)}</span>
                                             </div>
-                                            <span className="font-medium">{formatCurrency(item.amount)}</span>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                             </div>
+
 
                             <div className="mb-4">
                                 <h4 className="font-bold mb-2">Deductions</h4>

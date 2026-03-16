@@ -1,12 +1,11 @@
-import AppLayout from '@/layouts/app-layout';
+import HrLayout from '@/layouts/hr-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, useForm, usePage } from '@inertiajs/react';
 import InputError from '@/components/input-error';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { update } from '@/actions/App/Http/Controllers/HrRole/PayrollPeriodController';
-import React from 'react';
+import { store } from '@/actions/App/Http/Controllers/HrRole/PayrollPeriodController';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -14,8 +13,8 @@ const breadcrumbs: BreadcrumbItem[] = [
         href: '/payroll-periods',
     },
     {
-        title: 'Edit Payroll Period',
-        href: '/payroll-period/edit',
+        title: 'Create Payroll Period',
+        href: '/payroll-period/create',
     },
 ];
 
@@ -24,16 +23,6 @@ interface FormData {
     end_date: string;
     pay_date: string;
     payroll_per_status: string;
-}
-
-interface EditProps {
-    payrollPeriod: {
-        id: number;
-        start_date: string;
-        end_date: string;
-        pay_date: string;
-        payroll_per_status: string;
-    };
 }
 
 interface PageProps {
@@ -45,28 +34,28 @@ interface PageProps {
     };
 }
 
-export default function Edit({ payrollPeriod }: EditProps) {
-    const { payroll_period_enums } = usePage<{ payroll_period_enums: PageProps['payroll_period_enums'] }>().props;
-
-    const { data, setData, errors, processing, put } = useForm<FormData>({
-        start_date: payrollPeriod.start_date || '',
-        end_date: payrollPeriod.end_date || '',
-        pay_date: payrollPeriod.pay_date || '',
-        payroll_per_status: payrollPeriod.payroll_per_status || '',
+export default function Create() {
+    const { data, setData, errors, processing, post } = useForm<FormData>({
+        start_date: '',
+        end_date: '',
+        pay_date: '',
+        payroll_per_status: 'open', // Default status
     });
+
+    const { payroll_period_enums } = usePage().props
 
     function submitPayrollPeriod(e: React.FormEvent) {
         e.preventDefault();
-        put(update(payrollPeriod.id).url);
+        post(store().url);
     }
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Edit Payroll Period" />
+        <HrLayout breadcrumbs={breadcrumbs}>
+            <Head title="Create Payroll Period" />
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Edit Payroll Period Information</CardTitle>
+                        <CardTitle>Payroll Period Information</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={submitPayrollPeriod} className="space-y-6">
@@ -121,7 +110,7 @@ export default function Edit({ payrollPeriod }: EditProps) {
                                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                                     >
                                         <option value="" disabled>Select a status</option>
-                                        {payroll_period_enums.map(({ value, label }) => (
+                                        {payroll_period_enums.map(({value, label}) => (
                                             <option key={value} value={value}>
                                                 {label}
                                             </option>
@@ -136,13 +125,13 @@ export default function Edit({ payrollPeriod }: EditProps) {
                                     type="submit"
                                     disabled={processing}
                                 >
-                                    {processing ? 'Updating...' : 'Update Payroll Period'}
+                                    {processing ? 'Creating...' : 'Create Payroll Period'}
                                 </Button>
                             </div>
                         </form>
                     </CardContent>
                 </Card>
             </div>
-        </AppLayout>
+        </HrLayout>
     );
 }
