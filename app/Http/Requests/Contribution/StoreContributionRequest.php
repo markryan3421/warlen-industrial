@@ -37,8 +37,8 @@ class StoreContributionRequest extends FormRequest
     {
         return [
             'type' => 'Contribution Type',
-            'effective_from' => 'Effective From Date',
-            'effective_to' => 'Effective To Date',
+            // 'effective_from' => 'Effective From Date',
+            // 'effective_to' => 'Effective To Date',
             'salary_ranges' => 'Salary Ranges',
             'salary_ranges.*.salary_from' => 'Salary From',
             'salary_ranges.*.salary_to' => 'Salary To',

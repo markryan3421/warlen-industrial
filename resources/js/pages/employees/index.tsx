@@ -1,4 +1,4 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, router } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
@@ -7,7 +7,7 @@ import type { BreadcrumbItem } from '@/types';
 import EmmployeeController from '@/actions/App/Http/Controllers/EmployeeController';
 import {
     Users, MoreHorizontalIcon, Search, X, Filter, ChevronDown, Check, Circle, CheckCircle, XCircle,
-    UserPlus
+    UserPlus, Calendar
 } from 'lucide-react';
 import {
     DropdownMenu,
@@ -26,6 +26,8 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { format } from 'date-fns';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -58,6 +60,8 @@ interface Employee {
     contract_start_date: string;
     contract_end_date: string;
     employee_status: string;
+    hire_date?: string;
+    created_at?: string;
 }
 
 interface BranchData {
@@ -73,9 +77,13 @@ interface BranchData {
 interface PageProps {
     employees: Employee[];
     branchesData?: BranchData[];
+    filters?: {
+        date_from?: string;
+        date_to?: string;
+    };
 }
 
-export default function Index({ employees, branchesData = [] }: PageProps) {
+export default function Index({ employees, branchesData = [], filters = {} }: PageProps) {
     const { delete: destroy } = useForm();
 
     // Refs for dropdown positioning
@@ -101,6 +109,22 @@ export default function Index({ employees, branchesData = [] }: PageProps) {
 
     // Status filter state - Using Switch
     const [showActiveOnly, setShowActiveOnly] = useState(true); // true = show only active employees
+
+    // Date range filter state (similar to incentives)
+    const [dateFrom, setDateFrom] = useState<Date | undefined>(
+        filters.date_from ? new Date(filters.date_from) : undefined
+    );
+    const [dateTo, setDateTo] = useState<Date | undefined>(
+        filters.date_to ? new Date(filters.date_to) : undefined
+    );
+
+    // Separate month states for left and right calendars
+    const [leftCalendarMonth, setLeftCalendarMonth] = useState<Date>(new Date());
+    const [rightCalendarMonth, setRightCalendarMonth] = useState<Date>(() => {
+        const nextMonth = new Date();
+        nextMonth.setMonth(nextMonth.getMonth() + 1);
+        return nextMonth;
+    });
 
     // Branch dropdown position for site dropdown
     const [branchDropdownPosition, setBranchDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
@@ -177,6 +201,21 @@ export default function Index({ employees, branchesData = [] }: PageProps) {
             document.removeEventListener('mousedown', handleClickOutside);
         };
     }, [branchPopoverOpen, sitePopoverOpen]);
+
+    // Update URL when date filters change (similar to incentives)
+    useEffect(() => {
+        const params: any = {};
+
+        if (dateFrom) {
+            params.date_from = format(dateFrom, 'yyyy-MM-dd');
+        }
+        if (dateTo) {
+            params.date_to = format(dateTo, 'yyyy-MM-dd');
+        }
+
+        // Preserve other filters if needed
+        router.get('/employees', params, { preserveState: true, replace: true });
+    }, [dateFrom, dateTo]);
 
     // Helper function
     const safeToLowerCase = (value: any): string => {
@@ -258,9 +297,39 @@ export default function Index({ employees, branchesData = [] }: PageProps) {
         return 'No contract period';
     };
 
+    const clearDateFilters = () => {
+        setDateFrom(undefined);
+        setDateTo(undefined);
+    };
+
     // Filter employees
     const filteredEmployees = useMemo(() => {
         let filtered = employees;
+
+        // Apply date range filter (using hire_date or created_at)
+        if (dateFrom || dateTo) {
+            filtered = filtered.filter(employee => {
+                // Use hire_date if available, otherwise use created_at or contract_start_date
+                const employeeDate = employee.hire_date || employee.created_at || employee.contract_start_date;
+                
+                if (!employeeDate) return false;
+
+                const empDate = new Date(employeeDate);
+
+                if (dateFrom && dateTo) {
+                    // Both dates selected - check if date falls within range
+                    return empDate >= dateFrom && empDate <= dateTo;
+                } else if (dateFrom) {
+                    // Only from date selected - dates after or on from date
+                    return empDate >= dateFrom;
+                } else if (dateTo) {
+                    // Only to date selected - dates before or on to date
+                    return empDate <= dateTo;
+                }
+
+                return true;
+            });
+        }
 
         if (selectedPositions.length > 0) {
             filtered = filtered.filter(employee =>
@@ -309,7 +378,7 @@ export default function Index({ employees, branchesData = [] }: PageProps) {
         }
 
         return filtered;
-    }, [employees, searchTerm, selectedPositions, selectedBranch, selectedSite, showActiveOnly]);
+    }, [employees, searchTerm, selectedPositions, selectedBranch, selectedSite, showActiveOnly, dateFrom, dateTo]);
 
     const clearFilters = () => {
         setSearchTerm('');
@@ -317,6 +386,8 @@ export default function Index({ employees, branchesData = [] }: PageProps) {
         setSelectedBranch('');
         setSelectedSite('');
         setShowActiveOnly(true); // Reset to show active only
+        setDateFrom(undefined);
+        setDateTo(undefined);
         setPositionSearchTerm('');
         setBranchSearchTerm('');
         setSiteSearchTerm('');
@@ -352,17 +423,30 @@ export default function Index({ employees, branchesData = [] }: PageProps) {
         ...selectedPositions,
         selectedBranch,
         selectedSite,
-        !showActiveOnly // Count as filter if showing all employees
+        !showActiveOnly, // Count as filter if showing all employees
+        dateFrom,
+        dateTo
     ].filter(Boolean).length;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Employees" />
             <div className="flex flex-1 flex-col gap-2 p-4">
-                {/* Header with title and description */}
-                <div className="mb-2">
-                    <h1 className="text-2xl font-bold text-gray-900">Employee Management</h1>
-                    <p className="text-sm text-gray-500 mt-1">See who's active on this run.</p>
+                {/* Header with title and create button aligned right */}
+                <div className="flex justify-between items-center mb-2">
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-900">Employee Management</h1>
+                        <p className="text-sm text-gray-500 mt-1">See who's active on this run.</p>
+                    </div>
+                    <Link href="/employees/create">
+                        <Button className="h-14">
+                            <UserPlus className="h-5 w-5" />
+                            <div className="flex flex-col items-start leading-tight">
+                                <span className="text-sm font-medium">Create</span>
+                                <span className="text-xs font-normal">Employee</span>
+                            </div>
+                        </Button>
+                    </Link>
                 </div>
 
                 {/* Header with filters */}
@@ -403,7 +487,7 @@ export default function Index({ employees, branchesData = [] }: PageProps) {
                                         role="combobox"
                                         aria-expanded={positionPopoverOpen}
                                         className={cn(
-                                            "w-[140px] justify-between",
+                                            "w-[140px] justify-between h-14",
                                             selectedPositions.length > 0 && "border-primary text-primary"
                                         )}
                                     >
@@ -495,7 +579,7 @@ export default function Index({ employees, branchesData = [] }: PageProps) {
                                     variant="outline"
                                     onClick={handleBranchButtonClick}
                                     className={cn(
-                                        "w-[140px] justify-between",
+                                        "w-[140px] justify-between h-14",
                                         selectedBranch && "border-primary text-primary"
                                     )}
                                 >
@@ -612,8 +696,90 @@ export default function Index({ employees, branchesData = [] }: PageProps) {
                             </div>
                         )}
 
+                        {/* Date Range Filter - Added before Status */}
+                        <div className="flex flex-col min-w-[300px]">
+                            <Label className="text-xs font-semibold text-black mb-1 ml-1">
+                                Hire Date Range
+                            </Label>
+                            <div className="relative">
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            className={cn(
+                                                "w-full justify-start text-left font-normal h-14",
+                                                !dateFrom && !dateTo && "text-muted-foreground"
+                                            )}
+                                        >
+                                            <Calendar className="mr-2 h-4 w-4" />
+                                            {dateFrom || dateTo ? (
+                                                <>
+                                                    {dateFrom && format(dateFrom, 'MMM d, yyyy')}
+                                                    {dateFrom && dateTo && ' - '}
+                                                    {dateTo && format(dateTo, 'MMM d, yyyy')}
+                                                </>
+                                            ) : (
+                                                <span>Filter by date range</span>
+                                            )}
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0" align="start">
+                                        <div className="flex">
+                                            {/* Left Calendar */}
+                                            <div className="border-r">
+                                                <CalendarComponent
+                                                    mode="range"
+                                                    selected={{
+                                                        from: dateFrom,
+                                                        to: dateTo,
+                                                    }}
+                                                    onSelect={(range) => {
+                                                        setDateFrom(range?.from);
+                                                        setDateTo(range?.to);
+                                                    }}
+                                                    month={leftCalendarMonth}
+                                                    onMonthChange={setLeftCalendarMonth}
+                                                    numberOfMonths={1}
+                                                    initialFocus
+                                                />
+                                            </div>
+
+                                            {/* Right Calendar */}
+                                            <div>
+                                                <CalendarComponent
+                                                    mode="range"
+                                                    selected={{
+                                                        from: dateFrom,
+                                                        to: dateTo,
+                                                    }}
+                                                    onSelect={(range) => {
+                                                        setDateFrom(range?.from);
+                                                        setDateTo(range?.to);
+                                                    }}
+                                                    month={rightCalendarMonth}
+                                                    onMonthChange={setRightCalendarMonth}
+                                                    numberOfMonths={1}
+                                                />
+                                            </div>
+                                        </div>
+                                    </PopoverContent>
+                                </Popover>
+
+                                {/* Clear button for date filter */}
+                                {(dateFrom || dateTo) && (
+                                    <button
+                                        onClick={clearDateFilters}
+                                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                        title="Clear date filter"
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+
                         {/* Status Switch - Active Only Toggle */}
-                        <div className="flex flex-col border rounded-md px-3 py-2 bg-white shadow-sm min-w-[110px]">
+                        <div className="flex flex-col border rounded-md px-3 py-2 bg-white shadow-sm min-w-[110px] h-14 justify-center">
                             <Label className="text-xs font-semibold text-black mb-0.5">
                                 Status
                             </Label>
@@ -635,15 +801,6 @@ export default function Index({ employees, branchesData = [] }: PageProps) {
                                 />
                             </div>
                         </div>
-                        <Link href="/employees/create">
-                            <Button className="ml-auto h-14">
-                                <UserPlus className="h-5 w-5" />
-                                <div className="flex flex-col items-start leading-tight">
-                                    <span className="text-sm font-medium">Create</span>
-                                    <span className="text-xs font-normal">Employee</span>
-                                </div>
-                            </Button>
-                        </Link>
                     </div>
                 )}
 
@@ -674,9 +831,11 @@ export default function Index({ employees, branchesData = [] }: PageProps) {
                                         ? `No employees in ${selectedBranch} / ${selectedSite} found.`
                                         : selectedBranch
                                             ? `No employees in ${selectedBranch} found.`
-                                            : !showActiveOnly
-                                                ? `No employees found.`
-                                                : "No employees match your current filters."
+                                            : dateFrom || dateTo
+                                                ? `No employees found for the selected date range.`
+                                                : !showActiveOnly
+                                                    ? `No employees found.`
+                                                    : "No employees match your current filters."
                             }
                         </p>
                         <Button variant="outline" onClick={clearFilters}>

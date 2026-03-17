@@ -18,8 +18,8 @@ class CreateNewContributionVersion
     {
         $contributionVersion = ContributionVersion::create([
             'type' => $data['type'],
-            'effective_from' => $data['effective_from'],
-            'effective_to' => $data['effective_to'],
+            // 'effective_from' => $data['effective_from'],
+            // 'effective_to' => $data['effective_to'],
         ]);
 
         return $contributionVersion;
