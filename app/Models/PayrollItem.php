@@ -28,7 +28,7 @@ class PayrollItem extends Model
     {
         return LogOptions::defaults()
             ->logOnly([
-                'payroll_id',
+                'payroll.employee.user.name',
                 'code',
                 'type',
                 'amount',

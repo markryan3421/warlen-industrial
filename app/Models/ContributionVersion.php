@@ -34,8 +34,8 @@ class ContributionVersion extends Model
         return LogOptions::defaults()
             ->logOnly([
                 'type',
-                'effective_from',
-                'effective_to',
+                // 'effective_from',
+                // 'effective_to',
             ])
             ->logOnlyDirty();
     }

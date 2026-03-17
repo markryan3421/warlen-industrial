@@ -30,7 +30,7 @@ class Branch extends Model
             ->logOnly([
                 'branch_name',
                 'branch_address',
-                'branch_slug'
+               // 'branch_slug'
             ])
             ->logOnlyDirty();
     }

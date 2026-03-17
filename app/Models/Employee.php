@@ -55,11 +55,16 @@ class Employee extends Model
     {
         return LogOptions::defaults()
             ->logOnly([
-                'position_id',
-                'branch_id',
-                'user_id',
-                'site_id',
-                'slug_emp',
+                // 'position_id',
+                // 'branch_id',
+                // 'user_id',
+                // 'site_id',
+                'position.pos_name',
+                'branch.branch_name',
+                'site.site_name',
+                'user.name',
+                'user.email',
+                //'slug_emp',
                 'emp_code',
                 'employee_number',
                 'contract_start_date',

@@ -41,8 +41,8 @@ class ApplicationLeave extends Model
     {
         return LogOptions::defaults()
             ->logOnly([
-                'employee_id',
-                'slug_app',
+                'employee.user.name',
+                //'slug_app',
                 'leave_start',
                 'leave_end',
                 'reason_to_leave',
