@@ -8,6 +8,8 @@ use App\Http\Controllers\BranchController;
 use App\Http\Controllers\ContributionVersionController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\EmployeeRole\ApplicationLeaveController as EmployeeApplicationLeaveController;
+use App\Http\Controllers\HrRole\HRAttendanceController;
+use App\Http\Controllers\HrRole\HRAttendanceImportController;
 use App\Http\Controllers\HrRole\PayrollController as HrPayrollController;
 use App\Http\Controllers\HrRole\PayrollPeriodController as HrPayrollPeriodController;
 use App\Http\Controllers\IncentiveController;
@@ -77,16 +79,27 @@ Route::middleware(['auth', 'verified', 'throttle:limit-actions', 'roleBase'])->g
 
     Route::resource('payrolls', PayrollController::class)->except(['show']);
 
-    Route::get('/attendance-schedules', [AttendanceController::class, 'attendanceSchedules']);
-    Route::get('/attendance-period-stats', [AttendanceController::class, 'attendancePeriodStats']);
-    Route::get('/attendance-logs', [AttendanceController::class, 'attendanceLogs']);
-    Route::get('/attendance-exception-stats', [AttendanceController::class, 'attendanceExceptionStats']);
+    Route::get('/attendance-schedules', [AttendanceController::class, 'attendanceSchedules'])->name('admin.attendance-schedules');
+    Route::get('/attendance-period-stats', [AttendanceController::class, 'attendancePeriodStats'])->name('admin.attendance-period-stats');
+    Route::get('/attendance-logs', [AttendanceController::class, 'attendanceLogs'])->name('admin.attendance-logs');
+    Route::get('/attendance-exception-stats', [AttendanceController::class, 'attendanceExceptionStats'])->name('admin.attendance-exception-stats');
 
     Route::get('/coming-soon', function () {
         return Inertia::render('coming-soon');
     });
+    Route::resource('/activity-logs', ActivityLogController::class)->only(['index']);
 
 
+
+    //intended for HR
+    Route::get('/hr/attendance-logs', [HRAttendanceController::class, 'attendanceLogs'])->name('hr.attendance-logs');
+    Route::get('/hr/attendance-exception-stats', [HRAttendanceController::class, 'attendanceExceptionStats'])->name('hr.attendance-exception-stats');
+    Route::get('/hr/attendance-period-stats', [HRAttendanceController::class, 'attendancePeriodStats'])->name('hr.attendance-period-stats');
+    Route::get('/hr/attendance-schedules', [HRAttendanceController::class, 'attendanceSchedules'])->name('hr.attendance-schedules');
+
+    Route::resource('/hr/attendances', HRAttendanceImportController::class, [
+        'as' => 'hr'
+    ]);
 
     Route::resource('/hr/payroll', HrPayrollController::class)->names([
         'index' => 'hr.payroll.index',
@@ -103,8 +116,6 @@ Route::middleware(['auth', 'verified', 'throttle:limit-actions', 'roleBase'])->g
         'update' => 'hr.payroll-periods.update',
         'destroy' => 'hr.payroll-periods.destroy',
     ]);
-
-    Route::resource('/activity-logs', ActivityLogController::class)->only(['index']);
 });
 
 
