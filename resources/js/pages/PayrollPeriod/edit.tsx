@@ -5,7 +5,7 @@ import InputError from '@/components/input-error';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { update } from '@/actions/App/Http/Controllers/HrRole/PayrollPeriodController';
+import { update } from '@/actions/App/Http/Controllers/PayrollPeriodController';
 import React from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [

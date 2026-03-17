@@ -16,8 +16,8 @@ class UpdateContribution
     {
         $contributionVersion->update([
             'type' => $data['type'],
-            'effective_from' => $data['effective_from'],
-            'effective_to' => $data['effective_to'],
+            // 'effective_from' => $data['effective_from'],
+            // 'effective_to' => $data['effective_to'],
         ]);
 
         $contributionVersion->contributionBrackets()->delete();
