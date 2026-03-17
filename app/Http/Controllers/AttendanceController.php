@@ -42,13 +42,26 @@ class AttendanceController extends Controller
                 'normal_work_hours', 'real_work_hours',
                 'late_times', 'late_minutes',
                 'attended_days', 'absent_days',
-                'real_pay',
+                'real_pay', 'scheduled_days',
             ],
             searchColumns: ['employee_name', 'department'],
         );
 
+        $visualData = AttendancePeriodStat::query()
+            ->select([
+                'employee_id', 'employee_name', 'department',
+                'period_start', 'period_end',
+                'normal_work_hours', 'real_work_hours',
+                'late_times', 'late_minutes',
+                'attended_days', 'absent_days',
+                'real_pay', 'scheduled_days',
+            ])
+            ->orderBy('period_start')
+            ->get();
+
         return Inertia::render('attendances/PeriodStat/index', [
             'stats'         => $stats,
+            'visualData'    => $visualData,
             'filters'       => $request->only(['search', 'perPage']),
             'totalCount'    => $stats['totalCount'],
             'filteredCount' => $stats['filteredCount'],
@@ -66,8 +79,17 @@ class AttendanceController extends Controller
             searchColumns: ['employee_name', 'department'],
         );
 
+        $timelineData = AttendanceLog::query()
+            ->select([
+                'employee_id', 'employee_name', 'department', 'date',
+                'time_in', 'time_out', 'total_hours', 'is_overtime',
+            ])
+            ->orderBy('date')
+            ->get();
+
         return Inertia::render('attendances/AttendanceLogs/index', [
             'logs'         => $logs,
+            'timelineData' => $timelineData,
             'filters'       => $request->only(['search', 'perPage']),
             'totalCount'    => $logs['totalCount'],
             'filteredCount' => $logs['filteredCount'],

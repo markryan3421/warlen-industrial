@@ -5,15 +5,32 @@ namespace App\Models;
 use App\Policies\IncentivePolicy;
 use Illuminate\Database\Eloquent\Attributes\UsePolicy;
 use Illuminate\Database\Eloquent\Model;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 #[UsePolicy(IncentivePolicy::class)]
 class Incentive extends Model
 {
+    use LogsActivity;
+
     protected $fillable = [
         'payroll_period_id',
         'incentive_name',
         'incentive_amount'
     ];
+
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly([
+                'payroll_period.start_date',
+                'payroll_period.end_date',
+                'incentive_name',
+                'incentive_amount'
+            ])
+            ->logOnlyDirty();
+    }
 
     public function payroll_period()
     {

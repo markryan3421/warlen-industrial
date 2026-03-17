@@ -10,17 +10,30 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class Site extends Model
 {
-    use HasFactory;
-    
+    use HasFactory, LogsActivity;
+
     protected $table = 'sites';
 
     protected $fillable = [
         'branch_id',
         'site_name'
     ];
+
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly([
+                'branch.branch_name',
+                'site_name',
+            ])
+            ->logOnlyDirty(); 
+    }
 
     public function branch(): BelongsTo
     {
@@ -34,7 +47,7 @@ class Site extends Model
 
 
     // Accessors and Mutators
-    protected function siteName():Attribute
+    protected function siteName(): Attribute
     {
         return Attribute::make(
             get: fn($value) => Str::upper($value),

@@ -130,8 +130,6 @@ export default function AttendanceExceptionStats({ stats, calendarData, filters,
     }));
   }, [calendarData]);
 
-  console.log('calendarDataFormatted', calendarDataFormatted);
-
   return (
     <AppLayout breadcrumbs={breadcrumbs}>
       <Head title="Attendance Logs" />

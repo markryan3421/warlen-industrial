@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\ApplicationLeaveController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AttendanceImportController;
@@ -7,9 +8,9 @@ use App\Http\Controllers\BranchController;
 use App\Http\Controllers\ContributionVersionController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\EmployeeRole\ApplicationLeaveController as EmployeeApplicationLeaveController;
-use App\Http\Controllers\IncentiveController;
 use App\Http\Controllers\HrRole\PayrollController as HrPayrollController;
 use App\Http\Controllers\HrRole\PayrollPeriodController as HrPayrollPeriodController;
+use App\Http\Controllers\IncentiveController;
 use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\PayrollPeriodController;
 use App\Http\Controllers\PermissionController;
@@ -102,6 +103,8 @@ Route::middleware(['auth', 'verified', 'throttle:limit-actions', 'roleBase'])->g
         'update' => 'hr.payroll-periods.update',
         'destroy' => 'hr.payroll-periods.destroy',
     ]);
+
+    Route::resource('/activity-logs', ActivityLogController::class)->only(['index']);
 });
 
 

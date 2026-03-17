@@ -7,6 +7,11 @@ import { AttendancePeriodStatsTableConfig } from "@/config/tables/attendance-per
 import AppLayout from "@/layouts/app-layout";
 import { type BreadcrumbItem } from '@/types';
 import AttendanceController from '../../../actions/App/Http/Controllers/AttendanceController';
+import { CustomPagination } from "@/components/custom-pagination";
+import { AttendancePeriodStatView, AttendanceStatsVisualTable } from "@/components/attendance/attendance-period-stat-view";
+import { useState } from "react";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { BarChart, ScrollText, Sheet } from "lucide-react";
 
 const breadcrumbs: BreadcrumbItem[] = [
   {
@@ -66,12 +71,13 @@ interface FilterProps {
 
 interface IndexProps {
   stats: PeriodStatPagination;
+  visualData: PeriodStat[];
   filters: FilterProps;
   totalCount: number;
   filteredCount: number;
 }
 
-export default function AttendancePeriodStat({ stats, filters, totalCount, filteredCount }: IndexProps) {
+export default function AttendancePeriodStat({ stats, visualData, filters, totalCount, filteredCount }: IndexProps) {
   const { data, setData } = useForm({
     search: filters.search || '',
     perPage: filters.perPage || '5',
@@ -122,49 +128,90 @@ export default function AttendancePeriodStat({ stats, filters, totalCount, filte
     });
   }
 
+  const [activeTab, setActiveTab] = useState('table');
+  console.log('Stats data:', stats.data);
 
   return (
     <AppLayout breadcrumbs={breadcrumbs}>
       <Head title="Attendance Period Stats" />
       {/* <CustomToast /> */}
       <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-
-        {/* Search Bar */}
-        <div className="flex items-center justify-items-start gap-4 w-full ms-4">
-          <Input
-            type="text"
-            value={data.search}
-            onChange={handleChange}
-            placeholder='Search employee...'
-            name="search"
-            className='max-w-sm h-10 w-1/3'
-          />
-
-          <Button onClick={handleReset} className="bg-primary ml-2 h-10 px-5 cursor-pointer">
-            clear
-          </Button>
+        {/* Page Header */}
+        <div className="flex items-center gap-4 ms-4">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+            <ScrollText className="h-6 w-6 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Attendance Period Stats</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Provides a high level overview of each employee's attendance performance, including late, absent, and overtime.
+              <br /> The attendance metric of employee.
+            </p>
+          </div>
         </div>
 
-        {/* Custom Table */}
-        <CustomTable
-          columns={AttendancePeriodStatsTableConfig.columns}
-          actions={AttendancePeriodStatsTableConfig.actions}
-          data={stats.data}
-          from={stats.from}
-          onDelete={() => { }}   // no delete for attendance records
-          onView={() => { }}  // wire up a modal here later if needed
-          onEdit={() => { }}     // no edit for attendance records
-        />
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full sm:w-auto">
+            <TabsList className="bg-muted/50 p-1 rounded-full shadow-sm">
+              <TabsTrigger value="table" className="rounded-full px-6 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                <Sheet className="h-4 w-4 mr-2" />
+                Table
+              </TabsTrigger>
+              <TabsTrigger value="visual" className="rounded-full px-6 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                <BarChart className="h-4 w-4 mr-2" />
+                Visual Stats
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
 
-        <Pagination
-          pagination={stats}
-          perPage={data.perPage}
-          onPerPageChange={handlePerPageChange}
-          totalCount={totalCount}
-          filteredCount={filteredCount}
-          search={data.search}
-          resourceName='stats'
-        />
+          {/* Right: Search + Clear - only show in table view */}
+          {activeTab === 'table' && (
+            <div className="flex items-center gap-4 w-full sm:w-auto">
+              <Input
+                type="text"
+                value={data.search}
+                onChange={handleChange}
+                placeholder="Search employee..."
+                name="search"
+                className="h-10 w-full sm:w-64"
+              />
+              <Button
+                onClick={handleReset}
+                className="bg-primary h-10 px-5 cursor-pointer whitespace-nowrap"
+              >
+                clear
+              </Button>
+            </div>
+          )}
+        </div>
+
+
+        {activeTab === 'table' ? (
+          <>
+            {/* Custom Table */}
+            <CustomTable
+              columns={AttendancePeriodStatsTableConfig.columns}
+              actions={AttendancePeriodStatsTableConfig.actions}
+              data={stats.data}
+              from={stats.from}
+              onDelete={() => { }}   // no delete for attendance records
+              onView={() => { }}  // wire up a modal here later if needed
+              onEdit={() => { }}     // no edit for attendance records
+            />
+
+            <CustomPagination
+              pagination={stats}
+              perPage={data.perPage}
+              onPerPageChange={handlePerPageChange}
+              totalCount={totalCount}
+              filteredCount={filteredCount}
+              search={data.search}
+              resourceName='stats'
+            />
+          </>
+        ) : (
+          <AttendancePeriodStatView stats={visualData} />
+        )}
       </div>
     </AppLayout>
   );
