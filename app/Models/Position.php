@@ -9,12 +9,14 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 #[UsePolicy(PositionPolicy::class)]
 class Position extends Model
 {
     //
-    use SoftDeletes, HasFactory;
+    use SoftDeletes, HasFactory, LogsActivity;
 
     protected $casts = [
         'deleted_at' => 'datetime',
@@ -27,12 +29,19 @@ class Position extends Model
         'pos_slug'
     ];
 
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['pos_name', 'basic_salary', 'pos_slug'])
+            ->logOnlyDirty();
+    }
+
     public function employees()
     {
         return $this->hasMany(Employee::class);
     }
 
-    public function getRouteKeyName(): string 
+    public function getRouteKeyName(): string
     {
         return 'pos_slug';
     }
@@ -47,6 +56,4 @@ class Position extends Model
             set: fn($value) => strtolower(trim(strip_tags($value))),
         );
     }
-
-
 }
