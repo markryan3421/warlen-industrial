@@ -48,11 +48,23 @@ export default function Edit({ branch }: Props) {
         put(`/branches/${branch.branch_slug}`, {
             onSuccess: (page) => {
                 const successMessage = page.props.flash?.success || 'Branch created successfully.'
-                toast.success(successMessage);
+                toast.success(successMessage, {
+                    style: {
+                        backgroundColor: 'white',
+                        color: '#002dce',
+                        border: '1px solid #d5d8d5'
+                    }
+                });
             },
             onError: (errors) => {
                 const errorMessage = Object.values(errors).flat()[0] || 'Failed to create branch.';
-                toast.error(errorMessage);
+                toast.error(errorMessage, {
+                    style: {
+                        backgroundColor: 'white',
+                        color: 'red',
+                        border: '1px solid #d5d8d5'
+                    }
+                });
             }
         });
     }
@@ -85,7 +97,7 @@ export default function Edit({ branch }: Props) {
                         {/* Branch Information Card - Left Column */}
                         <Card className="border shadow-sm overflow-hidden h-fit">
                             <CardHeader className="border-b">
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-3 mt-3">
                                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
                                         <Building2 className="h-4 w-4 text-primary" />
                                     </div>
@@ -148,10 +160,10 @@ export default function Edit({ branch }: Props) {
                         </Card>
 
                         {/* Branch Sites Card - Right Column */}
-                        <Card className="border shadow-sm overflow-hidden h-fit">
+                        <Card className="border shadow-sm overflow-hidden h-full">
                             <CardHeader className="border-b">
                                 <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-3 mt-3">
                                         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
                                             <PlusCircle className="h-4 w-4 text-primary" />
                                         </div>

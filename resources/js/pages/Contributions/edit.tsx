@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Percent, LoaderCircle } from "lucide-react";
+import { Plus, Trash2, Percent, LoaderCircle, Pencil } from "lucide-react";
 import { update } from '@/actions/App/Http/Controllers/ContributionVersionController';
 import { CustomDatePicker } from '@/components/ui/custom-date-picker';
 import { toast } from 'sonner';
@@ -77,11 +77,11 @@ export default function Edit({ contributionVersion }: EditProps) {
         e.preventDefault();
         put(update(contributionVersion.id).url, {
             onSuccess: (page) => {
-                const successMessage = page.props.flash?.success || 'Branch created successfully.'
+                const successMessage = page.props.flash?.success || 'Contriubution created successfully.'
                 toast.success(successMessage);
             },
             onError: (errors) => {
-                const errorMessage = Object.values(errors).flat()[0] || 'Failed to create branch.';
+                const errorMessage = Object.values(errors).flat()[0] || 'Failed to create contribution.';
                 toast.error(errorMessage);
             }
         });
@@ -124,6 +124,19 @@ export default function Edit({ contributionVersion }: EditProps) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Edit Contribution Version" />
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
+                {/* Page Header */}
+                <div className="flex items-center gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+                        <Pencil className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl font-bold tracking-tight">Edit Branch</h1>
+                        <p className="text-sm text-muted-foreground mt-1">
+                            Update branch information and manage associated sites
+                        </p>
+                    </div>
+                </div>
+
                 <Card>
                     <CardHeader>
                         <CardTitle>Edit Contribution Version</CardTitle>

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Percent, LoaderCircle } from "lucide-react";
+import { Plus, Trash2, Percent, LoaderCircle, Pencil } from "lucide-react";
 import { store } from '@/actions/App/Http/Controllers/ContributionVersionController';
 import { CustomDatePicker } from '@/components/ui/custom-date-picker';
 import { format, isToday } from 'date-fns';
@@ -101,6 +101,21 @@ export default function Create() {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Create Contribution Version" />
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
+
+                {/* Page Header */}
+                <div className="flex items-center gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+                        <Pencil className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl font-bold tracking-tight">Create New Contribution</h1>
+                        <p className="text-sm text-muted-foreground mt-1">
+                            Add a new contribution version and configure its salary ranges
+                        </p>
+                    </div>
+                </div>
+
+
                 <Card>
                     <CardHeader>
                         <CardTitle>Contribution Version Information</CardTitle>

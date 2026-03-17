@@ -19,7 +19,7 @@ use Inertia\Inertia;
 class BranchController extends Controller
 {
     use HasPaginatedIndex;
-    
+
     public function __construct(private BranchRepository $branchRepository) {}
     /**
      * Display a listing of the resource.
@@ -35,8 +35,8 @@ class BranchController extends Controller
         // $branches = Branch::withCount('sites')->get();
 
         $result = $this->paginateCollection(
-            items:         collect($branches), // wrap in Collection if not already
-            request:       $request,
+            items: collect($branches), // wrap in Collection if not already
+            request: $request,
             searchColumns: ['branch_name', 'branch_address'], // adjust to Branch columns
         );
 
@@ -122,9 +122,20 @@ class BranchController extends Controller
         if ($this->limit('update-branch:' . auth()->id(), 60, 15)) {
             return back()->with('error', 'Too many attempts. Please try again later.');
         }
+
         try {
             DB::beginTransaction();
 
+            // Get all site IDs from the request that have IDs (existing sites)
+            $keepSiteIds = collect($request->sites)
+                ->filter(fn($site) => isset($site['id']))
+                ->pluck('id')
+                ->toArray();
+
+            // Delete sites that are not in the request
+            $branch->sites()->whereNotIn('id', $keepSiteIds)->delete();
+
+            // Update or create sites
             $action->update($request->validated(), $branch);
 
             $this->cacheForget('branches');
@@ -135,7 +146,7 @@ class BranchController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
 
-            return back()->with('error', 'Failed to update branch or site. Please try again.' . $e->getMessage());
+            return back()->with('error', 'Failed to update branch or site. Please try again.');
         }
     }
 
@@ -145,7 +156,7 @@ class BranchController extends Controller
     public function destroy(Branch $branch)
     {
         Gate::authorize('delete', $branch);
-        
+
         if ($this->limit('delete-branch:' . Auth::id(), 60, 10)) {
             return back()->with('error', 'Too many attempts. Please try again later.');
         }

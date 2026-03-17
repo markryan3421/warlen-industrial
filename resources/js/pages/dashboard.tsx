@@ -225,9 +225,6 @@ export default function Dashboard() {
                                             2% added on the employee count this month
                                     </p>
                                 </div> */}
-                                <div className='border-1 w-4'>
-
-                                </div>
                             </div>
                         </div>
                     </div>

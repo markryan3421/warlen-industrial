@@ -1,4 +1,5 @@
 import { Head, router, useForm } from "@inertiajs/react";
+import { useEffect } from "react";
 import { CustomTable } from "@/components/custom-table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,6 +57,23 @@ export default function AttendanceSchedules({ schedules, filters, totalCount, fi
         search: filters.search || '',
         perPage: filters.perPage || '10',
     });
+
+    // Log schedules data whenever it changes
+    useEffect(() => {
+        console.log('========== ATTENDANCE SCHEDULES DEBUG ==========');
+        console.log('Full schedules object:', schedules);
+        console.log('Schedules data array:', schedules?.data);
+        console.log('Number of records:', schedules?.data?.length);
+        console.log('First record (if exists):', schedules?.data?.[0]);
+        console.log('Pagination info:', {
+            from: schedules?.from,
+            to: schedules?.to,
+            total: schedules?.total,
+            currentPage: schedules?.current_page,
+            lastPage: schedules?.last_page
+        });
+        console.log('===============================================');
+    }, [schedules]);
 
     // Handle search input change
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -13,13 +13,18 @@ use Inertia\Inertia;
 
 class AttendanceController extends Controller
 {
-    public function attendanceSchedules(Request $request) {
+    public function attendanceSchedules(Request $request)
+    {
         $schedules = PaginatedTableService::make(
-            model:         AttendanceSchedule::class,
-            request:       $request,
-            columns:       [
-                'employee_id', 'employee_name', 'department',
-                'date', 'shift_code', 'shift_label',
+            model: AttendanceSchedule::class,
+            request: $request,
+            columns: [
+                'employee_id',
+                'employee_name',
+                'department',
+                'date',
+                'shift_code',
+                'shift_label',
             ],
             searchColumns: ['employee_name', 'department', 'shift_label'],
         );
@@ -32,16 +37,23 @@ class AttendanceController extends Controller
         ]);
     }
 
-    public function attendancePeriodStats(Request $request) {
+    public function attendancePeriodStats(Request $request)
+    {
         $stats = PaginatedTableService::make(
-            model:         AttendancePeriodStat::class,
-            request:       $request,
-            columns:       [
-                'employee_id', 'employee_name', 'department',
-                'period_start', 'period_end',
-                'normal_work_hours', 'real_work_hours',
-                'late_times', 'late_minutes',
-                'attended_days', 'absent_days',
+            model: AttendancePeriodStat::class,
+            request: $request,
+            columns: [
+                'employee_id',
+                'employee_name',
+                'department',
+                'period_start',
+                'period_end',
+                'normal_work_hours',
+                'real_work_hours',
+                'late_times',
+                'late_minutes',
+                'attended_days',
+                'absent_days',
                 'real_pay',
             ],
             searchColumns: ['employee_name', 'department'],
@@ -55,46 +67,44 @@ class AttendanceController extends Controller
         ]);
     }
 
-    public function attendanceLogs(Request $request) {
+    public function attendanceLogs(Request $request)
+    {
         $logs = PaginatedTableService::make(
-            model:         AttendanceLog::class,
-            request:       $request,
-            columns:       [
-                'employee_id', 'employee_name', 'department',
-                'date', 'time_in', 'time_out', 'total_hours', 'is_overtime',
-            ],
-            searchColumns: ['employee_name', 'department'],
-        );
-        
-        // Get exception stats for the second tab
-        $exceptionStats = PaginatedTableService::make(
-            model:         AttendanceExceptionStat::class,
-            request:       $request,
-            columns:       [
-                'employee_id', 'employee_name', 'department', 'date',
-                'am_time_in', 'am_time_out', 'pm_time_in', 'pm_time_out',
-                'late_minutes', 'leave_early_minutes', 'absence_minutes',
-                'total_exception_minutes',
+            model: AttendanceLog::class,
+            request: $request,
+            columns: [
+                'employee_id',
+                'employee_name',
+                'department',
+                'date',
+                'time_in',
+                'time_out',
+                'total_hours',
+                'is_overtime',
             ],
             searchColumns: ['employee_name', 'department'],
         );
 
         $timelineData = AttendanceLog::query()
             ->select([
-                'employee_id', 'employee_name', 'department', 'date',
-                'time_in', 'time_out', 'total_hours', 'is_overtime',
+                'employee_id',
+                'employee_name',
+                'department',
+                'date',
+                'time_in',
+                'time_out',
+                'total_hours',
+                'is_overtime',
             ])
             ->orderBy('date')
             ->get();
 
         return Inertia::render('attendances/AttendanceLogs/index', [
-            'logs' => $logs,
-            'stats' => $exceptionStats,
-            'filters' => $request->only(['search', 'perPage']),
-            'totalCount' => $logs['totalCount'],
+            'logs'         => $logs,
+            'timelineData' => $timelineData,
+            'filters'       => $request->only(['search', 'perPage']),
+            'totalCount'    => $logs['totalCount'],
             'filteredCount' => $logs['filteredCount'],
-            'statsTotalCount' => $exceptionStats['totalCount'],
-            'statsFilteredCount' => $exceptionStats['filteredCount'],
         ]);
     }
 
@@ -102,12 +112,20 @@ class AttendanceController extends Controller
     {
         // Paginated data — for the table view
         $stats = PaginatedTableService::make(
-            model:         AttendanceExceptionStat::class,
-            request:       $request,
-            columns:       [
-                'employee_id', 'employee_name', 'department', 'date',
-                'am_time_in', 'am_time_out', 'pm_time_in', 'pm_time_out',
-                'late_minutes', 'leave_early_minutes', 'absence_minutes',
+            model: AttendanceExceptionStat::class,
+            request: $request,
+            columns: [
+                'employee_id',
+                'employee_name',
+                'department',
+                'date',
+                'am_time_in',
+                'am_time_out',
+                'pm_time_in',
+                'pm_time_out',
+                'late_minutes',
+                'leave_early_minutes',
+                'absence_minutes',
                 'total_exception_minutes',
             ],
             searchColumns: ['employee_name', 'department'],
@@ -117,89 +135,159 @@ class AttendanceController extends Controller
         // Only fetch the columns the calendar actually needs
         $calendarData = AttendanceExceptionStat::query()
             ->select([
-                'employee_id', 'employee_name', 'department', 'date',
-                'am_time_in', 'am_time_out', 'pm_time_in', 'pm_time_out',
-                'absence_minutes', 'total_exception_minutes',
+                'employee_id',
+                'employee_name',
+                'department',
+                'date',
+                'am_time_in',
+                'am_time_out',
+                'pm_time_in',
+                'pm_time_out',
+                'absence_minutes',
+                'total_exception_minutes',
             ])
             ->orderBy('date')
             ->get();
 
         return Inertia::render('attendances/ExceptionStats/index', [
-            'stats' => $stats,
-            'logs' => ['data' => [], 'links' => [], 'from' => 0, 'to' => 0, 'total' => 0],
-            'filters' => $request->only(['search', 'perPage']),
-            'totalCount' => 0,
-            'filteredCount' => 0,
-            'statsTotalCount' => $stats['totalCount'],
-            'statsFilteredCount' => $stats['filteredCount'],
+            'stats'         => $stats,
+            'calendarData'  => $calendarData,
+            'filters'       => $request->only(['search', 'perPage']),
+            'totalCount'    => $stats['totalCount'],
+            'filteredCount' => $stats['filteredCount'],
         ]);
     }
 
-    public function attendances(Request $request) {
-    // Get attendance logs
-    $logs = PaginatedTableService::make(
-        model: AttendanceLog::class,
-        request: $request,
-        columns: [
-            'employee_id', 'employee_name', 'department',
-            'date', 'time_in', 'time_out', 'total_hours', 'is_overtime',
-        ],
-        searchColumns: ['employee_name', 'department'],
-    );
-    
-    // Get exception stats
-    $exceptions = PaginatedTableService::make(
-        model: AttendanceExceptionStat::class,
-        request: $request,
-        columns: [
-            'employee_id', 'employee_name', 'department', 'date',
-            'am_time_in', 'am_time_out', 'pm_time_in', 'pm_time_out',
-            'late_minutes', 'leave_early_minutes', 'absence_minutes',
-            'total_exception_minutes',
-        ],
-        searchColumns: ['employee_name', 'department'],
-    );
-    
-    // Get schedules
-    $schedules = PaginatedTableService::make(
-            model:         AttendanceSchedule::class,
-            request:       $request,
-            columns:       [
-                'employee_id', 'employee_name', 'department',
-                'date', 'shift_code', 'shift_label',
+    public function attendanceManagement(Request $request)
+    {
+        $tab = $request->get('tab', 'logs');
+
+        // Fetch all data
+        $logs = PaginatedTableService::make(
+            model: AttendanceLog::class,
+            request: $request,
+            columns: [
+                'employee_id',
+                'employee_name',
+                'department',
+                'date',
+                'time_in',
+                'time_out',
+                'total_hours',
+                'is_overtime',
+            ],
+            searchColumns: ['employee_name', 'department'],
+        );
+
+        // Add debugging
+        \Log::info('Logs data structure:', ['logs' => $logs]);
+
+        $exceptionStats = PaginatedTableService::make(
+            model: AttendanceExceptionStat::class,
+            request: $request,
+            columns: [
+                'employee_id',
+                'employee_name',
+                'department',
+                'date',
+                'am_time_in',
+                'am_time_out',
+                'pm_time_in',
+                'pm_time_out',
+                'late_minutes',
+                'leave_early_minutes',
+                'absence_minutes',
+                'total_exception_minutes',
+            ],
+            searchColumns: ['employee_name', 'department'],
+        );
+
+        $periodStats = PaginatedTableService::make(
+            model: AttendancePeriodStat::class,
+            request: $request,
+            columns: [
+                'employee_id',
+                'employee_name',
+                'department',
+                'period_start',
+                'period_end',
+                'normal_work_hours',
+                'real_work_hours',
+                'late_times',
+                'late_minutes',
+                'attended_days',
+                'absent_days',
+                'real_pay',
+            ],
+            searchColumns: ['employee_name', 'department'],
+        );
+
+        $schedules = PaginatedTableService::make(
+            model: AttendanceSchedule::class,
+            request: $request,
+            columns: [
+                'employee_id',
+                'employee_name',
+                'department',
+                'date',
+                'shift_code',
+                'shift_label',
             ],
             searchColumns: ['employee_name', 'department', 'shift_label'],
         );
-    
-    // Get period stats
-    $periods = PaginatedTableService::make(
-        model: AttendancePeriodStat::class,
-        request: $request,
-        columns: [
-            'employee_id', 'employee_name', 'department',
-            'period_start', 'period_end',
-            'normal_work_hours', 'real_work_hours',
-            'late_times', 'late_minutes',
-            'attended_days', 'absent_days',
-            'real_pay',
-        ],
-        searchColumns: ['employee_name', 'department'],
-    );
 
-    return Inertia::render('attendances/index', [
-        'logs' => $logs,
-        'exceptions' => $exceptions,
-        'schedules' => $schedules,
-        'periods' => $periods,
-        'filters' => $request->only(['search', 'perPage']),
-        'totalCount' => $logs['totalCount'],
-        'filteredCount' => $logs['filteredCount'],
-        'exceptionsTotalCount' => $exceptions['totalCount'],
-        'exceptionsFilteredCount' => $exceptions['filteredCount'],
-        'schedulesTotalCount' => $schedules['totalCount'],
-        'schedulesFilteredCount' => $schedules['filteredCount'],
-        'periodsTotalCount' => $periods['totalCount'],
-        'periodsFilteredCount' => $periods['filteredCount'],
-    ]);
-}
+        // Fetch timeline data for logs
+        $timelineData = AttendanceLog::query()
+            ->select([
+                'employee_id',
+                'employee_name',
+                'department',
+                'date',
+                'time_in',
+                'time_out',
+                'total_hours',
+                'is_overtime',
+            ])
+            ->orderBy('date')
+            ->get();
+
+        // Fetch calendar data for exception stats
+        $calendarData = AttendanceExceptionStat::query()
+            ->select([
+                'employee_id',
+                'employee_name',
+                'department',
+                'date',
+                'am_time_in',
+                'am_time_out',
+                'pm_time_in',
+                'pm_time_out',
+                'absence_minutes',
+                'total_exception_minutes',
+            ])
+            ->orderBy('date')
+            ->get();
+
+        return Inertia::render('attendances/index', [
+            'logs' => $logs,
+            'timelineData' => $timelineData,
+            'exceptionStats' => $exceptionStats,
+            'calendarData' => $calendarData,
+            'periodStats' => $periodStats,
+            'schedules' => $schedules,
+            'filters' => $request->only(['search', 'perPage']),
+            'totalCounts' => [
+                'logs' => $logs['totalCount'] ?? 0,
+                'exceptionStats' => $exceptionStats['totalCount'] ?? 0,
+                'periodStats' => $periodStats['totalCount'] ?? 0,
+                'schedules' => $schedules['totalCount'] ?? 0,
+            ],
+            'filteredCounts' => [
+                'logs' => $logs['filteredCount'] ?? 0,
+                'exceptionStats' => $exceptionStats['filteredCount'] ?? 0,
+                'periodStats' => $periodStats['filteredCount'] ?? 0,
+                'schedules' => $schedules['filteredCount'] ?? 0,
+            ],
+        ]);
+    }
 }

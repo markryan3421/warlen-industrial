@@ -73,7 +73,7 @@ Route::middleware(['auth', 'verified', 'throttle:limit-actions', 'roleBase'])->g
 
     Route::resource('payrolls', PayrollController::class)->except(['show']);
 
-    Route::get('/attendances', [AttendanceController::class, ]);
+    Route::get('/attendances', [AttendanceController::class, 'attendanceManagement'])->name('attendances.index');
     Route::get('/attendance-schedules', [AttendanceController::class, 'attendanceSchedules']);
     Route::get('/attendance-period-stats', [AttendanceController::class, 'attendancePeriodStats']);
     Route::get('/attendance-logs', [AttendanceController::class, 'attendanceLogs']);

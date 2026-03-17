@@ -67,12 +67,23 @@ export default function Index({ branches, filters, totalCount, filteredCount }: 
         if (confirm("Are you sure you want to delete this branch?")) {
             destroy(BranchController.destroy(String(slugOrId)).url, {
                 onSuccess: (page) => {
-                    const successMessage = page.props.flash?.success || 'Branch created successfully.'
-                    toast.success(successMessage);
+                    const successMessage = page.props.flash?.success || 'Branch deleted successfully.'
+                    toast.success(successMessage, {
+                        style: {
+                            backgroundColor: 'white',
+                            color: '#c10000',
+                            border: '1px solid #d5d8d5'
+                        }
+                    });
                 },
                 onError: (errors) => {
-                    const errorMessage = Object.values(errors).flat()[0] || 'Failed to create branch.';
-                    toast.error(errorMessage);
+                    const errorMessage = Object.values(errors).flat()[0] || 'Failed to delete branch.';
+                    toast.error(errorMessage, {
+                        style: {
+                            backgroundColor: 'white',
+                            color: '#ff0000'
+                        }
+                    });
                 }
             });
         }
@@ -252,11 +263,11 @@ export default function Index({ branches, filters, totalCount, filteredCount }: 
                                     </div>
 
                                     {/* Sites table with better styling */}
-                                    <div className="rounded-lg border bg-card">
+                                    <div className="rounded-lg border bg-card overflow-hidden">
                                         <Table>
-                                            <TableHeader className="bg-muted/50">
+                                            <TableHeader className=" bg-blue-900 rounded-lg">
                                                 <TableRow className="hover:bg-transparent">
-                                                    <TableHead className="w-full py-3 font-semibold">Site Name</TableHead>
+                                                    <TableHead className="w-full py-3 font-semibold text-white/90">Site Name</TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>

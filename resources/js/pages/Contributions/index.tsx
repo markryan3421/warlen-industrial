@@ -466,9 +466,6 @@ export default function Index({
                             </Card>
                         ) : (
                             <Card>
-                                <CardHeader className="pb-3">
-                                    <CardTitle>Contribution List</CardTitle>
-                                </CardHeader>
                                 <CardContent className="p-0">
                                     <CustomTable
                                         columns={ContributionTableConfig.columns}
@@ -478,6 +475,7 @@ export default function Index({
                                         onDelete={handleDelete}
                                         onView={viewDetails}
                                         onEdit={handleEdit}
+                                        title = "Contribution Tablea"
                                     />
                                 </CardContent>
                             </Card>

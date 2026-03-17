@@ -154,8 +154,8 @@ export default function EmployeePayrollTable({
                     ${Array.from(styles).map(style => style.outerHTML).join('')}
                     <style>
                         @page { size: auto; margin: 0mm; }
-                        body { padding: 20px; font-family: system-ui, sans-serif; }
-                        .receipt-container { max-width: 800px; margin: 0 auto; }
+                        body { padding: 50px; font-family: system-ui, sans-serif; }
+                        .receipt-container { margin: 0 auto; padding-left: 10px: padding-right: 10px; }
                     </style>
                 </head>
                 <body>
@@ -174,6 +174,68 @@ export default function EmployeePayrollTable({
             </html>
         `);
         iframeDoc.close();
+    };
+
+    // Enhanced mapping for deduction codes
+    const deductionCodeMapping: Record<string, string> = {
+        'SSS': 'SSS Contribution',
+        'PHILHEALTH': 'PhilHealth Contribution',
+        'PAGIBIG': 'Pag-IBIG Contribution',
+        'TAX': 'Withholding Tax',
+        'WITHHOLDING_TAX': 'Withholding Tax',
+        'LOAN': 'Loan Payment',
+        'LATE': 'Late Deduction',
+        'HOLIDAY OT': 'Holiday Overtime Pay',
+        'HOLIDAY_OT': 'Holiday Overtime Pay',
+    };
+
+    // Enhanced mapping for earning codes
+    const earningCodeMapping: Record<string, string> = {
+        'BASE': 'Base Pay',
+        'BASIC': 'Basic Pay',
+        'REGULAR': 'Regular Pay',
+        'OVERTIME': 'Overtime Pay',
+        'OT': 'Overtime Pay',
+        'HOLIDAY': 'Holiday Pay',
+        'HOLIDAY_OT': 'Holiday Overtime Pay',
+        'HOLIDAY OT': 'Holiday Overtime Pay',
+        'ALLOWANCE': 'Allowance',
+        'TRANSPO': 'Transportation Allowance',
+        'TRANSPORTATION': 'Transportation Allowance',
+        'MEAL': 'Meal Allowance',
+        'COMMISSION': 'Commission',
+        'BONUS': 'Bonus',
+        'INCENTIVE': 'Incentive',
+        '13TH_MONTH': '13th Month Pay',
+        'THIRTEENTH_MONTH': '13th Month Pay',
+        'SIL': 'SIL Pay',
+        'LEAVE': 'Leave Pay',
+        'SICK_LEAVE': 'Sick Leave Pay',
+        'VACATION_LEAVE': 'Vacation Leave Pay',
+    };
+
+    // Unified function to format item names
+    const formatItemName = (item: PayrollItem): string => {
+        const code = item.code.toUpperCase();
+        const mapping = item.type === 'earning' ? earningCodeMapping : deductionCodeMapping;
+        
+        // Check for exact match in mapping
+        if (mapping[code]) {
+            return mapping[code];
+        }
+        
+        // Check for partial matches (e.g., "HOLIDAY OT" vs "HOLIDAY_OT")
+        for (const [key, value] of Object.entries(mapping)) {
+            if (code.includes(key) || key.includes(code)) {
+                return value;
+            }
+        }
+        
+        // If no mapping found, format the code
+        return code
+            .split(/[_-\s]+/)
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .join(' ');
     };
 
     const handleViewReceipt = (payroll: PayrollData) => {
@@ -448,7 +510,7 @@ export default function EmployeePayrollTable({
                                 <div>
                                     <h3 className="font-bold text-lg">{selectedPayroll.employee?.user.name}</h3>
                                     <p className="text-sm text-gray-500">
-                                        {selectedPayroll.employee?.position?.pos_name} • ID: {selectedPayroll.employee?.emp_code}
+                                        {selectedPayroll.employee?.position?.pos_name} • ID: Emp-{selectedPayroll.employee?.emp_code}
                                     </p>
                                 </div>
                             </div>
@@ -468,74 +530,81 @@ export default function EmployeePayrollTable({
                                 </div>
                             </div>
 
-                            <div>
-                                <h4 className="font-bold mb-2">Earnings</h4>
-                                {selectedPayroll.payroll_items
-                                    ?.filter(item => item.type === 'earning')
-                                    .map((item) => {
-                                        // Check if the code is "HOLIDAY OT" (case insensitive)
-                                        const isHolidayOT = item.code.toUpperCase() === 'HOLIDAY OT' ||
-                                            item.code.toUpperCase().includes('HOLIDAY') &&
-                                            item.code.toUpperCase().includes('OT');
-
-                                        const isBaseSalary = item.code.toUpperCase() === 'BASE';
-
-                                        const isOvertime = item.code.toUpperCase() === 'OVERTIME';
-
-                                        // Determine the display name
-                                        let displayName;
-                                        if (isHolidayOT) {
-                                            displayName = 'Holiday Overtime Pay';
-                                        } else if (isBaseSalary) {
-                                            displayName = 'Base Pay';
-                                        } else if (isOvertime) {
-                                            displayName = 'Overtime Pay';
-                                        }
-                                        else {
-                                            displayName = item.code.split('_')
-                                                .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-                                                .join(' ');
-                                        }
-
-                                        return (
-                                            <div key={item.id} className="flex justify-between items-center py-2 border-b last:border-0">
+                            {/* Earnings Section */}
+                            <div className="mb-6">
+                                <h4 className="font-bold mb-3 text-green-700">Earnings</h4>
+                                <div className="space-y-2">
+                                    {selectedPayroll.payroll_items
+                                        ?.filter(item => item.type === 'earning')
+                                        .map((item) => (
+                                            <div key={item.id} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-0">
                                                 <div>
-                                                    <span className="font-medium">
-                                                        {displayName}
+                                                    <span className="font-medium text-gray-800">
+                                                        {formatItemName(item)}
                                                     </span>
                                                     {item.description && (
-                                                        <p className="text-xs text-gray-500">
+                                                        <p className="text-xs text-gray-500 mt-0.5">
                                                             {item.description.charAt(0).toUpperCase() + item.description.slice(1).toLowerCase()}
                                                         </p>
                                                     )}
                                                 </div>
-                                                <span className="font-medium">{formatCurrency(item.amount)}</span>
+                                                <span className="font-medium text-green-600">
+                                                    {formatCurrency(item.amount)}
+                                                </span>
                                             </div>
-                                        );
-                                    })}
-                            </div>
-
-
-                            <div className="mb-4">
-                                <h4 className="font-bold mb-2">Deductions</h4>
-                                <div className="space-y-2">
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-gray-600">Total Deductions</span>
-                                        <span className="text-red-600">-{formatCurrency(selectedPayroll.total_deduction)}</span>
-                                    </div>
+                                        ))}
+                                </div>
+                                <div className="mt-4 pt-3 border-t border-gray-200 flex justify-between items-center font-semibold">
+                                    <span className="text-gray-700">Total Earnings</span>
+                                    <span className="text-green-600">{formatCurrency(selectedPayroll.gross_pay)}</span>
                                 </div>
                             </div>
 
-                            <div className="border-t pt-3">
-                                <div className="flex justify-between font-bold">
-                                    <span>NET PAY</span>
-                                    <span className="text-green-600">{formatCurrency(selectedPayroll.net_pay)}</span>
+                            {/* Deductions Section */}
+                            {selectedPayroll.payroll_items?.some(item => item.type === 'deduction') && (
+                                <div className="mb-6">
+                                    <h4 className="font-bold mb-3 text-red-700">Deductions</h4>
+                                    <div className="space-y-2">
+                                        {selectedPayroll.payroll_items
+                                            ?.filter(item => item.type === 'deduction')
+                                            .map((item) => (
+                                                <div key={item.id} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-0">
+                                                    <div>
+                                                        <span className="font-medium text-gray-800">
+                                                            {formatItemName(item)}
+                                                        </span>
+                                                        {item.description && (
+                                                            <p className="text-xs text-gray-500 mt-0.5">
+                                                                {item.description.charAt(0).toUpperCase() + item.description.slice(1).toLowerCase()}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                    <span className="font-medium text-red-600">
+                                                        -{formatCurrency(item.amount)}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                    </div>
+                                    <div className="mt-4 pt-3 border-t border-gray-200 flex justify-between items-center font-semibold">
+                                        <span className="text-gray-700">Total Deductions</span>
+                                        <span className="text-red-600">-{formatCurrency(selectedPayroll.total_deduction)}</span>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Net Pay Summary */}
+                            <div className="bg-blue-50 p-4 rounded-lg">
+                                <div className="flex justify-between items-center">
+                                    <div>
+                                        <span className="text-lg font-bold text-gray-800">Net Income Pay</span>
+                                    </div>
+                                    <span className="text-2xl font-bold text-blue-600">
+                                        {formatCurrency(selectedPayroll.net_pay)}
+                                    </span>
                                 </div>
                             </div>
                         </div>
                     )}
-
-
 
                     <DialogFooter className="mt-4">
                         <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
