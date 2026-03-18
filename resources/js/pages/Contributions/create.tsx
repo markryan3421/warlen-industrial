@@ -12,90 +12,90 @@ import { CustomDatePicker } from '@/components/ui/custom-date-picker';
 import { format, isToday } from 'date-fns';
 import { toast } from 'sonner';
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Contribution Versions',
-        href: '/contribution-versions',
-    },
-    {
-        title: 'Create Contribution Version',
-        href: '/contribution-version/create',
-    },
-];
+// const breadcrumbs: BreadcrumbItem[] = [
+//     {
+//         title: 'Contribution Versions',
+//         href: '/contribution-versions',
+//     },
+//     {
+//         title: 'Create Contribution Version',
+//         href: '/contribution-version/create',
+//     },
+// ];
 
-interface SalaryRange {
-    salary_from: string;
-    salary_to: string;
-    employee_share: string;
-    employer_share: string;
-}
+// interface SalaryRange {
+//     salary_from: string;
+//     salary_to: string;
+//     employee_share: string;
+//     employer_share: string;
+// }
 
-interface FormData {
-    type: string;
-    effective_from: string;
-    effective_to: string;
-    salary_ranges: SalaryRange[];
-}
+// interface FormData {
+//     type: string;
+//     effective_from: string;
+//     effective_to: string;
+//     salary_ranges: SalaryRange[];
+// }
 
-export default function Create() {
-    const { data, setData, errors, processing, post } = useForm<FormData>({
-        type: '',
-        effective_from: isToday(new Date()) ? format(new Date(), "yyyy-MM-dd") : '',
-        effective_to: '',
-        salary_ranges: [{
-            salary_from: '',
-            salary_to: '',
-            employee_share: '',
-            employer_share: '',
-        }],
-    });
+// export default function Create() {
+//     const { data, setData, errors, processing, post } = useForm<FormData>({
+//         type: '',
+//         effective_from: isToday(new Date()) ? format(new Date(), "yyyy-MM-dd") : '',
+//         effective_to: '',
+//         salary_ranges: [{
+//             salary_from: '',
+//             salary_to: '',
+//             employee_share: '',
+//             employer_share: '',
+//         }],
+//     });
 
-    function submitContributionVersion(e: React.FormEvent) {
-        e.preventDefault();
-        post(store().url, {
-            onSuccess: (page) => {
-                const successMessage = page.props.flash?.success || 'Branch created successfully.'
-                toast.success(successMessage);
-            },
-            onError: (errors) => {
-                const errorMessage = Object.values(errors).flat()[0] || 'Failed to create branch.';
-                toast.error(errorMessage);
-            }
-        });
-    }
+//     function submitContributionVersion(e: React.FormEvent) {
+//         e.preventDefault();
+//         post(store().url, {
+//             onSuccess: (page) => {
+//                 const successMessage = page.props.flash?.success || 'Branch created successfully.'
+//                 toast.success(successMessage);
+//             },
+//             onError: (errors) => {
+//                 const errorMessage = Object.values(errors).flat()[0] || 'Failed to create branch.';
+//                 toast.error(errorMessage);
+//             }
+//         });
+//     }
 
-    const addSalaryRange = () => {
-        setData('salary_ranges', [
-            ...data.salary_ranges,
-            {
-                salary_from: '',
-                salary_to: '',
-                employee_share: '',
-                employer_share: '',
-            }
-        ]);
-    };
+//     const addSalaryRange = () => {
+//         setData('salary_ranges', [
+//             ...data.salary_ranges,
+//             {
+//                 salary_from: '',
+//                 salary_to: '',
+//                 employee_share: '',
+//                 employer_share: '',
+//             }
+//         ]);
+//     };
 
-    const removeSalaryRange = (index: number) => {
-        if (data.salary_ranges.length > 1) {
-            setData('salary_ranges', data.salary_ranges.filter((_, i) => i !== index));
-        }
-    };
+//     const removeSalaryRange = (index: number) => {
+//         if (data.salary_ranges.length > 1) {
+//             setData('salary_ranges', data.salary_ranges.filter((_, i) => i !== index));
+//         }
+//     };
 
-    const updateSalaryRange = (index: number, field: keyof SalaryRange, value: string) => {
-        const updatedRanges = data.salary_ranges.map((range, i) => {
-            if (i === index) {
-                return { ...range, [field]: value };
-            }
-            return range;
-        });
-        setData('salary_ranges', updatedRanges);
-    };
+//     const updateSalaryRange = (index: number, field: keyof SalaryRange, value: string) => {
+//         const updatedRanges = data.salary_ranges.map((range, i) => {
+//             if (i === index) {
+//                 return { ...range, [field]: value };
+//             }
+//             return range;
+//         });
+//         setData('salary_ranges', updatedRanges);
+//     };
 
-    // Helper function to get nested error messages
-    const getNestedError = (index: number, field: string) => {
-        return errors[`salary_ranges.${index}.${field}`];
-    };
+//     // Helper function to get nested error messages
+//     const getNestedError = (index: number, field: string) => {
+//         return errors[`salary_ranges.${index}.${field}`];
+//     };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -141,162 +141,162 @@ export default function Create() {
                                 <InputError message={errors.type} />
                             </div>
 
-                            {/* Effective Dates */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-5">
-                                {/* Effective From */}
-                                <CustomDatePicker
-                                    value={data.effective_from}
-                                    onChange={(val) => setData('effective_from', val)}
-                                    error={errors.effective_from}
-                                    label="Effective From"
-                                />
+//                             {/* Effective Dates */}
+//                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-5">
+//                                 {/* Effective From */}
+//                                 <CustomDatePicker
+//                                     value={data.effective_from}
+//                                     onChange={(val) => setData('effective_from', val)}
+//                                     error={errors.effective_from}
+//                                     label="Effective From"
+//                                 />
 
-                                {/* Effective To */}
-                                <CustomDatePicker
-                                    value={data.effective_to}
-                                    onChange={(val) => setData('effective_to', val)}
-                                    error={errors.effective_to}
-                                    label="Effective To"
-                                />
-                            </div>
+//                                 {/* Effective To */}
+//                                 <CustomDatePicker
+//                                     value={data.effective_to}
+//                                     onChange={(val) => setData('effective_to', val)}
+//                                     error={errors.effective_to}
+//                                     label="Effective To"
+//                                 />
+//                             </div>
 
-                            {/* Salary Ranges Repeater */}
-                            <div className="space-y-4 col-span-2">
-                                <div className="flex items-center justify-between">
-                                    <label className="text-sm font-medium">Salary Ranges & Contributions</label>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={addSalaryRange}
-                                        className='hover: cursor-pointer'
-                                    >
-                                        <Plus className="h-4 w-4 mr-2" />
-                                        Add Range
-                                    </Button>
-                                </div>
+//                             {/* Salary Ranges Repeater */}
+//                             <div className="space-y-4 col-span-2">
+//                                 <div className="flex items-center justify-between">
+//                                     <label className="text-sm font-medium">Salary Ranges & Contributions</label>
+//                                     <Button
+//                                         type="button"
+//                                         variant="outline"
+//                                         size="sm"
+//                                         onClick={addSalaryRange}
+//                                         className='hover: cursor-pointer'
+//                                     >
+//                                         <Plus className="h-4 w-4 mr-2" />
+//                                         Add Range
+//                                     </Button>
+//                                 </div>
 
-                                {/* Display salary_ranges array error */}
-                                {errors.salary_ranges && typeof errors.salary_ranges === 'string' && (
-                                    <div className="text-sm text-red-600">
-                                        <InputError message={errors.salary_ranges} />
-                                    </div>
-                                )}
+//                                 {/* Display salary_ranges array error */}
+//                                 {errors.salary_ranges && typeof errors.salary_ranges === 'string' && (
+//                                     <div className="text-sm text-red-600">
+//                                         <InputError message={errors.salary_ranges} />
+//                                     </div>
+//                                 )}
 
-                                {data.salary_ranges.map((range, index) => (
-                                    <div key={index} className="relative p-4 border rounded-lg bg-muted/5">
-                                        {data.salary_ranges.length > 1 && (
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="icon"
-                                                className="absolute -top-2 -right-2 h-8 w-8 rounded-full bg-background border shadow-sm"
-                                                onClick={() => removeSalaryRange(index)}
-                                            >
-                                                <Trash2 className="h-4 w-4 text-destructive" />
-                                            </Button>
-                                        )}
+//                                 {data.salary_ranges.map((range, index) => (
+//                                     <div key={index} className="relative p-4 border rounded-lg bg-muted/5">
+//                                         {data.salary_ranges.length > 1 && (
+//                                             <Button
+//                                                 type="button"
+//                                                 variant="ghost"
+//                                                 size="icon"
+//                                                 className="absolute -top-2 -right-2 h-8 w-8 rounded-full bg-background border shadow-sm"
+//                                                 onClick={() => removeSalaryRange(index)}
+//                                             >
+//                                                 <Trash2 className="h-4 w-4 text-destructive" />
+//                                             </Button>
+//                                         )}
 
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div className="space-y-2">
-                                                <label className="text-sm font-medium">Salary From (₱)</label>
-                                                <Input
-                                                    type="number"
-                                                    value={range.salary_from}
-                                                    onChange={e => updateSalaryRange(index, 'salary_from', e.target.value)}
-                                                    placeholder="0.00"
-                                                />
-                                                {/* Display nested error for salary_from */}
-                                                <InputError message={getNestedError(index, 'salary_from')} />
-                                            </div>
+//                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+//                                             <div className="space-y-2">
+//                                                 <label className="text-sm font-medium">Salary From (₱)</label>
+//                                                 <Input
+//                                                     type="number"
+//                                                     value={range.salary_from}
+//                                                     onChange={e => updateSalaryRange(index, 'salary_from', e.target.value)}
+//                                                     placeholder="0.00"
+//                                                 />
+//                                                 {/* Display nested error for salary_from */}
+//                                                 <InputError message={getNestedError(index, 'salary_from')} />
+//                                             </div>
 
-                                            <div className="space-y-2">
-                                                <label className="text-sm font-medium">Salary To (₱)</label>
-                                                <Input
-                                                    type="number"
-                                                    value={range.salary_to}
-                                                    onChange={e => updateSalaryRange(index, 'salary_to', e.target.value)}
-                                                    placeholder="0.00"
-                                                />
-                                                {/* Display nested error for salary_to */}
-                                                <InputError message={getNestedError(index, 'salary_to')} />
-                                            </div>
-                                        </div>
+//                                             <div className="space-y-2">
+//                                                 <label className="text-sm font-medium">Salary To (₱)</label>
+//                                                 <Input
+//                                                     type="number"
+//                                                     value={range.salary_to}
+//                                                     onChange={e => updateSalaryRange(index, 'salary_to', e.target.value)}
+//                                                     placeholder="0.00"
+//                                                 />
+//                                                 {/* Display nested error for salary_to */}
+//                                                 <InputError message={getNestedError(index, 'salary_to')} />
+//                                             </div>
+//                                         </div>
 
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                                            <div className="space-y-2">
-                                                <div className="flex items-center gap-1">
-                                                    <label className="text-sm font-medium">Employee Share</label>
-                                                    <Percent className="h-3 w-3 text-muted-foreground" />
-                                                </div>
-                                                <div className="relative">
-                                                    <Input
-                                                        type="number"
-                                                        value={range.employee_share}
-                                                        onChange={e => updateSalaryRange(index, 'employee_share', e.target.value)}
-                                                        placeholder="0.00"
-                                                        className="pr-8"
-                                                    />
-                                                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                                                        <span className="text-sm text-muted-foreground">%</span>
-                                                    </div>
-                                                </div>
-                                                {/* Display nested error for employee_share */}
-                                                <InputError message={getNestedError(index, 'employee_share')} />
-                                            </div>
+//                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+//                                             <div className="space-y-2">
+//                                                 <div className="flex items-center gap-1">
+//                                                     <label className="text-sm font-medium">Employee Share</label>
+//                                                     <Percent className="h-3 w-3 text-muted-foreground" />
+//                                                 </div>
+//                                                 <div className="relative">
+//                                                     <Input
+//                                                         type="number"
+//                                                         value={range.employee_share}
+//                                                         onChange={e => updateSalaryRange(index, 'employee_share', e.target.value)}
+//                                                         placeholder="0.00"
+//                                                         className="pr-8"
+//                                                     />
+//                                                     <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+//                                                         <span className="text-sm text-muted-foreground">%</span>
+//                                                     </div>
+//                                                 </div>
+//                                                 {/* Display nested error for employee_share */}
+//                                                 <InputError message={getNestedError(index, 'employee_share')} />
+//                                             </div>
 
-                                            <div className="space-y-2">
-                                                <div className="flex items-center gap-1">
-                                                    <label className="text-sm font-medium">Employer Share</label>
-                                                    <Percent className="h-3 w-3 text-muted-foreground" />
-                                                </div>
-                                                <div className="relative">
-                                                    <Input
-                                                        type="number"
-                                                        value={range.employer_share}
-                                                        onChange={e => updateSalaryRange(index, 'employer_share', e.target.value)}
-                                                        placeholder="0.00"
-                                                        className="pr-8"
-                                                    />
-                                                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                                                        <span className="text-sm text-muted-foreground">%</span>
-                                                    </div>
-                                                </div>
-                                                {/* Display nested error for employer_share */}
-                                                <InputError message={getNestedError(index, 'employer_share')} />
-                                            </div>
-                                        </div>
+//                                             <div className="space-y-2">
+//                                                 <div className="flex items-center gap-1">
+//                                                     <label className="text-sm font-medium">Employer Share</label>
+//                                                     <Percent className="h-3 w-3 text-muted-foreground" />
+//                                                 </div>
+//                                                 <div className="relative">
+//                                                     <Input
+//                                                         type="number"
+//                                                         value={range.employer_share}
+//                                                         onChange={e => updateSalaryRange(index, 'employer_share', e.target.value)}
+//                                                         placeholder="0.00"
+//                                                         className="pr-8"
+//                                                     />
+//                                                     <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+//                                                         <span className="text-sm text-muted-foreground">%</span>
+//                                                     </div>
+//                                                 </div>
+//                                                 {/* Display nested error for employer_share */}
+//                                                 <InputError message={getNestedError(index, 'employer_share')} />
+//                                             </div>
+//                                         </div>
 
-                                        {/* Optional: Add helper text */}
-                                        <div className="mt-2 text-xs text-muted-foreground">
-                                            <p>Enter contribution percentage (e.g., 10 for 10%)</p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
+//                                         {/* Optional: Add helper text */}
+//                                         <div className="mt-2 text-xs text-muted-foreground">
+//                                             <p>Enter contribution percentage (e.g., 10 for 10%)</p>
+//                                         </div>
+//                                     </div>
+//                                 ))}
+//                             </div>
 
-                            <div className="flex justify-end col-start-2 space-x-3 p-5">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => window.history.back()}
-                                    className='hover:cursor-pointer'
-                                >
-                                    Cancel
-                                </Button>
-                                <Button
-                                    type="submit"
-                                    disabled={processing}
-                                    className='hover:cursor-pointer'
-                                >
-                                    {processing && <LoaderCircle className='h-4 w-4 animate-spin' />}
-                                    {processing ? 'Creating...' : 'Create Contribution Version'}
-                                </Button>
-                            </div>
-                        </form>
-                    </CardContent>
-                </Card>
-            </div>
-        </AppLayout>
-    );
-}
+//                             <div className="flex justify-end col-start-2 space-x-3 p-5">
+//                                 <Button
+//                                     type="button"
+//                                     variant="outline"
+//                                     onClick={() => window.history.back()}
+//                                     className='hover:cursor-pointer'
+//                                 >
+//                                     Cancel
+//                                 </Button>
+//                                 <Button
+//                                     type="submit"
+//                                     disabled={processing}
+//                                     className='hover:cursor-pointer'
+//                                 >
+//                                     {processing && <LoaderCircle className='h-4 w-4 animate-spin' />}
+//                                     {processing ? 'Creating...' : 'Create Contribution Version'}
+//                                 </Button>
+//                             </div>
+//                         </form>
+//                     </CardContent>
+//                 </Card>
+//             </div>
+//         </AppLayout>
+//     );
+// }

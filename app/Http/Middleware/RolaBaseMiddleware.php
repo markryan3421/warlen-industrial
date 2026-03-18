@@ -30,9 +30,13 @@ class RolaBaseMiddleware
             'hr.dashboard',
             'employee.application-leave.*',
             'hr.payroll.*',
-            'hr.payroll-periods.*'
+            'hr.payroll-periods.*',
+            'hr.attendances.*',
+            'hr.attendance-logs',          
+            'hr.attendance-exception-stats', 
+            'hr.attendance-period-stats',    
+            'hr.attendance-schedules'      
         ))) {
-            // return redirect()->intended(route('dashboard'));
             abort(401);
         }
 
@@ -50,10 +54,18 @@ class RolaBaseMiddleware
                 'application-leave.*',
                 'payroll-periods.*',
                 'hr.payroll.*',
-                'hr.payroll-periods.*'
+                'hr.payroll-periods.*',
+                'hr.attendances.*',
+                'hr.attendance-logs',           
+                'hr.attendance-exception-stats',
+                'hr.attendance-period-stats',
+                'hr.attendance-schedules',
+                'admin.attendance-logs',           
+                'admin.attendance-exception-stats',
+                'admin.attendance-period-stats',
+                'admin.attendance-schedules'
             )
         ) {
-            // return redirect()->intended(route('employee.dashboard'));
             abort(401);
         }
 
@@ -67,12 +79,16 @@ class RolaBaseMiddleware
                 'positions.*',
                 'employees.*',
                 'permissions.*',
+                'incentives.*',
                 'contribution-versions.*',
                 'employee.application-leave.*',
                 'payroll-periods.*',
+                'admin.attendance-logs',           
+                'admin.attendance-exception-stats',
+                'admin.attendance-period-stats',
+                'admin.attendance-schedules'
             )
         ) {
-            // return redirect()->intended(route('hr.dashboard'));
             abort(401);
         }
 

@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { LayoutDashboard, CircleMinus, CircleUser, Building2, Handshake, Coins  , UserCog, Clipboard, Banknote, LayoutDashboardIcon, HandCoins } from 'lucide-react';
+import { LayoutDashboard, History, CircleUser, Building2, Handshake, Coins  , UserCog, Clipboard, Banknote, LayoutDashboardIcon, HandCoins } from 'lucide-react';
 import BranchController from '@/actions/App/Http/Controllers/BranchController';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -26,6 +26,7 @@ import ApplicationLeaveController from '@/actions/App/Http/Controllers/Applicati
 import ContributionVersionController from '@/actions/App/Http/Controllers/ContributionVersionController';
 import { useCurrentUrl } from '@/hooks/use-current-url'; // Add this import
 import PayrollController from "@/actions/App/Http/Controllers/PayrollController";
+import LogsController from "@/actions/App/Http/Controllers/ActivityLogController";
 const ExpendituresItems: NavItem[] = [
     {
         title: 'Dashboard',
@@ -75,6 +76,12 @@ const AccessControlItems: NavItem[] = [
         href: '/positions',
         icon: UserCog,
     },
+
+    {
+        title: 'Activity Logs',
+        href: LogsController.index(),
+        icon: History,
+    },
 ];
 
 const AttendanceItems: NavItem[] = [
@@ -117,13 +124,13 @@ export function AppSidebar() {
             <SidebarHeader className="px-5">
                 <SidebarMenu>
                     <SidebarMenuItem>
-                        <SidebarMenuButton 
-                            className="py-10" 
+                        <SidebarMenuButton
+                            className="py-10"
                             asChild
                         >
-                            <Link href = {dashboard()} prefetch className="h-8 w-8 hover:bg-white">
+                            <Link href={dashboard()} prefetch className="h-8 w-8 hover:bg-white">
                                 <AppLogo />
-                            </Link>     
+                            </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 </SidebarMenu>

@@ -8,7 +8,7 @@ import {
 import Footer from '@/components/footer';
 import { SectionCards } from '@/components/section-cards';
 import SystemAlert from '@/components/system-alert';
-import { ChartConfig, type } from '@/components/ui/chart';
+import { ChartConfig} from '@/components/ui/chart';
 import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes';
 import { Head, Link } from '@inertiajs/react';

@@ -8,16 +8,19 @@ use Illuminate\Database\Eloquent\Attributes\UsePolicy;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 #[UsePolicy(PayrollPeriodPolicy::class)]
 class PayrollPeriod extends Model
 {
+    use LogsActivity;
     protected $fillable = [
         'start_date',
         'end_date',
         'pay_date',
         'payroll_per_status',
-    ]; 
+    ];
 
     // protected $casts = [
     //     'start_date' => 'date',
@@ -30,7 +33,19 @@ class PayrollPeriod extends Model
         return $this->hasMany(Payroll::class, 'payroll_period_id');
     }
 
-   
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly([
+                'start_date',
+                'end_date',
+                'pay_date',
+                'payroll_per_status',
+            ])
+            ->logOnlyDirty();
+    }
+
+
     public function incentives(): HasMany
     {
         return $this->hasMany(Incentive::class, 'payroll_period_id');

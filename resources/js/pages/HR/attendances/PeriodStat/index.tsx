@@ -4,9 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Pagination } from "@/components/ui/pagination";
 import { AttendancePeriodStatsTableConfig } from "@/config/tables/attendance-period-stats";
-import AppLayout from "@/layouts/app-layout";
+import HrLayout from '@/layouts/hr-layout';
 import { type BreadcrumbItem } from '@/types';
-import AttendanceController from '../../../actions/App/Http/Controllers/AttendanceController';
+import AttendanceController from  "@/actions/App/Http/Controllers/HrRole/HRAttendanceController";
 import { CustomPagination } from "@/components/custom-pagination";
 import { AttendancePeriodStatView, AttendanceStatsVisualTable } from "@/components/attendance/attendance-period-stat-view";
 import { useState } from "react";
@@ -132,7 +132,7 @@ export default function AttendancePeriodStat({ stats, visualData, filters, total
   console.log('Stats data:', stats.data);
 
   return (
-    <AppLayout breadcrumbs={breadcrumbs}>
+    <HrLayout breadcrumbs={breadcrumbs}>
       <Head title="Attendance Period Stats" />
       {/* <CustomToast /> */}
       <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
@@ -213,6 +213,6 @@ export default function AttendancePeriodStat({ stats, visualData, filters, total
           <AttendancePeriodStatView stats={visualData} />
         )}
       </div>
-    </AppLayout>
+    </HrLayout>
   );
 }

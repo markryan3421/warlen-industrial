@@ -1,7 +1,7 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
-import { Calculator, Percent, Filter, X, Calendar as CalendarIcon } from 'lucide-react';
+import { Calculator, Percent, Plus, Trash2, LoaderCircle } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
-import { format } from 'date-fns';
+import { format, isToday } from 'date-fns';
 
 import ContributionVersionController from '@/actions/App/Http/Controllers/ContributionVersionController';
 import { CustomTable } from '@/components/custom-table';
@@ -12,20 +12,14 @@ import {
 import {
     Table, TableBody, TableCell, TableHead, TableHeader, TableRow
 } from '@/components/ui/table';
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ContributionTableConfig } from '@/config/tables/contribution-table';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import { CustomModalView } from '@/components/custom-modal-view';
 import { ContributionModalConfig } from '@/config/forms/contribution-modal-view';
-import { CustomPagination } from '@/components/custom-pagination';
 import { CustomToast, toast } from '@/components/custom-toast';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
 import {
     Card,
     CardContent,
@@ -33,8 +27,7 @@ import {
     CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
+import InputError from '@/components/input-error';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Contributions', href: '/contributions' },
@@ -51,39 +44,33 @@ interface ContributionBracket {
 interface ContributionVersion {
     id: number;
     type: 'sss' | 'philhealth' | 'pagibig';
-    effective_from: string;
-    effective_to: string;
     contribution_brackets: ContributionBracket[];
     created_at: string;
     updated_at: string;
 }
 
-interface LinkProps {
-    active: boolean;
-    label: string;
-    url: string | null;
-}
-
 interface ContributionVersionsPagination {
     data: ContributionVersion[];
-    links: LinkProps[];
     from: number;
     to: number;
     total: number;
 }
 
-interface FilterProps {
-    type: string;
-    perPage: string;
-    date_from?: string;
-    date_to?: string;
-}
-
 interface IndexProps {
     contributionVersions: ContributionVersionsPagination;
-    filters: FilterProps;
-    totalCount: number;
-    filteredCount: number;
+}
+
+// Form interfaces
+interface SalaryRange {
+    salary_from: string;
+    salary_to: string;
+    employee_share: string;
+    employer_share: string;
+}
+
+interface FormData {
+    type: string;
+    salary_ranges: SalaryRange[];
 }
 
 // =============================================================================
@@ -116,29 +103,22 @@ const getContributionTypeLabel = (type: string) => {
     }
 };
 
-const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    });
-};
-
 // =============================================================================
 // PAGE COMPONENT
 // =============================================================================
 
 export default function Index({
     contributionVersions,
-    filters,
-    totalCount,
-    filteredCount,
 }: IndexProps) {
     const { delete: destroy } = useForm();
     const [selectedVersion, setSelectedVersion] = useState<ContributionVersion | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isBracketsModalOpen, setIsBracketsModalOpen] = useState(false);
-    const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editingVersion, setEditingVersion] = useState<ContributionVersion | null>(null);
+
+    console.log('contributionVersions', contributionVersions);
     
     // Safely ensure data is an array and remove duplicates based on ID
     const versions = useMemo(() => {
@@ -150,106 +130,10 @@ export default function Index({
         return Array.from(uniqueMap.values());
     }, [contributionVersions]);
 
-    const { data, setData } = useForm({
-        type: filters.type || '',
-        perPage: filters.perPage || '10',
-    });
-
-    // Date range filter state
-    const [dateFrom, setDateFrom] = useState<Date | undefined>(
-        filters.date_from ? new Date(filters.date_from) : undefined
-    );
-    const [dateTo, setDateTo] = useState<Date | undefined>(
-        filters.date_to ? new Date(filters.date_to) : undefined
-    );
-
-    // Client-side filtering
-    const displayData = useMemo(() => {
-        let filtered = versions;
-
-        // Apply type filter
-        if (data.type && data.type !== '' && data.type !== 'all') {
-            filtered = filtered.filter(version => version.type === data.type);
-        }
-
-        // Apply date range filter
-        if (dateFrom || dateTo) {
-            filtered = filtered.filter(version => {
-                const effectiveFrom = new Date(version.effective_from);
-                const effectiveTo = new Date(version.effective_to);
-
-                if (dateFrom && dateTo) {
-                    return effectiveFrom <= dateTo && effectiveTo >= dateFrom;
-                } else if (dateFrom) {
-                    return effectiveTo >= dateFrom;
-                } else if (dateTo) {
-                    return effectiveFrom <= dateTo;
-                }
-                return true;
-            });
-        }
-
-        return filtered;
-    }, [versions, data.type, dateFrom, dateTo]);
-
-    // Update URL when filters change
-    useEffect(() => {
-        const params: Record<string, string> = {};
-
-        if (data.type && data.type !== '' && data.type !== 'all') {
-            params.type = data.type;
-        }
-        
-        if (data.perPage) {
-            params.perPage = data.perPage;
-        }
-
-        if (dateFrom) {
-            params.date_from = format(dateFrom, 'yyyy-MM-dd');
-        }
-        
-        if (dateTo) {
-            params.date_to = format(dateTo, 'yyyy-MM-dd');
-        }
-
-        // Only update if there are actual params
-        if (Object.keys(params).length > 0) {
-            router.get(
-                ContributionVersionController.index.url(),
-                params,
-                { preserveState: true, preserveScroll: true, replace: true }
-            );
-        }
-    }, [data.type, data.perPage, dateFrom, dateTo]);
-
-    // ── Filter handlers ────────────────────────────────────────────────────
-    const handleTypeChange = (value: string) => {
-        setData('type', value);
-        // Close calendar if open
-        setIsCalendarOpen(false);
-    };
-
-    const handleClearTypeFilter = () => {
-        setData('type', '');
-    };
-
-    const handleClearDateFilters = () => {
-        setDateFrom(undefined);
-        setDateTo(undefined);
-        setIsCalendarOpen(false);
-    };
-
-    const handleClearAllFilters = () => {
-        setData('type', '');
-        setDateFrom(undefined);
-        setDateTo(undefined);
-        setIsCalendarOpen(false);
-    };
-
-    // ── Per-page ───────────────────────────────────────────────────────────
-    const handlePerPageChange = (value: string) => {
-        setData('perPage', value);
-    };
+    // Get existing contribution types
+    const existingTypes = useMemo(() => {
+        return versions.map(version => version.type);
+    }, [versions]);
 
     // ── Delete ─────────────────────────────────────────────────────────────
     const handleDelete = (id: number | string) => {
@@ -290,19 +174,12 @@ export default function Index({
 
     // ── Edit ───────────────────────────────────────────────────────────────
     const handleEdit = (version: ContributionVersion) => {
-        router.get(ContributionVersionController.edit(version.id).url);
+        setEditingVersion(version);
+        setIsEditModalOpen(true);
     };
 
-    // Check if any filter is active
-    const hasActiveFilters = (data.type && data.type !== '' && data.type !== 'all') || dateFrom || dateTo;
-
     // Check if there are any records at all
-    const hasRecords = totalCount > 0;
-
-    // Format date range for display
-    const dateRangeText = dateFrom || dateTo 
-        ? `${dateFrom ? format(dateFrom, 'MMM d, yyyy') : ''} ${dateFrom && dateTo ? '-' : ''} ${dateTo ? format(dateTo, 'MMM d, yyyy') : ''}`
-        : '';
+    const hasRecords = versions.length > 0;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -322,106 +199,16 @@ export default function Index({
                     </div>
                 </div>
 
-                {/* Toolbar - Fixed layout to prevent calendar overlap */}
+                {/* Create button - only shown when there are records */}
                 {hasRecords && (
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                        <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-                            {/* Type Filter */}
-                            <div className="flex items-center gap-2 relative min-w-[180px]">
-                                <Filter className="h-4 w-4 text-gray-500 absolute left-3 z-10" />
-                                <Select
-                                    value={data.type || 'all'}
-                                    onValueChange={handleTypeChange}
-                                >
-                                    <SelectTrigger className="w-full h-10 pl-10 pr-8 bg-white">
-                                        <SelectValue placeholder="Filter by type" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">All Types</SelectItem>
-                                        <SelectItem value="sss">SSS</SelectItem>
-                                        <SelectItem value="philhealth">PhilHealth</SelectItem>
-                                        <SelectItem value="pagibig">Pag-IBIG</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                {data.type && data.type !== 'all' && (
-                                    <button
-                                        onClick={handleClearTypeFilter}
-                                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 z-10"
-                                    >
-                                        <X className="h-4 w-4" />
-                                    </button>
-                                )}
-                            </div>
-
-                            {/* Date Range Picker - With controlled open state */}
-                            <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
-                                <PopoverTrigger asChild>
-                                    <Button
-                                        variant="outline"
-                                        className={`w-full sm:w-[260px] justify-start text-left font-normal h-10 bg-white ${
-                                            !dateFrom && !dateTo ? 'text-muted-foreground' : ''
-                                        }`}
-                                    >
-                                        <CalendarIcon className="mr-2 h-4 w-4" />
-                                        {dateRangeText || <span>Filter by date range</span>}
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0" align="start" side="bottom" sideOffset={5}>
-                                    <Calendar
-                                        mode="range"
-                                        selected={{
-                                            from: dateFrom,
-                                            to: dateTo,
-                                        }}
-                                        onSelect={(range) => {
-                                            setDateFrom(range?.from);
-                                            setDateTo(range?.to);
-                                            // Don't close automatically to allow range selection
-                                        }}
-                                        numberOfMonths={2}
-                                        initialFocus
-                                    />
-                                    <div className="flex items-center justify-end gap-2 p-3 border-t">
-                                        <Button 
-                                            variant="outline" 
-                                            size="sm"
-                                            onClick={() => {
-                                                setDateFrom(undefined);
-                                                setDateTo(undefined);
-                                            }}
-                                        >
-                                            Clear
-                                        </Button>
-                                        <Button 
-                                            size="sm"
-                                            onClick={() => setIsCalendarOpen(false)}
-                                        >
-                                            Apply
-                                        </Button>
-                                    </div>
-                                </PopoverContent>
-                            </Popover>
-
-                            {/* Clear All Filters Button */}
-                            {hasActiveFilters && (
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={handleClearAllFilters}
-                                    className="gap-1 h-10 px-2"
-                                >
-                                    <X className="h-4 w-4" />
-                                    Clear All
-                                </Button>
-                            )}
-                        </div>
-
-                        <Link
-                            href={ContributionVersionController.create()}
-                            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 whitespace-nowrap"
+                    <div className="flex justify-end">
+                        <Button
+                            onClick={() => setIsCreateModalOpen(true)}
+                            className="inline-flex items-center justify-center gap-2"
                         >
-                            + Create Contribution Version
-                        </Link>
+                            <Plus className="h-4 w-4" />
+                            Create Contribution Version
+                        </Button>
                     </div>
                 )}
 
@@ -436,12 +223,10 @@ export default function Index({
                             <p className="text-muted-foreground mb-6 max-w-sm">
                                 Create your first contribution version to set up SSS, PhilHealth, and Pag-IBIG contribution tables with their corresponding brackets.
                             </p>
-                            <Link href={ContributionVersionController.create()}>
-                                <Button className="gap-2">
-                                    <Calculator className="h-4 w-4" />
-                                    Create Your First Version
-                                </Button>
-                            </Link>
+                            <Button onClick={() => setIsCreateModalOpen(true)} className="gap-2">
+                                <Plus className="h-4 w-4" />
+                                Create Your First Version
+                            </Button>
                         </CardContent>
                     </Card>
                 ) : (
@@ -500,10 +285,30 @@ export default function Index({
                                     : dateRangeText ? `Date: ${dateRangeText}` : ''}
                                 resourceName="contribution version"
                             />
-                        )}
-                    </>
+                        </CardContent>
+                    </Card>
                 )}
             </div>
+
+            {/* Create Modal */}
+            <CreateContributionModal
+                isOpen={isCreateModalOpen}
+                onClose={() => setIsCreateModalOpen(false)}
+                existingTypes={existingTypes}
+            />
+
+            {/* Edit Modal */}
+            {editingVersion && (
+                <EditContributionModal
+                    isOpen={isEditModalOpen}
+                    onClose={() => {
+                        setIsEditModalOpen(false);
+                        setEditingVersion(null);
+                    }}
+                    contributionVersion={editingVersion}
+                    existingTypes={existingTypes.filter(type => type !== editingVersion.type)}
+                />
+            )}
 
             {/* Brackets Modal */}
             <Dialog open={isBracketsModalOpen} onOpenChange={setIsBracketsModalOpen}>
@@ -513,13 +318,7 @@ export default function Index({
                             Contribution Brackets - {selectedVersion && getContributionTypeLabel(selectedVersion.type)}
                         </DialogTitle>
                         <DialogDescription>
-                            {selectedVersion && (
-                                <div className="flex items-center gap-2 mt-1">
-                                    <Badge variant="secondary">
-                                        {formatDate(selectedVersion.effective_from)} - {formatDate(selectedVersion.effective_to)}
-                                    </Badge>
-                                </div>
-                            )}
+                            View salary brackets and contribution percentages for this contribution type.
                         </DialogDescription>
                     </DialogHeader>
                     
@@ -532,7 +331,6 @@ export default function Index({
                                             <TableHead>Salary Range</TableHead>
                                             <TableHead className="text-right">Employee Share (%)</TableHead>
                                             <TableHead className="text-right">Employer Share (%)</TableHead>
-                                            <TableHead className="text-right">Total (%)</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -541,7 +339,7 @@ export default function Index({
                                                 index === self.findIndex(b => b.id === bracket.id)
                                             )
                                             .map((bracket) => {
-                                                const total = bracket.employee_share + bracket.employer_share;
+                                               
                                                 return (
                                                     <TableRow key={bracket.id}>
                                                         <TableCell className="font-medium">
@@ -550,7 +348,7 @@ export default function Index({
                                                         </TableCell>
                                                         <TableCell className="text-right">{bracket.employee_share}%</TableCell>
                                                         <TableCell className="text-right">{bracket.employer_share}%</TableCell>
-                                                        <TableCell className="text-right font-medium">{total}%</TableCell>
+                                                       
                                                     </TableRow>
                                                 );
                                             })}
@@ -578,5 +376,519 @@ export default function Index({
                 headerIcon={<Percent className="h-6 w-6 text-primary" />}
             />
         </AppLayout>
+    );
+}
+
+// =============================================================================
+// CREATE MODAL COMPONENT
+// =============================================================================
+
+interface CreateContributionModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    existingTypes: string[];
+}
+
+function CreateContributionModal({ isOpen, onClose, existingTypes }: CreateContributionModalProps) {
+    const { data, setData, errors, processing, post, reset } = useForm<FormData>({
+        type: '',
+        salary_ranges: [{
+            salary_from: '',
+            salary_to: '',
+            employee_share: '',
+            employer_share: '',
+        }],
+    });
+
+    const handleClose = () => {
+        reset();
+        onClose();
+    };
+
+    function submitContributionVersion(e: React.FormEvent) {
+        e.preventDefault();
+        post(ContributionVersionController.store().url, {
+            onSuccess: (page) => {
+                const successMessage = page.props.flash?.success || 'Contribution version created successfully.';
+                toast.success(successMessage);
+                handleClose();
+            },
+            onError: (errors) => {
+                const errorMessage = Object.values(errors).flat()[0] || 'Failed to create contribution version.';
+                toast.error(errorMessage);
+            }
+        });
+    }
+
+    const addSalaryRange = () => {
+        setData('salary_ranges', [
+            ...data.salary_ranges,
+            {
+                salary_from: '',
+                salary_to: '',
+                employee_share: '',
+                employer_share: '',
+            }
+        ]);
+    };
+
+    const removeSalaryRange = (index: number) => {
+        if (data.salary_ranges.length > 1) {
+            setData('salary_ranges', data.salary_ranges.filter((_, i) => i !== index));
+        }
+    };
+
+    const updateSalaryRange = (index: number, field: keyof SalaryRange, value: string) => {
+        const updatedRanges = data.salary_ranges.map((range, i) => {
+            if (i === index) {
+                return { ...range, [field]: value };
+            }
+            return range;
+        });
+        setData('salary_ranges', updatedRanges);
+    };
+
+    const getNestedError = (index: number, field: string) => {
+        return errors[`salary_ranges.${index}.${field}`];
+    };
+
+    // Check if all contribution types are already taken
+    const allTypesTaken = existingTypes.length >= 3;
+
+    return (
+        <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
+            <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                    <DialogTitle className="text-2xl">Create Contribution Version</DialogTitle>
+                    <DialogDescription>
+                        Create a new contribution version with salary ranges and contribution percentages.
+                    </DialogDescription>
+                </DialogHeader>
+
+                {allTypesTaken ? (
+                    <div className="py-8 text-center">
+                        <p className="text-muted-foreground mb-4">
+                            All contribution types (SSS, PhilHealth, Pag-IBIG) already have versions.
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                            You can only have one version per contribution type. Please edit or delete existing versions if you need to make changes.
+                        </p>
+                    </div>
+                ) : (
+                    <form onSubmit={submitContributionVersion} className="space-y-6">
+                        {/* Contribution Type */}
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Contribution Type</label>
+                            <Select
+                                value={data.type}
+                                onValueChange={(value) => setData('type', value)}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select contribution type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {!existingTypes.includes('sss') && (
+                                        <SelectItem value="sss">SSS</SelectItem>
+                                    )}
+                                    {!existingTypes.includes('philhealth') && (
+                                        <SelectItem value="philhealth">PhilHealth</SelectItem>
+                                    )}
+                                    {!existingTypes.includes('pagibig') && (
+                                        <SelectItem value="pagibig">Pag-IBIG</SelectItem>
+                                    )}
+                                </SelectContent>
+                            </Select>
+                            {existingTypes.length > 0 && (
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    Available types: {['sss', 'philhealth', 'pagibig']
+                                        .filter(type => !existingTypes.includes(type))
+                                        .map(type => getContributionTypeLabel(type))
+                                        .join(', ')}
+                                </p>
+                            )}
+                            <InputError message={errors.type} />
+                        </div>
+
+                        {/* Salary Ranges Repeater */}
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <label className="text-sm font-medium">Salary Ranges & Contributions</label>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={addSalaryRange}
+                                    className='hover:cursor-pointer'
+                                >
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    Add Range
+                                </Button>
+                            </div>
+
+                            {errors.salary_ranges && typeof errors.salary_ranges === 'string' && (
+                                <div className="text-sm text-red-600">
+                                    <InputError message={errors.salary_ranges} />
+                                </div>
+                            )}
+
+                            {data.salary_ranges.map((range, index) => (
+                                <div key={index} className="relative p-4 border rounded-lg bg-muted/5">
+                                    {data.salary_ranges.length > 1 && (
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            className="absolute -top-2 -right-2 h-8 w-8 rounded-full bg-background border shadow-sm"
+                                            onClick={() => removeSalaryRange(index)}
+                                        >
+                                            <Trash2 className="h-4 w-4 text-destructive" />
+                                        </Button>
+                                    )}
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-medium">Salary From (₱)</label>
+                                            <Input
+                                                type="number"
+                                                value={range.salary_from}
+                                                onChange={e => updateSalaryRange(index, 'salary_from', e.target.value)}
+                                                placeholder="0.00"
+                                            />
+                                            <InputError message={getNestedError(index, 'salary_from')} />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-medium">Salary To (₱)</label>
+                                            <Input
+                                                type="number"
+                                                value={range.salary_to}
+                                                onChange={e => updateSalaryRange(index, 'salary_to', e.target.value)}
+                                                placeholder="0.00"
+                                            />
+                                            <InputError message={getNestedError(index, 'salary_to')} />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                        <div className="space-y-2">
+                                            <div className="flex items-center gap-1">
+                                                <label className="text-sm font-medium">Employee Share</label>
+                                                <Percent className="h-3 w-3 text-muted-foreground" />
+                                            </div>
+                                            <div className="relative">
+                                                <Input
+                                                    type="number"
+                                                    value={range.employee_share}
+                                                    onChange={e => updateSalaryRange(index, 'employee_share', e.target.value)}
+                                                    placeholder="0.00"
+                                                    className="pr-8"
+                                                />
+                                                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                                    <span className="text-sm text-muted-foreground">%</span>
+                                                </div>
+                                            </div>
+                                            <InputError message={getNestedError(index, 'employee_share')} />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <div className="flex items-center gap-1">
+                                                <label className="text-sm font-medium">Employer Share</label>
+                                                <Percent className="h-3 w-3 text-muted-foreground" />
+                                            </div>
+                                            <div className="relative">
+                                                <Input
+                                                    type="number"
+                                                    value={range.employer_share}
+                                                    onChange={e => updateSalaryRange(index, 'employer_share', e.target.value)}
+                                                    placeholder="0.00"
+                                                    className="pr-8"
+                                                />
+                                                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                                    <span className="text-sm text-muted-foreground">%</span>
+                                                </div>
+                                            </div>
+                                            <InputError message={getNestedError(index, 'employer_share')} />
+                                        </div>
+                                    </div>
+                                    <div className="mt-2 text-xs text-muted-foreground">
+                                        <p>Enter contribution percentage (e.g., 10 for 10%)</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="flex justify-end space-x-3 pt-4">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={handleClose}
+                                className='hover:cursor-pointer'
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                type="submit"
+                                disabled={processing}
+                                className='hover:cursor-pointer'
+                            >
+                                {processing && <LoaderCircle className='h-4 w-4 animate-spin mr-2' />}
+                                {processing ? 'Creating...' : 'Create Contribution Version'}
+                            </Button>
+                        </div>
+                    </form>
+                )}
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+// =============================================================================
+// EDIT MODAL COMPONENT
+// =============================================================================
+
+interface EditContributionModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    contributionVersion: ContributionVersion;
+    existingTypes: string[]; // Types that are already taken (excluding current one)
+}
+
+function EditContributionModal({ isOpen, onClose, contributionVersion, existingTypes }: EditContributionModalProps) {
+    const initialSalaryRanges = contributionVersion.contribution_brackets.map(bracket => ({
+        salary_from: bracket.salary_from.toString(),
+        salary_to: bracket.salary_to.toString(),
+        employee_share: bracket.employee_share.toString(),
+        employer_share: bracket.employer_share.toString(),
+    }));
+
+    const { data, setData, errors, processing, put, reset } = useForm<FormData>({
+        type: contributionVersion.type || '',
+        salary_ranges: initialSalaryRanges.length > 0 ? initialSalaryRanges : [{
+            salary_from: '',
+            salary_to: '',
+            employee_share: '',
+            employer_share: '',
+        }],
+    });
+
+    const handleClose = () => {
+        reset();
+        onClose();
+    };
+
+    function submitContributionVersion(e: React.FormEvent) {
+        e.preventDefault();
+        put(ContributionVersionController.update(contributionVersion.id).url, {
+            onSuccess: (page) => {
+                const successMessage = page.props.flash?.success || 'Contribution version updated successfully.';
+                toast.success(successMessage);
+                handleClose();
+            },
+            onError: (errors) => {
+                const errorMessage = Object.values(errors).flat()[0] || 'Failed to update contribution version.';
+                toast.error(errorMessage);
+            }
+        });
+    }
+
+    const addSalaryRange = () => {
+        setData('salary_ranges', [
+            ...data.salary_ranges,
+            {
+                salary_from: '',
+                salary_to: '',
+                employee_share: '',
+                employer_share: '',
+            }
+        ]);
+    };
+
+    const removeSalaryRange = (index: number) => {
+        if (data.salary_ranges.length > 1) {
+            setData('salary_ranges', data.salary_ranges.filter((_, i) => i !== index));
+        }
+    };
+
+    const updateSalaryRange = (index: number, field: keyof SalaryRange, value: string) => {
+        const updatedRanges = data.salary_ranges.map((range, i) => {
+            if (i === index) {
+                return { ...range, [field]: value };
+            }
+            return range;
+        });
+        setData('salary_ranges', updatedRanges);
+    };
+
+    const getNestedError = (index: number, field: string) => {
+        return errors[`salary_ranges.${index}.${field}`];
+    };
+
+    return (
+        <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
+            <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                    <DialogTitle className="text-2xl">Edit Contribution Version</DialogTitle>
+                    <DialogDescription>
+                        Update contribution version details and salary ranges.
+                    </DialogDescription>
+                </DialogHeader>
+
+                <form onSubmit={submitContributionVersion} className="space-y-6">
+                    {/* Contribution Type */}
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium">Contribution Type</label>
+                        <Select
+                            value={data.type}
+                            onValueChange={(value) => setData('type', value)}
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select contribution type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {/* Always show current type */}
+                                <SelectItem value={contributionVersion.type}>
+                                    {getContributionTypeLabel(contributionVersion.type)}
+                                </SelectItem>
+                                
+                                {/* Show other types only if they're not taken */}
+                                {!existingTypes.includes('sss') && contributionVersion.type !== 'sss' && (
+                                    <SelectItem value="sss">SSS</SelectItem>
+                                )}
+                                {!existingTypes.includes('philhealth') && contributionVersion.type !== 'philhealth' && (
+                                    <SelectItem value="philhealth">PhilHealth</SelectItem>
+                                )}
+                                {!existingTypes.includes('pagibig') && contributionVersion.type !== 'pagibig' && (
+                                    <SelectItem value="pagibig">Pag-IBIG</SelectItem>
+                                )}
+                            </SelectContent>
+                        </Select>
+                        <InputError message={errors.type} />
+                    </div>
+
+                    {/* Salary Ranges Repeater */}
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                            <label className="text-sm font-medium">Salary Ranges & Contributions</label>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={addSalaryRange}
+                                className='hover:cursor-pointer'
+                            >
+                                <Plus className="h-4 w-4 mr-2" />
+                                Add Range
+                            </Button>
+                        </div>
+
+                        {errors.salary_ranges && typeof errors.salary_ranges === 'string' && (
+                            <div className="text-sm text-red-600">
+                                <InputError message={errors.salary_ranges} />
+                            </div>
+                        )}
+
+                        {data.salary_ranges.map((range, index) => (
+                            <div key={index} className="relative p-4 border rounded-lg bg-muted/5">
+                                {data.salary_ranges.length > 1 && (
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        className="absolute -top-2 -right-2 h-8 w-8 rounded-full bg-background border shadow-sm"
+                                        onClick={() => removeSalaryRange(index)}
+                                    >
+                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                    </Button>
+                                )}
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium">Salary From (₱)</label>
+                                        <Input
+                                            type="number"
+                                            value={range.salary_from}
+                                            onChange={e => updateSalaryRange(index, 'salary_from', e.target.value)}
+                                            placeholder="0.00"
+                                        />
+                                        <InputError message={getNestedError(index, 'salary_from')} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium">Salary To (₱)</label>
+                                        <Input
+                                            type="number"
+                                            value={range.salary_to}
+                                            onChange={e => updateSalaryRange(index, 'salary_to', e.target.value)}
+                                            placeholder="0.00"
+                                        />
+                                        <InputError message={getNestedError(index, 'salary_to')} />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                    <div className="space-y-2">
+                                        <div className="flex items-center gap-1">
+                                            <label className="text-sm font-medium">Employee Share</label>
+                                            <Percent className="h-3 w-3 text-muted-foreground" />
+                                        </div>
+                                        <div className="relative">
+                                            <Input
+                                                type="number"
+                                                value={range.employee_share}
+                                                onChange={e => updateSalaryRange(index, 'employee_share', e.target.value)}
+                                                placeholder="0.00"
+                                                className="pr-8"
+                                            />
+                                            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                                <span className="text-sm text-muted-foreground">%</span>
+                                            </div>
+                                        </div>
+                                        <InputError message={getNestedError(index, 'employee_share')} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <div className="flex items-center gap-1">
+                                            <label className="text-sm font-medium">Employer Share</label>
+                                            <Percent className="h-3 w-3 text-muted-foreground" />
+                                        </div>
+                                        <div className="relative">
+                                            <Input
+                                                type="number"
+                                                value={range.employer_share}
+                                                onChange={e => updateSalaryRange(index, 'employer_share', e.target.value)}
+                                                placeholder="0.00"
+                                                className="pr-8"
+                                            />
+                                            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                                <span className="text-sm text-muted-foreground">%</span>
+                                            </div>
+                                        </div>
+                                        <InputError message={getNestedError(index, 'employer_share')} />
+                                    </div>
+                                </div>
+                                <div className="mt-2 text-xs text-muted-foreground">
+                                    <p>Enter contribution percentage (e.g., 10 for 10%)</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="flex justify-end space-x-3 pt-4">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleClose}
+                            className='hover:cursor-pointer'
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="submit"
+                            disabled={processing}
+                            className='hover:cursor-pointer'
+                        >
+                            {processing && <LoaderCircle className='h-4 w-4 animate-spin mr-2' />}
+                            {processing ? 'Updating...' : 'Update Contribution Version'}
+                        </Button>
+                    </div>
+                </form>
+            </DialogContent>
+        </Dialog>
     );
 }

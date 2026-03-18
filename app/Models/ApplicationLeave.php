@@ -4,18 +4,20 @@ namespace App\Models;
 
 use App\Policies\ApplicationLeavePolicy;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Attributes\UsePolicy;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Str;
-use Illuminate\Database\Eloquent\Attributes\UsePolicy;
 use Illuminate\Support\Facades\App;
+use Illuminate\Support\Str;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 #[UsePolicy(ApplicationLeavePolicy::class)]
 class ApplicationLeave extends Model
 {
 
-    use HasFactory;
+    use HasFactory, LogsActivity;
 
     protected $fillable = [
         'employee_id',
@@ -34,6 +36,23 @@ class ApplicationLeave extends Model
         'leave_start' => 'date',
         'leave_end' => 'date',
     ];
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly([
+                'employee.user.name',
+                //'slug_app',
+                'leave_start',
+                'leave_end',
+                'reason_to_leave',
+                'app_status',
+                'approved_by',
+                'rejected_by',
+                'remarks',
+            ])
+            ->logOnlyDirty();
+    }
 
     public function employee()
     {
@@ -58,7 +77,7 @@ class ApplicationLeave extends Model
 
     protected function appStatus(): Attribute
     {
-       return Attribute::make(
+        return Attribute::make(
             set: fn($value) => trim(strip_tags($value)),
         );
     }

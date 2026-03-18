@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\ApplicationLeaveController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AttendanceImportController;
@@ -7,9 +8,11 @@ use App\Http\Controllers\BranchController;
 use App\Http\Controllers\ContributionVersionController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\EmployeeRole\ApplicationLeaveController as EmployeeApplicationLeaveController;
-use App\Http\Controllers\IncentiveController;
+use App\Http\Controllers\HrRole\HRAttendanceController;
+use App\Http\Controllers\HrRole\HRAttendanceImportController;
 use App\Http\Controllers\HrRole\PayrollController as HrPayrollController;
 use App\Http\Controllers\HrRole\PayrollPeriodController as HrPayrollPeriodController;
+use App\Http\Controllers\IncentiveController;
 use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\PayrollPeriodController;
 use App\Http\Controllers\PermissionController;
@@ -82,8 +85,19 @@ Route::middleware(['auth', 'verified', 'throttle:limit-actions', 'roleBase'])->g
     Route::get('/coming-soon', function () {
         return Inertia::render('coming-soon');
     });
+    Route::resource('/activity-logs', ActivityLogController::class)->only(['index']);
 
 
+
+    //intended for HR
+    Route::get('/hr/attendance-logs', [HRAttendanceController::class, 'attendanceLogs'])->name('hr.attendance-logs');
+    Route::get('/hr/attendance-exception-stats', [HRAttendanceController::class, 'attendanceExceptionStats'])->name('hr.attendance-exception-stats');
+    Route::get('/hr/attendance-period-stats', [HRAttendanceController::class, 'attendancePeriodStats'])->name('hr.attendance-period-stats');
+    Route::get('/hr/attendance-schedules', [HRAttendanceController::class, 'attendanceSchedules'])->name('hr.attendance-schedules');
+
+    Route::resource('/hr/attendances', HRAttendanceImportController::class, [
+        'as' => 'hr'
+    ]);
 
     Route::resource('/hr/payroll', HrPayrollController::class)->names([
         'index' => 'hr.payroll.index',

@@ -6,7 +6,7 @@ import { Calendar, Sheet, ChartSpline, Clock, ScrollText, Upload } from 'lucide-
 import AppLayout from '@/layouts/app-layout';
 import BiometricImport from '@/components/biometric-import';
 import { CustomTable } from '@/components/custom-table';
-import { Pagination } from '@/components/ui/pagination';
+import { CustomPagination } from '@/components/custom-pagination';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -109,49 +109,37 @@ interface LinkProps {
     url: string | null;
 }
 
+/** Standard pagination structure from Laravel */
+interface PaginationMeta {
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+    from: number;
+    to: number;
+    links: LinkProps[];
+    path?: string;
+    first_page_url?: string;
+    last_page_url?: string;
+    next_page_url?: string | null;
+    prev_page_url?: string | null;
+}
+
 /** Pagination structures for each data type */
-interface LogsPagination {
+interface LogsPagination extends PaginationMeta {
     data: Logs[];
-    links: LinkProps[];
-    from: number;
-    to: number;
-    total: number;
-    current_page?: number;
-    last_page?: number;
-    per_page?: number;
 }
 
-interface ExceptionPagination {
+interface ExceptionPagination extends PaginationMeta {
     data: ExceptionStats[];
-    links: LinkProps[];
-    from: number;
-    to: number;
-    total: number;
-    current_page?: number;
-    last_page?: number;
-    per_page?: number;
 }
 
-interface SchedulePagination {
+interface SchedulePagination extends PaginationMeta {
     data: Schedule[];
-    links: LinkProps[];
-    from: number;
-    to: number;
-    total: number;
-    current_page?: number;
-    last_page?: number;
-    per_page?: number;
 }
 
-interface PeriodPagination {
+interface PeriodPagination extends PaginationMeta {
     data: PeriodStat[];
-    links: LinkProps[];
-    from: number;
-    to: number;
-    total: number;
-    current_page?: number;
-    last_page?: number;
-    per_page?: number;
 }
 
 /** Filter properties for search and pagination */
@@ -234,31 +222,17 @@ const TableSkeleton = ({ rows = 5, columns = 8 }: { rows?: number; columns?: num
 
 export default function AttendanceManagement({
     // Data props with default values - MATCHING THE EXACT PROP NAMES FROM CONTROLLER
-    logs = { data: [], links: [], from: 0, to: 0, total: 0 },
+    logs = { data: [], current_page: 1, last_page: 1, per_page: 10, total: 0, from: 0, to: 0, links: [] },
     timelineData = [],
-    exceptionStats = { data: [], links: [], from: 0, to: 0, total: 0 },
+    exceptionStats = { data: [], current_page: 1, last_page: 1, per_page: 10, total: 0, from: 0, to: 0, links: [] },
     calendarData = [],
-    schedules = { data: [], links: [], from: 0, to: 0, total: 0 },
-    periodStats = { data: [], links: [], from: 0, to: 0, total: 0 },
+    schedules = { data: [], current_page: 1, last_page: 1, per_page: 10, total: 0, from: 0, to: 0, links: [] },
+    periodStats = { data: [], current_page: 1, last_page: 1, per_page: 10, total: 0, from: 0, to: 0, links: [] },
     filters = { search: '', perPage: '10' },
     // Count props with default values
     totalCounts = { logs: 0, exceptionStats: 0, periodStats: 0, schedules: 0 },
     filteredCounts = { logs: 0, exceptionStats: 0, periodStats: 0, schedules: 0 },
 }: IndexProps) {
-
-    // Debug: Log all props to see what's coming from the backend
-    useEffect(() => {
-        console.log('========== PROPS RECEIVED ==========');
-        console.log('logs:', logs);
-        console.log('exceptionStats:', exceptionStats);
-        console.log('periodStats:', periodStats);
-        console.log('schedules:', schedules);
-        console.log('timelineData:', timelineData);
-        console.log('calendarData:', calendarData);
-        console.log('totalCounts:', totalCounts);
-        console.log('filteredCounts:', filteredCounts);
-        console.log('====================================');
-    }, [logs, exceptionStats, periodStats, schedules, timelineData, calendarData, totalCounts, filteredCounts]);
 
     // ==========================================================================
     // STATE MANAGEMENT
@@ -275,6 +249,9 @@ export default function AttendanceManagement({
 
     /** Loading state for table data */
     const [isTableLoading, setIsTableLoading] = useState(false);
+
+    /** Local search state for instant filtering */
+    const [localSearch, setLocalSearch] = useState(filters.search || '');
 
     /** Form state for search and pagination */
     const { data, setData } = useForm({
@@ -318,14 +295,29 @@ export default function AttendanceManagement({
 
     /**
      * Handle loading state for table skeleton
+     * Only show skeleton for actual data changes, not for pagination clicks
      */
     useEffect(() => {
-        const onStart = () => {
-            setIsTableLoading(true);
+        let timeoutId: NodeJS.Timeout;
+
+        const onStart = (event: { visit: { data: any } }) => {
+            // Clear any pending timeout
+            if (timeoutId) clearTimeout(timeoutId);
+
+            // Only show loading if it's not a pagination request
+            const isPaginationRequest = event.visit?.data?.page ||
+                event.visit?.data?.perPage;
+
+            if (!isPaginationRequest) {
+                setIsTableLoading(true);
+            }
         };
 
         const onFinish = () => {
-            setIsTableLoading(false);
+            // Add a small delay to prevent flickering
+            timeoutId = setTimeout(() => {
+                setIsTableLoading(false);
+            }, 200);
         };
 
         const removeStartListener = router.on('start', onStart);
@@ -334,6 +326,7 @@ export default function AttendanceManagement({
         return () => {
             removeStartListener();
             removeFinishListener();
+            if (timeoutId) clearTimeout(timeoutId);
         };
     }, []);
 
@@ -344,44 +337,32 @@ export default function AttendanceManagement({
         setActiveSubTab('table');
     }, [activeMainTab]);
 
+
+    /**
+     * Handle search input change - instant update without server request
+     */
+    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setLocalSearch(value);
+        // Optionally sync with server for persistence (debounced)
+        setData('search', value);
+    };
+
+    /**
+     * Reset search filters
+     */
+    const handleResetFilters = () => {
+        setLocalSearch('');
+        setData('search', '');
+        setData('perPage', '10');
+    };
+
     // ==========================================================================
     // EVENT HANDLERS
     // ==========================================================================
 
     /**
-     * Handle search input change
-     */
-    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value;
-        setData('search', value);
-
-        const queryString = {
-            ...(value && { search: value }),
-            ...(data.perPage && { perPage: data.perPage }),
-            tab: activeMainTab,
-        };
-
-        router.get('/attendances', queryString, {
-            preserveState: true,
-            preserveScroll: true,
-        });
-    };
-
-    /**
-     * Reset all filters to default values
-     */
-    const handleResetFilters = () => {
-        setData('search', '');
-        setData('perPage', '10');
-
-        router.get('/attendances', { tab: activeMainTab }, {
-            preserveState: true,
-            preserveScroll: true,
-        });
-    };
-
-    /**
-     * Handle items per page change
+     * Handle items per page change - this still requires server request
      */
     const handlePerPageChange = (value: string) => {
         setData('perPage', value);
@@ -505,42 +486,124 @@ export default function AttendanceManagement({
      */
     const getCurrentData = () => {
         switch (activeMainTab) {
-            case 'logs':
+            case 'logs': {
+                // Calculate last_page if it's not provided correctly
+                const total = logs?.total || 0;
+                const perPage = parseInt(data.perPage);
+                const calculatedLastPage = Math.ceil(total / perPage) || 1;
+
+                const paginationData = {
+                    current_page: logs?.current_page || 1,
+                    last_page: logs?.last_page || calculatedLastPage, // Use calculated if missing
+                    per_page: logs?.per_page || perPage,
+                    total: total,
+                    from: logs?.from || 0,
+                    to: logs?.to || 0,
+                    links: logs?.links || [],
+                    currentPage: logs?.current_page || 1,
+                    lastPage: logs?.last_page || calculatedLastPage,
+                    perPage: logs?.per_page || perPage,
+                };
+
                 return {
                     data: logs?.data || [],
-                    pagination: logs,
+                    pagination: paginationData,
                     config: AttendanceLogsTableConfig,
-                    totalCount: totalCounts?.logs || logs?.total || 0,
+                    totalCount: totalCounts?.logs || total,
                     filteredCount: filteredCounts?.logs || logs?.data?.length || 0,
                 };
-            case 'exceptions':
+            }
+
+            case 'exceptions': {
+                const total = exceptionStats?.total || 0;
+                const perPage = parseInt(data.perPage);
+                const calculatedLastPage = Math.ceil(total / perPage) || 1;
+
                 return {
                     data: exceptionStats?.data || [],
-                    pagination: exceptionStats,
+                    pagination: {
+                        current_page: exceptionStats?.current_page || 1,
+                        last_page: exceptionStats?.last_page || calculatedLastPage,
+                        per_page: exceptionStats?.per_page || perPage,
+                        total: total,
+                        from: exceptionStats?.from || 0,
+                        to: exceptionStats?.to || 0,
+                        links: exceptionStats?.links || [],
+                        currentPage: exceptionStats?.current_page || 1,
+                        lastPage: exceptionStats?.last_page || calculatedLastPage,
+                        perPage: exceptionStats?.per_page || perPage,
+                    },
                     config: AttendanceExceptionStatsTableConfig,
-                    totalCount: totalCounts?.exceptionStats || exceptionStats?.total || 0,
+                    totalCount: totalCounts?.exceptionStats || total,
                     filteredCount: filteredCounts?.exceptionStats || exceptionStats?.data?.length || 0,
                 };
-            case 'schedules':
+            }
+
+            case 'schedules': {
+                const total = schedules?.total || 0;
+                const perPage = parseInt(data.perPage);
+                const calculatedLastPage = Math.ceil(total / perPage) || 1;
+
                 return {
                     data: schedules?.data || [],
-                    pagination: schedules,
+                    pagination: {
+                        current_page: schedules?.current_page || 1,
+                        last_page: schedules?.last_page || calculatedLastPage,
+                        per_page: schedules?.per_page || perPage,
+                        total: total,
+                        from: schedules?.from || 0,
+                        to: schedules?.to || 0,
+                        links: schedules?.links || [],
+                        currentPage: schedules?.current_page || 1,
+                        lastPage: schedules?.last_page || calculatedLastPage,
+                        perPage: schedules?.per_page || perPage,
+                    },
                     config: AttendanceSchedulesTableConfig,
-                    totalCount: totalCounts?.schedules || schedules?.total || 0,
+                    totalCount: totalCounts?.schedules || total,
                     filteredCount: filteredCounts?.schedules || schedules?.data?.length || 0,
                 };
-            case 'periods':
+            }
+
+            case 'periods': {
+                const total = periodStats?.total || 0;
+                const perPage = parseInt(data.perPage);
+                const calculatedLastPage = Math.ceil(total / perPage) || 1;
+
                 return {
                     data: periodStats?.data || [],
-                    pagination: periodStats,
+                    pagination: {
+                        current_page: periodStats?.current_page || 1,
+                        last_page: periodStats?.last_page || calculatedLastPage,
+                        per_page: periodStats?.per_page || perPage,
+                        total: total,
+                        from: periodStats?.from || 0,
+                        to: periodStats?.to || 0,
+                        links: periodStats?.links || [],
+                        currentPage: periodStats?.current_page || 1,
+                        lastPage: periodStats?.last_page || calculatedLastPage,
+                        perPage: periodStats?.per_page || perPage,
+                    },
                     config: AttendancePeriodStatsTableConfig,
-                    totalCount: totalCounts?.periodStats || periodStats?.total || 0,
+                    totalCount: totalCounts?.periodStats || total,
                     filteredCount: filteredCounts?.periodStats || periodStats?.data?.length || 0,
                 };
+            }
+
             default:
                 return {
                     data: [],
-                    pagination: { data: [], links: [], from: 0, to: 0, total: 0 },
+                    pagination: {
+                        current_page: 1,
+                        last_page: 1,
+                        per_page: parseInt(data.perPage),
+                        total: 0,
+                        from: 0,
+                        to: 0,
+                        links: [],
+                        currentPage: 1,
+                        lastPage: 1,
+                        perPage: parseInt(data.perPage),
+                    },
                     config: AttendanceLogsTableConfig,
                     totalCount: 0,
                     filteredCount: 0,
@@ -555,10 +618,49 @@ export default function AttendanceManagement({
         return mainTabs.find(t => t.id === activeMainTab) || mainTabs[0];
     };
 
-    // Get current data and tab
+    // ==========================================================================
+    // INSTANT SEARCH - CLIENT SIDE FILTERING
+    // ==========================================================================
+
+    /**
+     * Filter data based on local search term
+     */
+    const filteredData = useMemo(() => {
+        const currentData = getCurrentData().data;
+
+        if (!localSearch.trim()) {
+            return currentData;
+        }
+
+        const searchTerm = localSearch.toLowerCase().trim();
+
+        return currentData.filter(item => {
+            // Search in employee name
+            if (item.employee_name?.toLowerCase().includes(searchTerm)) return true;
+
+            // Search in employee ID
+            if (item.employee_id?.toLowerCase().includes(searchTerm)) return true;
+
+            // Search in department
+            if (item.department?.toLowerCase().includes(searchTerm)) return true;
+
+            // For logs, search in date
+            if ('date' in item && item.date?.includes(searchTerm)) return true;
+
+            // For exception stats, search in additional fields
+            if ('am_time_in' in item) {
+                const exceptionItem = item as ExceptionStats;
+                if (exceptionItem.am_time_in?.toLowerCase().includes(searchTerm)) return true;
+                if (exceptionItem.pm_time_out?.toLowerCase().includes(searchTerm)) return true;
+            }
+
+            return false;
+        });
+    }, [localSearch, activeMainTab, logs, exceptionStats, schedules, periodStats, data.perPage]);
+
+    // Get current data and tab (AFTER functions are defined)
     const current = getCurrentData();
     const currentMainTab = getCurrentMainTab();
-
     // Determine number of skeleton columns based on active tab
     const getSkeletonColumns = () => {
         switch (activeMainTab) {
@@ -700,17 +802,33 @@ export default function AttendanceManagement({
                             </TabsList>
                         </Tabs>
 
-                        {/* Search - only show in table view */}
+                        {/* Search - only show in table view - INSTANT SEARCH */}
                         {activeSubTab === 'table' && (
                             <div className="flex items-center gap-4">
-                                <Input
-                                    type="text"
-                                    value={data.search}
-                                    onChange={handleSearchChange}
-                                    placeholder={`Search in ${currentMainTab.label}...`}
-                                    className="h-10 w-64"
-                                />
-                                <Button onClick={handleResetFilters} variant="outline" className="h-10">
+                                <div className="relative">
+                                    <Input
+                                        type="text"
+                                        value={localSearch}
+                                        onChange={handleSearchChange}
+                                        placeholder={`Search in ${currentMainTab.label}...`}
+                                        className="h-10 w-64 pr-8"
+                                        autoComplete="off"
+                                    />
+                                    {localSearch && (
+                                        <button
+                                            onClick={handleResetFilters}
+                                            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                        >
+                                            ✕
+                                        </button>
+                                    )}
+                                </div>
+                                <Button
+                                    onClick={handleResetFilters}
+                                    variant="outline"
+                                    className="h-10"
+                                    disabled={!localSearch}
+                                >
                                     Clear
                                 </Button>
                             </div>
@@ -718,17 +836,33 @@ export default function AttendanceManagement({
                     </div>
                 )}
 
-                {/* Search for tabs without sub-tabs */}
+                {/* Search for tabs without sub-tabs - INSTANT SEARCH */}
                 {!['logs', 'exceptions'].includes(activeMainTab) && (
                     <div className="flex items-center gap-4">
-                        <Input
-                            type="text"
-                            value={data.search}
-                            onChange={handleSearchChange}
-                            placeholder={`Search in ${currentMainTab.label}...`}
-                            className="h-10 w-64"
-                        />
-                        <Button onClick={handleResetFilters} variant="outline" className="h-10">
+                        <div className="relative">
+                            <Input
+                                type="text"
+                                value={localSearch}
+                                onChange={handleSearchChange}
+                                placeholder={`Search in ${currentMainTab.label}...`}
+                                className="h-10 w-64 pr-8"
+                                autoComplete="off"
+                            />
+                            {localSearch && (
+                                <button
+                                    onClick={handleResetFilters}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                >
+                                    ✕
+                                </button>
+                            )}
+                        </div>
+                        <Button
+                            onClick={handleResetFilters}
+                            variant="outline"
+                            className="h-10"
+                            disabled={!localSearch}
+                        >
                             Clear
                         </Button>
                     </div>
@@ -756,15 +890,24 @@ export default function AttendanceManagement({
                         </div>
                         <div className="text-right">
                             <div className="text-sm text-gray-500">
-                                {activeSubTab === 'table' ? 'Total Records' : 'Total Items'}
+                                {activeSubTab === 'table' ?
+                                    (localSearch ? 'Filtered Records' : 'Total Records') :
+                                    'Total Items'}
                             </div>
                             <div className="text-2xl font-bold text-primary">
                                 {activeSubTab === 'table'
-                                    ? current.totalCount.toLocaleString()
+                                    ? localSearch
+                                        ? filteredData.length.toLocaleString()
+                                        : current.totalCount.toLocaleString()
                                     : activeSubTab === 'timeline'
                                         ? timelineDataFormatted.length.toLocaleString()
                                         : calendarDataFormatted.length.toLocaleString()}
                             </div>
+                            {localSearch && activeSubTab === 'table' && (
+                                <div className="text-xs text-gray-400">
+                                    of {current.totalCount.toLocaleString()} total
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -773,14 +916,18 @@ export default function AttendanceManagement({
                 <div className="relative min-h-[400px]">
                     {activeSubTab === 'table' ? (
                         <>
-                            {/* Table Info */}
+                            {/* Table Info - Shows filtered results count */}
                             <div className="mb-4 flex items-center justify-between">
                                 <div className="text-sm text-gray-600">
-                                    Showing <span className="font-bold text-primary">{current.data.length}</span> of{' '}
-                                    <span className="font-bold">{current.totalCount.toLocaleString()}</span> records
-                                    {data.search && (
+                                    Showing <span className="font-bold text-primary">
+                                        {filteredData.length}
+                                    </span> of{' '}
+                                    <span className="font-bold">
+                                        {localSearch ? current.totalCount.toLocaleString() : current.totalCount.toLocaleString()}
+                                    </span> records
+                                    {localSearch && (
                                         <span className="ml-1">
-                                            (filtered from <span className="font-bold">{current.totalCount.toLocaleString()}</span>)
+                                            (filtered)
                                         </span>
                                     )}
                                 </div>
@@ -789,7 +936,7 @@ export default function AttendanceManagement({
                                 </div>
                             </div>
 
-                            {/* Table with Skeleton Loader */}
+                            {/* Table with Skeleton Loader - Shows filtered data */}
                             {isTableLoading ? (
                                 <TableSkeleton
                                     rows={parseInt(data.perPage)}
@@ -799,7 +946,7 @@ export default function AttendanceManagement({
                                 <CustomTable
                                     columns={current.config.columns}
                                     actions={current.config.actions}
-                                    data={current.data}
+                                    data={filteredData} // Use filtered data instead of current.data
                                     from={current.pagination?.from || 0}
                                     onDelete={() => { }}
                                     onView={() => { }}
@@ -807,17 +954,19 @@ export default function AttendanceManagement({
                                 />
                             )}
 
-                            {/* Pagination */}
-                            {!isTableLoading && current.data.length > 0 && (
+                            {/* Pagination - Always visible when there's data */}
+                            {filteredData.length > 0 && (
                                 <div className="mt-4">
-                                    <Pagination
+                                    <CustomPagination
                                         pagination={current.pagination}
                                         perPage={data.perPage}
                                         onPerPageChange={handlePerPageChange}
-                                        totalCount={current.totalCount}
-                                        filteredCount={current.filteredCount}
-                                        search={data.search}
-                                        resourceName={activeMainTab}
+                                        totalCount={localSearch ? filteredData.length : current.totalCount}
+                                        filteredCount={localSearch ? filteredData.length : current.filteredCount}
+                                        search={localSearch}
+                                        resourceName={activeMainTab === 'logs' ? 'logs' :
+                                            activeMainTab === 'exceptions' ? 'exceptions' :
+                                                activeMainTab === 'schedules' ? 'schedules' : 'periods'}
                                     />
                                 </div>
                             )}
@@ -839,8 +988,8 @@ export default function AttendanceManagement({
                     ) : null}
                 </div>
 
-                {/* Empty State */}
-                {!isTableLoading && current.data.length === 0 && activeSubTab === 'table' && (
+                {/* Empty State - Shows when no filtered results */}
+                {!isTableLoading && filteredData.length === 0 && activeSubTab === 'table' && (
                     <div className="flex flex-col items-center justify-center py-16 text-center">
                         <div className="rounded-full bg-gray-100 p-6 mb-4">
                             {activeMainTab === 'logs' && <ScrollText className="h-12 w-12 text-gray-400" />}
@@ -850,13 +999,13 @@ export default function AttendanceManagement({
                         </div>
                         <h3 className="text-lg font-semibold mb-2">No records found</h3>
                         <p className="text-gray-500 mb-6 max-w-sm">
-                            {data.search
-                                ? "No records match your search criteria. Try adjusting your filters."
+                            {localSearch
+                                ? `No results match "${localSearch}". Try adjusting your search.`
                                 : `No ${currentMainTab.label.toLowerCase()} available at the moment.`}
                         </p>
-                        {data.search && (
+                        {localSearch && (
                             <Button onClick={handleResetFilters} variant="outline">
-                                Clear Filters
+                                Clear Search
                             </Button>
                         )}
                     </div>
