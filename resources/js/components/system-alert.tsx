@@ -24,7 +24,7 @@ const cardArrayItems = [
     {
         icon: CalendarClock,
         title: "Pending Requests",
-        subtitle: "Marky Bigote requested a leave."
+        subtitle: "Employee requested a leave."
     },
     {
         icon: ScrollText,
