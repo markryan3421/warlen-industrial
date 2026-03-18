@@ -13,18 +13,21 @@ trait BranchValidationRules
                 'required',
                 'string',
                 'max:255',
-                'unique:branches'
+                'unique:branches',
+                'regex:/^[a-zA-Z0-9\s\-_\.&,()@]+$/',
             ],
             'branch_address' => [
                 'required',
                 'string',
                 'max:255',
+                'regex:/^[a-zA-Z0-9\s\-_\.&,()@]+$/',
             ],
             'sites' => 'sometimes|array',
             'sites.*.site_name' => [
                 'required_with:sites',
                 'string',
                 'max:255',
+                'regex:/^[a-zA-Z0-9\s\-_\.&,()@]+$/',
                 function ($attribute, $value, $fail) {
                     $sites = request('sites');
                     $siteNames = array_column($sites, 'site_name');
@@ -43,12 +46,14 @@ trait BranchValidationRules
                 'required',
                 'string',
                 'max:255',
+                'regex:/^[a-zA-Z0-9\s\-_\.&,()@]+$/',
                 Rule::unique('branches', 'branch_name')->ignore($this->route('branch'))
             ],
             'branch_address' => [
                 'required',
                 'string',
                 'max:255',
+                'regex:/^[a-zA-Z0-9\s\-_\.&,()@]+$/',
             ],
             'sites' => 'sometimes|array',
             'sites.*.id' => [
@@ -60,6 +65,7 @@ trait BranchValidationRules
                 'required_with:sites',
                 'string',
                 'max:255',
+                'regex:/^[a-zA-Z0-9\s\-_\.&,()@]+$/',
                 function ($attribute, $value, $fail) {
                     $sites = request('sites');
                     $siteNames = array_column($sites, 'site_name');

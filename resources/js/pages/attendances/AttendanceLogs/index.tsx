@@ -127,8 +127,6 @@ export default function AttendanceLogs({ logs, timelineData, filters, totalCount
     }));
   }, [timelineData]);
 
-  console.log('timelineDataFormat', timelineDataFormat);
-
   return (
     <AppLayout breadcrumbs={breadcrumbs}>
       <Head title="Attendance Logs" />

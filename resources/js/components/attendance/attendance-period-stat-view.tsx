@@ -483,10 +483,10 @@ export function AttendancePeriodStatView({ stats, className }: Props) {
           {/* Department filter */}
           <Select value={deptFilter} onValueChange={handleDept}>
             <SelectTrigger className="w-full sm:w-[180px] h-8 text-xs border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
-              <SelectValue placeholder="All Departments" />
+              <SelectValue placeholder="Pay Frequency" />
             </SelectTrigger>
             <SelectContent className="rounded-xl border-slate-200 dark:border-slate-700 shadow-xl">
-              <SelectItem value="all">All Departments</SelectItem>
+              <SelectItem value="all">Pay Frequency</SelectItem>
               {departments.map(dept => (
                 <SelectItem key={dept} value={dept}>{dept}</SelectItem>
               ))}
