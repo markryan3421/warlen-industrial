@@ -1,7 +1,7 @@
 import { Head, router, useForm } from '@inertiajs/react';
 import { Calendar, Sheet, ChartSpline } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { ExceptionStatsHybrid } from '@/components/attendance/exception-stats-view';
+import { ExceptionStatsHybrid, ExceptionStatsTimeline } from '@/components/attendance/exception-stats-view';
 import { CustomPagination } from '@/components/custom-pagination';
 import { CustomTable } from '@/components/custom-table';
 import { Button } from '@/components/ui/button';
@@ -130,6 +130,8 @@ export default function AttendanceExceptionStats({ stats, calendarData, filters,
     }));
   }, [calendarData]);
 
+  console.log('calendar data formatted', calendarDataFormatted);
+
   return (
     <AppLayout breadcrumbs={breadcrumbs}>
       <Head title="Attendance Logs" />
@@ -221,13 +223,9 @@ export default function AttendanceExceptionStats({ stats, calendarData, filters,
             />
           </>
         ) : (
-          <ExceptionStatsHybrid
-            calendarData={calendarDataFormatted}
-            onDayClick={(dateKey, records) => {
-              console.log('Selected:', dateKey, records);
-            }}
-            maxVisible={3}
-            title="Attendance Exception Stats"
+          <ExceptionStatsTimeline
+            exceptions={calendarDataFormatted} // or whatever prop you have for the list data
+            onExceptionClick={(record) => console.log('Clicked', record)}
           />
         )}
       </div>
