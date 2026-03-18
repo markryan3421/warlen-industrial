@@ -6,6 +6,11 @@ use Illuminate\Validation\Rule;
 
 trait EmployeeValidationRules
 {
+    /**
+     * Get the validation rules that apply to the employee.
+     *
+     * @return array
+     */
     protected function empRules(): array
     {
         return [

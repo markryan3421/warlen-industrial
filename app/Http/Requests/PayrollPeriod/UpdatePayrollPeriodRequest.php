@@ -2,12 +2,12 @@
 
 namespace App\Http\Requests\PayrollPeriod;
 
-use App\Enums\PayrollPeriodStatusEnum;
+use App\Concerns\PayrollPeriod\PayrollPeriodValidationRules;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class UpdatePayrollPeriodRequest extends FormRequest
 {
+    use PayrollPeriodValidationRules;
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -23,18 +23,11 @@ class UpdatePayrollPeriodRequest extends FormRequest
      */
     public function rules(): array
     {
-        // return [
-        //     'start_date' => 'required|date|before_or_equal:end_date',
-        //     'end_date' => 'required|date|after_or_equal:start_date',
-        //     'pay_date' => 'required|date|after_or_equal:start_date|before_or_equal:end_date',
-        //     'payroll_per_status' => ['required', Rule::in(['open', 'processing', 'completed'])],
-        // ];
+       return $this->payrollPeriodRules();
+    }
 
-        return [
-            'start_date' => 'required',
-            'end_date' => 'required',
-            'pay_date' => 'required',
-            'payroll_per_status' => ['required', Rule::enum(PayrollPeriodStatusEnum::class)],
-        ];
+    public function attributes(): array
+    {
+       return $this->payrollPeriodAttributes();
     }
 }
