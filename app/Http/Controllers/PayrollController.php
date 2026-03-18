@@ -28,7 +28,7 @@ class PayrollController extends Controller
             'totalDeductions' => $this->payrollService->calculateTotalDeductions($payrolls),
             'totalNetPay' => $this->payrollService->calculateTotalNetPay($payrolls),
             'totalGrossPay' => $this->payrollService->calculateTotalGrossPay($payrolls),
-            'activeEmployee' => $this->payrollService->getActiveEmployeeCount()
+            'activeEmployee' => $this->payrollService->getActiveEmployeesInPayroll($payrolls)
         ]);
     }
 

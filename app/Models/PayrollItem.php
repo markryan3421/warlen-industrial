@@ -50,4 +50,11 @@ class PayrollItem extends Model
             set: fn($value) => trim(strip_tags($value)),
         );
     }
+
+    protected function amount(): Attribute
+    {
+        return Attribute::make(
+            set: fn($value) => is_numeric($value) ? (float) $value : 0,
+        );
+    }
 }

@@ -56,4 +56,11 @@ class Position extends Model
             set: fn($value) => strtolower(trim(strip_tags($value))),
         );
     }
+
+    protected function basicSalary(): Attribute
+    {
+        return Attribute::make(
+            set: fn($value) => is_numeric($value) ? (float) $value : 0,
+        );
+    }
 }

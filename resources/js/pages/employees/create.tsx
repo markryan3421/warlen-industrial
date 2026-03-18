@@ -166,7 +166,7 @@ export default function Create({ positions, branches, site = [] }: Props) {
                             <div className="space-y-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="emp_code">Employee Code <span className="text-red-500">*</span></Label>
-                                    <Input id="emp_code" value={data.emp_code} onChange={e => setData('emp_code', e.target.value)} className="w-full" placeholder="Enter employee code" />
+                                    <Input id="emp_code" type="number" value={data.emp_code} onChange={e => setData('emp_code', e.target.value)} className="w-full" placeholder="Enter employee code" />
                                     <InputError message={errors.emp_code} />
                                 </div>
                                 <div className="space-y-2">

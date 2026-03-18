@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('positions', function (Blueprint $table) {
             $table->id();
             $table->string('pos_name')->unique();
-            $table->decimal('basic_salary', 15, 2);
+            $table->decimal('basic_salary');
             $table->string('pos_slug')->unique();
             $table->softDeletes();
             $table->timestamps();
