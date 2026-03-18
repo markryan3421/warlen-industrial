@@ -1,3 +1,4 @@
+// payroll-processing-cards.tsx
 "use client"
 import * as React from "react"
 import { Button } from "@/components/ui/button"
@@ -8,7 +9,6 @@ import {
     PopoverTrigger,
 } from "@/components/ui/popover"
 import { format } from "date-fns"
-import { DateRange } from "react-day-picker"
 import {
     Card,
     CardDescription,
@@ -16,7 +16,7 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card"
-import { RefreshCcw, ListFilter, CalendarIcon, Banknote, TrendingUp, TrendingDown, Wallet, SquareUserRound, PhilippinePeso, Newspaper } from "lucide-react"
+import { RefreshCcw, Banknote, TrendingUp, TrendingDown, Wallet, SquareUserRound, PhilippinePeso, Newspaper, Calendar as CalendarIcon, X } from "lucide-react"
 import {
     Select,
     SelectContent,
@@ -26,7 +26,6 @@ import {
     SelectValue
 } from "./ui/select"
 import { Label } from "@/components/ui/label"
-import { cn } from "@/lib/utils"
 import { useEffect, useState, useRef } from "react"
 
 // Define the Payroll interface to match the one from the index page
@@ -67,6 +66,7 @@ interface Payroll {
             pos_name: string;
             deleted_at: string;
         };
+        pay_frequency: string;
     };
     created_at: string;
     updated_at: string;
@@ -81,6 +81,25 @@ interface PayrollProcessingCardsProps {
     activeEmployee: number;
     formatCurrency: (amount: number) => string;
     formatNumber: (amount: number) => string;
+    
+    // Filter props
+    dateFrom?: Date;
+    dateTo?: Date;
+    selectedFrequency: string;
+    selectedPosition: string;
+    onDateFromChange: (date: Date | undefined) => void;
+    onDateToChange: (date: Date | undefined) => void;
+    onFrequencyChange: (value: string) => void;
+    onPositionChange: (value: string) => void;
+    onRefresh: () => void;
+    
+    // Options for dropdowns
+    frequencyOptions: string[];
+    positionOptions: string[];
+    
+    // New props for filtered counts
+    totalFilteredPayrolls?: number;
+    totalOriginalPayrolls?: number;
 }
 
 // Custom hook for counting animation
@@ -89,33 +108,33 @@ function useCountAnimation(end: number | string, duration: number = 1000, startO
     const [isAnimating, setIsAnimating] = useState(false)
     const countRef = useRef<number>(0)
     const animationRef = useRef<number>()
-    
+
     // Parse the end value (handles strings with commas)
     const parseNumericValue = (val: number | string): number => {
         if (typeof val === 'number') return val
         return parseFloat(val.replace(/,/g, '')) || 0
     }
-    
+
     const numericEnd = parseNumericValue(end)
-    
+
     const startAnimation = () => {
         if (isAnimating) return
-        
+
         setIsAnimating(true)
         const startTime = performance.now()
         const startValue = 0
-        
+
         const animate = (currentTime: number) => {
             const elapsedTime = currentTime - startTime
             const progress = Math.min(elapsedTime / duration, 1)
-            
+
             // Easing function for smooth animation
             const easeOutQuart = 1 - Math.pow(1 - progress, 4)
             const currentCount = startValue + (numericEnd - startValue) * easeOutQuart
-            
+
             setCount(currentCount)
             countRef.current = currentCount
-            
+
             if (progress < 1) {
                 animationRef.current = requestAnimationFrame(animate)
             } else {
@@ -123,36 +142,36 @@ function useCountAnimation(end: number | string, duration: number = 1000, startO
                 setIsAnimating(false)
             }
         }
-        
+
         animationRef.current = requestAnimationFrame(animate)
     }
-    
+
     useEffect(() => {
         if (startOnMount) {
             // Small delay to ensure component is mounted
             const timer = setTimeout(startAnimation, 100)
             return () => clearTimeout(timer)
         }
-        
+
         return () => {
             if (animationRef.current) {
                 cancelAnimationFrame(animationRef.current)
             }
         }
     }, [numericEnd, startOnMount])
-    
+
     return { count, isAnimating, startAnimation }
 }
 
 // Component for animated value with formatting
-function AnimatedValue({ 
-    value, 
-    prefix = "", 
+function AnimatedValue({
+    value,
+    prefix = "",
     suffix = "",
     duration = 1000,
     className = "",
     startOnMount = true
-}: { 
+}: {
     value: string | number
     prefix?: string
     suffix?: string
@@ -161,7 +180,7 @@ function AnimatedValue({
     startOnMount?: boolean
 }) {
     const { count, startAnimation } = useCountAnimation(value, duration, startOnMount)
-    
+
     // Format the number with commas
     const formatNumber = (num: number): string => {
         if (Number.isInteger(num)) {
@@ -169,9 +188,9 @@ function AnimatedValue({
         }
         return num.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")
     }
-    
+
     return (
-        <span 
+        <span
             className={className}
             onMouseEnter={() => !startOnMount && startAnimation()}
         >
@@ -180,247 +199,345 @@ function AnimatedValue({
     )
 }
 
-
-export default function PayrollProcessingCards({ 
-    payrolls = [], 
-    totalOvertimePay = 0, 
+export default function PayrollProcessingCards({
+    payrolls = [],
+    totalOvertimePay = 0,
     totalOvertimeHours = 0,
     totalDeductions = 0,
     totalNetPay = 0,
-    activeEmployee = 0,  // Add this line with default value
+    activeEmployee = 0,
     formatCurrency,
-    formatNumber 
+    formatNumber,
+    
+    // Filter props
+    dateFrom,
+    dateTo,
+    selectedFrequency,
+    selectedPosition,
+    onDateFromChange,
+    onDateToChange,
+    onFrequencyChange,
+    onPositionChange,
+    onRefresh,
+    
+    // Options
+    frequencyOptions,
+    positionOptions,
+    
+    // New props
+    totalFilteredPayrolls,
+    totalOriginalPayrolls
 }: PayrollProcessingCardsProps) {
-    // Date range state
-    const [dateRange, setDateRange] = React.useState<DateRange | undefined>({
-        from: new Date(new Date().getFullYear(), new Date().getMonth(), 1), // First day of current month
-        to: new Date() // Today
-    })
+    // Calendar month states
+    const [leftCalendarMonth, setLeftCalendarMonth] = React.useState<Date>(
+        dateFrom || new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+    )
+    const [rightCalendarMonth, setRightCalendarMonth] = React.useState<Date>(
+        new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1)
+    )
 
-    // Remove the local employeeCount calculation since we're using activeEmployee from props
-    // const employeeCount = payrolls.length;  // DELETE THIS LINE
+    // Check if any filter is active
+    const hasActiveFilters = React.useMemo(() => {
+        return dateFrom !== undefined || dateTo !== undefined || 
+               selectedFrequency !== "all" || selectedPosition !== "all";
+    }, [dateFrom, dateTo, selectedFrequency, selectedPosition]);
+
+    // Clear date filters function
+    const clearDateFilters = () => {
+        onDateFromChange(undefined)
+        onDateToChange(undefined)
+    }
+
+    // Update calendar months when dateFrom changes
+    React.useEffect(() => {
+        if (dateFrom) {
+            setLeftCalendarMonth(dateFrom)
+            setRightCalendarMonth(new Date(dateFrom.getFullYear(), dateFrom.getMonth() + 1, 1))
+        }
+    }, [dateFrom])
 
     // Calculate percentage changes (you can implement actual calculations later)
-    // For now, keeping the static percentages as placeholders
-    const netPayPercentage = "+12.5%";
-    const deductionsPercentage = "-12.5%";
-    const overtimePercentage = "+12.5%";
-    const employeePercentage = "+12.5%";
+    const netPayPercentage = hasActiveFilters ? "Filtered" : "+12.5%";
+    const deductionsPercentage = hasActiveFilters ? "Filtered" : "-12.5%";
+    const overtimePercentage = hasActiveFilters ? "Filtered" : "+12.5%";
+    const employeePercentage = hasActiveFilters ? "Filtered" : "+12.5%";
 
     return (
         <>
-        <div className="p-5 px-7">
-            <h1 className="text-lg font-semibold">Payroll Processing</h1>
-            <p>Review and calculate salaries for the specific time-frame.</p>
-        </div>
-
-        <section className="grid grid-cols-4 gap-4 px-7 py-5 pb-9 mx-7 border-1 border-gray-300 rounded-lg">
-            {/* Your filter section - unchanged */}
-            <div className="">
-                <Label htmlFor="terms">Payroll Date Period</Label>
-                <Popover>
-                    <PopoverTrigger asChild>
-                        <Button
-                            id="date"
-                            variant={"outline"}
-                            className={cn(
-                                "w-full justify-start text-left font-normal",
-                                !dateRange && "text-muted-foreground"
-                            )}
-                        >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {dateRange?.from ? (
-                                dateRange.to ? (
-                                    <>
-                                        {format(dateRange.from, "MMM dd, yyyy")} -{" "}
-                                        {format(dateRange.to, "MMM dd, yyyy")}
-                                    </>
-                                ) : (
-                                    format(dateRange.from, "MMM dd, yyyy")
-                                )
-                            ) : (
-                                <span>Pick a date range</span>
-                            )}
-                        </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                            initialFocus
-                            mode="range"
-                            defaultMonth={dateRange?.from}
-                            selected={dateRange}
-                            onSelect={setDateRange}
-                            numberOfMonths={2}
-                        />
-                    </PopoverContent>
-                </Popover>
+            <div className="p-5 px-7">
+                <h1 className="text-lg font-semibold">Payroll Processing</h1>
+                <p>Review and calculate salaries for the specific time-frame.</p>
             </div>
 
-            <div className="ml-8">
-                <Label htmlFor="terms">Payroll Type</Label>
-                <Select>
-                    <SelectTrigger className="w-full max-w-48 hover:cursor-pointer hover:bg-gray-100">
-                        <SelectValue placeholder="Select Payroll Type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectGroup>
-                        <SelectItem value="monthly">Monthly</SelectItem>
-                        <SelectItem value="yearly">Yearly</SelectItem>
-                        </SelectGroup>
-                    </SelectContent>
-                </Select>
-            </div>
+            <section className="flex flex-wrap items-end gap-4 px-7 py-5 pb-9 mx-7 border border-gray-300 rounded-lg">
+                {/* Date Range Picker */}
+                <div className="w-full sm:w-[300px]">
+                    <Label htmlFor="date-range" className="mb-2 block text-sm font-medium">
+                        Date Range
+                    </Label>
+                    <div className="relative">
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    className="w-full justify-start text-left font-normal h-10"
+                                >
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {dateFrom && dateTo ? (
+                                        <>
+                                            {format(dateFrom, 'MMM d, yyyy')} - {format(dateTo, 'MMM d, yyyy')}
+                                        </>
+                                    ) : (
+                                        <span>Select date range</span>
+                                    )}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                                <div className="flex">
+                                    <div className="border-r">
+                                        <Calendar
+                                            mode="range"
+                                            selected={{
+                                                from: dateFrom,
+                                                to: dateTo,
+                                            }}
+                                            onSelect={(range) => {
+                                                onDateFromChange(range?.from)
+                                                onDateToChange(range?.to)
+                                            }}
+                                            month={leftCalendarMonth}
+                                            onMonthChange={setLeftCalendarMonth}
+                                            numberOfMonths={1}
+                                            initialFocus
+                                        />
+                                    </div>
+                                    <div>
+                                        <Calendar
+                                            mode="range"
+                                            selected={{
+                                                from: dateFrom,
+                                                to: dateTo,
+                                            }}
+                                            onSelect={(range) => {
+                                                onDateFromChange(range?.from)
+                                                onDateToChange(range?.to)
+                                            }}
+                                            month={rightCalendarMonth}
+                                            onMonthChange={setRightCalendarMonth}
+                                            numberOfMonths={1}
+                                        />
+                                    </div>
+                                </div>
+                            </PopoverContent>
+                        </Popover>
 
-            <div className="ml-8">
-                <Label htmlFor="terms">Employee Batch</Label>
-                <Select>
-                    <SelectTrigger className="w-full max-w-48 hover:cursor-pointer hover:bg-gray-100">
-                        <SelectValue placeholder="Select Employee Batch" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectGroup>
-                            <SelectItem value="regular-workers">Regular Workers</SelectItem>
-                            <SelectItem value="Contractors">Contractors</SelectItem>
-                            <SelectItem value="project-managers">Project Managers</SelectItem>
-                        </SelectGroup>
-                    </SelectContent>
-                </Select>
-            </div>
-            <div className="flex justify-center items-center mt-6 space-x-3">
-                <Button className="px-20 bg-white border-1 rounded-lg text-black hover:cursor-pointer hover:bg-gray-100"><ListFilter/>Filter</Button>
-                <Button className="px-20 bg-white border-1 rounded-lg text-black hover:cursor-pointer hover:bg-gray-100"><RefreshCcw/>Refresh</Button>
-            </div>
-        </section>
+                        {/* Clear button for date filter */}
+                        {(dateFrom || dateTo) && (
+                            <button
+                                onClick={clearDateFilters}
+                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                title="Clear date filter"
+                            >
+                                <X className="h-4 w-4" />
+                            </button>
+                        )}
+                    </div>
+                </div>
 
-        <div className="grid grid-cols-4 gap-4 p-3 px-7 mt-5">
+                {/* Pay Frequency */}
+                <div className="w-full sm:w-[200px]">
+                    <Label htmlFor="pay-frequency" className="mb-2 block text-sm font-medium">
+                        Frequency
+                    </Label>
+                    <Select value={selectedFrequency} onValueChange={onFrequencyChange}>
+                        <SelectTrigger className="w-full h-10">
+                            <SelectValue placeholder="Select Payroll Type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectGroup>
+                                <SelectItem value="all">All</SelectItem>
+                                {frequencyOptions.map((frequency, index) => (
+                                    <SelectItem key={index} value={frequency}>
+                                        {frequency}
+                                    </SelectItem>
+                                ))}
+                            </SelectGroup>
+                        </SelectContent>
+                    </Select>
+                </div>
 
-            <Card className="
+                {/* Employee Position */}
+                <div className="w-full sm:w-[200px]">
+                    <Label htmlFor="employee-position" className="mb-2 block text-sm font-medium">
+                        Employee Position
+                    </Label>
+                    <Select value={selectedPosition} onValueChange={onPositionChange}>
+                        <SelectTrigger className="w-full h-10">
+                            <SelectValue placeholder="Select Employee Position" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectGroup>
+                                <SelectItem value="all">All</SelectItem>
+                                {positionOptions.map((position, index) => (
+                                    <SelectItem key={index} value={position}>
+                                        {position}
+                                    </SelectItem>
+                                ))}
+                            </SelectGroup>
+                        </SelectContent>
+                    </Select>
+                </div>
+
+                {/* Refresh Button */}
+                <div className="flex items-end">
+                    <Button 
+                        variant="outline" 
+                        className="h-10 px-8 gap-2"
+                        onClick={onRefresh}
+                    >
+                        <RefreshCcw className="h-4 w-4" />
+                        Refresh
+                    </Button>
+                </div>
+            </section>
+
+            {/* Filter indicator */}
+            {hasActiveFilters && totalFilteredPayrolls !== undefined && totalOriginalPayrolls !== undefined && (
+                <div className="px-7 mt-2">
+                    <p className="text-sm text-gray-500">
+                        Showing {totalFilteredPayrolls} of {totalOriginalPayrolls} records
+                    </p>
+                </div>
+            )}
+
+            <div className="grid grid-cols-4 gap-4 p-3 px-7 mt-5">
+                <Card className="
                 @container/card
                 animate-in fade-in slide-in-from-bottom-4 duration-400
                 hover:-translate-y-1 hover:scale-100
                 transition-all ease-out
             ">
-                <CardHeader>
-                    <div className="flex justify-between">
-                        <CardDescription className="font-extrabold text-base">Estimated Net Payroll</CardDescription>
-                        <CardDescription>
-                            <Newspaper className="w-9 h-13 -mt-3 -mb-10 text-blue-800" />
-                        </CardDescription>
-                    </div>
-                    <CardTitle className="text-xl font-semibold tabular-nums @[250px]/card:text-xl -mb-4 flex mt-6">
-                        {/* Show peso sign */}
-                        <PhilippinePeso className="h-7 w-5" />
-                        <AnimatedValue
-                            value={formatNumber(totalNetPay)}
-                            duration={1000}
-                        />
-                    </CardTitle>
-                    <div className="flex justify-start gap-2 py-3">
-                        {/* Percentage of difference compare to previous month */}
-                        <span className="text-xs">{netPayPercentage}</span>
-                        <TrendingUp className="h-4 w-4 text-green-600" />
-                    </div>
-                </CardHeader>
-                <CardFooter className="-mt-8 pb-3 text">
-                    <span className="text-gray-600 text-sm">Last Month</span>
-                </CardFooter>
-            </Card>
+                    <CardHeader>
+                        <div className="flex justify-between">
+                            <CardDescription className="font-extrabold text-base">Estimated Net Payroll</CardDescription>
+                            <CardDescription>
+                                <Newspaper className="w-9 h-13 -mt-3 -mb-10 text-blue-800" />
+                            </CardDescription>
+                        </div>
+                        <CardTitle className="text-xl font-semibold tabular-nums @[250px]/card:text-xl -mb-4 flex mt-6">
+                            {/* Show peso sign */}
+                            <PhilippinePeso className="h-7 w-5" />
+                            <AnimatedValue
+                                value={formatNumber(totalNetPay)}
+                                duration={1000}
+                            />
+                        </CardTitle>
+                        <div className="flex justify-start gap-2 py-3">
+                            {/* Percentage of difference compare to previous month */}
+                            <span className="text-xs">{netPayPercentage}</span>
+                            {!hasActiveFilters && <TrendingUp className="h-4 w-4 text-green-600" />}
+                        </div>
+                    </CardHeader>
+                    <CardFooter className="-mt-8 pb-3 text">
+                        <span className="text-gray-600 text-sm">Last Month</span>
+                    </CardFooter>
+                </Card>
 
-            <Card className="
+                <Card className="
                 @container/card
                 animate-in fade-in slide-in-from-bottom-4 duration-400
                 hover:-translate-y-1 hover:scale-100
                 transition-all ease-out
             ">
-                <CardHeader>
-                    <div className="flex justify-between">
-                        <CardDescription className="font-extrabold text-base">Total Deductions</CardDescription>
-                        <CardDescription>
-                            <Banknote className="w-10 h-15 -mt-3 -mb-10 text-blue-800" />
-                        </CardDescription>
-                    </div>
-                    <CardTitle className="text-xl font-semibold tabular-nums @[250px]/card:text-xl -mb-4 flex mt-6">
-                        {/* Show peso sign */}
-                        <PhilippinePeso className="h-7 w-5" />
-                        <AnimatedValue
-                            value={formatNumber(totalDeductions)}
-                            duration={1000}
-                        />
-                    </CardTitle>
-                    <div className="flex justify-start gap-2 py-3">
-                        {/* Percentage of difference compare to previous month */}
-                        <span className="text-xs">{deductionsPercentage}</span>
-                        <TrendingDown className="h-4 w-4 text-red-600" />
-                    </div>
-                </CardHeader>
-                <CardFooter className="-mt-8 pb-3 text">
-                    <span className="text-gray-600 text-sm">Approvals</span>
-                </CardFooter>
-            </Card>
+                    <CardHeader>
+                        <div className="flex justify-between">
+                            <CardDescription className="font-extrabold text-base">Total Deductions</CardDescription>
+                            <CardDescription>
+                                <Banknote className="w-10 h-15 -mt-3 -mb-10 text-blue-800" />
+                            </CardDescription>
+                        </div>
+                        <CardTitle className="text-xl font-semibold tabular-nums @[250px]/card:text-xl -mb-4 flex mt-6">
+                            {/* Show peso sign */}
+                            <PhilippinePeso className="h-7 w-5" />
+                            <AnimatedValue
+                                value={formatNumber(totalDeductions)}
+                                duration={1000}
+                            />
+                        </CardTitle>
+                        <div className="flex justify-start gap-2 py-3">
+                            {/* Percentage of difference compare to previous month */}
+                            <span className="text-xs">{deductionsPercentage}</span>
+                            {!hasActiveFilters && <TrendingDown className="h-4 w-4 text-red-600" />}
+                        </div>
+                    </CardHeader>
+                    <CardFooter className="-mt-8 pb-3 text">
+                        <span className="text-gray-600 text-sm">Approvals</span>
+                    </CardFooter>
+                </Card>
 
-            <Card className="
+                <Card className="
                 @container/card
                 animate-in fade-in slide-in-from-bottom-4 duration-400
                 hover:-translate-y-1 hover:scale-100
                 transition-all ease-out
             ">
-                <CardHeader>
-                    <div className="flex justify-between">
-                        <CardDescription className="font-extrabold text-base">Total Overtime Pay</CardDescription>
-                        <CardDescription>
-                            <Wallet className="w-9 h-13 -mt-3 -mb-10 text-blue-800" />
-                        </CardDescription>
-                    </div>
-                    <CardTitle className="text-xl font-semibold tabular-nums @[250px]/card:text-xl -mb-4 flex mt-6">
-                        {/* Show peso sign */}
-                        <PhilippinePeso className="h-7 w-5" />
-                        <AnimatedValue
-                            value={formatNumber(totalOvertimePay)}
-                            duration={1000}
-                        />
-                    </CardTitle>
-                    <div className="flex justify-start gap-2 py-3">
-                        {/* Percentage of difference compare to previous month */}
-                        <span className="text-xs">{overtimePercentage}</span>
-                        <TrendingUp className="h-4 w-4 text-green-600" />
-                    </div>
-                </CardHeader>
-                <CardFooter className="-mt-8 pb-3 text">
-                    <span className="text-gray-600 text-sm">Total Hours: {totalOvertimeHours} hrs</span>
-                </CardFooter>
-            </Card>
+                    <CardHeader>
+                        <div className="flex justify-between">
+                            <CardDescription className="font-extrabold text-base">Total Overtime Pay</CardDescription>
+                            <CardDescription>
+                                <Wallet className="w-9 h-13 -mt-3 -mb-10 text-blue-800" />
+                            </CardDescription>
+                        </div>
+                        <CardTitle className="text-xl font-semibold tabular-nums @[250px]/card:text-xl -mb-4 flex mt-6">
+                            {/* Show peso sign */}
+                            <PhilippinePeso className="h-7 w-5" />
+                            <AnimatedValue
+                                value={formatNumber(totalOvertimePay)}
+                                duration={1000}
+                            />
+                        </CardTitle>
+                        <div className="flex justify-start gap-2 py-3">
+                            {/* Percentage of difference compare to previous month */}
+                            <span className="text-xs">{overtimePercentage}</span>
+                            {!hasActiveFilters && <TrendingUp className="h-4 w-4 text-green-600" />}
+                        </div>
+                    </CardHeader>
+                    <CardFooter className="-mt-8 pb-3 text">
+                        <span className="text-gray-600 text-sm">Total Hours: {totalOvertimeHours} hrs</span>
+                    </CardFooter>
+                </Card>
 
-            <Card className="
+                <Card className="
                 @container/card
                 animate-in fade-in slide-in-from-bottom-4 duration-400
                 hover:-translate-y-1 hover:scale-100
                 transition-all ease-out
             ">
-                <CardHeader>
-                    <div className="flex justify-between">
-                        <CardDescription className="font-extrabold text-base">Active Employees</CardDescription>
-                        <CardDescription>
-                            <SquareUserRound className="w-9 h-13 -mt-3 -mb-10 text-blue-800" />
-                        </CardDescription>
-                    </div>
-                    <CardTitle className="text-xl font-semibold tabular-nums @[250px]/card:text-xl -mb-4 flex mt-6">
-                        {/* Don't show peso sign */}
-                        <AnimatedValue
-                            value={activeEmployee} 
-                            duration={1000}
-                        />
-                    </CardTitle>
-                    <div className="flex justify-start gap-2 py-3">
-                        {/* Percentage of difference compare to previous month */}
-                        <span className="text-xs">{employeePercentage}</span>
-                        <TrendingUp className="h-4 w-4 text-green-600" />
-                    </div>
-                </CardHeader>
-                <CardFooter className="-mt-8 pb-3 text">
-                    <span className="text-gray-600 text-sm">Active Status</span>  {/* Changed from "Newly Hires" to "Active Status" */}
-                </CardFooter>
-            </Card>
-        </div>
+                    <CardHeader>
+                        <div className="flex justify-between">
+                            <CardDescription className="font-extrabold text-base">Active Employees</CardDescription>
+                            <CardDescription>
+                                <SquareUserRound className="w-9 h-13 -mt-3 -mb-10 text-blue-800" />
+                            </CardDescription>
+                        </div>
+                        <CardTitle className="text-xl font-semibold tabular-nums @[250px]/card:text-xl -mb-4 flex mt-6">
+                            {/* Don't show peso sign */}
+                            <AnimatedValue
+                                value={activeEmployee}
+                                duration={1000}
+                            />
+                        </CardTitle>
+                        <div className="flex justify-start gap-2 py-3">
+                            {/* Percentage of difference compare to previous month */}
+                            <span className="text-xs">{employeePercentage}</span>
+                            {!hasActiveFilters && <TrendingUp className="h-4 w-4 text-green-600" />}
+                        </div>
+                    </CardHeader>
+                    <CardFooter className="-mt-8 pb-3 text">
+                        <span className="text-gray-600 text-sm">Active Status</span>
+                    </CardFooter>
+                </Card>
+            </div>
         </>
     )
 }
