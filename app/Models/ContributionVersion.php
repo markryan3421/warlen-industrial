@@ -20,22 +20,22 @@ class ContributionVersion extends Model
 
     protected $fillable = [
         'type',
-        'effective_from',
-        'effective_to',
+        // 'effective_from',
+        // 'effective_to',
     ];
 
-    protected $casts = [
-        'effective_from' => 'date',
-        'effective_to' => 'date',
-    ];
+    // protected $casts = [
+    //     'effective_from' => 'date',
+    //     'effective_to' => 'date',
+    // ];
 
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
             ->logOnly([
                 'type',
-                'effective_from',
-                'effective_to',
+                // 'effective_from',
+                // 'effective_to',
             ])
             ->logOnlyDirty();
     }
@@ -56,17 +56,17 @@ class ContributionVersion extends Model
         );
     }
 
-    protected function effectiveFrom(): Attribute
-    {
-        return Attribute::make(
-            get: fn($value) => $value ? Carbon::parse($value)->format('Y-m-d') : null,
-        );
-    }
+    // protected function effectiveFrom(): Attribute
+    // {
+    //     return Attribute::make(
+    //         get: fn ($value) => $value ? Carbon::parse($value)->format('Y-m-d') : null,
+    //     );
+    // }
 
-    protected function effectiveTo(): Attribute
-    {
-        return Attribute::make(
-            get: fn($value) => $value ? Carbon::parse($value)->format('Y-m-d') : null,
-        );
-    }
+    // protected function effectiveTo(): Attribute
+    // {
+    //     return Attribute::make(
+    //         get: fn ($value) => $value ? Carbon::parse($value)->format('Y-m-d') : null,
+    //     );
+    // }
 }

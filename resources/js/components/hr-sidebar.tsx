@@ -11,7 +11,11 @@ import {
     Calendar,
     UserCog,
     Settings,
-    LogOut
+    LogOut,
+    Users,
+    Contact,
+    BookUser,
+    UserRoundCog,
 } from 'lucide-react';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -29,6 +33,8 @@ import AppLogo from './app-logo';
 import type { NavItem } from '@/types';
 import PayrollController from "@/actions/App/Http/Controllers/HrRole/PayrollController";
 import PayrollPeriodController from "@/actions/App/Http/Controllers/HrRole/PayrollPeriodController";
+import AttendanceController from "@/actions/App/Http/Controllers/HrRole/HRAttendanceController";
+import IncentiveController from "@/actions/App/Http/Controllers/HrRole/HRIncentiveController";
 
 // HR-specific menu items
 const hrExpendituresItems: NavItem[] = [
@@ -36,6 +42,12 @@ const hrExpendituresItems: NavItem[] = [
         title: 'Dashboard',
         href: '/hr/dashboard',
         icon: Airplay,
+    },
+
+      {
+        title: 'Incentives',
+        href: IncentiveController.index(),
+        icon: FileBadge,
     },
     {
         title: 'Run Payroll',
@@ -46,7 +58,34 @@ const hrExpendituresItems: NavItem[] = [
         title: 'Payroll Period',
         href: PayrollPeriodController.index(),
         icon: Calendar,
+    },
+       {
+        title: 'Attendance',
+        href: '/hr/attendances',
+        icon: Users,
+    },
+    {
+        title: 'Attendance Logs',
+        href: AttendanceController.attendanceLogs(),
+        icon: Contact,
+    },
+    {
+        title: 'Attendance Exception Stats',
+        href: AttendanceController.attendanceExceptionStats(),
+        icon: Calendar,
+    },
+    {
+        title: 'Attendance Period Stats',
+        href: AttendanceController.attendancePeriodStats(),
+        icon: BookUser,
+    },
+
+    {
+        title: 'Attendance Schedules',
+        href: AttendanceController.attendanceSchedules(),
+        icon: UserRoundCog,
     }
+
 ];
 
 const hrAccessControlItems: NavItem[] = [

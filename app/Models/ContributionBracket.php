@@ -26,7 +26,7 @@ class ContributionBracket extends Model
     {
         return LogOptions::defaults()
             ->logOnly([
-                'contribution_version_id',
+                'contributionVersion.type',
                 'salary_from',
                 'salary_to',
                 'employee_share',

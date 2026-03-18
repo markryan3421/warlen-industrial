@@ -24,7 +24,8 @@ class Incentive extends Model
     {
         return LogOptions::defaults()
             ->logOnly([
-                'payroll_period_id',
+                'payroll_period.start_date',
+                'payroll_period.end_date',
                 'incentive_name',
                 'incentive_amount'
             ])

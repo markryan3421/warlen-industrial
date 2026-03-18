@@ -9,10 +9,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 #[UsePolicy(PayrollPolicy::class)]
 class Payroll extends Model
 {
+    use LogsActivity;
     protected $fillable = [
         'payroll_period_id',
         'employee_id',
@@ -25,8 +27,9 @@ class Payroll extends Model
     {
         return LogOptions::defaults()
             ->logOnly([
-                'payroll_period_id',
-                'employee_id',
+                'payrollPeriod.start_date',
+                'payrollPeriod.end_date',
+                'employee.user.name',
                 'gross_pay',
                 'total_deduction',
                 'net_pay',

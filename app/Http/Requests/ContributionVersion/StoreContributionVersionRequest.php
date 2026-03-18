@@ -23,8 +23,8 @@ class StoreContributionVersionRequest extends FormRequest
     {
         return [
             'type' => 'required',
-            'effective_from' => 'required',
-            'effective_to' => 'required',
+            // 'effective_from' => 'required',
+            // 'effective_to' => 'required',
         ];
     }
 }

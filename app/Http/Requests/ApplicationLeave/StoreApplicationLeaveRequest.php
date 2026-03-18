@@ -2,10 +2,12 @@
 
 namespace App\Http\Requests\ApplicationLeave;
 
+use App\Concerns\ApplicationLeave\ApplicationLeaveValidationRules;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreApplicationLeaveRequest extends FormRequest
 {
+    use ApplicationLeaveValidationRules;
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -21,11 +23,11 @@ class StoreApplicationLeaveRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
-            'leave_start' => 'required|date|after_or_equal:today',
-            'leave_end' => 'required|date|after_or_equal:leave_start',
-            'reason_to_leave' => 'required|string|max:1000',
-            'remarks' => 'nullable|string|max:1000',
-        ];
+       return $this->applicationLeaveStoreRules();
+    }
+
+    public function attributes(): array
+    {
+       return $this->applicatiobLeaveAttributes();
     }
 }

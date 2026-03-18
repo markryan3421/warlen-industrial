@@ -29,10 +29,10 @@ class Site extends Model
     {
         return LogOptions::defaults()
             ->logOnly([
-                'branch_id',
+                'branch.branch_name',
                 'site_name',
             ])
-            ->logOnlyDirty();
+            ->logOnlyDirty(); 
     }
 
     public function branch(): BelongsTo

@@ -266,6 +266,45 @@ export default function Index({ activityLogs }: ActivityLogProps) {
         }
     };
 
+    // Helper function to format field names (handles relationship fields)
+    const formatFieldName = (field: string): string => {
+        // Handle relationship fields (e.g., branch.branch_name)
+        if (field.includes('.')) {
+            const parts = field.split('.');
+            // Format each part and join with " - "
+            return parts
+                .map(part => part
+                    .split('_')
+                    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                    .join(' ')
+                )
+                .join(' - ');
+        }
+        
+        // Convert snake_case to Title Case with spaces
+        return field
+            .split('_')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+    };
+
+    // Helper function to get display value for relationship fields
+    const getDisplayValue = (value: any): string => {
+        if (value === null || value === undefined) return 'N/A';
+        if (typeof value === 'object') {
+            // If it's an object with common display fields, try to show a meaningful value
+            if (value.name) return String(value.name);
+            if (value.branch_name) return String(value.branch_name);
+            if (value.site_name) return String(value.site_name);
+            if (value.title) return String(value.title);
+            if (value.id && Object.keys(value).length === 1) return `ID: ${value.id}`;
+            // Otherwise return a summary (first few properties)
+            const props = Object.keys(value).slice(0, 3).map(key => `${key}: ${value[key]}`).join(', ');
+            return `{ ${props}${Object.keys(value).length > 3 ? '...' : ''} }`;
+        }
+        return String(value);
+    };
+
     // Format changes for display
     const formatChanges = (log: ActivityLog) => {
         const properties = log.properties;
@@ -281,8 +320,10 @@ export default function Index({ activityLogs }: ActivityLogProps) {
                     <div className="text-sm">
                         {changedFields.map(field => (
                             <div key={field} className="grid grid-cols-3 gap-2 text-xs">
-                                <span className="text-gray-500">{field}:</span>
-                                <span className="col-span-2 font-mono">{String(properties.attributes?.[field])}</span>
+                                <span className="text-gray-500">{formatFieldName(field)}:</span>
+                                <span className="col-span-2 font-mono">
+                                    {getDisplayValue(properties.attributes?.[field])}
+                                </span>
                             </div>
                         ))}
                     </div>
@@ -301,13 +342,13 @@ export default function Index({ activityLogs }: ActivityLogProps) {
                     <div className="text-sm">
                         {changedFields.map(field => (
                             <div key={field} className="grid grid-cols-3 gap-2 text-xs border-l-2 border-blue-200 pl-2">
-                                <span className="text-gray-500">{field}:</span>
+                                <span className="text-gray-500">{formatFieldName(field)}:</span>
                                 <div className="col-span-2">
                                     <span className="text-red-600 line-through mr-2">
-                                        {String(properties.old?.[field])}
+                                        {getDisplayValue(properties.old?.[field])}
                                     </span>
                                     <span className="text-green-600">
-                                        {String(properties.attributes?.[field])}
+                                        {getDisplayValue(properties.attributes?.[field])}
                                     </span>
                                 </div>
                             </div>
@@ -325,8 +366,10 @@ export default function Index({ activityLogs }: ActivityLogProps) {
                     <div className="text-sm">
                         {deletedFields.map(field => (
                             <div key={field} className="grid grid-cols-3 gap-2 text-xs">
-                                <span className="text-gray-500">{field}:</span>
-                                <span className="col-span-2 font-mono">{String(properties.old?.[field])}</span>
+                                <span className="text-gray-500">{formatFieldName(field)}:</span>
+                                <span className="col-span-2 font-mono">
+                                    {getDisplayValue(properties.old?.[field])}
+                                </span>
                             </div>
                         ))}
                     </div>
