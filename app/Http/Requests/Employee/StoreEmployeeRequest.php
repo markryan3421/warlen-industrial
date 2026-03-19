@@ -31,4 +31,9 @@ class StoreEmployeeRequest extends FormRequest
     {
         return $this->empAttributes();
     }
+
+    public function messages(): array
+    {
+        return $this->empMessages();
+    }
 }

@@ -24,11 +24,16 @@ class UpdatePositionRequest extends FormRequest
      */
     public function rules(): array
     {
-       return $this->updatePositionRules();
+        return $this->updatePositionRules();
     }
 
     public function attributes(): array
     {
         return $this->positionAttributes();
+    }
+
+    public function messages(): array
+    {
+        return $this->positionMessages();
     }
 }

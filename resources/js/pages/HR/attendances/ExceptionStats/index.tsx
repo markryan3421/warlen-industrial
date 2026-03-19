@@ -1,7 +1,7 @@
 import { Head, router, useForm } from '@inertiajs/react';
 import { Calendar, Sheet, ChartSpline } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { ExceptionStatsHybrid } from '@/components/attendance/exception-stats-view';
+import { ExceptionStatsTimeline } from '@/components/attendance/exception-stats-view';
 import { CustomPagination } from '@/components/custom-pagination';
 import { CustomTable } from '@/components/custom-table';
 import { Button } from '@/components/ui/button';
@@ -221,7 +221,7 @@ export default function AttendanceExceptionStats({ stats, calendarData, filters,
             />
           </>
         ) : (
-          <ExceptionStatsHybrid
+          <ExceptionStatsTimeline
             calendarData={calendarDataFormatted}
             onDayClick={(dateKey, records) => {
               console.log('Selected:', dateKey, records);

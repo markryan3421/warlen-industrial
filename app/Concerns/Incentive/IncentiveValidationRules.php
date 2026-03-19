@@ -21,7 +21,7 @@ trait IncentiveValidationRules
             'incentive_amount' => [
                 'required',
                 'numeric',
-                'min:100',
+                'min:100'
             ],
             'employee_ids' => [
                 'required',
