@@ -10,33 +10,74 @@ use App\Models\Branch;
 use App\Models\Employee;
 use App\Models\Position;
 use App\Models\Site;
+use Illuminate\Http\Request;
 use App\Repository\EmployeeRepository;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
+use App\Traits\HasPaginatedIndex;
 
 class EmployeeController extends Controller
 {
+    use HasPaginatedIndex;
 
     public function __construct(private EmployeeRepository $employeeRepository) {}
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         Gate::authorize('viewAny', Employee::class);
-
-        // $employees = $this->cacheRemember('employees', 60, function () {
-        //     return $this->employeeRepository->getEmployees();
-        // });
-        $employees = $this->employeeRepository->getEmployees();
-        $branchesWithSites = $this->employeeRepository->getBranchesWithSites();
-
-
+    
+        // Full unfiltered collection — cached
+        $employees = $this->cacheRemember('employees', 60, function () {
+            return $this->employeeRepository->getEmployees();
+        });
+    
+        // ── Derive allPositions from the FULL collection (before filtering) ──────
+        // This gives the Position popover the complete list of options regardless
+        // of what filters are currently active or what page the user is on.
+        $allPositions = $employees
+            ->map(fn ($e) => optional($e->position)->pos_name)
+            ->filter()           // remove nulls
+            ->unique()
+            ->sort()
+            ->values()
+            ->all();
+    
+        // ── Paginate + filter — the trait now handles all filter params ──────────
+        $result = $this->paginateCollection(
+            items:         collect($employees),
+            request:       $request,
+            searchColumns: [
+                'emp_code',
+                'user.name',
+                'position.pos_name',
+                'branch.branch_name',
+                'site.site_name',
+                'employee_status',
+            ],
+        );
+    
+        $branchesWithSites = $this->cacheRemember('branchesWithSites', 60, function () {
+            return $this->employeeRepository->getBranchesWithSites();
+        });
+    
         return Inertia::render('employees/index', [
-            'employees' => $employees,
-            'branchesData' => $branchesWithSites
+            'employees' => [
+                'data'    => $result['data'],
+                'links'   => $result['pagination']['links'] ?? [],
+                'from'    => $result['pagination']['from']  ?? 0,
+                'to'      => $result['pagination']['to']    ?? 0,
+                'total'   => $result['pagination']['total'] ?? 0,
+                'perPage' => (int) ($request->perPage ?? 10),
+            ],
+            'branchesData'  => $branchesWithSites,
+            'allPositions'  => $allPositions,          // ← NEW
+            'filters'       => $result['filters'],     // now includes branch/site/status/positions/dates
+            'totalCount'    => $result['totalCount'],
+            'filteredCount' => $result['filteredCount'],
         ]);
     }
 
