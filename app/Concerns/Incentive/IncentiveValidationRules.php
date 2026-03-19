@@ -15,7 +15,8 @@ trait IncentiveValidationRules
                 'required',
                 'string',
                 'min:3',
-                'max:255'
+                'max:255',
+                'regex:/^[a-zA-Z0-9\s\-_\.&,()@]+$/',
             ],
             'incentive_amount' => [
                 'required',
