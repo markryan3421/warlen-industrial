@@ -30,4 +30,9 @@ class StorePositionRequest extends FormRequest
     {
         return $this->positionAttributes();
     }
+
+    public function messages(): array
+    {
+        return $this->positionMessages();
+    }
 }

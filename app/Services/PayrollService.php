@@ -25,7 +25,7 @@ class PayrollService
     public function calculateTotalOvertimePay(Collection $payrolls): float
     {
         $totalOvertimePay = 0;
-        
+
         foreach ($payrolls as $payroll) {
             if ($payroll->payrollItems) {
                 $overtimeItems = $payroll->payrollItems->filter(function ($item) {
@@ -36,7 +36,7 @@ class PayrollService
                 $totalOvertimePay += $overtimeItems->sum('amount');
             }
         }
-        
+
         return $totalOvertimePay;
     }
 
@@ -46,7 +46,7 @@ class PayrollService
     public function calculateTotalOvertimeHours(Collection $payrolls): int
     {
         $totalOvertimeHours = 0;
-        
+
         foreach ($payrolls as $payroll) {
             if ($payroll->payrollItems) {
                 $overtimeItems = $payroll->payrollItems->filter(function ($item) {
@@ -57,16 +57,28 @@ class PayrollService
                 $totalOvertimeHours += $overtimeItems->count() * 8;
             }
         }
-        
+
         return $totalOvertimeHours;
     }
 
     /**
      * Get active employee count
      */
-    public function getActiveEmployeeCount(): int
+    // public function getActiveEmployeeCount(): int
+    // {
+    //     return Employee::query()
+    //         ->where('employee_status', 'active')
+    //         ->count();
+    // }
+
+    public function getActiveEmployeesInPayroll(Collection $payrolls): int
     {
+        // Get unique employee IDs from the payroll collection
+        $employeeIdsInPayroll = $payrolls->pluck('employee_id')->unique()->toArray();
+
+        // Count active employees among those in the payroll
         return Employee::query()
+            ->whereIn('id', $employeeIdsInPayroll)
             ->where('employee_status', 'active')
             ->count();
     }
