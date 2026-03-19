@@ -11,7 +11,7 @@ import { AttendanceExceptionStatsTableConfig } from '@/config/tables/attendance-
 import HrLayout from '@/layouts/hr-layout';
 import type { BreadcrumbItem } from '@/types';
 
-import AttendanceController from  "@/actions/App/Http/Controllers/HrRole/HRAttendanceController";
+import AttendanceController from "@/actions/App/Http/Controllers/HrRole/HRAttendanceController";
 
 const breadcrumbs: BreadcrumbItem[] = [
   {
