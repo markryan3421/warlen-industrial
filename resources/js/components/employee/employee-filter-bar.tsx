@@ -6,7 +6,7 @@
  * header and the column headers.
  *
  * Layout (single row, h-9 controls):
- *   [🔍 Search] | [Position ▾] [Branch ▾] [↳ Site ▾] [📅 Date] [Active only ◉]   [× Clear]
+ *   [Search] | [Position ▾] [Branch ▾] [↳ Site ▾] [Date] [Active only ◉]   [× Clear]
  *
  * All controls are h-9 (36px) to match the table's internal density.
  * No floating labels above inputs — label text is embedded in the trigger.
@@ -58,12 +58,28 @@ interface EmployeeFilterBarProps {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export function EmployeeFilterBar({
+    // Data
     allPositions, branchesData,
+
+    // Initial Data
     searchTerm, selectedPositions, selectedBranch, selectedSite,
     status, dateFrom, dateTo,
+
+    // Callbacks or FilteredData
     onSearchChange, onPositionsChange, onBranchChange, onSiteChange,
-    onStatusChange, onDateFromChange, onDateToChange, onClearAll,
+    onStatusChange, onDateFromChange, onDateToChange,
+
+    // Clear
+    onClearAll,
 }: EmployeeFilterBarProps) {
+
+    // searchTerm + onSearchChange
+    // selectedPositions + onPositionChange
+    // selectedBranch + onBranchChange
+    // selectedSite + onSiteChange
+    // status + onStatusChange
+    // dateFrom + onDateFromChange
+    // dateTo + onDateToChange
 
     const branchOptions = useMemo(
         () => branchesData.map(b => ({ value: b.branch_name, label: b.branch_name })),

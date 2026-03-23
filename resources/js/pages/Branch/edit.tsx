@@ -48,11 +48,23 @@ export default function Edit({ branch }: Props) {
         put(`/branches/${branch.branch_slug}`, {
             onSuccess: (page) => {
                 const successMessage = page.props.flash?.success || 'Branch created successfully.'
-                toast.success(successMessage);
+                toast.success(successMessage, {
+                    style: {
+                        backgroundColor: 'white',
+                        color: '#002dce',
+                        border: '1px solid #d5d8d5'
+                    }
+                });
             },
             onError: (errors) => {
                 const errorMessage = Object.values(errors).flat()[0] || 'Failed to create branch.';
-                toast.error(errorMessage);
+                toast.error(errorMessage, {
+                    style: {
+                        backgroundColor: 'white',
+                        color: 'red',
+                        border: '1px solid #d5d8d5'
+                    }
+                });
             }
         });
     }
@@ -85,7 +97,7 @@ export default function Edit({ branch }: Props) {
                         {/* Branch Information Card - Left Column */}
                         <Card className="border shadow-sm overflow-hidden h-fit">
                             <CardHeader className="border-b">
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-3 mt-3">
                                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
                                         <Building2 className="h-4 w-4 text-primary" />
                                     </div>
@@ -139,7 +151,7 @@ export default function Edit({ branch }: Props) {
                                     </div>
 
                                     {/* Read-only Branch ID/Slug (Optional) */}
-                                    <div className="pt-2 text-xs text-muted-foreground border-t">
+                                    <div className=" text-xs text-muted-foreground border-t">
                                         <span className="font-medium">Branch ID: </span>
                                         <span className="font-mono">{branch.id}</span>
                                     </div>
@@ -148,10 +160,10 @@ export default function Edit({ branch }: Props) {
                         </Card>
 
                         {/* Branch Sites Card - Right Column */}
-                        <Card className="border shadow-sm overflow-hidden h-fit">
+                        <Card className="border shadow-sm overflow-hidden h-full">
                             <CardHeader className="border-b">
                                 <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-3 mt-3">
                                         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
                                             <PlusCircle className="h-4 w-4 text-primary" />
                                         </div>
@@ -165,14 +177,14 @@ export default function Edit({ branch }: Props) {
 
                                     {/* Show count of sites */}
                                     {data.sites.length > 0 && (
-                                        <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                                        <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 mt-3 text-xs font-medium text-primary">
                                             {data.sites.length} {data.sites.length === 1 ? 'Site' : 'Sites'}
                                         </span>
                                     )}
                                 </div>
                             </CardHeader>
 
-                            <CardContent className="p-6">
+                            <CardContent className="p-6 -mb-5">
                                 <SiteRepeater
                                     sites={data.sites}
                                     setSites={setSites}

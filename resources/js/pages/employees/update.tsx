@@ -9,6 +9,7 @@ import InputError from '@/components/input-error';
 import { update } from '@/actions/App/Http/Controllers/EmployeeController';
 import { useEffect, useState } from 'react';
 import { Search, ChevronDown } from 'lucide-react';
+import { toast } from 'sonner';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -40,17 +41,17 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
     // Helper function to format date for input field (YYYY-MM-DD)
     const formatDateForInput = (dateString: string | null | undefined) => {
         if (!dateString) return '';
-        
+
         // If it's already in YYYY-MM-DD format, return as is
         if (typeof dateString === 'string' && dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
             return dateString;
         }
-        
+
         // Otherwise try to parse and format
         try {
             const date = new Date(dateString);
             if (isNaN(date.getTime())) return '';
-            
+
             const year = date.getFullYear();
             const month = String(date.getMonth() + 1).padStart(2, '0');
             const day = String(date.getDate()).padStart(2, '0');
@@ -62,15 +63,15 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
 
     const getStatusFromDates = (start: string, end: string) => {
         if (!start || !end) return 'Inactive';
-        
+
         const today = new Date();
         const startDate = new Date(start);
         const endDate = new Date(end);
-        
+
         today.setHours(0, 0, 0, 0);
         startDate.setHours(0, 0, 0, 0);
         endDate.setHours(0, 0, 0, 0);
-        
+
         return (today >= startDate && today <= endDate) ? 'Active' : 'Inactive';
     };
 
@@ -174,7 +175,16 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        put(update(employee.slug_emp).url);
+        put(update(employee.slug_emp).url, {
+            onSuccess: (page) => {
+                const successMessage = (page.props as any).flash?.success || 'Employee updated successfully.'
+                toast.success(successMessage);
+            },
+            onError: (errors) => {
+                const errorMessage = Object.values(errors).flat()[0] || 'Failed to update employee.';
+                toast.error(errorMessage);
+            }
+        });
     };
 
     const selectPosition = (positionId: string, positionName: string) => {
@@ -219,47 +229,47 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
                             <div className="space-y-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="emp_code">Employee Code <span className="text-red-500">*</span></Label>
-                                    <Input 
-                                        id="emp_code" 
-                                        value={data.emp_code} 
-                                        onChange={e => setData('emp_code', e.target.value)} 
-                                        className="w-full" 
-                                        placeholder="Enter employee code" 
+                                    <Input
+                                        id="emp_code"
+                                        value={data.emp_code}
+                                        onChange={e => setData('emp_code', e.target.value)}
+                                        className="w-full"
+                                        placeholder="Enter employee code"
                                     />
                                     <InputError message={errors.emp_code} />
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="name">Name <span className="text-red-500">*</span></Label>
-                                    <Input 
-                                        id="name" 
-                                        value={data.name} 
-                                        onChange={e => setData('name', e.target.value)} 
-                                        className="w-full" 
-                                        placeholder="Enter full name" 
+                                    <Input
+                                        id="name"
+                                        value={data.name}
+                                        onChange={e => setData('name', e.target.value)}
+                                        className="w-full"
+                                        placeholder="Enter full name"
                                     />
                                     <InputError message={errors.name} />
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="email">Email <span className="text-red-500">*</span></Label>
-                                    <Input 
-                                        id="email" 
-                                        type="email" 
-                                        value={data.email} 
-                                        onChange={e => setData('email', e.target.value)} 
-                                        className="w-full" 
-                                        placeholder="Enter email address" 
+                                    <Input
+                                        id="email"
+                                        type="email"
+                                        value={data.email}
+                                        onChange={e => setData('email', e.target.value)}
+                                        className="w-full"
+                                        placeholder="Enter email address"
                                     />
                                     <InputError message={errors.email} />
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="password">Password</Label>
-                                    <Input 
-                                        id="password" 
-                                        type="password" 
-                                        value={data.password} 
-                                        onChange={e => setData('password', e.target.value)} 
-                                        className="w-full" 
-                                        placeholder="Leave blank to keep current" 
+                                    <Input
+                                        id="password"
+                                        type="password"
+                                        value={data.password}
+                                        onChange={e => setData('password', e.target.value)}
+                                        className="w-full"
+                                        placeholder="Leave blank to keep current"
                                     />
                                     <p className="text-xs text-gray-500">Leave empty if no change</p>
                                     <InputError message={errors.password} />
@@ -273,14 +283,14 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
                                     <Label htmlFor="employee_number">Contact Number <span className="text-red-500">*</span></Label>
                                     <div className="flex">
                                         <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm">+63</span>
-                                        <Input 
-                                            id="employee_number" 
-                                            type="text" 
-                                            value={getDisplayValue('employee_number')} 
-                                            onChange={e => handlePhoneChange('employee_number', e.target.value)} 
-                                            className="w-full rounded-l-none" 
-                                            placeholder="XXX XXX XXXX" 
-                                            maxLength={10} 
+                                        <Input
+                                            id="employee_number"
+                                            type="text"
+                                            value={getDisplayValue('employee_number')}
+                                            onChange={e => handlePhoneChange('employee_number', e.target.value)}
+                                            className="w-full rounded-l-none"
+                                            placeholder="XXX XXX XXXX"
+                                            maxLength={10}
                                         />
                                     </div>
                                     <InputError message={errors.employee_number} />
@@ -288,8 +298,8 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
                                 <div className="space-y-2">
                                     <Label htmlFor="position_id">Position <span className="text-red-500">*</span></Label>
                                     <div className="relative">
-                                        <div 
-                                            className="flex items-center border border-input rounded-md cursor-pointer" 
+                                        <div
+                                            className="flex items-center border border-input rounded-md cursor-pointer"
                                             onClick={() => setShowPositionDropdown(!showPositionDropdown)}
                                         >
                                             <div className="flex-1 px-3 py-2 text-sm">
@@ -302,22 +312,22 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
                                                 <div className="p-2 border-b">
                                                     <div className="relative">
                                                         <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                                                        <Input 
-                                                            value={positionSearch} 
-                                                            onChange={(e) => setPositionSearch(e.target.value)} 
-                                                            placeholder="Search positions..." 
-                                                            className="pl-8" 
-                                                            autoFocus 
-                                                            onClick={(e) => e.stopPropagation()} 
+                                                        <Input
+                                                            value={positionSearch}
+                                                            onChange={(e) => setPositionSearch(e.target.value)}
+                                                            placeholder="Search positions..."
+                                                            className="pl-8"
+                                                            autoFocus
+                                                            onClick={(e) => e.stopPropagation()}
                                                         />
                                                     </div>
                                                 </div>
                                                 <div className="max-h-60 overflow-auto">
                                                     {filteredPositions.length > 0 ? (
                                                         filteredPositions.map((position) => (
-                                                            <div 
-                                                                key={position.id} 
-                                                                className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm" 
+                                                            <div
+                                                                key={position.id}
+                                                                className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
                                                                 onClick={() => selectPosition(position.id.toString(), position.pos_name)}
                                                             >
                                                                 {position.pos_name}
@@ -337,10 +347,10 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="pay_frequency">Pay Frequency <span className="text-red-500">*</span></Label>
-                                    <select 
-                                        id="pay_frequency" 
-                                        value={data.pay_frequency} 
-                                        onChange={e => setData('pay_frequency', e.target.value)} 
+                                    <select
+                                        id="pay_frequency"
+                                        value={data.pay_frequency}
+                                        onChange={e => setData('pay_frequency', e.target.value)}
                                         className="w-full h-10 px-3 rounded-md border border-input bg-background"
                                     >
                                         <option value="">Select a Pay Frequency</option>
@@ -352,13 +362,13 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="employee_status">Status <span className="text-red-500">*</span></Label>
-                                    <Input 
-                                        id="employee_status" 
-                                        type="text" 
-                                        value={data.employee_status} 
-                                        className="w-full h-10 px-3 rounded-md border border-input bg-gray-100" 
-                                        readOnly 
-                                        placeholder="Employee Status" 
+                                    <Input
+                                        id="employee_status"
+                                        type="text"
+                                        value={data.employee_status}
+                                        className="w-full h-10 px-3 rounded-md border border-input bg-gray-100"
+                                        readOnly
+                                        placeholder="Employee Status"
                                     />
                                     <InputError message={errors.employee_status} />
                                 </div>
@@ -366,14 +376,14 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
                                     <Label htmlFor="emergency_contact_number">Emergency Contact</Label>
                                     <div className="flex">
                                         <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm">+63</span>
-                                        <Input 
-                                            id="emergency_contact_number" 
-                                            type="text" 
-                                            value={getDisplayValue('emergency_contact_number')} 
-                                            onChange={e => handlePhoneChange('emergency_contact_number', e.target.value)} 
-                                            className="w-full rounded-l-none" 
-                                            placeholder="XXX XXX XXXX" 
-                                            maxLength={10} 
+                                        <Input
+                                            id="emergency_contact_number"
+                                            type="text"
+                                            value={getDisplayValue('emergency_contact_number')}
+                                            onChange={e => handlePhoneChange('emergency_contact_number', e.target.value)}
+                                            className="w-full rounded-l-none"
+                                            placeholder="XXX XXX XXXX"
+                                            maxLength={10}
                                         />
                                     </div>
                                 </div>
@@ -386,8 +396,8 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
                             <div className="space-y-2">
                                 <Label htmlFor="branch_id">Branch <span className="text-red-500">*</span></Label>
                                 <div className="relative">
-                                    <div 
-                                        className="flex items-center border border-input rounded-md cursor-pointer" 
+                                    <div
+                                        className="flex items-center border border-input rounded-md cursor-pointer"
                                         onClick={() => setShowBranchDropdown(!showBranchDropdown)}
                                     >
                                         <div className="flex-1 px-3 py-2 text-sm">
@@ -400,22 +410,22 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
                                             <div className="p-2 border-b">
                                                 <div className="relative">
                                                     <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                                                    <Input 
-                                                        value={branchSearch} 
-                                                        onChange={(e) => setBranchSearch(e.target.value)} 
-                                                        placeholder="Search branches..." 
-                                                        className="pl-8" 
-                                                        autoFocus 
-                                                        onClick={(e) => e.stopPropagation()} 
+                                                    <Input
+                                                        value={branchSearch}
+                                                        onChange={(e) => setBranchSearch(e.target.value)}
+                                                        placeholder="Search branches..."
+                                                        className="pl-8"
+                                                        autoFocus
+                                                        onClick={(e) => e.stopPropagation()}
                                                     />
                                                 </div>
                                             </div>
                                             <div className="max-h-60 overflow-auto">
                                                 {filteredBranches.length > 0 ? (
                                                     filteredBranches.map((branch) => (
-                                                        <div 
-                                                            key={branch.id} 
-                                                            className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm" 
+                                                        <div
+                                                            key={branch.id}
+                                                            className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
                                                             onClick={() => selectBranch(branch.id.toString(), branch.branch_name)}
                                                         >
                                                             {branch.branch_name}
@@ -437,8 +447,8 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
                                 <div className="space-y-2">
                                     <Label htmlFor="site_id">Site <span className="text-red-500">*</span></Label>
                                     <div className="relative">
-                                        <div 
-                                            className="flex items-center border border-input rounded-md cursor-pointer" 
+                                        <div
+                                            className="flex items-center border border-input rounded-md cursor-pointer"
                                             onClick={() => setShowSiteDropdown(!showSiteDropdown)}
                                         >
                                             <div className="flex-1 px-3 py-2 text-sm">
@@ -451,13 +461,13 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
                                                 <div className="p-2 border-b">
                                                     <div className="relative">
                                                         <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                                                        <Input 
-                                                            value={siteSearch} 
-                                                            onChange={(e) => setSiteSearch(e.target.value)} 
-                                                            placeholder="Search sites..." 
-                                                            className="pl-8" 
-                                                            autoFocus 
-                                                            onClick={(e) => e.stopPropagation()} 
+                                                        <Input
+                                                            value={siteSearch}
+                                                            onChange={(e) => setSiteSearch(e.target.value)}
+                                                            placeholder="Search sites..."
+                                                            className="pl-8"
+                                                            autoFocus
+                                                            onClick={(e) => e.stopPropagation()}
                                                         />
                                                     </div>
                                                 </div>
@@ -466,9 +476,9 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
                                                         filteredSites.map((site) => {
                                                             const siteName = site.site_name || site.name || '';
                                                             return (
-                                                                <div 
-                                                                    key={site.id} 
-                                                                    className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm" 
+                                                                <div
+                                                                    key={site.id}
+                                                                    className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
                                                                     onClick={() => selectSite(site.id.toString(), siteName)}
                                                                 >
                                                                     {siteName}
@@ -498,24 +508,24 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="contract_start_date">Start Date <span className="text-red-500">*</span></Label>
-                                <Input 
-                                    id="contract_start_date" 
-                                    type="date" 
-                                    value={data.contract_start_date} 
-                                    onChange={e => setData('contract_start_date', e.target.value)} 
-                                    className="w-full h-10 px-3 rounded-md border border-input bg-background" 
+                                <Input
+                                    id="contract_start_date"
+                                    type="date"
+                                    value={data.contract_start_date}
+                                    onChange={e => setData('contract_start_date', e.target.value)}
+                                    className="w-full h-10 px-3 rounded-md border border-input bg-background"
                                 />
                                 <InputError message={errors.contract_start_date} />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="contract_end_date">End Date <span className="text-red-500">*</span></Label>
-                                <Input 
-                                    id="contract_end_date" 
-                                    type="date" 
-                                    value={data.contract_end_date} 
-                                    onChange={e => setData('contract_end_date', e.target.value)} 
-                                    className="w-full h-10 px-3 rounded-md border border-input bg-background" 
-                                    min={data.contract_start_date} 
+                                <Input
+                                    id="contract_end_date"
+                                    type="date"
+                                    value={data.contract_end_date}
+                                    onChange={e => setData('contract_end_date', e.target.value)}
+                                    className="w-full h-10 px-3 rounded-md border border-input bg-background"
+                                    min={data.contract_start_date}
                                 />
                                 <InputError message={errors.contract_end_date} />
                             </div>
@@ -532,13 +542,13 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
                 </form>
             </div>
             {(showPositionDropdown || showSiteDropdown || showBranchDropdown) && (
-                <div 
-                    className="fixed inset-0 z-0" 
-                    onClick={() => { 
-                        setShowPositionDropdown(false); 
+                <div
+                    className="fixed inset-0 z-0"
+                    onClick={() => {
+                        setShowPositionDropdown(false);
                         setShowSiteDropdown(false);
                         setShowBranchDropdown(false);
-                    }} 
+                    }}
                 />
             )}
         </AppLayout>

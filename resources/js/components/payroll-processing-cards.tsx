@@ -78,10 +78,11 @@ interface PayrollProcessingCardsProps {
     totalOvertimeHours: number;
     totalDeductions: number;
     totalNetPay: number;
+    totalGrossPay: number;
     activeEmployee: number;
     formatCurrency: (amount: number) => string;
     formatNumber: (amount: number) => string;
-    
+
     // Filter props
     dateFrom?: Date;
     dateTo?: Date;
@@ -92,11 +93,11 @@ interface PayrollProcessingCardsProps {
     onFrequencyChange: (value: string) => void;
     onPositionChange: (value: string) => void;
     onRefresh: () => void;
-    
+
     // Options for dropdowns
     frequencyOptions: string[];
     positionOptions: string[];
-    
+
     // New props for filtered counts
     totalFilteredPayrolls?: number;
     totalOriginalPayrolls?: number;
@@ -199,6 +200,16 @@ function AnimatedValue({
     )
 }
 
+// Helper function to format frequency display names
+const getFrequencyDisplayName = (frequency: string): string => {
+    const frequencyMap: Record<string, string> = {
+        'monthly': 'Monthly',
+        'semi_monthly': 'Semi-Monthly',
+        'weekender': 'Weekender'
+    }
+    return frequencyMap[frequency] || frequency
+}
+
 export default function PayrollProcessingCards({
     payrolls = [],
     totalOvertimePay = 0,
@@ -208,7 +219,7 @@ export default function PayrollProcessingCards({
     activeEmployee = 0,
     formatCurrency,
     formatNumber,
-    
+
     // Filter props
     dateFrom,
     dateTo,
@@ -219,11 +230,11 @@ export default function PayrollProcessingCards({
     onFrequencyChange,
     onPositionChange,
     onRefresh,
-    
+
     // Options
     frequencyOptions,
     positionOptions,
-    
+
     // New props
     totalFilteredPayrolls,
     totalOriginalPayrolls
@@ -238,8 +249,8 @@ export default function PayrollProcessingCards({
 
     // Check if any filter is active
     const hasActiveFilters = React.useMemo(() => {
-        return dateFrom !== undefined || dateTo !== undefined || 
-               selectedFrequency !== "all" || selectedPosition !== "all";
+        return dateFrom !== undefined || dateTo !== undefined ||
+            selectedFrequency !== "all" || selectedPosition !== "all";
     }, [dateFrom, dateTo, selectedFrequency, selectedPosition]);
 
     // Clear date filters function
@@ -264,12 +275,20 @@ export default function PayrollProcessingCards({
 
     return (
         <>
-            <div className="p-5 px-7">
-                <h1 className="text-lg font-semibold">Payroll Processing</h1>
-                <p>Review and calculate salaries for the specific time-frame.</p>
+            {/* Page Header */}
+            <div className="flex items-center gap-4 ms-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+                    <Banknote className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                    <h1 className="text-2xl font-bold tracking-tight">Payroll Management</h1>
+                    <p className="text-sm text-muted-foreground mt-1">
+                        Process and manage employee payroll efficiently
+                    </p>
+                </div>
             </div>
 
-            <section className="flex flex-wrap items-end gap-4 px-7 py-5 pb-9 mx-7 border border-gray-300 rounded-lg">
+            <section className="flex flex-wrap items-end gap-4 px-7 py-5 pb-9 mx-4 border border-gray-300 rounded-lg">
                 {/* Date Range Picker */}
                 <div className="w-full sm:w-[300px]">
                     <Label htmlFor="date-range" className="mb-2 block text-sm font-medium">
@@ -347,18 +366,18 @@ export default function PayrollProcessingCards({
                 {/* Pay Frequency */}
                 <div className="w-full sm:w-[200px]">
                     <Label htmlFor="pay-frequency" className="mb-2 block text-sm font-medium">
-                        Frequency
+                        Pay Frequency
                     </Label>
                     <Select value={selectedFrequency} onValueChange={onFrequencyChange}>
                         <SelectTrigger className="w-full h-10">
-                            <SelectValue placeholder="Select Payroll Type" />
+                            <SelectValue placeholder="Select Pay Frequency" />
                         </SelectTrigger>
                         <SelectContent>
                             <SelectGroup>
                                 <SelectItem value="all">All</SelectItem>
                                 {frequencyOptions.map((frequency, index) => (
                                     <SelectItem key={index} value={frequency}>
-                                        {frequency}
+                                        {getFrequencyDisplayName(frequency)}
                                     </SelectItem>
                                 ))}
                             </SelectGroup>
@@ -377,7 +396,7 @@ export default function PayrollProcessingCards({
                         </SelectTrigger>
                         <SelectContent>
                             <SelectGroup>
-                                <SelectItem value="all">All</SelectItem>
+                                <SelectItem value="all">All Positions</SelectItem>
                                 {positionOptions.map((position, index) => (
                                     <SelectItem key={index} value={position}>
                                         {position}
@@ -390,8 +409,8 @@ export default function PayrollProcessingCards({
 
                 {/* Refresh Button */}
                 <div className="flex items-end">
-                    <Button 
-                        variant="outline" 
+                    <Button
+                        variant="outline"
                         className="h-10 px-8 gap-2"
                         onClick={onRefresh}
                     >

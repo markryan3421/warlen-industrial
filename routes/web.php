@@ -30,9 +30,6 @@ Route::get('/', function () {
     ]);
 })->name('home');
 
-// Route::get('dashboard', function () {
-//     return Inertia::render('dashboard');
-// })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware(['auth', 'verified', 'throttle:limit-actions', 'roleBase'])->group(function () {
 
@@ -61,7 +58,7 @@ Route::middleware(['auth', 'verified', 'throttle:limit-actions', 'roleBase'])->g
     Route::resource('branches', BranchController::class)->except(['show']);
     Route::delete('/branches/{branch:branch_slug}', [BranchController::class, 'destroy'])->name('branches.destroy');
     Route::resource('positions', PositionController::class)->except(['show']);
-    Route::resource('employees', EmployeeController::class)->except(['show']);
+    Route::resource('employees', EmployeeController::class);
     Route::resource('permissions', PermissionController::class);
     Route::resource('incentives', IncentiveController::class)->except(['show']);
 
@@ -81,10 +78,11 @@ Route::middleware(['auth', 'verified', 'throttle:limit-actions', 'roleBase'])->g
 
     Route::resource('payrolls', PayrollController::class)->except(['show']);
 
-    Route::get('/attendance-schedules', [AttendanceController::class, 'attendanceSchedules'])->name('admin.attendance-schedules');
-    Route::get('/attendance-period-stats', [AttendanceController::class, 'attendancePeriodStats'])->name('admin.attendance-period-stats');
-    Route::get('/attendance-logs', [AttendanceController::class, 'attendanceLogs'])->name('admin.attendance-logs');
-    Route::get('/attendance-exception-stats', [AttendanceController::class, 'attendanceExceptionStats'])->name('admin.attendance-exception-stats');
+    Route::get('/attendances', [AttendanceController::class, 'attendanceManagement'])->name('attendances.index');
+    Route::get('/attendance-schedules', [AttendanceController::class, 'attendanceSchedules']);
+    Route::get('/attendance-period-stats', [AttendanceController::class, 'attendancePeriodStats']);
+    Route::get('/attendance-logs', [AttendanceController::class, 'attendanceLogs']);
+    Route::get('/attendance-exception-stats', [AttendanceController::class, 'attendanceExceptionStats']);
 
     Route::get('/coming-soon', function () {
         return Inertia::render('coming-soon');

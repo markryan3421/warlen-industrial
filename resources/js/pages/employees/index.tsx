@@ -45,6 +45,8 @@ import { CustomTable } from '@/components/custom-table';
 import { BranchData, EmployeeFilterBar } from '@/components/employee/employee-filter-bar';
 import { EmployeesTableConfig } from '@/config/tables/employees-table';
 import { CustomPagination } from '@/components/custom-pagination';
+import { toast } from 'sonner';
+import { CustomHeader } from '@/components/custom-header';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Employees', href: '/employees' },
@@ -119,6 +121,7 @@ export default function Index({
     filteredCount,
 }: PageProps) {
     const { delete: destroy } = useForm();
+    console.log(EmployeesTableConfig.actions);
 
     // ── Filter state — initialised from URL params so the UI reflects the
     //    current server-side filter on first render / browser back-forward.
@@ -185,14 +188,14 @@ export default function Index({
         });
     }
 
-    // ── Search debounce — 300 ms so we don't hit the server on every keystroke
+    // ── Search debounce — 100 ms so we don't hit the server on every keystroke
     const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const handleSearchChange = (value: string) => {
         setSearchTerm(value);
         if (searchTimer.current) clearTimeout(searchTimer.current);
         searchTimer.current = setTimeout(() => {
             applyFilters({ search: value });
-        }, 300);
+        }, 100);
     };
 
     // ── Branch change resets site ────────────────────────────────────────────
@@ -247,9 +250,18 @@ export default function Index({
     };
 
     // ── Delete ────────────────────────────────────────────────────────────────
-    const handleDelete = (slug: string) => {
-        if (confirm('Are you sure you want to delete this employee?')) {
-            destroy(EmmployeeController.destroy(slug).url);
+    const handleDelete = (employee: Employee) => {
+        if (confirm("Are you sure you want to delete this employee?")) {
+            destroy(EmmployeeController.destroy(employee.slug_emp).url, {
+                onSuccess: (page) => {
+                    const successMessage = (page.props as any).flash?.success || 'Employee deleted successfully.';
+                    toast.success(successMessage);
+                },
+                onError: (errors) => {
+                    const errorMessage = Object.values(errors).flat()[0] || 'Failed to delete employee, please try again.';
+                    toast.error(errorMessage);
+                }
+            });
         }
     };
 
@@ -264,6 +276,15 @@ export default function Index({
         dateTo,
     ].filter(Boolean).length;
 
+    const handleView = (employee: Employee) => {
+        // Use your existing helper or router
+        router.get(EmmployeeController.show(employee.slug_emp).url);
+    };
+
+    const handleEdit = (employee: Employee) => {
+        router.get(EmmployeeController.edit(employee.slug_emp).url);
+    };
+
     // ─── Render ───────────────────────────────────────────────────────────────
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -272,10 +293,11 @@ export default function Index({
 
                 {/* Page header */}
                 <div className="flex justify-between items-center">
-                    <div>
-                        <h1 className="text-2xl font-bold text-gray-900">Employee Management</h1>
-                        <p className="text-sm text-gray-500 mt-1">See who's active on this run.</p>
-                    </div>
+                    <CustomHeader
+                        icon={<Users className="h-6 w-6 text-primary" />}
+                        title="Employees"
+                        description="Manage your workforce: add, edit, and organize employee records with ease."
+                    />
                     <Link href="/employees/create">
                         <Button className="h-14">
                             <UserPlus className="h-5 w-5" />
@@ -318,8 +340,8 @@ export default function Index({
                             data={employees.data}
                             from={employees.from ?? 1}
                             onDelete={handleDelete}
-                            onView={() => { }}
-                            onEdit={() => { }}
+                            onView={handleView}
+                            onEdit={handleEdit}
 
                             toolbar={
                                 <EmployeeFilterBar

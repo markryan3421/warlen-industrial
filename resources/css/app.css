@@ -5,6 +5,11 @@
 @import 'tw-animate-css';
 
 
+.monetary-value {
+    font-family: 'Roboto Mono', 'Inter', monospace;
+    font-feature-settings: 'tnum';
+}
+
 .fira-sans-medium {
     font-family: "Fira Sans", sans-serif;
     font-weight: 500;
@@ -30,6 +35,20 @@
     font-style: normal;
     font-variation-settings:
         "wdth" 100;
+}
+
+.inter-bold {
+    font-family: "Inter", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 700;
+    font-style: medium;
+}
+
+.inter-extrabold {
+    font-family: "Inter", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 700;
+    font-style: medium;
 }
 
 
