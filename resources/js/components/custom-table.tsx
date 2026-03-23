@@ -45,6 +45,35 @@ interface CustomTableProps {
     onView: (row: TableRow) => void;
     onEdit: (row: TableRow) => void;
     title?: string;
+    /**
+     * Optional toolbar slot rendered between the navy header bar and the
+     * column headers, inside the rounded card.
+     *
+     * Use this to embed filters, search, or any controls that belong
+     * visually with the table without the component needing to know
+     * what those controls are.
+     *
+     * Example:
+     *   <CustomTable
+     *     toolbar={<EmployeeFilterBar ... />}
+     *     ...
+     *   />
+     */
+    toolbar?: React.ReactNode;
+    /**
+     * Optional custom empty state rendered inside the card when `data`
+     * is empty. Replaces the default "No records found" state.
+     *
+     * Use this to show a filter-aware message when the data array is
+     * empty because of active filters rather than a genuinely empty dataset.
+     *
+     * Example:
+     *   <CustomTable
+     *     filterEmptyState={<FilterEmptyState onClear={clearFilters} />}
+     *     ...
+     *   />
+     */
+    filterEmptyState?: React.ReactNode;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -79,6 +108,20 @@ function IndexBadge({ value }: { value: number }) {
 
 // Cell value — handles all display types
 function CellValue({ col, row }: { col: TableColumn; row: TableRow }) {
+    // Render row (for relationships)
+    if (col.render) {
+        const rendered = col.render(row);
+        if (col.isBadge) {
+            return (
+                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold bg-[#1d4791]/10 dark:bg-[#1d4791]/20 text-[#1d4791] dark:text-blue-300 border border-[#1d4791]/15 dark:border-[#1d4791]/30 whitespace-nowrap">
+                    {rendered}
+                </span>
+            );
+        }
+        return <>{rendered}</>;
+    }
+
+    // Image row
     if (col.isImage) {
         return (
             <div className="flex justify-center">
@@ -90,6 +133,8 @@ function CellValue({ col, row }: { col: TableColumn; row: TableRow }) {
             </div>
         );
     }
+
+    // Badge row
     if (col.isBadge) {
         const rendered = col.render ? col.render(row) : formatCellValue(col, row);
         return (
@@ -98,6 +143,8 @@ function CellValue({ col, row }: { col: TableColumn; row: TableRow }) {
             </span>
         );
     }
+
+    // Date row
     if (col.isDate) {
         return (
             <span className="text-[13px] font-medium text-slate-600 dark:text-slate-300 whitespace-nowrap">
@@ -107,6 +154,8 @@ function CellValue({ col, row }: { col: TableColumn; row: TableRow }) {
             </span>
         );
     }
+
+    // Default row
     return (
         <span className="block truncate max-w-[220px]">
             {formatCellValue(col, row)}
@@ -152,7 +201,8 @@ function ActionDropdown({
 
     const handleAction = (action: ActionConfig) => {
         if (action.label === "Delete") {
-            onDelete(row.branch_slug || row.id);
+            // onDelete(row.branch_slug || row.id);
+            onDelete?.(row);
         } else if (action.label === "View") {
             onView?.(row);
         } else if (action.label === "Edit") {
@@ -232,6 +282,8 @@ export const CustomTable = ({
     onView,
     onEdit,
     title,
+    toolbar,
+    filterEmptyState,
 }: CustomTableProps) => {
     const route = useRoute();
 
@@ -259,12 +311,19 @@ export const CustomTable = ({
                     </div>
                 </div>
 
+                {/* ── Optional toolbar slot ────────────────────────────────── */}
+                {toolbar && (
+                    <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40">
+                        {toolbar}
+                    </div>
+                )}
+
                 {/* ══════════════════════════════════════════════════════════════
                     MOBILE  (< 768px) — stacked field cards
                 ══════════════════════════════════════════════════════════════ */}
                 <div className="block md:hidden">
                     {data.length === 0 ? (
-                        <EmptyState />
+                        filterEmptyState ?? <EmptyState />
                     ) : (
                         <div className="divide-y divide-slate-100 dark:divide-slate-800">
                             {data.map((row, index) => (
@@ -311,7 +370,7 @@ export const CustomTable = ({
                 ══════════════════════════════════════════════════════════════ */}
                 <div className="hidden md:block lg:hidden">
                     {data.length === 0 ? (
-                        <EmptyState />
+                        filterEmptyState ?? <EmptyState />
                     ) : (
                         <div className="p-4 grid grid-cols-2 gap-3">
                             {data.map((row, index) => (
@@ -415,7 +474,7 @@ export const CustomTable = ({
                             ) : (
                                 <tr>
                                     <td colSpan={columns.length + 1}>
-                                        <EmptyState />
+                                        {filterEmptyState ?? <EmptyState />}
                                     </td>
                                 </tr>
                             )}

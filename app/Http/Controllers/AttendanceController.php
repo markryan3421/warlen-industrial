@@ -29,8 +29,18 @@ class AttendanceController extends Controller
             searchColumns: ['employee_name', 'department', 'shift_label'],
         );
 
+
+        $calendarData = AttendanceSchedule::query()
+            ->select([
+                'employee_id', 'employee_name', 'department',
+                'date', 'shift_code', 'shift_label', 
+            ])
+            ->orderBy('date')
+            ->get();
+
         return Inertia::render('attendances/ScheduleInfo/index', [
             'schedules'         => $schedules,
+            'calendarData' => $calendarData,
             'filters'       => $request->only(['search', 'perPage']),
             'totalCount'    => $schedules['totalCount'],
             'filteredCount' => $schedules['filteredCount'],

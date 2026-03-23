@@ -13,7 +13,7 @@ trait EmployeeAttributes
     protected function empAttributes(): array
     {
         return [
-            'employee_number' => 'employee number',
+            'employee_number' => 'employee contact number',
             'emergency_contact_number' => 'emergency contact number',
             'emp_code' => 'emp code',
             'pay_frequency' => 'pay frequency',

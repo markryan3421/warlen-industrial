@@ -1,59 +1,64 @@
+/**
+ * employees/index.tsx
+ *
+ * Architecture: ALL filtering is server-side via query params.
+ *
+ * Why this matters:
+ *   The controller paginates the full employee list before sending it to the
+ *   browser. `employees.data` only contains the current page (e.g. 10 rows).
+ *   Client-side filtering against that slice is meaningless — searching for
+ *   "John" would only find Johns on page 1, not across all 500 employees.
+ *
+ * How it works now:
+ *   Every filter change calls applyFilters(), which builds a single query-string
+ *   object containing ALL active params (search, positions, branch, site, status,
+ *   date_from, date_to, perPage) and fires ONE router.get(). The controller
+ *   receives these params, filters + paginates the full dataset, and returns
+ *   the correct page. Inertia re-renders with the fresh data.
+ *
+ * Pagination fix:
+ *   Previously a useEffect on dateFrom/dateTo was calling router.get() with
+ *   ONLY the date params, which silently dropped the `page` param from any
+ *   URL set by clicking a pagination link. Every navigation was immediately
+ *   overwritten back to page 1. That useEffect is gone. Every navigation —
+ *   including date picker changes — goes through applyFilters(), which always
+ *   resets to page 1 (correct: filters should restart from the beginning).
+ *
+ * Local state that stays client-side:
+ *   - searchTerm (debounced via the 300ms timer below — avoids a server round
+ *     trip on every keystroke)
+ *   - UI state only (no derived filteredEmployees memo)
+ *
+ * FilterProps now includes all filter keys so they survive perPage changes.
+ */
+
 import { Head, Link, useForm, router } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import type { BreadcrumbItem } from '@/types';
 import EmmployeeController from '@/actions/App/Http/Controllers/EmployeeController';
-import {
-    Users, MoreHorizontalIcon, Search, X, Filter, ChevronDown, Check, Circle, CheckCircle, XCircle,
-    UserPlus, Calendar
-} from 'lucide-react';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuGroup,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Input } from '@/components/ui/input';
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from "@/components/ui/popover";
-import { cn } from '@/lib/utils';
-import { Badge } from '@/components/ui/badge';
-import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
-import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { Users, Search, UserPlus } from 'lucide-react';
 import { format } from 'date-fns';
 
+import { CustomTable } from '@/components/custom-table';
+import { BranchData, EmployeeFilterBar } from '@/components/employee/employee-filter-bar';
+import { EmployeesTableConfig } from '@/config/tables/employees-table';
+import { CustomPagination } from '@/components/custom-pagination';
+import { toast } from 'sonner';
+import { CustomHeader } from '@/components/custom-header';
+
 const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Employees',
-        href: '/employees',
-    },
+    { title: 'Employees', href: '/employees' },
 ];
 
+// ─── Types ────────────────────────────────────────────────────────────────────
 interface Employee {
     id: number;
-    position: {
-        pos_name: string;
-        deleted_at: string | null;
-    } | null;
-    branch: {
-        branch_name: string;
-        branch_address: string;
-    } | null;
-    site: {
-        site_name: string;
-        id: number;
-    } | null;
-    user: {
-        name: string;
-        email: string;
-    };
+    position: { pos_name: string; deleted_at: string | null } | null;
+    branch: { branch_name: string; branch_address: string } | null;
+    site: { site_name: string; id: number } | null;
+    user: { name: string; email: string };
     slug_emp: string;
     emp_code: string | number;
     pay_frequency: string;
@@ -64,380 +69,235 @@ interface Employee {
     created_at?: string;
 }
 
-interface BranchData {
-    id: number;
-    branch_name: string;
-    branch_address: string;
-    sites: Array<{
-        id: number;
-        site_name: string;
-    }>;
+interface LinkProps {
+    active: boolean;
+    label: string;
+    url: string | null;
+}
+
+/**
+ * All filter keys the controller understands.
+ * Keeping them in one interface ensures nothing is silently dropped when
+ * building the query string.
+ */
+interface FilterProps {
+    search?: string;
+    positions?: string;    // comma-separated list
+    branch?: string;
+    site?: string;
+    status?: string;    // '' (all) | 'active' | 'inactive'
+    date_from?: string;
+    date_to?: string;
+    perPage?: string;
 }
 
 interface PageProps {
-    employees: Employee[];
-    branchesData?: BranchData[];
-    filters?: {
-        date_from?: string;
-        date_to?: string;
+    employees: {
+        data: Employee[];
+        perPage: number;
+        total: number;
+        current_page: number;
+        last_page: number;
+        from: number;
+        to: number;
+        links: LinkProps[];
     };
+    branchesData: BranchData[];
+    /** All distinct position names from the full (unfiltered) employee list.
+     *  Sent by the controller so the Position popover works across all pages. */
+    allPositions: string[];
+    filters?: FilterProps;
+    totalCount: number;
+    filteredCount: number;
 }
 
-export default function Index({ employees, branchesData = [], filters = {} }: PageProps) {
+// ─── Page component ───────────────────────────────────────────────────────────
+export default function Index({
+    employees,
+    branchesData = [],
+    allPositions = [],
+    filters = {},
+    totalCount,
+    filteredCount,
+}: PageProps) {
     const { delete: destroy } = useForm();
+    console.log(EmployeesTableConfig.actions);
 
-    // Refs for dropdown positioning
-    const branchButtonRef = useRef<HTMLButtonElement>(null);
-    const branchDropdownRef = useRef<HTMLDivElement>(null);
-    const siteDropdownRef = useRef<HTMLDivElement>(null);
-
-    // Search and filter state
-    const [searchTerm, setSearchTerm] = useState('');
-    const [selectedPositions, setSelectedPositions] = useState<string[]>([]);
-    const [positionSearchTerm, setPositionSearchTerm] = useState('');
-    const [positionPopoverOpen, setPositionPopoverOpen] = useState(false);
-
-    // Branch filter state
-    const [selectedBranch, setSelectedBranch] = useState<string>('');
-    const [branchPopoverOpen, setBranchPopoverOpen] = useState(false);
-    const [branchSearchTerm, setBranchSearchTerm] = useState('');
-
-    // Site filter state
-    const [selectedSite, setSelectedSite] = useState<string>('');
-    const [sitePopoverOpen, setSitePopoverOpen] = useState(false);
-    const [siteSearchTerm, setSiteSearchTerm] = useState('');
-
-    // Status filter state - Using Switch
-    const [showActiveOnly, setShowActiveOnly] = useState(true); // true = show only active employees
-
-    // Date range filter state (similar to incentives)
+    // ── Filter state — initialised from URL params so the UI reflects the
+    //    current server-side filter on first render / browser back-forward.
+    const [searchTerm, setSearchTerm] = useState(filters.search ?? '');
+    const [selectedPositions, setSelectedPositions] = useState<string[]>(
+        filters.positions ? filters.positions.split(',').filter(Boolean) : [],
+    );
+    const [selectedBranch, setSelectedBranch] = useState(filters.branch ?? '');
+    const [selectedSite, setSelectedSite] = useState(filters.site ?? '');
+    // '' = All (default, renders everyone)
+    // 'active' = Active only
+    // 'inactive' = Inactive only
+    const [status, setStatus] = useState<string>(filters.status ?? '');
     const [dateFrom, setDateFrom] = useState<Date | undefined>(
-        filters.date_from ? new Date(filters.date_from) : undefined
+        filters.date_from ? new Date(filters.date_from) : undefined,
     );
     const [dateTo, setDateTo] = useState<Date | undefined>(
-        filters.date_to ? new Date(filters.date_to) : undefined
+        filters.date_to ? new Date(filters.date_to) : undefined,
     );
 
-    // Separate month states for left and right calendars
-    const [leftCalendarMonth, setLeftCalendarMonth] = useState<Date>(new Date());
-    const [rightCalendarMonth, setRightCalendarMonth] = useState<Date>(() => {
-        const nextMonth = new Date();
-        nextMonth.setMonth(nextMonth.getMonth() + 1);
-        return nextMonth;
-    });
+    // ── Central navigation function ───────────────────────────────────────────
+    /**
+     * Builds the complete query-string from ALL active filters and fires a
+     * single router.get(). Always resets to page 1 (any filter change
+     * invalidates the current page position).
+     *
+     * This is the ONLY place that calls router.get() for filters.
+     * Keeping it central avoids the race condition where two separate effects
+     * were each calling router.get() and overwriting each other.
+     */
+    function applyFilters(overrides: Partial<{
+        search: string;
+        positions: string[];
+        branch: string;
+        site: string;
+        status: string;
+        from: Date | undefined;
+        to: Date | undefined;
+        perPage: string;
+    }> = {}) {
+        const s = overrides.search ?? searchTerm;
+        const pos = overrides.positions ?? selectedPositions;
+        const br = overrides.branch ?? selectedBranch;
+        const si = overrides.site ?? selectedSite;
+        const st = overrides.status ?? status;
+        const from = overrides.from !== undefined ? overrides.from : dateFrom;
+        const to = overrides.to !== undefined ? overrides.to : dateTo;
+        const pp = overrides.perPage ?? String(employees.perPage ?? 10);
 
-    // Branch dropdown position for site dropdown
-    const [branchDropdownPosition, setBranchDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
+        const params: Record<string, string> = {};
+        if (s.trim()) params.search = s.trim();
+        if (pos.length) params.positions = pos.join(',');
+        if (br) params.branch = br;
+        if (si) params.site = si;
+        if (st) params.status = st;      // omit when '' (all — server default)
+        if (from) params.date_from = format(from, 'yyyy-MM-dd');
+        if (to) params.date_to = format(to, 'yyyy-MM-dd');
+        if (pp && pp !== '10') params.perPage = pp;     // omit when default
 
-    // Update branch dropdown position when it opens
-    useEffect(() => {
-        const updatePosition = () => {
-            if (branchDropdownRef.current) {
-                const rect = branchDropdownRef.current.getBoundingClientRect();
-                setBranchDropdownPosition({
-                    top: rect.top + window.scrollY,
-                    left: rect.right + window.scrollX,
-                    width: rect.width,
-                });
-            }
-        };
-
-        if (branchPopoverOpen && selectedBranch) {
-            // Small delay to ensure the dropdown is rendered
-            setTimeout(updatePosition, 10);
-            window.addEventListener('scroll', updatePosition);
-            window.addEventListener('resize', updatePosition);
-        }
-
-        return () => {
-            window.removeEventListener('scroll', updatePosition);
-            window.removeEventListener('resize', updatePosition);
-        };
-    }, [branchPopoverOpen, selectedBranch]);
-
-    // Handle branch button click
-    const handleBranchButtonClick = () => {
-        const newState = !branchPopoverOpen;
-        setBranchPopoverOpen(newState);
-        if (!newState) {
-            setSitePopoverOpen(false);
-        }
-    };
-
-    // When branch is selected, open site dropdown
-    useEffect(() => {
-        if (selectedBranch && branchPopoverOpen) {
-            // Small delay to ensure branch dropdown is rendered
-            setTimeout(() => {
-                setSitePopoverOpen(true);
-            }, 50);
-        } else if (!selectedBranch) {
-            setSitePopoverOpen(false);
-            setSelectedSite('');
-        }
-    }, [selectedBranch, branchPopoverOpen]);
-
-    // Handle click outside to close both dropdowns
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (
-                branchButtonRef.current &&
-                !branchButtonRef.current.contains(event.target as Node) &&
-                branchDropdownRef.current &&
-                !branchDropdownRef.current.contains(event.target as Node) &&
-                siteDropdownRef.current &&
-                !siteDropdownRef.current.contains(event.target as Node)
-            ) {
-                setBranchPopoverOpen(false);
-                setSitePopoverOpen(false);
-            }
-        };
-
-        if (branchPopoverOpen || sitePopoverOpen) {
-            document.addEventListener('mousedown', handleClickOutside);
-        }
-
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, [branchPopoverOpen, sitePopoverOpen]);
-
-    // Update URL when date filters change (similar to incentives)
-    useEffect(() => {
-        const params: any = {};
-
-        if (dateFrom) {
-            params.date_from = format(dateFrom, 'yyyy-MM-dd');
-        }
-        if (dateTo) {
-            params.date_to = format(dateTo, 'yyyy-MM-dd');
-        }
-
-        // Preserve other filters if needed
-        router.get('/employees', params, { preserveState: true, replace: true });
-    }, [dateFrom, dateTo]);
-
-    // Helper function
-    const safeToLowerCase = (value: any): string => {
-        if (value === null || value === undefined) return '';
-        return String(value).toLowerCase();
-    };
-
-    // Get unique positions
-    const allPositions = useMemo(() => {
-        const positions = employees
-            .map(emp => emp.position?.pos_name)
-            .filter((pos): pos is string =>
-                pos !== null && pos !== undefined && pos.trim() !== ''
-            );
-        return [...new Set(positions)].sort();
-    }, [employees]);
-
-    // Filter positions
-    const filteredPositions = useMemo(() => {
-        if (!positionSearchTerm.trim()) return allPositions;
-        const term = safeToLowerCase(positionSearchTerm);
-        return allPositions.filter(position =>
-            safeToLowerCase(position).includes(term)
-        );
-    }, [allPositions, positionSearchTerm]);
-
-    // Filter branches
-    const filteredBranches = useMemo(() => {
-        if (!branchSearchTerm.trim()) return branchesData;
-        const term = safeToLowerCase(branchSearchTerm);
-        return branchesData.filter(branch =>
-            safeToLowerCase(branch.branch_name).includes(term)
-        );
-    }, [branchesData, branchSearchTerm]);
-
-    // Get sites for selected branch
-    const availableSites = useMemo(() => {
-        if (!selectedBranch) return [];
-        const branch = branchesData.find(b => b.branch_name === selectedBranch);
-        return branch?.sites || [];
-    }, [branchesData, selectedBranch]);
-
-    // Filter sites
-    const filteredSites = useMemo(() => {
-        if (!siteSearchTerm.trim()) return availableSites;
-        const term = safeToLowerCase(siteSearchTerm);
-        return availableSites.filter(site =>
-            safeToLowerCase(site.site_name).includes(term)
-        );
-    }, [availableSites, siteSearchTerm]);
-
-    const hasValidPosition = (employee: Employee) => {
-        return employee.position && !employee.position.deleted_at;
+        router.get('/employees', params, {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+        });
     }
 
-    const handleDelete = (slug: string) => {
-        if (confirm("Are you sure you want to delete this employee?")) {
-            destroy(EmmployeeController.destroy(slug).url);
-        }
-    }
-
-    const formatDate = (dateString: string | undefined | null) => {
-        if (!dateString) return '';
-        try {
-            return new Date(dateString).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric'
-            });
-        } catch (error) {
-            return '';
-        }
+    // ── Search debounce — 100 ms so we don't hit the server on every keystroke
+    const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const handleSearchChange = (value: string) => {
+        setSearchTerm(value);
+        if (searchTimer.current) clearTimeout(searchTimer.current);
+        searchTimer.current = setTimeout(() => {
+            applyFilters({ search: value });
+        }, 100);
     };
 
-    const formatContractRange = (employee: Employee) => {
-        if (employee.contract_start_date && employee.contract_end_date) {
-            return `${formatDate(employee.contract_start_date)} - ${formatDate(employee.contract_end_date)}`;
-        }
-        return 'No contract period';
+    // ── Branch change resets site ────────────────────────────────────────────
+    const handleBranchChange = (branch: string) => {
+        setSelectedBranch(branch);
+        setSelectedSite('');
+        applyFilters({ branch, site: '' });
     };
 
-    const clearDateFilters = () => {
-        setDateFrom(undefined);
-        setDateTo(undefined);
+    // ── Individual filter handlers ────────────────────────────────────────────
+    const handlePositionsChange = (positions: string[]) => {
+        setSelectedPositions(positions);
+        applyFilters({ positions });
     };
 
-    // Filter employees
-    const filteredEmployees = useMemo(() => {
-        let filtered = employees;
+    const handleSiteChange = (site: string) => {
+        setSelectedSite(site);
+        applyFilters({ site });
+    };
 
-        // Apply date range filter (using hire_date or created_at)
-        if (dateFrom || dateTo) {
-            filtered = filtered.filter(employee => {
-                // Use hire_date if available, otherwise use created_at or contract_start_date
-                const employeeDate = employee.hire_date || employee.created_at || employee.contract_start_date;
-                
-                if (!employeeDate) return false;
+    const handleStatusChange = (value: string) => {
+        setStatus(value);
+        applyFilters({ status: value });
+    };
 
-                const empDate = new Date(employeeDate);
+    const handleDateFromChange = (from: Date | undefined) => {
+        setDateFrom(from);
+        applyFilters({ from });
+    };
 
-                if (dateFrom && dateTo) {
-                    // Both dates selected - check if date falls within range
-                    return empDate >= dateFrom && empDate <= dateTo;
-                } else if (dateFrom) {
-                    // Only from date selected - dates after or on from date
-                    return empDate >= dateFrom;
-                } else if (dateTo) {
-                    // Only to date selected - dates before or on to date
-                    return empDate <= dateTo;
-                }
+    const handleDateToChange = (to: Date | undefined) => {
+        setDateTo(to);
+        applyFilters({ to });
+    };
 
-                return true;
-            });
-        }
+    // ── Per-page change ───────────────────────────────────────────────────────
+    const handlePerPageChange = (value: string) => {
+        applyFilters({ perPage: value });
+    };
 
-        if (selectedPositions.length > 0) {
-            filtered = filtered.filter(employee =>
-                employee.position?.pos_name && selectedPositions.includes(employee.position.pos_name)
-            );
-        }
-
-        if (selectedBranch) {
-            filtered = filtered.filter(employee =>
-                employee.branch?.branch_name === selectedBranch
-            );
-        }
-
-        if (selectedSite) {
-            filtered = filtered.filter(employee =>
-                employee.site?.site_name === selectedSite
-            );
-        }
-
-        // Status filter - Using Switch
-        if (showActiveOnly) {
-            filtered = filtered.filter(employee =>
-                ['active', 'Active', 'ACTIVE'].includes(employee.employee_status)
-            );
-        }
-
-        if (searchTerm.trim()) {
-            const term = safeToLowerCase(searchTerm);
-            filtered = filtered.filter(employee => {
-                const empCode = safeToLowerCase(employee.emp_code);
-                const empName = safeToLowerCase(employee.user?.name);
-                const positionName = safeToLowerCase(employee.position?.pos_name);
-                const payFrequency = safeToLowerCase(employee.pay_frequency);
-                const branchName = safeToLowerCase(employee.branch?.branch_name);
-                const siteName = safeToLowerCase(employee.site?.site_name);
-                const status = safeToLowerCase(employee.employee_status);
-
-                return empCode.includes(term) ||
-                    empName.includes(term) ||
-                    positionName.includes(term) ||
-                    payFrequency.includes(term) ||
-                    branchName.includes(term) ||
-                    siteName.includes(term) ||
-                    status.includes(term);
-            });
-        }
-
-        return filtered;
-    }, [employees, searchTerm, selectedPositions, selectedBranch, selectedSite, showActiveOnly, dateFrom, dateTo]);
-
+    // ── Clear all ─────────────────────────────────────────────────────────────
     const clearFilters = () => {
         setSearchTerm('');
         setSelectedPositions([]);
         setSelectedBranch('');
         setSelectedSite('');
-        setShowActiveOnly(true); // Reset to show active only
+        setStatus('');
         setDateFrom(undefined);
         setDateTo(undefined);
-        setPositionSearchTerm('');
-        setBranchSearchTerm('');
-        setSiteSearchTerm('');
+        // Navigate to a clean URL — no filter params at all
+        router.get('/employees', {}, { preserveState: true, replace: true });
     };
 
-    const clearSearch = () => {
-        setSearchTerm('');
+    // ── Delete ────────────────────────────────────────────────────────────────
+    const handleDelete = (employee: Employee) => {
+        if (confirm("Are you sure you want to delete this employee?")) {
+            destroy(EmmployeeController.destroy(employee.slug_emp).url, {
+                onSuccess: (page) => {
+                    const successMessage = (page.props as any).flash?.success || 'Employee deleted successfully.';
+                    toast.success(successMessage);
+                },
+                onError: (errors) => {
+                    const errorMessage = Object.values(errors).flat()[0] || 'Failed to delete employee, please try again.';
+                    toast.error(errorMessage);
+                }
+            });
+        }
     };
 
-    const handlePositionSelect = (position: string) => {
-        setSelectedPositions(prev => {
-            if (prev.includes(position)) {
-                return prev.filter(p => p !== position);
-            } else {
-                return [...prev, position];
-            }
-        });
-    };
-
-    const handleBranchSelect = (branch: string) => {
-        setSelectedBranch(prev => prev === branch ? '' : branch);
-        setSelectedSite(''); // Reset site when branch changes
-        setSiteSearchTerm(''); // Reset site search
-        // Keep branch dropdown open
-    };
-
-    const handleSiteSelect = (site: string) => {
-        setSelectedSite(prev => prev === site ? '' : site);
-        // Keep both dropdowns open
-    };
-
+    // ── Active filter count (for the Clear button badge) ─────────────────────
     const activeFiltersCount = [
+        searchTerm.trim(),
         ...selectedPositions,
         selectedBranch,
         selectedSite,
-        !showActiveOnly, // Count as filter if showing all employees
+        status !== '',   // any non-default status selection counts as a filter
         dateFrom,
-        dateTo
+        dateTo,
     ].filter(Boolean).length;
 
+    const handleView = (employee: Employee) => {
+        // Use your existing helper or router
+        router.get(EmmployeeController.show(employee.slug_emp).url);
+    };
+
+    const handleEdit = (employee: Employee) => {
+        router.get(EmmployeeController.edit(employee.slug_emp).url);
+    };
+
+    // ─── Render ───────────────────────────────────────────────────────────────
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Employees" />
-            <div className="flex flex-1 flex-col gap-2 p-4">
-                {/* Header with title and create button aligned right */}
-                <div className="flex justify-between items-center mb-2">
-                    <div>
-                        <h1 className="text-2xl font-bold text-gray-900">Employee Management</h1>
-                        <p className="text-sm text-gray-500 mt-1">See who's active on this run.</p>
-                    </div>
+            <div className="flex flex-1 flex-col gap-4 p-4">
+
+                {/* Page header */}
+                <div className="flex justify-between items-center">
+                    <CustomHeader
+                        icon={<Users className="h-6 w-6 text-primary" />}
+                        title="Employees"
+                        description="Manage your workforce: add, edit, and organize employee records with ease."
+                    />
                     <Link href="/employees/create">
                         <Button className="h-14">
                             <UserPlus className="h-5 w-5" />
@@ -449,363 +309,8 @@ export default function Index({ employees, branchesData = [], filters = {} }: Pa
                     </Link>
                 </div>
 
-                {/* Header with filters */}
-                {employees.length > 0 && (
-                    <div className="flex items-end gap-4 flex-wrap">
-                        {/* Search Bar with Label */}
-                        <div className="flex flex-col min-w-[250px]">
-                            <div className="relative">
-                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                                <Input
-                                    type="text"
-                                    placeholder="Search by ID or name..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="pl-10 pr-10 h-14 w-full"
-                                />
-                                {searchTerm && (
-                                    <button
-                                        onClick={clearSearch}
-                                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 bg-white rounded-full p-1 hover:bg-gray-100 transition-colors"
-                                        aria-label="Clear search"
-                                    >
-                                        <X className="h-4 w-4" />
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Position Filter with Label */}
-                        <div className="flex flex-col min-w-[140px]">
-                            <Label className="text-xs font-semibold text-black mb-1 ml-1">
-                                Position
-                            </Label>
-                            <Popover open={positionPopoverOpen} onOpenChange={setPositionPopoverOpen}>
-                                <PopoverTrigger asChild>
-                                    <Button
-                                        variant="outline"
-                                        role="combobox"
-                                        aria-expanded={positionPopoverOpen}
-                                        className={cn(
-                                            "w-[140px] justify-between h-14",
-                                            selectedPositions.length > 0 && "border-primary text-primary"
-                                        )}
-                                    >
-                                        <div className="flex items-center gap-2 truncate">
-                                            <span className="truncate text-gray-500">
-                                                {selectedPositions.length === 0
-                                                    ? "Select Position"
-                                                    : `${selectedPositions.length} selected`
-                                                }
-                                            </span>
-                                        </div>
-                                        <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-[350px] p-3">
-                                    <div className="space-y-3">
-                                        <div className="relative w-full">
-                                            <Search className="absolute left-2 top-2.5 h-3.5 w-3.5 text-gray-400" />
-                                            <Input
-                                                placeholder="Search positions..."
-                                                value={positionSearchTerm}
-                                                onChange={(e) => setPositionSearchTerm(e.target.value)}
-                                                className="pl-7 h-8 text-sm w-full"
-                                            />
-                                            {positionSearchTerm && (
-                                                <button
-                                                    onClick={() => setPositionSearchTerm('')}
-                                                    className="absolute right-2 top-2 text-gray-400 hover:text-gray-600"
-                                                >
-                                                    <X className="h-3.5 w-3.5" />
-                                                </button>
-                                            )}
-                                        </div>
-
-                                        {filteredPositions.length === 0 ? (
-                                            <div className="text-center py-3 text-sm text-gray-500">
-                                                No positions found.
-                                            </div>
-                                        ) : (
-                                            <div className="flex flex-wrap gap-1.5 max-h-[280px] overflow-y-auto p-1">
-                                                {filteredPositions.map((position) => {
-                                                    const isSelected = selectedPositions.includes(position);
-                                                    return (
-                                                        <Badge
-                                                            key={position}
-                                                            variant={isSelected ? "default" : "outline"}
-                                                            className={cn(
-                                                                "cursor-pointer px-2 py-0.5 text-xs font-normal inline-flex items-center gap-1 transition-all h-6 w-fit",
-                                                                isSelected
-                                                                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                                                                    : "hover:bg-gray-100"
-                                                            )}
-                                                            onClick={() => handlePositionSelect(position)}
-                                                        >
-                                                            <span>{position}</span>
-                                                            {isSelected && (
-                                                                <Check className="h-2.5 w-2.5 shrink-0" />
-                                                            )}
-                                                        </Badge>
-                                                    );
-                                                })}
-                                            </div>
-                                        )}
-                                        {selectedPositions.length > 0 && (
-                                            <div className="flex justify-between items-center pt-2 border-t">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => setSelectedPositions([])}
-                                                    className="text-red-600 hover:text-red-700 hover:bg-red-50 h-7 text-xs px-2"
-                                                >
-                                                    Clear all
-                                                </Button>
-                                            </div>
-                                        )}
-                                    </div>
-                                </PopoverContent>
-                            </Popover>
-                        </div>
-
-                        {/* Branches Filter with Label */}
-                        <div className="flex flex-col">
-                            <Label className="text-xs font-semibold text-black mb-1 ml-1">
-                                Branch
-                            </Label>
-                            <div className="relative">
-                                <Button
-                                    ref={branchButtonRef}
-                                    variant="outline"
-                                    onClick={handleBranchButtonClick}
-                                    className={cn(
-                                        "w-[140px] justify-between h-14",
-                                        selectedBranch && "border-primary text-primary"
-                                    )}
-                                >
-                                    <span className="truncate text-gray-500">{selectedBranch || "Select Branch"}</span>
-                                    <ChevronDown className="h-4 w-4 opacity-50 ml-2 flex-shrink-0" />
-                                </Button>
-
-                                {/* Branch Dropdown */}
-                                {branchPopoverOpen && (
-                                    <div
-                                        ref={branchDropdownRef}
-                                        className="absolute z-50 w-[220px] bg-white rounded-md border shadow-md mt-1"
-                                        style={{
-                                            top: '100%',
-                                            left: 0,
-                                        }}
-                                    >
-                                        <div className="p-2 border-b">
-                                            <div className="relative">
-                                                <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
-                                                <Input
-                                                    placeholder="Search branches..."
-                                                    value={branchSearchTerm}
-                                                    onChange={(e) => setBranchSearchTerm(e.target.value)}
-                                                    className="pl-8 h-9 text-sm"
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className="max-h-[280px] overflow-y-auto">
-                                            {filteredBranches.length === 0 ? (
-                                                <div className="text-center py-4 text-sm text-gray-500">
-                                                    No branches found
-                                                </div>
-                                            ) : (
-                                                filteredBranches.map((branch) => (
-                                                    <div
-                                                        key={branch.id}
-                                                        className={cn(
-                                                            "flex items-center justify-between px-3 py-2 text-sm cursor-pointer hover:bg-gray-50",
-                                                            selectedBranch === branch.branch_name && "bg-blue-50 text-blue-600"
-                                                        )}
-                                                        onClick={() => handleBranchSelect(branch.branch_name)}
-                                                    >
-                                                        <span>{branch.branch_name}</span>
-                                                        {selectedBranch === branch.branch_name && (
-                                                            <Check className="h-4 w-4 text-blue-600" />
-                                                        )}
-                                                    </div>
-                                                ))
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {selectedBranch && sitePopoverOpen && branchDropdownPosition.left > 0 && (
-                            <div
-                                ref={siteDropdownRef}
-                                className="fixed z-50 w-[220px] bg-white rounded-md border shadow-md"
-                                style={{
-                                    top: branchDropdownPosition.top,
-                                    left: branchDropdownPosition.left + 1,
-                                }}
-                            >
-                                <div className="p-2 border-b">
-                                    <div className="relative">
-                                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
-                                        <Input
-                                            placeholder="Search sites..."
-                                            value={siteSearchTerm}
-                                            onChange={(e) => setSiteSearchTerm(e.target.value)}
-                                            className="pl-8 h-9 text-sm"
-                                            autoFocus
-                                        />
-                                    </div>
-                                </div>
-                                <div className="max-h-[280px] overflow-y-auto">
-                                    {/* All Sites option */}
-                                    <div
-                                        className={cn(
-                                            "flex items-center justify-between px-3 py-2 text-sm cursor-pointer hover:bg-gray-50",
-                                            !selectedSite && "bg-blue-50 text-blue-600 font-medium"
-                                        )}
-                                        onClick={() => handleSiteSelect('')}
-                                    >
-                                        <span>All Sites</span>
-                                        {!selectedSite && <Check className="h-4 w-4 text-blue-600" />}
-                                    </div>
-
-                                    {/* Site options */}
-                                    {filteredSites.length === 0 ? (
-                                        <div className="text-center py-4 text-sm text-gray-500">
-                                            No sites found
-                                        </div>
-                                    ) : (
-                                        filteredSites.map((site) => (
-                                            <div
-                                                key={site.id}
-                                                className={cn(
-                                                    "flex items-center justify-between px-3 py-2 text-sm cursor-pointer hover:bg-gray-50",
-                                                    selectedSite === site.site_name && "bg-blue-50 text-blue-600"
-                                                )}
-                                                onClick={() => handleSiteSelect(site.site_name)}
-                                            >
-                                                <span>{site.site_name}</span>
-                                                {selectedSite === site.site_name && (
-                                                    <Check className="h-4 w-4 text-blue-600" />
-                                                )}
-                                            </div>
-                                        ))
-                                    )}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Date Range Filter - Added before Status */}
-                        <div className="flex flex-col min-w-[300px]">
-                            <Label className="text-xs font-semibold text-black mb-1 ml-1">
-                                Hire Date Range
-                            </Label>
-                            <div className="relative">
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <Button
-                                            variant="outline"
-                                            className={cn(
-                                                "w-full justify-start text-left font-normal h-14",
-                                                !dateFrom && !dateTo && "text-muted-foreground"
-                                            )}
-                                        >
-                                            <Calendar className="mr-2 h-4 w-4" />
-                                            {dateFrom || dateTo ? (
-                                                <>
-                                                    {dateFrom && format(dateFrom, 'MMM d, yyyy')}
-                                                    {dateFrom && dateTo && ' - '}
-                                                    {dateTo && format(dateTo, 'MMM d, yyyy')}
-                                                </>
-                                            ) : (
-                                                <span>Filter by date range</span>
-                                            )}
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0" align="start">
-                                        <div className="flex">
-                                            {/* Left Calendar */}
-                                            <div className="border-r">
-                                                <CalendarComponent
-                                                    mode="range"
-                                                    selected={{
-                                                        from: dateFrom,
-                                                        to: dateTo,
-                                                    }}
-                                                    onSelect={(range) => {
-                                                        setDateFrom(range?.from);
-                                                        setDateTo(range?.to);
-                                                    }}
-                                                    month={leftCalendarMonth}
-                                                    onMonthChange={setLeftCalendarMonth}
-                                                    numberOfMonths={1}
-                                                    initialFocus
-                                                />
-                                            </div>
-
-                                            {/* Right Calendar */}
-                                            <div>
-                                                <CalendarComponent
-                                                    mode="range"
-                                                    selected={{
-                                                        from: dateFrom,
-                                                        to: dateTo,
-                                                    }}
-                                                    onSelect={(range) => {
-                                                        setDateFrom(range?.from);
-                                                        setDateTo(range?.to);
-                                                    }}
-                                                    month={rightCalendarMonth}
-                                                    onMonthChange={setRightCalendarMonth}
-                                                    numberOfMonths={1}
-                                                />
-                                            </div>
-                                        </div>
-                                    </PopoverContent>
-                                </Popover>
-
-                                {/* Clear button for date filter */}
-                                {(dateFrom || dateTo) && (
-                                    <button
-                                        onClick={clearDateFilters}
-                                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                                        title="Clear date filter"
-                                    >
-                                        <X className="h-4 w-4" />
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Status Switch - Active Only Toggle */}
-                        <div className="flex flex-col border rounded-md px-3 py-2 bg-white shadow-sm min-w-[110px] h-14 justify-center">
-                            <Label className="text-xs font-semibold text-black mb-0.5">
-                                Status
-                            </Label>
-                            <div className="flex items-center">
-                                <Label
-                                    htmlFor="active-filter"
-                                    className={cn(
-                                        "text-sm cursor-pointer select-none mr-3",
-                                        showActiveOnly ? "text-gray-600 font-medium" : "text-gray-600"
-                                    )}
-                                >
-                                    Active
-                                </Label>
-                                <Switch
-                                    id="active-filter"
-                                    checked={showActiveOnly}
-                                    onCheckedChange={setShowActiveOnly}
-                                    className="data-[state=checked]:bg-green-600 data-[state=unchecked]:bg-gray-200"
-                                />
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* Employee Table */}
-                {employees.length === 0 ? (
+                {/* Empty dataset (no employees exist at all) */}
+                {employees.total === 0 && activeFiltersCount === 0 ? (
                     <div className="flex flex-col items-center justify-center py-16 text-center">
                         <div className="rounded-full bg-gray-100 p-6 mb-4">
                             <Users className="h-12 w-12 text-gray-400" />
@@ -818,114 +323,85 @@ export default function Index({ employees, branchesData = [], filters = {} }: Pa
                             <Button>Create Your First Employee</Button>
                         </Link>
                     </div>
-                ) : filteredEmployees.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-12 px-4 text-center border rounded-lg bg-gray-50">
-                        <Search className="h-12 w-12 text-gray-400 mb-3" />
-                        <h3 className="text-lg font-medium text-gray-900 mb-1">No results found</h3>
-                        <p className="text-gray-500 mb-4">
-                            {searchTerm && selectedPositions.length > 0
-                                ? `No employees matching "${searchTerm}" in selected positions found.`
-                                : searchTerm
-                                    ? `No employees matching "${searchTerm}" found.`
-                                    : selectedBranch && selectedSite
-                                        ? `No employees in ${selectedBranch} / ${selectedSite} found.`
-                                        : selectedBranch
-                                            ? `No employees in ${selectedBranch} found.`
-                                            : dateFrom || dateTo
-                                                ? `No employees found for the selected date range.`
-                                                : !showActiveOnly
-                                                    ? `No employees found.`
-                                                    : "No employees match your current filters."
-                            }
-                        </p>
-                        <Button variant="outline" onClick={clearFilters}>
-                            Clear Filters
-                        </Button>
-                    </div>
+
                 ) : (
                     <>
-                        <div className="border rounded-lg overflow-hidden mt-4">
-                            <Table>
-                                <TableHeader className="bg-gray-100 font-black">
-                                    <TableRow>
-                                        <TableHead>Code</TableHead>
-                                        <TableHead>Name</TableHead>
-                                        <TableHead>Position</TableHead>
-                                        <TableHead>Pay Frequency</TableHead>
-                                        <TableHead>Branch</TableHead>
-                                        <TableHead>Site</TableHead>
-                                        <TableHead>Contract Period</TableHead>
-                                        <TableHead>Status</TableHead>
-                                        <TableHead>Actions</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody className="text-[13px]">
-                                    {filteredEmployees.map((employee) => (
-                                        <TableRow key={employee.id}>
-                                            <TableCell>{employee.emp_code}</TableCell>
-                                            <TableCell>{employee.user?.name || 'N/A'}</TableCell>
-                                            <TableCell>
-                                                {hasValidPosition(employee) ? (
-                                                    employee.position?.pos_name
-                                                ) : (
-                                                    <span className="text-gray-500 italic text-xs">Not assigned</span>
-                                                )}
-                                            </TableCell>
-                                            <TableCell className="capitalize">
-                                                {employee.pay_frequency?.replace('_', ' ') || 'N/A'}
-                                            </TableCell>
-                                            <TableCell>{employee.branch?.branch_name || 'N/A'}</TableCell>
-                                            <TableCell>{employee.site?.site_name || 'N/A'}</TableCell>
-                                            <TableCell>{formatContractRange(employee)}</TableCell>
-                                            <TableCell>
-                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${['active', 'Active', 'ACTIVE'].includes(employee.employee_status)
-                                                    ? 'bg-green-100 text-green-800'
-                                                    : 'bg-yellow-100 text-yellow-800'
-                                                    }`}>
-                                                    {employee.employee_status || 'Unknown'}
-                                                </span>
-                                            </TableCell>
-                                            <TableCell className="text-center">
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild>
-                                                        <Button size="icon" className="size-8 bg-transparent hover:cursor-pointer hover:bg-transparent text-black">
-                                                            <MoreHorizontalIcon />
-                                                        </Button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="start">
-                                                        <DropdownMenuGroup>
-                                                            <DropdownMenuItem asChild>
-                                                                <Link href={EmmployeeController.edit(employee.slug_emp)} className="w-full">
-                                                                    Edit
-                                                                </Link>
-                                                            </DropdownMenuItem>
-                                                            <DropdownMenuItem
-                                                                className="hover:!bg-red-100 hover:!text-red-800 hover:cursor-pointer"
-                                                                onClick={() => handleDelete(employee.slug_emp)}
-                                                            >
-                                                                Delete
-                                                            </DropdownMenuItem>
-                                                        </DropdownMenuGroup>
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </div>
+                        {/*
+                         * data={employees.data}  — the current page from the server.
+                         *   No filteredEmployees memo. The server already filtered + paginated.
+                         *
+                         * from={employees.from}  — correct 1-based row counter per page
+                         *   (e.g. page 2 of 10 starts at row 11, not 1).
+                         */}
+                        <CustomTable
+                            title="Employees"
+                            columns={EmployeesTableConfig.columns}
+                            actions={EmployeesTableConfig.actions}
+                            data={employees.data}
+                            from={employees.from ?? 1}
+                            onDelete={handleDelete}
+                            onView={handleView}
+                            onEdit={handleEdit}
 
-                        {/* Show filter and total count */}
-                        <div className="text-sm text-gray-500 flex justify-between items-center mt-2">
-                            <span>
-                                Showing {filteredEmployees.length} {filteredEmployees.length === 1 ? 'employee' : 'employees'}
-                            </span>
-                            {activeFiltersCount > 0 && (
-                                <span className="text-xs bg-gray-100 px-2 py-1 rounded">
-                                    Filtered by: {activeFiltersCount} filter{activeFiltersCount > 1 ? 's' : ''}
-                                </span>
-                            )}
-                        </div>
+                            toolbar={
+                                <EmployeeFilterBar
+                                    allPositions={allPositions}
+                                    branchesData={branchesData}
+                                    searchTerm={searchTerm}
+                                    selectedPositions={selectedPositions}
+                                    selectedBranch={selectedBranch}
+                                    selectedSite={selectedSite}
+                                    status={status}
+                                    dateFrom={dateFrom}
+                                    dateTo={dateTo}
+                                    onSearchChange={handleSearchChange}
+                                    onPositionsChange={handlePositionsChange}
+                                    onBranchChange={handleBranchChange}
+                                    onSiteChange={handleSiteChange}
+                                    onStatusChange={handleStatusChange}
+                                    onDateFromChange={handleDateFromChange}
+                                    onDateToChange={handleDateToChange}
+                                    onClearAll={clearFilters}
+                                />
+                            }
+
+                            filterEmptyState={
+                                <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
+                                    <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center mb-3">
+                                        <Search className="h-5 w-5 text-slate-400 dark:text-slate-500" />
+                                    </div>
+                                    <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1">
+                                        No results found
+                                    </h3>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 max-w-xs">
+                                        {searchTerm && selectedPositions.length > 0
+                                            ? `No employees matching "${searchTerm}" in selected positions.`
+                                            : searchTerm
+                                                ? `No employees matching "${searchTerm}".`
+                                                : selectedBranch && selectedSite
+                                                    ? `No employees in ${selectedBranch} / ${selectedSite}.`
+                                                    : selectedBranch
+                                                        ? `No employees in ${selectedBranch}.`
+                                                        : dateFrom || dateTo
+                                                            ? 'No employees in the selected date range.'
+                                                            : 'No employees match your current filters.'}
+                                    </p>
+                                    <Button variant="outline" size="sm" onClick={clearFilters}>
+                                        Clear filters
+                                    </Button>
+                                </div>
+                            }
+                        />
+
+                        <CustomPagination
+                            pagination={employees}
+                            perPage={String(employees.perPage ?? 10)}
+                            onPerPageChange={handlePerPageChange}
+                            totalCount={totalCount}
+                            filteredCount={filteredCount}
+                            search={searchTerm}
+                            resourceName="employee"
+                        />
                     </>
                 )}
             </div>

@@ -9,6 +9,7 @@ import InputError from '@/components/input-error';
 import { store } from '@/actions/App/Http/Controllers/EmployeeController';
 import { useEffect, useState } from 'react';
 import { Search, ChevronDown } from 'lucide-react';
+import { toast } from 'sonner';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -131,7 +132,16 @@ export default function Create({ positions, branches, site = [] }: Props) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        post(store().url);
+        post(store().url, {
+            onSuccess: (page) => {
+                const successMessage = (page.props as any).flash?.success || 'Employee created successfully.'
+                toast.success(successMessage);
+            },
+            onError: (errors) => {
+                const errorMessage = Object.values(errors).flat()[0] || 'Failed to create employee.';
+                toast.error(errorMessage);
+            }
+        });
     };
 
     const selectPosition = (positionId: string, positionName: string) => {
@@ -166,7 +176,7 @@ export default function Create({ positions, branches, site = [] }: Props) {
                             <div className="space-y-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="emp_code">Employee Code <span className="text-red-500">*</span></Label>
-                                    <Input id="emp_code" value={data.emp_code} onChange={e => setData('emp_code', e.target.value)} className="w-full" placeholder="Enter employee code" />
+                                    <Input id="emp_code" type="number" value={data.emp_code} onChange={e => setData('emp_code', e.target.value)} className="w-full" placeholder="Enter employee code" />
                                     <InputError message={errors.emp_code} />
                                 </div>
                                 <div className="space-y-2">
@@ -269,22 +279,22 @@ export default function Create({ positions, branches, site = [] }: Props) {
                                             <div className="p-2 border-b">
                                                 <div className="relative">
                                                     <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                                                    <Input 
-                                                        value={branchSearch} 
-                                                        onChange={(e) => setBranchSearch(e.target.value)} 
-                                                        placeholder="Search branches..." 
-                                                        className="pl-8" 
-                                                        autoFocus 
-                                                        onClick={(e) => e.stopPropagation()} 
+                                                    <Input
+                                                        value={branchSearch}
+                                                        onChange={(e) => setBranchSearch(e.target.value)}
+                                                        placeholder="Search branches..."
+                                                        className="pl-8"
+                                                        autoFocus
+                                                        onClick={(e) => e.stopPropagation()}
                                                     />
                                                 </div>
                                             </div>
                                             <div className="max-h-60 overflow-auto">
                                                 {filteredBranches.length > 0 ? (
                                                     filteredBranches.map((branch) => (
-                                                        <div 
-                                                            key={branch.id} 
-                                                            className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm" 
+                                                        <div
+                                                            key={branch.id}
+                                                            className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
                                                             onClick={() => selectBranch(branch.id.toString(), branch.branch_name)}
                                                         >
                                                             {branch.branch_name}
@@ -366,8 +376,8 @@ export default function Create({ positions, branches, site = [] }: Props) {
                 </form>
             </div>
             {(showPositionDropdown || showSiteDropdown || showBranchDropdown) && (
-                <div className="fixed inset-0 z-0" onClick={() => { 
-                    setShowPositionDropdown(false); 
+                <div className="fixed inset-0 z-0" onClick={() => {
+                    setShowPositionDropdown(false);
                     setShowSiteDropdown(false);
                     setShowBranchDropdown(false);
                 }} />

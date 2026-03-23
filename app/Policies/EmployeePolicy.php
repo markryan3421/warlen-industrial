@@ -13,7 +13,7 @@ class EmployeePolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->hasAnyRole(['admin', 'employee']);
+        return $user->hasAnyRole(['admin', 'hr_head']);
     }
 
     /**
@@ -29,7 +29,7 @@ class EmployeePolicy
      */
     public function create(User $user): bool
     {
-        return $user->hasAnyRole(['admin', 'employee']);
+        return $user->hasAnyRole(['admin', 'hr_head']);
     }
 
     /**
@@ -37,7 +37,7 @@ class EmployeePolicy
      */
     public function update(User $user, Employee $employee): bool
     {
-        return $user->hasAnyRole(['admin', 'employee']);
+        return $user->hasAnyRole(['admin', 'hr_head']);
     }
 
     /**
@@ -45,7 +45,7 @@ class EmployeePolicy
      */
     public function delete(User $user, Employee $employee): bool
     {
-        return $user->hasAnyRole(['admin', 'employee']);
+        return $user->hasAnyRole(['admin', 'hr_head']);
     }
 
     /**
@@ -53,7 +53,7 @@ class EmployeePolicy
      */
     public function restore(User $user, Employee $employee): bool
     {
-        return $user->hasAnyRole(['admin', 'employee']);
+        return $user->hasAnyRole(['admin', 'hr_head']);
     }
 
     /**
@@ -61,6 +61,6 @@ class EmployeePolicy
      */
     public function forceDelete(User $user, Employee $employee): bool
     {
-        return $user->hasAnyRole(['admin', 'employee']);
+        return $user->hasAnyRole(['admin', 'hr_head']);
     }
 }

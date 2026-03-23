@@ -132,6 +132,7 @@ export default function Edit({ payrollPeriod }: EditProps) {
                             </div>
 
                             <div className="flex justify-end pt-4">
+                                <Button type="button" variant="outline" onClick={() => window.history.back()}>Cancel</Button>
                                 <Button
                                     type="submit"
                                     disabled={processing}

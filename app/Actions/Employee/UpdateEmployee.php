@@ -23,7 +23,7 @@ class UpdateEmployee
 
         $userData = [
             'name' => $data['name'],
-            'email' => $data['email'],
+            'email' => filter_var($data['email'], FILTER_SANITIZE_EMAIL),
         ];
 
         if (!empty($data['password'])) {
@@ -43,7 +43,7 @@ class UpdateEmployee
             'site_id' => $data['site_id'],
             'employee_number' => $data['employee_number'],
             'emp_code' => $data['emp_code'],
-            'slug_emp' => Str::slug($data['name'].' '.$data['emp_code']),
+            'slug_emp' => Str::slug($data['name'] . ' ' . $data['emp_code']),
             'emergency_contact_number' => $data['emergency_contact_number'],
             'contract_start_date' => $data['contract_start_date'],
             'contract_end_date' => $data['contract_end_date'],
@@ -55,3 +55,4 @@ class UpdateEmployee
         return $employee;
     }
 }
+ 

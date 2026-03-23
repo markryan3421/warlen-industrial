@@ -4,61 +4,36 @@ namespace App\Traits;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
-use Illuminate\Database\Eloquent\Builder;
 
 /**
  * HasPaginatedIndex
  *
- * A controller trait that adds search + pagination on top of any data source —
- * whether that's a repository result, a cached collection, an eager-loaded
- * query, or a plain Eloquent builder.
+ * A controller trait that adds search, filtering, and pagination on top of
+ * any data source — whether that's a repository result, a cached collection,
+ * an eager-loaded query, or a plain Eloquent builder.
  *
- * The key difference from PaginatedTableService:
- *   PaginatedTableService  — owns the query entirely (flat Eloquent only)
- *   HasPaginatedIndex      — works WITH your existing query/collection/repository
- *
- * Usage in a controller:
- *
- *   use App\Traits\HasPaginatedIndex;
- *
- *   class BranchController extends Controller
- *   {
- *       use HasPaginatedIndex;
- *
- *       public function index(Request $request)
- *       {
- *           $branches = $this->cacheRemember('branches', 60, fn() =>
- *               $this->branchRepository->getBranches()
- *           );
- *
- *           // Paginate the cached collection — no query rebuilding needed
- *           $result = $this->paginateCollection(
- *               items:         $branches,
- *               request:       $request,
- *               searchColumns: ['name', 'address'],
- *           );
- *
- *           return Inertia::render('Branch/index', [
- *               'branches'      => $result['data'],
- *               'pagination'    => $result['pagination'],
- *               'filters'       => $result['filters'],
- *               'totalCount'    => $result['totalCount'],
- *               'filteredCount' => $result['filteredCount'],
- *           ]);
- *       }
- *   }
+ * Supported filter params (all optional, all stackable):
+ *   search      — full-text across searchColumns (dot-notation supported)
+ *   positions   — comma-separated position names  e.g. "Manager,Developer"
+ *   branch      — exact branch_name match
+ *   site        — exact site_name match
+ *   status      — '' / omit = all (default) | 'active' = active only | 'inactive' = inactive only
+ *   date_from   — YYYY-MM-DD; filters on hire_date, then created_at, then contract_start_date
+ *   date_to     — YYYY-MM-DD; upper bound for the same date field
+ *   perPage     — rows per page (default 10; -1 = all)
+ *   page        — current page number (built into the link URLs automatically)
  */
 trait HasPaginatedIndex
 {
     /**
      * Paginate a Collection (repository result, cached data, eager-loaded data).
      *
-     * Use this when you already HAVE the data as a Collection — from a repository,
-     * cache, or an Eloquent ->get() call. Search is done in PHP on the collection.
+     * All filtering is done in PHP on the collection. Use this when you already
+     * HAVE the data as a Collection — from a repository, cache, or ->get().
      *
-     * @param  Collection   $items          The full dataset
-     * @param  Request      $request        For reading search + perPage params
-     * @param  array        $searchColumns  Dot-notation supported: 'employee.name'
+     * @param  Collection  $items          The full unfiltered dataset
+     * @param  Request     $request        For reading filter + pagination params
+     * @param  array       $searchColumns  Dot-notation supported: 'user.name', 'position.pos_name'
      * @return array
      */
     protected function paginateCollection(
@@ -68,21 +43,89 @@ trait HasPaginatedIndex
     ): array {
         $totalCount = $items->count();
 
-        // ── Search — filter the collection in PHP ─────────────────────────────
+        // ── 1. Full-text search ───────────────────────────────────────────────
         if ($request->filled('search')) {
             $search = strtolower($request->search);
 
             $items = $items->filter(function ($item) use ($search, $searchColumns) {
                 foreach ($searchColumns as $col) {
-                    // Support dot notation for relationships: 'employee.name'
                     $value = $this->resolveNestedValue($item, $col);
-
                     if (str_contains(strtolower((string) $value), $search)) {
-                        return true; // match found — keep this item
+                        return true;
                     }
                 }
                 return false;
-            })->values(); // re-index after filter
+            })->values();
+        }
+
+        // ── 2. Position filter (multi-select, comma-separated) ────────────────
+        if ($request->filled('positions')) {
+            $positions = array_filter(explode(',', $request->positions));
+
+            $items = $items->filter(function ($item) use ($positions) {
+                $posName = $this->resolveNestedValue($item, 'position.pos_name');
+                return in_array($posName, $positions, true);
+            })->values();
+        }
+
+        // ── 3. Branch filter ──────────────────────────────────────────────────
+        if ($request->filled('branch')) {
+            $branch = $request->branch;
+
+            $items = $items->filter(function ($item) use ($branch) {
+                return $this->resolveNestedValue($item, 'branch.branch_name') === $branch;
+            })->values();
+        }
+
+        // ── 4. Site filter ────────────────────────────────────────────────────
+        if ($request->filled('site')) {
+            $site = $request->site;
+
+            $items = $items->filter(function ($item) use ($site) {
+                return $this->resolveNestedValue($item, 'site.site_name') === $site;
+            })->values();
+        }
+
+
+        // ── 5. Status filter ──────────────────────────────────────────────────────
+        //    No param / '' → show all employees (default — no filter applied)
+        //    'active'      → active employees only
+        //    'inactive'    → inactive employees only
+        $statusFilter = $request->get('status', '');
+
+        if ($statusFilter === 'active') {
+            $items = $items->filter(function ($item) {
+                $status = strtolower((string) ($this->resolveNestedValue($item, 'employee_status') ?? ''));
+                return $status === 'active';
+            })->values();
+        } elseif ($statusFilter === 'inactive') {
+            $items = $items->filter(function ($item) {
+                $status = strtolower((string) ($this->resolveNestedValue($item, 'employee_status') ?? ''));
+                return $status !== 'active';
+            })->values();
+        }
+        // else: '' or any other value → no status filter, return all
+        // ── 6. Date range filter ──────────────────────────────────────────────
+        //    Falls back through: hire_date → created_at → contract_start_date
+        if ($request->filled('date_from') || $request->filled('date_to')) {
+            $from = $request->filled('date_from') ? strtotime($request->date_from) : null;
+            $to   = $request->filled('date_to')   ? strtotime($request->date_to)   : null;
+
+            $items = $items->filter(function ($item) use ($from, $to) {
+                $raw = $this->resolveNestedValue($item, 'hire_date')
+                    ?? $this->resolveNestedValue($item, 'created_at')
+                    ?? $this->resolveNestedValue($item, 'contract_start_date');
+
+                if (!$raw) return false;
+
+                $ts = strtotime((string) $raw);
+
+                if ($from && $to)  return $ts >= $from && $ts <= $to;
+                if ($from)         return $ts >= $from;
+                if ($to)           return $ts <= $to;
+
+                return true;
+            })->values();
         }
 
         $filteredCount = $items->count();
@@ -92,25 +135,29 @@ trait HasPaginatedIndex
         if ($perPage === -1) {
             return [
                 'data'          => $items->values(),
-                'pagination'    => $this->buildPaginationMeta(1, $filteredCount, 1, $filteredCount, $filteredCount, $request, []),
-                'filters'       => $request->only(['search', 'perPage']),
+                'pagination'    => $this->buildPaginationMeta(
+                                       1, $filteredCount, 1, $filteredCount, $filteredCount, $request, []
+                                   ),
+                'filters'       => $this->buildFilters($request),
                 'totalCount'    => $totalCount,
                 'filteredCount' => $filteredCount,
             ];
         }
 
-        // ── Manual pagination on the collection ───────────────────────────────
-        $currentPage = (int) ($request->page ?? 1);
+        // ── Manual pagination ─────────────────────────────────────────────────
+        $currentPage = max(1, (int) ($request->page ?? 1));
         $offset      = ($currentPage - 1) * $perPage;
         $pageItems   = $items->slice($offset, $perPage)->values();
-        $lastPage    = (int) ceil($filteredCount / $perPage);
+        $lastPage    = max(1, (int) ceil($filteredCount / $perPage));
         $from        = $filteredCount > 0 ? $offset + 1 : 0;
         $to          = min($offset + $perPage, $filteredCount);
 
         return [
             'data'          => $pageItems,
-            'pagination'    => $this->buildPaginationMeta($currentPage, $lastPage, $from, $to, $filteredCount, $request),
-            'filters'       => $request->only(['search', 'perPage']),
+            'pagination'    => $this->buildPaginationMeta(
+                                   $currentPage, $lastPage, $from, $to, $filteredCount, $request
+                               ),
+            'filters'       => $this->buildFilters($request),
             'totalCount'    => $totalCount,
             'filteredCount' => $filteredCount,
         ];
@@ -122,11 +169,13 @@ trait HasPaginatedIndex
      * Use this when you have a Builder instance and want to keep the query
      * in SQL — better for large datasets where PHP-side filtering is too slow.
      *
-     * Supports eager loading — call ->with([...]) on the builder before passing.
+     * Note: branch/site/position/status filters are NOT implemented here because
+     * they require joins. Add them directly to the Builder before calling this
+     * method, or use paginateCollection() instead.
      *
-     * @param  Builder  $query          Eloquent query builder (with any ->with(), ->where(), etc. already applied)
+     * @param  Builder  $query          Eloquent query builder
      * @param  Request  $request        For reading search + perPage params
-     * @param  array    $searchColumns  DB column names to search against (no dot-notation — SQL only)
+     * @param  array    $searchColumns  DB column names (no dot-notation — SQL only)
      * @return array
      */
     protected function paginateQuery(
@@ -134,10 +183,8 @@ trait HasPaginatedIndex
         Request $request,
         array   $searchColumns = [],
     ): array {
-        // ── Total count BEFORE search ─────────────────────────────────────────
         $totalCount = $query->count();
 
-        // ── Search — add WHERE clauses to the SQL query ───────────────────────
         if ($request->filled('search')) {
             $search = $request->search;
 
@@ -151,34 +198,31 @@ trait HasPaginatedIndex
         $filteredCount = $query->count();
         $perPage       = (int) ($request->perPage ?? 10);
 
-        // ── "All" mode ────────────────────────────────────────────────────────
         if ($perPage === -1) {
             $all = $query->get();
-
             return [
                 'data'          => $all,
                 'pagination'    => $this->buildPaginationMeta(1, 1, 1, $filteredCount, $filteredCount, $request),
-                'filters'       => $request->only(['search', 'perPage']),
+                'filters'       => $this->buildFilters($request),
                 'totalCount'    => $totalCount,
                 'filteredCount' => $filteredCount,
             ];
         }
 
-        // ── Paginated query ───────────────────────────────────────────────────
         $paginated = $query->paginate($perPage)->withQueryString();
 
         return [
             'data'          => $paginated->items(),
             'pagination'    => $this->buildPaginationMeta(
-                                    $paginated->currentPage(),
-                                    $paginated->lastPage(),
-                                    $paginated->firstItem() ?? 0,
-                                    $paginated->lastItem()  ?? 0,
-                                    $paginated->total(),
-                                    $request,
-                                    $paginated->linkCollection()->toArray(),
-                                ),
-            'filters'       => $request->only(['search', 'perPage']),
+                                   $paginated->currentPage(),
+                                   $paginated->lastPage(),
+                                   $paginated->firstItem() ?? 0,
+                                   $paginated->lastItem()  ?? 0,
+                                   $paginated->total(),
+                                   $request,
+                                   $paginated->linkCollection()->toArray(),
+                               ),
+            'filters'       => $this->buildFilters($request),
             'totalCount'    => $totalCount,
             'filteredCount' => $filteredCount,
         ];
@@ -189,8 +233,27 @@ trait HasPaginatedIndex
     // =========================================================================
 
     /**
+     * Build the filters array returned to the frontend.
+     * Includes ALL filter params so the React state can initialise correctly
+     * on first render and survive perPage / page changes.
+     */
+    private function buildFilters(Request $request): array
+    {
+        return $request->only([
+            'search',
+            'positions',
+            'branch',
+            'site',
+            'status',
+            'date_from',
+            'date_to',
+            'perPage',
+        ]);
+    }
+
+    /**
      * Resolve a dot-notation key from a model or array.
-     * e.g. 'employee.user.name' → $item->employee->user->name
+     * e.g. 'position.pos_name' → $item->position->pos_name
      */
     private function resolveNestedValue(mixed $item, string $key): mixed
     {
@@ -212,7 +275,7 @@ trait HasPaginatedIndex
 
     /**
      * Build a consistent pagination meta array that matches
-     * what your existing Pagination.tsx component expects.
+     * what CustomPagination.tsx expects.
      */
     private function buildPaginationMeta(
         int     $currentPage,
@@ -223,7 +286,6 @@ trait HasPaginatedIndex
         Request $request,
         array   $links = [],
     ): array {
-        // Generate links if not provided (collection-paginated case)
         if (empty($links)) {
             $links = $this->buildLinks($currentPage, $lastPage, $request);
         }
@@ -238,13 +300,12 @@ trait HasPaginatedIndex
 
     /**
      * Build pagination link objects for collection-paginated results.
-     * Matches the structure Laravel's paginator produces natively.
+     * Matches the structure Laravel's own paginator produces.
      */
     private function buildLinks(int $currentPage, int $lastPage, Request $request): array
     {
         $links = [];
 
-        // Previous link
         $links[] = [
             'label'  => '&laquo; Previous',
             'url'    => $currentPage > 1
@@ -253,7 +314,6 @@ trait HasPaginatedIndex
             'active' => false,
         ];
 
-        // Numbered page links
         for ($page = 1; $page <= $lastPage; $page++) {
             $links[] = [
                 'label'  => (string) $page,
@@ -262,7 +322,6 @@ trait HasPaginatedIndex
             ];
         }
 
-        // Next link
         $links[] = [
             'label'  => 'Next &raquo;',
             'url'    => $currentPage < $lastPage
