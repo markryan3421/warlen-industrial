@@ -19,14 +19,11 @@ import {
 import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
 import AppLogo from './app-logo';
-import PayrollPeriodController from '@/actions/App/Http/Controllers/PayrollPeriodController';
 import { FileBadge, Calendar, UserRoundCog, Contact, BookUser } from 'lucide-react';
 import { Users } from 'lucide-react';
-import ApplicationLeaveController from '@/actions/App/Http/Controllers/ApplicationLeaveController';
-import ContributionVersionController from '@/actions/App/Http/Controllers/ContributionVersionController';
 import { useCurrentUrl } from '@/hooks/use-current-url'; // Add this import
-import PayrollController from "@/actions/App/Http/Controllers/PayrollController";
-import LogsController from "@/actions/App/Http/Controllers/ActivityLogController";
+import ContributionVersionController from '@/actions/App/Http/Controllers/ContributionVersionController';
+
 
 const ExpendituresItems: NavItem[] = [
     {
@@ -41,7 +38,7 @@ const ExpendituresItems: NavItem[] = [
     },
     {
         title: 'Contributions',
-        href: ContributionVersionController.index(),
+        href: '/contributions',
         icon: Handshake,
     },
     {
@@ -54,7 +51,7 @@ const ExpendituresItems: NavItem[] = [
 const AccessControlItems: NavItem[] = [
     {
         title: 'Run Payroll',
-        href: PayrollController.index(),
+        href: '/payrolls',
         icon: Banknote,
     },
     {
@@ -64,12 +61,12 @@ const AccessControlItems: NavItem[] = [
     },
     {
         title: 'Application Leaves',
-        href: ApplicationLeaveController.index(),
+        href: '/ApplicationLeave',
         icon: Clipboard,
     },
     {
         title: 'Payroll Periods',
-        href: PayrollPeriodController.index(),
+        href: '/payroll-periods',
         icon: Calendar,
     },
     {
@@ -80,7 +77,7 @@ const AccessControlItems: NavItem[] = [
 
     {
         title: 'Activity Logs',
-        href: LogsController.index(),
+        href: '/activity-logs',
         icon: History,
     },
 ];

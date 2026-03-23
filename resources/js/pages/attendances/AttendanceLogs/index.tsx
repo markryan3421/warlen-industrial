@@ -212,15 +212,12 @@ export default function AttendanceLogs({ logs, timelineData, filters, totalCount
     }
   }, [timelineData]);
 
-<<<<<<< HEAD
   // Log whenever formatted data changes
   useEffect(() => {
     console.log('timelineDataFormat updated:', timelineDataFormat);
     console.log('Formatted data length:', timelineDataFormat.length);
   }, [timelineDataFormat]);
 
-=======
->>>>>>> c340bc6f05fcb64bc5d8015d3c5fa3c5ed0f118e
   return (
     <AppLayout breadcrumbs={breadcrumbs}>
       <Head title="Attendance Logs" />
