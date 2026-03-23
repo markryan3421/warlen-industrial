@@ -121,7 +121,7 @@ export function AppSidebar() {
 
     return (
         <Sidebar collapsible="icon" className="border-r-1 bg-white border-gray-400">
-            <SidebarHeader className="px-5">
+            <SidebarHeader className="px-0 sm:ml-0 md:px-5 lg:px-2 lg:ml-3">
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton
@@ -137,7 +137,7 @@ export function AppSidebar() {
             </SidebarHeader>
 
             <SidebarContent className={`
-                ${isExpanded ? 'px-5' : 'px-3 transition-all duration-200 ease-in-out'}`}
+                ${isExpanded ? 'px-5 transition-all duration-200 ease-in-out' : 'px-3 transition-all duration-100 ease-in-out'}`}
             >
                 <NavMain items={ExpendituresItems} label="Expenditures" />
                 <NavMain items={AccessControlItems} label="Access Control" />

@@ -10,6 +10,7 @@ use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\EmployeeRole\ApplicationLeaveController as EmployeeApplicationLeaveController;
 use App\Http\Controllers\HrRole\HRAttendanceController;
 use App\Http\Controllers\HrRole\HRAttendanceImportController;
+use App\Http\Controllers\HrRole\HRIncentiveController;
 use App\Http\Controllers\HrRole\PayrollController as HrPayrollController;
 use App\Http\Controllers\HrRole\PayrollPeriodController as HrPayrollPeriodController;
 use App\Http\Controllers\IncentiveController;
@@ -99,6 +100,15 @@ Route::middleware(['auth', 'verified', 'throttle:limit-actions', 'roleBase'])->g
         'as' => 'hr'
     ]);
 
+    Route::resource('hr/incentives', HRIncentiveController::class)->except(['show'])->names([
+        'index' => 'hr.incentives.index',
+        'create' => 'hr.incentives.create',
+        'store' => 'hr.incentives.store',
+        'edit' => 'hr.incentives.edit',
+        'update' => 'hr.incentives.update',
+        'destroy' => 'hr.incentives.destroy',
+    ]);
+
     Route::resource('/hr/payroll', HrPayrollController::class)->names([
         'index' => 'hr.payroll.index',
         'create' => 'hr.payroll.create',
@@ -115,6 +125,8 @@ Route::middleware(['auth', 'verified', 'throttle:limit-actions', 'roleBase'])->g
         'destroy' => 'hr.payroll-periods.destroy',
     ]);
 });
+
+
 
 
 require __DIR__ . '/settings.php';

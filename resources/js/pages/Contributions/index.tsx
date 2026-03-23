@@ -1,5 +1,5 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
-import { Calculator, Percent, Plus, Trash2, LoaderCircle } from 'lucide-react';
+import { Calculator, Percent, Plus, Trash2, LoaderCircle, Filter } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 import { format, isToday } from 'date-fns';
 
@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import InputError from '@/components/input-error';
+import { CustomPagination } from '@/components/custom-pagination';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Contributions', href: '/contributions' },
@@ -54,6 +55,10 @@ interface ContributionVersionsPagination {
     from: number;
     to: number;
     total: number;
+    current_page?: number;
+    last_page?: number;
+    per_page?: number;
+    links?: any[];
 }
 
 interface IndexProps {
@@ -118,6 +123,10 @@ export default function Index({
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingVersion, setEditingVersion] = useState<ContributionVersion | null>(null);
 
+    // Filter states
+    const [typeFilter, setTypeFilter] = useState<string>("");
+    const [hasActiveFilters, setHasActiveFilters] = useState(false);
+
     console.log('contributionVersions', contributionVersions);
     
     // Safely ensure data is an array and remove duplicates based on ID
@@ -130,10 +139,33 @@ export default function Index({
         return Array.from(uniqueMap.values());
     }, [contributionVersions]);
 
+    // Filtered data based on type filter
+    const displayData = useMemo(() => {
+        if (!typeFilter || typeFilter === 'all') {
+            return versions;
+        }
+        return versions.filter(version => version.type === typeFilter);
+    }, [versions, typeFilter]);
+
+    // Update hasActiveFilters when filters change
+    useEffect(() => {
+        setHasActiveFilters(!!typeFilter && typeFilter !== 'all');
+    }, [typeFilter]);
+
     // Get existing contribution types
     const existingTypes = useMemo(() => {
         return versions.map(version => version.type);
     }, [versions]);
+
+    // Handle filter change
+    const handleTypeFilterChange = (value: string) => {
+        setTypeFilter(value);
+    };
+
+    // Clear all filters
+    const handleClearAllFilters = () => {
+        setTypeFilter("");
+    };
 
     // ── Delete ─────────────────────────────────────────────────────────────
     const handleDelete = (id: number | string) => {
@@ -199,9 +231,32 @@ export default function Index({
                     </div>
                 </div>
 
-                {/* Create button - only shown when there are records */}
+                {/* Filters and Create button */}
                 {hasRecords && (
-                    <div className="flex justify-end">
+                    <div className="flex justify-between items-center gap-4">
+                        <div className="flex items-center gap-2">
+                            <Select
+                                value={typeFilter || 'all'}
+                                onValueChange={handleTypeFilterChange}
+                            >
+                                <SelectTrigger className="w-[180px]">
+                                    <SelectValue placeholder="Filter by type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Types</SelectItem>
+                                    <SelectItem value="sss">SSS</SelectItem>
+                                    <SelectItem value="philhealth">PhilHealth</SelectItem>
+                                    <SelectItem value="pagibig">Pag-IBIG</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            
+                            {hasActiveFilters && (
+                                <Button variant="ghost" size="sm" onClick={handleClearAllFilters}>
+                                    Clear Filter
+                                </Button>
+                            )}
+                        </div>
+                        
                         <Button
                             onClick={() => setIsCreateModalOpen(true)}
                             className="inline-flex items-center justify-center gap-2"
@@ -260,33 +315,41 @@ export default function Index({
                                         onDelete={handleDelete}
                                         onView={viewDetails}
                                         onEdit={handleEdit}
-                                        title = "Contribution Tablea"
+                                        title="Contribution Table"
                                     />
                                 </CardContent>
                             </Card>
                         )}
 
                         {/* Pagination */}
-                        {displayData.length > 0 && (
+                        {displayData.length > 0 && contributionVersions && (
                             <CustomPagination
                                 pagination={{
-                                    ...contributionVersions,
                                     data: displayData,
-                                    total: displayData.length,
-                                    from: 1,
-                                    to: displayData.length
+                                    from: contributionVersions.from,
+                                    to: contributionVersions.to,
+                                    total: contributionVersions.total,
+                                    current_page: contributionVersions.current_page || 1,
+                                    last_page: contributionVersions.last_page || 1,
+                                    per_page: contributionVersions.per_page || 10,
+                                    links: contributionVersions.links || []
                                 }}
-                                perPage={data.perPage}
-                                onPerPageChange={handlePerPageChange}
-                                totalCount={totalCount}
+                                perPage={(contributionVersions.per_page || 10).toString()}
+                                onPerPageChange={(value) => {
+                                    // Handle per page change
+                                    router.get(
+                                        ContributionVersionController.index.url(),
+                                        { perPage: value, type: typeFilter !== 'all' ? typeFilter : undefined },
+                                        { preserveState: true }
+                                    );
+                                }}
+                                totalCount={contributionVersions.total}
                                 filteredCount={displayData.length}
-                                search={data.type && data.type !== '' && data.type !== 'all' 
-                                    ? `Type: ${getContributionTypeLabel(data.type)}` 
-                                    : dateRangeText ? `Date: ${dateRangeText}` : ''}
+                                search={typeFilter && typeFilter !== 'all' ? `Type: ${getContributionTypeLabel(typeFilter)}` : ''}
                                 resourceName="contribution version"
                             />
-                        </CardContent>
-                    </Card>
+                        )}
+                    </>
                 )}
             </div>
 
@@ -339,7 +402,6 @@ export default function Index({
                                                 index === self.findIndex(b => b.id === bracket.id)
                                             )
                                             .map((bracket) => {
-                                               
                                                 return (
                                                     <TableRow key={bracket.id}>
                                                         <TableCell className="font-medium">
@@ -348,7 +410,6 @@ export default function Index({
                                                         </TableCell>
                                                         <TableCell className="text-right">{bracket.employee_share}%</TableCell>
                                                         <TableCell className="text-right">{bracket.employer_share}%</TableCell>
-                                                       
                                                     </TableRow>
                                                 );
                                             })}

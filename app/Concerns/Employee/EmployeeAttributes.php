@@ -4,6 +4,12 @@ namespace App\Concerns\Employee;
 
 trait EmployeeAttributes
 {
+    /**
+     * Returns an associative array of employee attributes where the key is the attribute name
+     * and the value is a human-readable description of the attribute.
+     *
+     * @return array
+     */
     protected function empAttributes(): array
     {
         return [

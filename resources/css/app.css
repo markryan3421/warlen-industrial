@@ -5,6 +5,11 @@
 @import 'tw-animate-css';
 
 
+.monetary-value {
+    font-family: 'Roboto Mono', 'Inter', monospace;
+    font-feature-settings: 'tnum';
+}
+
 .fira-sans-medium {
     font-family: "Fira Sans", sans-serif;
     font-weight: 500;

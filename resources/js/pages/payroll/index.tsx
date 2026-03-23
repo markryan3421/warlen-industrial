@@ -1,13 +1,13 @@
 import { Head, Link, useForm, router } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import type { BreadcrumbItem } from '@/types';
-import { CreditCard, X, Bell } from 'lucide-react';
+import { CreditCard, X, Bell, Eye } from 'lucide-react';
 import Echo from 'laravel-echo';
 import PayrollProcessingCards from '@/components/payroll-processing-cards';
 import Pusher from 'pusher-js';
-import EmployeePayrollTable from '@/components/employee-payroll-table'; // Import the new component
+import EmployeePayrollTable from '@/components/employee-payroll-table';
 
 // Declare global window interface for Echo
 declare global {
@@ -61,6 +61,7 @@ interface Payroll {
             pos_name: string;
             deleted_at: string;
         };
+        pay_frequency: string;
     };
     created_at: string;
     updated_at: string;
@@ -76,31 +77,57 @@ interface PageProps {
     activeEmployee: number;
 }
 
-// Transform payroll data to match EmployeePayroll format
-const transformToEmployeePayroll = (payrolls: Payroll[]) => {
-    return payrolls.map((payroll, index) => ({
-        empID: payroll.employee?.emp_code || `EMP-${String(index + 1).padStart(3, '0')}`,
-        empName: payroll.employee?.user.name || 'Unknown Employee',
-        empRole: payroll.employee?.position?.pos_name || 'No Position',
-        empType: 'Full-Time', // You might want to get this from your data
-        regPay: payroll.gross_pay || 0,
-        otPay: 0, // Calculate from payroll_items if needed
-        holidayPay: 0, // Calculate from payroll_items if needed
-        incentives: 0, // Calculate from payroll_items if needed
-        loans: payroll.total_deduction || 0,
-        netPay: payroll.net_pay || 0,
-        status: 'Active' // Determine from your data
-    }));
+// Calculate analytics from payroll array
+const calculateAnalytics = (payrolls: Payroll[]) => {
+    return payrolls.reduce((acc, payroll) => {
+        let overtimePay = 0;
+        let overtimeHours = 0;
+
+        if (payroll.payroll_items) {
+            const overtimeItems = payroll.payroll_items.filter(item => {
+                if (item.type !== 'earning') return false;
+                const code = (item.code || '').toUpperCase();
+                return code.includes('OT') || code.includes('OVERTIME');
+            });
+
+            overtimePay = overtimeItems.reduce((sum, item) => sum + (item.amount || 0), 0);
+
+            overtimeItems.forEach(item => {
+                if (item.description) {
+                    const hoursMatch = item.description.match(/(\d+(?:\.\d+)?)\s*(?:hour|hr|h)/i);
+                    if (hoursMatch) {
+                        overtimeHours += parseFloat(hoursMatch[1]) || 0;
+                    }
+                }
+            });
+        }
+
+        return {
+            totalOvertimePay: acc.totalOvertimePay + overtimePay,
+            totalOvertimeHours: acc.totalOvertimeHours + overtimeHours,
+            totalDeductions: acc.totalDeductions + (payroll.total_deduction || 0),
+            totalNetPay: acc.totalNetPay + (payroll.net_pay || 0),
+            totalGrossPay: acc.totalGrossPay + (payroll.gross_pay || 0),
+            activeEmployee: acc.activeEmployee + 1
+        };
+    }, {
+        totalOvertimePay: 0,
+        totalOvertimeHours: 0,
+        totalDeductions: 0,
+        totalNetPay: 0,
+        totalGrossPay: 0,
+        activeEmployee: 0
+    });
 };
 
 export default function Index({
     payrolls,
-    totalOvertimePay,
-    totalOvertimeHours,
-    totalDeductions,
-    totalNetPay,
-    totalGrossPay,
-    activeEmployee
+    totalOvertimePay: initialOvertimePay,
+    totalOvertimeHours: initialOvertimeHours,
+    totalDeductions: initialDeductions,
+    totalNetPay: initialNetPay,
+    totalGrossPay: initialGrossPay,
+    activeEmployee: initialActiveEmployee
 }: PageProps) {
     const { delete: destroy } = useForm();
     const [selectedPayroll, setSelectedPayroll] = useState<Payroll | null>(null);
@@ -109,8 +136,11 @@ export default function Index({
     const [showNotification, setShowNotification] = useState(false);
     const [echoInitialized, setEchoInitialized] = useState(false);
 
-    // Transform payrolls for the employee table
-    const employeePayrollData = transformToEmployeePayroll(payrolls);
+    // Filter states
+    const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
+    const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
+    const [selectedFrequency, setSelectedFrequency] = useState<string>("all");
+    const [selectedPosition, setSelectedPosition] = useState<string>("all");
 
     // Initialize Echo with Reverb configuration
     useEffect(() => {
@@ -168,7 +198,7 @@ export default function Index({
                 setShowNotification(false);
             }, 5000);
 
-            router.reload({ only: ['payrolls', 'totalOvertimePay', 'totalOvertimeHours', 'totalDeductions', 'totalNetPay', 'totalGrossPay'] });
+            router.reload({ only: ['payrolls', 'totalOvertimePay', 'totalOvertimeHours', 'totalDeductions', 'totalNetPay', 'totalGrossPay', 'activeEmployee'] });
         });
 
         return () => {
@@ -176,7 +206,184 @@ export default function Index({
         };
     }, [echoInitialized]);
 
-    // Format functions
+    // Function to check if any filter is applied
+    const hasActiveFilters = useMemo(() => {
+        return dateFrom !== undefined || dateTo !== undefined ||
+            selectedFrequency !== "all" || selectedPosition !== "all";
+    }, [dateFrom, dateTo, selectedFrequency, selectedPosition]);
+
+    // Get unique values for filters
+    const uniqueFrequencies = useMemo(() => {
+        const freqs = payrolls
+            .map(p => p.employee?.pay_frequency)
+            .filter((freq): freq is string => freq !== undefined);
+        return [...Array.from(new Set(freqs))];
+    }, [payrolls]);
+
+    const uniquePositions = useMemo(() => {
+        const positions = payrolls
+            .map(p => p.employee?.position?.pos_name)
+            .filter((pos): pos is string => pos !== undefined);
+        return [...Array.from(new Set(positions))];
+    }, [payrolls]);
+
+    // Function to filter payrolls based on selected filters
+    const filteredPayrolls = useMemo(() => {
+        // If no filters are applied, return all payrolls
+        if (!hasActiveFilters) {
+            return payrolls;
+        }
+
+        return payrolls.filter(payroll => {
+            // Date filter - only apply if both dates are selected
+            if (dateFrom && dateTo && payroll.payroll_period) {
+                const periodStart = new Date(payroll.payroll_period.start_date);
+                const periodEnd = new Date(payroll.payroll_period.end_date);
+                const filterStart = new Date(dateFrom);
+                const filterEnd = new Date(dateTo);
+
+                // Set time to start/end of day for accurate comparison
+                filterStart.setHours(0, 0, 0, 0);
+                filterEnd.setHours(23, 59, 59, 999);
+
+                // Check if period overlaps with selected date range
+                if (periodEnd < filterStart || periodStart > filterEnd) {
+                    return false;
+                }
+            }
+
+            // Frequency filter
+            if (selectedFrequency !== "all" && payroll.employee?.pay_frequency !== selectedFrequency) {
+                return false;
+            }
+
+            // Position filter
+            if (selectedPosition !== "all" && payroll.employee?.position?.pos_name !== selectedPosition) {
+                return false;
+            }
+
+            return true;
+        });
+    }, [payrolls, dateFrom, dateTo, selectedFrequency, selectedPosition, hasActiveFilters]);
+
+    // Transform filtered payrolls for EmployeePayrollTable
+    const employeePayrollData = useMemo(() => {
+        return filteredPayrolls.map((payroll) => ({
+            // Include ALL original Payroll properties
+            id: payroll.id,
+            payroll_period_id: payroll.payroll_period_id,
+            employee_id: payroll.employee_id,
+            gross_pay: payroll.gross_pay || 0,
+            total_deduction: payroll.total_deduction || 0,
+            net_pay: payroll.net_pay || 0,
+            payroll_items: payroll.payroll_items,
+            payroll_period: payroll.payroll_period,
+            employee: payroll.employee,
+            created_at: payroll.created_at,
+            updated_at: payroll.updated_at,
+
+            // Add display fields (these match your table columns)
+            period_name: payroll.payroll_period?.period_name || 'N/A',
+            period_start: payroll.payroll_period?.start_date || '',
+            period_end: payroll.payroll_period?.end_date || '',
+            emp_code: payroll.employee?.emp_code || 'N/A',
+            employee_name: payroll.employee?.user.name || 'Unknown Employee',
+            position_name: payroll.employee?.position?.pos_name || 'No Position',
+        }));
+    }, [filteredPayrolls]);
+
+    // Calculate totals based on filtered payrolls
+    const filteredTotals = useMemo(() => {
+        // If no filters are applied, use the initial values from props
+        if (!hasActiveFilters) {
+            return {
+                totalOvertimePay: initialOvertimePay,
+                totalOvertimeHours: initialOvertimeHours,
+                totalDeductions: initialDeductions,
+                totalNetPay: initialNetPay,
+                totalGrossPay: initialGrossPay,
+                activeEmployee: initialActiveEmployee
+            };
+        }
+
+        // Calculate from filtered payrolls
+        const totals = filteredPayrolls.reduce((acc, payroll) => {
+            // Calculate overtime pay from payroll items
+            let overtimePay = 0;
+            let overtimeHours = 0;
+
+            // Check if payroll_items exists and has items
+            if (payroll.payroll_items && payroll.payroll_items.length > 0) {
+                // Define overtime codes to look for
+                const overtimeKeywords = [
+                    'OT', 'OTS', 'OVERTIME', 'OT PAY', 'REG OT',
+                    'OTHR', 'OT HRS', 'OVERTIME PAY', 'OT_WORK',
+                    'overtime', 'ot', 'ots'
+                ];
+
+                // Filter for overtime items
+                const overtimeItems = payroll.payroll_items.filter(item => {
+                    // Check if it's an earning type
+                    if (item.type !== 'earning') return false;
+
+                    const code = (item.code || '').toUpperCase().trim();
+                    const description = (item.description || '').toUpperCase().trim();
+
+                    // Check against keywords
+                    return overtimeKeywords.some(keyword =>
+                        code.includes(keyword) ||
+                        description.includes(keyword)
+                    );
+                });
+
+                // Sum up overtime pay
+                overtimePay = overtimeItems.reduce((sum, item) => {
+                    return sum + (Number(item.amount) || 0);
+                }, 0);
+
+                // Try to extract hours from description if available
+                overtimeItems.forEach(item => {
+                    if (item.description) {
+                        // Look for patterns like "2 hours", "2.5 hrs", etc.
+                        const hoursMatch = item.description.match(/(\d+(?:\.\d+)?)\s*(?:hour|hr|h)/i);
+                        if (hoursMatch) {
+                            overtimeHours += parseFloat(hoursMatch[1]) || 0;
+                        }
+                    }
+                });
+            }
+
+            return {
+                totalOvertimePay: acc.totalOvertimePay + overtimePay,
+                totalOvertimeHours: acc.totalOvertimeHours + overtimeHours,
+                totalDeductions: acc.totalDeductions + (Number(payroll.total_deduction) || 0),
+                totalNetPay: acc.totalNetPay + (Number(payroll.net_pay) || 0),
+                totalGrossPay: acc.totalGrossPay + (Number(payroll.gross_pay) || 0),
+                activeEmployee: acc.activeEmployee + 1
+            };
+        }, {
+            totalOvertimePay: 0,
+            totalOvertimeHours: 0,
+            totalDeductions: 0,
+            totalNetPay: 0,
+            totalGrossPay: 0,
+            activeEmployee: 0
+        });
+
+        return totals;
+    }, [filteredPayrolls, hasActiveFilters, initialOvertimePay, initialOvertimeHours, initialDeductions, initialNetPay, initialGrossPay, initialActiveEmployee]);
+
+    // Handle refresh button click - clear all filters
+    const handleRefresh = () => {
+        setDateFrom(undefined);
+        setDateTo(undefined);
+        setSelectedFrequency("all");
+        setSelectedPosition("all");
+
+        router.reload({ only: ['payrolls', 'totalOvertimePay', 'totalOvertimeHours', 'totalDeductions', 'totalNetPay', 'totalGrossPay', 'activeEmployee'] });
+    };
+
+    // Function to format currency to Philippine Peso
     const formatCurrency = (amount: number) => {
         return new Intl.NumberFormat('en-PH', {
             style: 'currency',
@@ -186,6 +393,7 @@ export default function Index({
         }).format(amount);
     };
 
+    // Function to format number with commas
     const formatNumber = (amount: number) => {
         return new Intl.NumberFormat('en-PH', {
             minimumFractionDigits: 2,
@@ -196,19 +404,30 @@ export default function Index({
     // Handlers for employee table actions
     const handleViewEmployee = (employee: any) => {
         console.log('View employee:', employee);
-        // Implement view logic
     };
 
     const handleEditEmployee = (employee: any) => {
         console.log('Edit employee:', employee);
-        // Implement edit logic
     };
 
     const handleDeleteEmployee = (employee: any) => {
-        if (confirm(`Are you sure you want to delete ${employee.empName}'s record?`)) {
+        if (confirm(`Are you sure you want to delete ${employee.employee_name}'s record?`)) {
             console.log('Delete employee:', employee);
-            // Implement delete logic
         }
+    };
+
+    const handleViewItems = (payroll: any) => {
+        // Find the original payroll from filteredPayrolls using the id
+        const originalPayroll = filteredPayrolls.find(p => p.id === payroll.id);
+        if (originalPayroll) {
+            setSelectedPayroll(originalPayroll);
+            setIsModalOpen(true);
+        }
+    };
+
+    const closeModal = () => {
+        setIsModalOpen(false);
+        setSelectedPayroll(null);
     };
 
     return (
@@ -217,14 +436,33 @@ export default function Index({
             <div className="flex flex-1 flex-col gap-2 p-4">
                 <PayrollProcessingCards
                     payrolls={payrolls}
-                    totalOvertimePay={totalOvertimePay}
-                    totalOvertimeHours={totalOvertimeHours}
-                    totalDeductions={totalDeductions}
-                    totalNetPay={totalNetPay}
-                    totalGrossPay={totalGrossPay}
-                    activeEmployee={activeEmployee}
+                    totalOvertimePay={filteredTotals.totalOvertimePay}
+                    totalOvertimeHours={filteredTotals.totalOvertimeHours}
+                    totalDeductions={filteredTotals.totalDeductions}
+                    totalNetPay={filteredTotals.totalNetPay}
+                    totalGrossPay={filteredTotals.totalGrossPay}
+                    activeEmployee={filteredTotals.activeEmployee}
                     formatCurrency={formatCurrency}
                     formatNumber={formatNumber}
+
+                    // Filter props
+                    dateFrom={dateFrom}
+                    dateTo={dateTo}
+                    selectedFrequency={selectedFrequency}
+                    selectedPosition={selectedPosition}
+                    onDateFromChange={setDateFrom}
+                    onDateToChange={setDateTo}
+                    onFrequencyChange={setSelectedFrequency}
+                    onPositionChange={setSelectedPosition}
+                    onRefresh={handleRefresh}
+
+                    // Options for dropdowns
+                    frequencyOptions={uniqueFrequencies}
+                    positionOptions={uniquePositions}
+
+                    // Filtered counts
+                    totalFilteredPayrolls={filteredPayrolls.length}
+                    totalOriginalPayrolls={payrolls.length}
                 />
 
                 {/* Notification Toast */}
@@ -247,29 +485,38 @@ export default function Index({
                 )}
 
                 <div className="flex justify-between items-center px-8">
-                    <h1 className="text-2xl font-bold">Payroll</h1>
-                    <Link href="/payroll/create">
-                        <Button size="sm">+ Generate Payroll</Button>
-                    </Link>
+                    <h1 className="text-2xl font-bold">
+                        Payroll
+                        {hasActiveFilters && (
+                            <span className="text-sm font-normal text-gray-500 ml-2">
+                                (Showing {filteredPayrolls.length} of {payrolls.length} records)
+                            </span>
+                        )}
+                    </h1>
                 </div>
 
-                <div className="py-4 px-8">
-                    {payrolls.length === 0 ? (
+                <div className="py-4">
+                    {filteredPayrolls.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-16 text-center">
                             <div className="rounded-full bg-gray-100 p-6 mb-4">
                                 <CreditCard className="h-12 w-12 text-gray-400" />
                             </div>
-                            <h3 className="text-lg font-semibold mb-2">No payroll records yet</h3>
+                            <h3 className="text-lg font-semibold mb-2">No payroll records found</h3>
                             <p className="text-gray-500 mb-6 max-w-sm">
-                                Get started by generating your first payroll.
+                                {payrolls.length > 0
+                                    ? "No records match your current filters. Try adjusting your filter criteria."
+                                    : "Import the Attendance and Payroll data to generate payroll records."
+                                }
                             </p>
-                            <Link href="/payroll/create">
-                                <Button>Generate Your First Payroll</Button>
-                            </Link>
+                            {hasActiveFilters && (
+                                <Button variant="outline" onClick={handleRefresh}>
+                                    Clear All Filters
+                                </Button>
+                            )}
                         </div>
                     ) : (
-                        <EmployeePayrollTable 
-                            data={payrolls}
+                        <EmployeePayrollTable
+                            data={employeePayrollData}
                             onView={handleViewEmployee}
                             onEdit={handleEditEmployee}
                             onDelete={handleDeleteEmployee}

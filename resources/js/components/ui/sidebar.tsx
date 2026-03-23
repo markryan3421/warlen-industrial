@@ -35,18 +35,32 @@ type SidebarContext = {
     state: "expanded" | "collapsed"
     open: boolean
     setOpen: (open: boolean) => void
-    openMobile: boolean
-    setOpenMobile: (open: boolean) => void
     isMobile: boolean
     toggleSidebar: () => void
 }
 
 const SidebarContext = React.createContext<SidebarContext | null>(null)
 
+type SidebarMobileContext = {
+    openMobile: boolean
+    setOpenMobile: (open: boolean) => void
+}
+
+const SidebarMobileContext = React.createContext<SidebarMobileContext | null>(null)
+
 function useSidebar() {
     const context = React.useContext(SidebarContext)
     if (!context) {
         throw new Error("useSidebar must be used within a SidebarProvider.")
+    }
+
+    return context
+}
+
+function useSidebarMobile() {
+    const context = React.useContext(SidebarMobileContext)
+    if (!context) {
+        throw new Error("useSidebarMobile must be used within a SidebarProvider.")
     }
 
     return context
@@ -112,39 +126,47 @@ const SidebarProvider = React.forwardRef<
 
         const state = open ? "expanded" : "collapsed"
 
+        const mobileContextValue = React.useMemo<SidebarMobileContext>(
+            () => ({
+                openMobile,
+                setOpenMobile,
+            }),
+            [openMobile, setOpenMobile],
+        )
+
         const contextValue = React.useMemo<SidebarContext>(
             () => ({
                 state,
                 open,
                 setOpen,
                 isMobile,
-                openMobile,
-                setOpenMobile,
                 toggleSidebar,
             }),
-            [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar]
+            [state, open, setOpen, isMobile, toggleSidebar]
         )
 
         return (
             <SidebarContext.Provider value={contextValue}>
-                <TooltipProvider delayDuration={0}>
-                    <div
-                        ref={ref}
-                        data-slot="sidebar-wrapper"
-                        style={{
-                            "--sidebar-width": SIDEBAR_WIDTH,
-                            "--sidebar-width-icon": SIDEBAR_WIDTH_ICON,
-                            ...style,
-                        } as React.CSSProperties}
-                        className={cn(
-                            "group/sidebar-wrapper has-data-[variant=inset]:bg-sidebar flex min-h-svh w-full",
-                            className
-                        )}
-                        {...props}
-                    >
-                        {children}
-                    </div>
-                </TooltipProvider>
+                <SidebarMobileContext.Provider value={mobileContextValue}>
+                    <TooltipProvider delayDuration={0}>
+                        <div
+                            ref={ref}
+                            data-slot="sidebar-wrapper"
+                            style={{
+                                "--sidebar-width": SIDEBAR_WIDTH,
+                                "--sidebar-width-icon": SIDEBAR_WIDTH_ICON,
+                                ...style,
+                            } as React.CSSProperties}
+                            className={cn(
+                                "group/sidebar-wrapper has-data-[variant=inset]:bg-sidebar flex min-h-svh w-full",
+                                className
+                            )}
+                            {...props}
+                        >
+                            {children}
+                        </div>
+                    </TooltipProvider>
+                </SidebarMobileContext.Provider>
             </SidebarContext.Provider>
         )
     }
@@ -170,7 +192,8 @@ const Sidebar = React.forwardRef<
         },
         ref
     ) => {
-        const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
+        const { isMobile, state } = useSidebar()
+        const { openMobile, setOpenMobile } = useSidebarMobile()
 
         if (collapsible === "none") {
             return (
@@ -206,6 +229,7 @@ const Sidebar = React.forwardRef<
                             } as React.CSSProperties
                         }
                         side={side}
+                        forceMount
                     >
                         <div className="flex h-full w-full flex-col">{children}</div>
                     </SheetContent>
@@ -317,7 +341,7 @@ const SidebarRail = React.forwardRef<
 SidebarRail.displayName = "SidebarRail"
 
 const SidebarInset = React.forwardRef<
-    HTMLMainElement,
+    HTMLElement,
     React.ComponentProps<"main">
 >(({ className, ...props }, ref) => {
     return (

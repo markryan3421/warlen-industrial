@@ -977,6 +977,7 @@ export default function AttendanceManagement({
                             isLoading={false}
                             onEmployeeSelect={(employeeId) => console.log('Selected employee:', employeeId)}
                             onDateChange={(date) => console.log('Date changed:', date)}
+                            
                         />
                     ) : activeMainTab === 'exceptions' && activeSubTab === 'calendar' ? (
                         <ExceptionStatsHybrid

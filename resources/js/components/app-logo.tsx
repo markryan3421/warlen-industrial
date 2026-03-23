@@ -1,15 +1,15 @@
 import AppLogoIcon from './app-logo-icon';
 import { useSidebar } from '@/components/ui/sidebar';
 
-export default function     AppLogo() {
+export default function AppLogo() {
     const { state } = useSidebar();
     const isExpanded = state === 'expanded';
 
     return (
-        <div className="flex items-center gap-2 p-5 hover:bg-transparent">
+        <div className="flex items-center gap-2 p-5 mx-5 md:-ml-0 lg:mr-5">
             <div className={`
-                flex items-center justify-center rounded-md hover:bg-transparent
-                ${isExpanded ? 'size-11 -ml-5 -mt- transition-all duration-300 ease-in-out' : 'size-7 -ml-7 transition-all duration-200 ease-in-out'}
+                flex items-center justify-center rounded-md
+                ${isExpanded ? 'size-11 -ml-5 transition-all duration-300 ease-in-out' : 'size-7 -ml-6.5 transition-all duration-200 ease-in-out'}
             `}>
                 <AppLogoIcon/>
             </div>

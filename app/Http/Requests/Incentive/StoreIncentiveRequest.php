@@ -2,10 +2,12 @@
 
 namespace App\Http\Requests\Incentive;
 
+use App\Concerns\Incentive\IncentiveValidationRules;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreIncentiveRequest extends FormRequest
 {
+    use IncentiveValidationRules;
     public function authorize(): bool
     {
         return true;
@@ -13,20 +15,16 @@ class StoreIncentiveRequest extends FormRequest
 
     public function rules(): array
     {
-        return [
-            'payroll_period_id' => ['required', 'exists:payroll_periods,id'],
-            'incentive_name' => ['required', 'string', 'max:255'],
-            'incentive_amount' => ['required', 'numeric', 'min:0'],
-            'employee_ids' => ['required', 'array', 'min:1'],
-            'employee_ids.*' => ['required', 'exists:employees,id'],
-        ];
+       return $this->incentiveRules();
+    }
+
+    public function attributes(): array
+    {
+        return $this->incentiveAttributes();
     }
 
     public function messages(): array
     {
-        return [
-            'employee_ids.required' => 'Please select at least one employee.',
-            'employee_ids.min' => 'Please select at least one employee.',
-        ];
+        return $this->incentivesMessages();
     }
 }

@@ -14,7 +14,7 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table"
-import { MoreHorizontalIcon, Eye } from "lucide-react"
+import { MoreHorizontalIcon, Eye, ChevronLeft, ChevronRight } from "lucide-react"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
     Dialog,
@@ -24,7 +24,8 @@ import {
     DialogTitle,
     DialogFooter,
 } from "@/components/ui/dialog"
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useMemo } from 'react';
+import { CustomPagination } from "@/components/custom-pagination";
 
 interface PayrollItem {
     id: number;
@@ -70,11 +71,15 @@ interface PayrollData {
 }
 
 interface EmployeePayrollTableProps {
-    data: PayrollData[];  // Changed from EmployeePayroll to PayrollData
+    data: PayrollData[];
     onView?: (payroll: PayrollData) => void;
     onEdit?: (payroll: PayrollData) => void;
     onDelete?: (payroll: PayrollData) => void;
-    onViewItems?: (payroll: PayrollData) => void; // Added for viewing payroll items
+    onViewItems?: (payroll: PayrollData) => void;
+    itemsPerPage?: number;
+    onPageChange?: (page: number) => void;
+    currentPage?: number;
+    totalCount?: number;
 }
 
 export default function EmployeePayrollTable({
@@ -82,11 +87,57 @@ export default function EmployeePayrollTable({
     onView,
     onEdit,
     onDelete,
-    onViewItems
+    onViewItems,
+    itemsPerPage = 10,
+    onPageChange,
+    currentPage: externalCurrentPage,
+    totalCount: externalTotalCount,
 }: EmployeePayrollTableProps) {
     const PrintRef = useRef<HTMLDivElement>(null);
     const [selectedPayroll, setSelectedPayroll] = useState<PayrollData | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [isItemsDialogOpen, setIsItemsDialogOpen] = useState(false);
+    
+    // Internal pagination state (if not controlled externally)
+    const [internalCurrentPage, setInternalCurrentPage] = useState(1);
+    const [internalPerPage, setInternalPerPage] = useState(itemsPerPage.toString());
+
+    // Determine if pagination is controlled externally or internally
+    const isControlled = externalCurrentPage !== undefined && onPageChange !== undefined;
+    const currentPage = isControlled ? externalCurrentPage : internalCurrentPage;
+    const totalCount = externalTotalCount || data.length;
+
+    // Calculate paginated data
+    const paginatedData = useMemo(() => {
+        const perPage = parseInt(internalPerPage);
+        // If "all" is selected, show all data
+        if (internalPerPage === "all") {
+            return data;
+        }
+        const start = (currentPage - 1) * perPage;
+        const end = start + perPage;
+        return data.slice(start, end);
+    }, [data, currentPage, internalPerPage]);
+
+    // Handle page change
+    const handlePageChange = (page: number) => {
+        if (isControlled) {
+            onPageChange(page);
+        } else {
+            setInternalCurrentPage(page);
+        }
+    };
+
+    // Handle per page change
+    const handlePerPageChange = (value: string) => {
+        setInternalPerPage(value);
+        setInternalCurrentPage(1); // Reset to first page when changing items per page
+    };
+
+    // Handle page click from pagination component
+    const handlePageClick = (page: number) => {
+        handlePageChange(page);
+    };
 
     // Helper function to safely format currency values
     const formatCurrency = (amount: any): string => {
@@ -120,6 +171,14 @@ export default function EmployeePayrollTable({
     const formatPeriodRange = (payroll: PayrollData) => {
         if (payroll.payroll_period) {
             return `${formatDate(payroll.payroll_period.start_date)} - ${formatDate(payroll.payroll_period.end_date)}`;
+        }
+        return 'N/A';
+    };
+
+    // Get period display text
+    const getPeriodDisplay = (payroll: PayrollData) => {
+        if (payroll.payroll_period) {
+            return payroll.payroll_period.period_name || 'N/A';
         }
         return 'N/A';
     };
@@ -192,26 +251,15 @@ export default function EmployeePayrollTable({
     // Enhanced mapping for earning codes
     const earningCodeMapping: Record<string, string> = {
         'BASE': 'Base Pay',
-        'BASIC': 'Basic Pay',
         'REGULAR': 'Regular Pay',
         'OVERTIME': 'Overtime Pay',
         'OT': 'Overtime Pay',
         'HOLIDAY': 'Holiday Pay',
         'HOLIDAY_OT': 'Holiday Overtime Pay',
         'HOLIDAY OT': 'Holiday Overtime Pay',
-        'ALLOWANCE': 'Allowance',
-        'TRANSPO': 'Transportation Allowance',
-        'TRANSPORTATION': 'Transportation Allowance',
-        'MEAL': 'Meal Allowance',
-        'COMMISSION': 'Commission',
-        'BONUS': 'Bonus',
         'INCENTIVE': 'Incentive',
         '13TH_MONTH': '13th Month Pay',
         'THIRTEENTH_MONTH': '13th Month Pay',
-        'SIL': 'SIL Pay',
-        'LEAVE': 'Leave Pay',
-        'SICK_LEAVE': 'Sick Leave Pay',
-        'VACATION_LEAVE': 'Vacation Leave Pay',
     };
 
     // Unified function to format item names
@@ -245,6 +293,8 @@ export default function EmployeePayrollTable({
     };
 
     const handleViewItems = (payroll: PayrollData) => {
+        setSelectedPayroll(payroll);
+        setIsItemsDialogOpen(true);
         if (onViewItems) onViewItems(payroll);
     };
 
@@ -271,11 +321,59 @@ export default function EmployeePayrollTable({
         </div>
     );
 
+    // Calculate pagination info
+    const perPageNum = internalPerPage === "all" ? data.length : parseInt(internalPerPage);
+    const startItem = internalPerPage === "all" ? 1 : (currentPage - 1) * perPageNum + 1;
+    const endItem = internalPerPage === "all" ? data.length : Math.min(currentPage * perPageNum, totalCount);
+    const lastPage = internalPerPage === "all" ? 1 : Math.ceil(totalCount / perPageNum);
+
+    // Generate page links for pagination with click handlers
+    const generatePageLinks = () => {
+        const links = [];
+        
+        // Previous link
+        links.push({
+            url: currentPage > 1 ? '#' : null,
+            label: '&laquo; Previous',
+            active: false
+        });
+        
+        // Page numbers
+        for (let i = 1; i <= lastPage; i++) {
+            links.push({
+                url: '#',
+                label: i.toString(),
+                active: i === currentPage
+            });
+        }
+        
+        // Next link
+        links.push({
+            url: currentPage < lastPage ? '#' : null,
+            label: 'Next &raquo;',
+            active: false
+        });
+        
+        return links;
+    };
+
+    // Create pagination object for CustomPagination
+    const paginationObject = {
+        data: paginatedData,
+        current_page: currentPage,
+        last_page: lastPage,
+        per_page: perPageNum,
+        total: totalCount,
+        from: startItem,
+        to: endItem,
+        links: generatePageLinks()
+    };
+
     return (
         <>
             {/* Desktop View - lg and above */}
-            <div className="hidden lg:block">
-                <div className="rounded-lg border-2 border-gray-200 overflow-hidden">
+            <div className="hidden lg:block px-8">
+                <div className="rounded-lg border-2 border-gray-200 overflow-hidden ">
                     <Table>
                         <TableHeader className="bg-white">
                             <TableRow>
@@ -291,7 +389,7 @@ export default function EmployeePayrollTable({
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {data.map((item, index) => (
+                            {paginatedData.map((item, index) => (
                                 <TableRow
                                     key={item.id || index}
                                     className="text-center odd:bg-white even:bg-stone-50/60 hover:bg-blue-50/60 transition-colors duration-200 animate-in fade-in slide-in-from-bottom-2 duration-500"
@@ -325,7 +423,6 @@ export default function EmployeePayrollTable({
                                     </TableCell>
                                     <TableCell className="text-center font-semibold text-green-600">
                                         {formatCurrency(item.net_pay)}
-
                                     </TableCell>
                                     <TableCell className="text-center">
                                         <span
@@ -347,19 +444,6 @@ export default function EmployeePayrollTable({
                             ))}
                         </TableBody>
                     </Table>
-
-                    {/* Footer with record count */}
-                    {data.length > 0 && (
-                        <div className="flex items-center justify-end gap-2 px-6 py-3 border-t border-gray-200 bg-stone-50">
-                            <p className="text-xs font-medium text-stone-500">
-                                Showing{" "}
-                                <span className="font-bold text-blue-600">
-                                    {data.length}
-                                </span>{" "}
-                                record{data.length !== 1 ? "s" : ""}
-                            </p>
-                        </div>
-                    )}
                 </div>
             </div>
 
@@ -367,7 +451,7 @@ export default function EmployeePayrollTable({
             <div className="hidden md:block lg:hidden">
                 <div className="rounded-xl border border-stone-200 bg-white shadow-sm overflow-hidden">
                     <div className="p-4 grid grid-cols-2 gap-3">
-                        {data.map((item, index) => (
+                        {paginatedData.map((item, index) => (
                             <div
                                 key={item.id || index}
                                 className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm hover:shadow-md hover:border-blue-300 transition-all duration-200 animate-in fade-in slide-in-from-bottom-2 duration-500"
@@ -375,16 +459,16 @@ export default function EmployeePayrollTable({
                             >
                                 <div className="flex items-center justify-between mb-3 pb-2.5 border-b">
                                     <span className="inline-flex items-center justify-center w-7 h-7 rounded-[7px] bg-blue-100 text-blue-600 text-[11px] font-bold">
-                                        {index + 1}
+                                        {startItem + index}
                                     </span>
                                     <Button
                                         variant="outline"
                                         size="sm"
-                                        onClick={() => handleViewItems(item)}
+                                        onClick={() => handleViewReceipt(item)}
                                         className="transition-all duration-200 hover:scale-105"
                                     >
                                         <Eye className="h-4 w-4 mr-1" />
-                                        View
+                                        View Receipt
                                     </Button>
                                 </div>
 
@@ -392,13 +476,13 @@ export default function EmployeePayrollTable({
                                     <div className="flex items-start justify-between">
                                         <dt className="text-[10px] font-bold uppercase text-stone-400">Period</dt>
                                         <dd className="text-[12.5px] font-medium text-right">
-                                            {item.payroll_period?.period_name || 'N/A'}
+                                            {getPeriodDisplay(item)}
                                         </dd>
                                     </div>
                                     <div className="flex items-start justify-between">
                                         <dt className="text-[10px] font-bold uppercase text-stone-400">Employee</dt>
                                         <dd className="text-[12.5px] font-medium text-right">
-                                            {item.employee?.emp_code} - {item.employee?.user.name}
+                                            {item.employee?.emp_code || 'N/A'} - {item.employee?.user.name || 'N/A'}
                                         </dd>
                                     </div>
                                     <div className="flex items-start justify-between">
@@ -423,15 +507,6 @@ export default function EmployeePayrollTable({
                             </div>
                         ))}
                     </div>
-
-                    {/* Footer */}
-                    {data.length > 0 && (
-                        <div className="flex items-center justify-end gap-2 px-6 py-3 border-t bg-stone-50">
-                            <p className="text-xs font-medium text-stone-500">
-                                Showing <span className="font-bold text-blue-600">{data.length}</span> records
-                            </p>
-                        </div>
-                    )}
                 </div>
             </div>
 
@@ -439,7 +514,7 @@ export default function EmployeePayrollTable({
             <div className="block md:hidden">
                 <div className="rounded-xl border border-stone-200 bg-white shadow-sm overflow-hidden">
                     <div className="divide-y">
-                        {data.map((item, index) => (
+                        {paginatedData.map((item, index) => (
                             <div
                                 key={item.id || index}
                                 className="px-4 py-4 odd:bg-white even:bg-stone-50 animate-in fade-in slide-in-from-bottom-2 duration-500"
@@ -447,23 +522,23 @@ export default function EmployeePayrollTable({
                             >
                                 <div className="flex items-center justify-between mb-3">
                                     <span className="inline-flex items-center justify-center w-7 h-7 rounded-[7px] bg-blue-100 text-blue-600 text-[11px] font-bold">
-                                        {index + 1}
+                                        {startItem + index}
                                     </span>
                                     <Button
                                         variant="outline"
                                         size="sm"
-                                        onClick={() => handleViewItems(item)}
+                                        onClick={() => handleViewReceipt(item)}
                                         className="transition-all duration-200 hover:scale-105"
                                     >
                                         <Eye className="h-4 w-4 mr-1" />
-                                        View
+                                        View Receipt
                                     </Button>
                                 </div>
 
                                 <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5">
                                     <div>
                                         <dt className="text-[10px] font-bold uppercase text-stone-400">Period</dt>
-                                        <dd className="text-[13px] mt-0.5">{item.payroll_period?.period_name || 'N/A'}</dd>
+                                        <dd className="text-[13px] mt-0.5">{getPeriodDisplay(item)}</dd>
                                     </div>
                                     <div>
                                         <dt className="text-[10px] font-bold uppercase text-stone-400">Emp Code</dt>
@@ -493,6 +568,126 @@ export default function EmployeePayrollTable({
                     </div>
                 </div>
             </div>
+
+            {/* Items View Dialog */}
+            <Dialog open={isItemsDialogOpen} onOpenChange={setIsItemsDialogOpen}>
+                <DialogContent className="lg:max-w-lg max-h-[90vh] overflow-y-auto">
+                    <DialogHeader className="items-center">
+                        <DialogTitle>Payroll Items</DialogTitle>
+                        <DialogDescription className="-mt-3">
+                            View payroll items for this employee
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    {selectedPayroll && (
+                        <div className="p-4 border border-gray-200 rounded-lg bg-white">
+                            <div className="flex items-center gap-4 mb-6">
+                                <div>
+                                    <h3 className="font-bold text-lg">{selectedPayroll.employee?.user.name}</h3>
+                                    <p className="text-sm text-gray-500">
+                                        {selectedPayroll.employee?.position?.pos_name} • ID: {selectedPayroll.employee?.emp_code}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4 mb-6 text-sm">
+                                <div>
+                                    <p className="text-gray-600">Pay Period:</p>
+                                    <p className="font-semibold">
+                                        {selectedPayroll.payroll_period?.period_name || 'N/A'}
+                                    </p>
+                                </div>
+                                <div>
+                                    <p className="text-gray-600">Period Date:</p>
+                                    <p className="font-semibold">
+                                        {formatPeriodRange(selectedPayroll)}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Earnings Section */}
+                            <div className="mb-6">
+                                <h4 className="font-bold mb-3 text-green-700">Earnings</h4>
+                                <div className="space-y-2">
+                                    {selectedPayroll.payroll_items
+                                        ?.filter(item => item.type === 'earning')
+                                        .map((item) => (
+                                            <div key={item.id} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-0">
+                                                <div>
+                                                    <span className="font-medium text-gray-800">
+                                                        {formatItemName(item)}
+                                                    </span>
+                                                    {item.description && (
+                                                        <p className="text-xs text-gray-500 mt-0.5">
+                                                            {item.description.charAt(0).toUpperCase() + item.description.slice(1).toLowerCase()}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                                <span className="font-medium text-green-600">
+                                                    {formatCurrency(item.amount)}
+                                                </span>
+                                            </div>
+                                        ))}
+                                </div>
+                                <div className="mt-4 pt-3 border-t border-gray-200 flex justify-between items-center font-semibold">
+                                    <span className="text-gray-700">Total Earnings</span>
+                                    <span className="text-green-600">{formatCurrency(selectedPayroll.gross_pay)}</span>
+                                </div>
+                            </div>
+
+                            {/* Deductions Section */}
+                            {selectedPayroll.payroll_items?.some(item => item.type === 'deduction') && (
+                                <div className="mb-6">
+                                    <h4 className="font-bold mb-3 text-red-700">Deductions</h4>
+                                    <div className="space-y-2">
+                                        {selectedPayroll.payroll_items
+                                            ?.filter(item => item.type === 'deduction')
+                                            .map((item) => (
+                                                <div key={item.id} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-0">
+                                                    <div>
+                                                        <span className="font-medium text-gray-800">
+                                                            {formatItemName(item)}
+                                                        </span>
+                                                        {item.description && (
+                                                            <p className="text-xs text-gray-500 mt-0.5">
+                                                                {item.description.charAt(0).toUpperCase() + item.description.slice(1).toLowerCase()}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                    <span className="font-medium text-red-600">
+                                                        -{formatCurrency(item.amount)}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                    </div>
+                                    <div className="mt-4 pt-3 border-t border-gray-200 flex justify-between items-center font-semibold">
+                                        <span className="text-gray-700">Total Deductions</span>
+                                        <span className="text-red-600">-{formatCurrency(selectedPayroll.total_deduction)}</span>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Net Pay Summary */}
+                            <div className="bg-blue-50 p-4 rounded-lg">
+                                <div className="flex justify-between items-center">
+                                    <div>
+                                        <span className="text-lg font-bold text-gray-800">Net Pay</span>
+                                    </div>
+                                    <span className="text-2xl font-bold text-blue-600">
+                                        {formatCurrency(selectedPayroll.net_pay)}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    <DialogFooter className="mt-4">
+                        <Button variant="outline" onClick={() => setIsItemsDialogOpen(false)}>
+                            Close
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             {/* Receipt Dialog */}
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -616,6 +811,21 @@ export default function EmployeePayrollTable({
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            {/* Pagination - Always show when there's data, regardless of page count */}
+            {data.length > 0 && (
+                <div className="mt-4 px-8">
+                    <CustomPagination
+                        pagination={paginationObject}
+                        perPage={internalPerPage}
+                        onPerPageChange={handlePerPageChange}
+                        totalCount={totalCount}
+                        filteredCount={totalCount}
+                        search=""
+                        resourceName="payroll"
+                    />
+                </div>
+            )}
         </>
     );
 }

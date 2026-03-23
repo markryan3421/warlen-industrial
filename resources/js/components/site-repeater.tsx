@@ -55,7 +55,7 @@ export default function SiteRepeater({ sites, setSites, errors }: SiteRepeaterPr
                 <div className="overflow-hidden">
                     {/* Scrollable container for sites with fixed height */}
                     <div className=" border-1 py-1 px-2 rounded-lg h-[99px] overflow-y-auto scrollbar-thin ">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-2">
                             {sites.map((site, index) => (
                                 <div key={index} className="flex gap-2 items-start group">
                                     <div className="flex-1 min-w-0"> {/* min-w-0 to allow truncation */}
@@ -77,7 +77,7 @@ export default function SiteRepeater({ sites, setSites, errors }: SiteRepeaterPr
                                         onClick={() => removeSite(index)}
                                         variant="ghost"
                                         size="icon"
-                                        className="h-8 w-8 shrink-0 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20 mt-1"
+                                        className="h-8 w-8 shrink-0 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20 mt-1 hover:cursor-pointer"
                                     >
                                         <X className="h-4 w-4" />
                                     </Button>

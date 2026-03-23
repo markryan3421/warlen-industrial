@@ -151,7 +151,7 @@ export default function Edit({ branch }: Props) {
                                     </div>
 
                                     {/* Read-only Branch ID/Slug (Optional) */}
-                                    <div className="pt-2 text-xs text-muted-foreground border-t">
+                                    <div className=" text-xs text-muted-foreground border-t">
                                         <span className="font-medium">Branch ID: </span>
                                         <span className="font-mono">{branch.id}</span>
                                     </div>
@@ -177,14 +177,14 @@ export default function Edit({ branch }: Props) {
 
                                     {/* Show count of sites */}
                                     {data.sites.length > 0 && (
-                                        <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                                        <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 mt-3 text-xs font-medium text-primary">
                                             {data.sites.length} {data.sites.length === 1 ? 'Site' : 'Sites'}
                                         </span>
                                     )}
                                 </div>
                             </CardHeader>
 
-                            <CardContent className="p-6">
+                            <CardContent className="p-6 -mb-5">
                                 <SiteRepeater
                                     sites={data.sites}
                                     setSites={setSites}
