@@ -179,7 +179,6 @@ export default function Index({
         } else if (typeof version === 'string') {
             id = parseInt(version, 10);
         } else {
-            console.error('Invalid version identifier:', version);
             return;
         }
 

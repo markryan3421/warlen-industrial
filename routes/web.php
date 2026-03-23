@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\ApplicationLeaveController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AttendanceImportController;
@@ -41,9 +42,7 @@ Route::middleware(['auth', 'verified', 'throttle:limit-actions', 'roleBase'])->g
         return Inertia::render('multipletables/index');
     });
     //admin dashboard
-    Route::get('dashboard', function () {
-        return Inertia::render('dashboard');
-    })->name('dashboard');
+    Route::get('dashboard',AdminDashboardController::class)->name('dashboard');
 
     //employee dashboard
     Route::get('employee/dashboard', function () {

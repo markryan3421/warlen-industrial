@@ -160,7 +160,7 @@ const StableLineChart = memo(
                         tickFormatter={(value) => value.toLocaleString()}
                         width={35}
                     />
-                    <Tooltip 
+                    <Tooltip
                         content={({ active, payload, label }) => {
                             if (active && payload && payload.length) {
                                 return (
@@ -187,15 +187,15 @@ const StableLineChart = memo(
                         onAnimationEnd={() => {
                             hasAnimatedLineChart = true;
                         }}
-                        activeDot={{ 
-                            r: 6, 
-                            stroke: 'white', 
+                        activeDot={{
+                            r: 6,
+                            stroke: 'white',
                             strokeWidth: 2,
                             fill: chartConfig.desktop.color,
                         }}
                     />
                 </LineChart>
-                
+
                 {/* Custom floating label (alternative to default tooltip) */}
                 {activePoint && (
                     <div
@@ -265,7 +265,7 @@ LineChartComponent.displayName = 'LineChartComponent';
 const PieChartComponent = memo(({ data }: { data: typeof pieChartData }) => {
     const animationPlayed = useRef(false);
     const { ref: containerRef, width, height } = useDebouncedElementSize(120);
-    
+
     return (
         <div ref={containerRef} className="w-full h-full">
             {width > 0 && height > 0 && (
@@ -313,7 +313,7 @@ PieChartComponent.displayName = 'PieChartComponent';
 const DesktopPieChartComponent = memo(({ data }: { data: typeof pieChartData }) => {
     const animationPlayed = useRef(false);
     const { ref: containerRef, width, height } = useDebouncedElementSize(120);
-    
+
     return (
         <div ref={containerRef} className="w-full h-full">
             {width > 0 && height > 0 && (
@@ -357,26 +357,37 @@ const DesktopPieChartComponent = memo(({ data }: { data: typeof pieChartData }) 
 });
 
 DesktopPieChartComponent.displayName = 'DesktopPieChartComponent';
+interface DashboardProps {
+    totalNetPay?: number;
+    totalActiveEmployee?: number;
+    openPayrollPeriod?: number;
+    pendingApplicationLeave?: number;
+}
 
-export default function Dashboard() {
+export default function Dashboard({ totalNetPay = 0, totalActiveEmployee = 0, openPayrollPeriod = 0, pendingApplicationLeave = 0 }: DashboardProps) {
     // Memoize calculations
-    const totalEmployees = useMemo(() => 
-        pieChartData.reduce((sum, item) => sum + item.value, 0), 
-    []);
+    const totalEmployees = useMemo(() =>
+        pieChartData.reduce((sum, item) => sum + item.value, 0),
+        []);
 
     // Memoize percentage calculations for legend items
-    const legendItems = useMemo(() => 
+    const legendItems = useMemo(() =>
         pieChartData.map(item => ({
             ...item,
             percentage: ((item.value / totalEmployees) * 100).toFixed(1)
-        })), 
-    [totalEmployees]);
+        })),
+        [totalEmployees]);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard" />
             <div className="@container/main flex flex-1 flex-col gap-2">
-                <SectionCards />
+                <SectionCards
+                    totalNetPay={totalNetPay}
+                    totalActiveEmployee={totalActiveEmployee}
+                    openPayrollPeriod={openPayrollPeriod}
+                    pendingApplicationLeave={pendingApplicationLeave}
+                />
 
                 <div className="my-4 relative flex-1 overflow-hidden rounded-xl border border-sidebar-border/70 md:min-h-min dark:border-sidebar-border mx-2 sm:mx-4 lg:mx-10">
 
@@ -394,8 +405,8 @@ export default function Dashboard() {
                                 {/* Chart Container */}
                                 <div className="w-full transition-all duration-300 ease-in-out flex-1">
                                     <div className="relative h-[200px] md:h-[250px] lg:h-[300px] lg:mt-5 w-full">
-                                        <LineChartComponent 
-                                            data={lineChartData} 
+                                        <LineChartComponent
+                                            data={lineChartData}
                                         />
                                     </div>
                                 </div>
