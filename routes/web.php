@@ -60,7 +60,7 @@ Route::middleware(['auth', 'verified', 'throttle:limit-actions', 'roleBase'])->g
     Route::resource('branches', BranchController::class)->except(['show']);
     Route::delete('/branches/{branch:branch_slug}', [BranchController::class, 'destroy'])->name('branches.destroy');
     Route::resource('positions', PositionController::class)->except(['show']);
-    Route::resource('employees', EmployeeController::class)->except(['show']);
+    Route::resource('employees', EmployeeController::class);
     Route::resource('permissions', PermissionController::class);
     Route::resource('incentives', IncentiveController::class)->except(['show']);
 

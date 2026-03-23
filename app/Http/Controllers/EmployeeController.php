@@ -135,7 +135,7 @@ class EmployeeController extends Controller
      */
     public function show(Employee $employee)
     {
-        Gate::authorize('view',$employee);
+        // Gate::authorize('view',$employee);
 
         $employee->load(['position', 'branch', 'user', 'site']);
 

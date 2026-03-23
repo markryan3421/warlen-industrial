@@ -104,9 +104,9 @@ export default function Index({ branches, filters, totalCount, filteredCount }: 
         });
     };
 
-    const handleDelete = (slugOrId: string | number) => {
+    const handleDelete = (branch: Branches) => {
         if (confirm("Are you sure you want to delete this branch?")) {
-            destroy(BranchController.destroy(String(slugOrId)).url, {
+            destroy(BranchController.destroy(branch.branch_slug).url, {
                 onSuccess: (page) => {
                     const successMessage = (page.props as any).flash?.success || 'Branch deleted successfully.';
                     toast.success(successMessage);
@@ -132,7 +132,7 @@ export default function Index({ branches, filters, totalCount, filteredCount }: 
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Branches" />
             <CustomToast />
-            
+
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
                 {/* Page Header */}
                 <div className="flex items-center gap-4 ms-4">
@@ -154,7 +154,7 @@ export default function Index({ branches, filters, totalCount, filteredCount }: 
                         onSearchReset={handleSearchReset}
                         searchPlaceholder="Search branches..."
                     />
-                    
+
                     <Link
                         href={BranchController.create()}
                         className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 whitespace-nowrap"

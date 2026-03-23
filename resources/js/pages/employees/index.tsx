@@ -119,6 +119,7 @@ export default function Index({
     filteredCount,
 }: PageProps) {
     const { delete: destroy } = useForm();
+    console.log(EmployeesTableConfig.actions);
 
     // ── Filter state — initialised from URL params so the UI reflects the
     //    current server-side filter on first render / browser back-forward.
@@ -185,14 +186,14 @@ export default function Index({
         });
     }
 
-    // ── Search debounce — 300 ms so we don't hit the server on every keystroke
+    // ── Search debounce — 100 ms so we don't hit the server on every keystroke
     const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const handleSearchChange = (value: string) => {
         setSearchTerm(value);
         if (searchTimer.current) clearTimeout(searchTimer.current);
         searchTimer.current = setTimeout(() => {
             applyFilters({ search: value });
-        }, 300);
+        }, 100);
     };
 
     // ── Branch change resets site ────────────────────────────────────────────
@@ -247,9 +248,9 @@ export default function Index({
     };
 
     // ── Delete ────────────────────────────────────────────────────────────────
-    const handleDelete = (slug: string) => {
-        if (confirm('Are you sure you want to delete this employee?')) {
-            destroy(EmmployeeController.destroy(slug).url);
+    const handleDelete = (employee: Employee) => {
+        if (confirm("Are you sure you want to delete this employee?")) {
+            destroy(EmmployeeController.destroy(employee.slug_emp).url);
         }
     };
 
@@ -263,6 +264,15 @@ export default function Index({
         dateFrom,
         dateTo,
     ].filter(Boolean).length;
+
+    const handleView = (employee: Employee) => {
+        // Use your existing helper or router
+        router.get(EmmployeeController.show(employee.slug_emp).url);
+    };
+
+    const handleEdit = (employee: Employee) => {
+        router.get(EmmployeeController.edit(employee.slug_emp).url);
+    };
 
     // ─── Render ───────────────────────────────────────────────────────────────
     return (
@@ -318,8 +328,8 @@ export default function Index({
                             data={employees.data}
                             from={employees.from ?? 1}
                             onDelete={handleDelete}
-                            onView={() => { }}
-                            onEdit={() => { }}
+                            onView={handleView}
+                            onEdit={handleEdit}
 
                             toolbar={
                                 <EmployeeFilterBar
