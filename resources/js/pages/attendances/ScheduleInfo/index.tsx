@@ -12,6 +12,7 @@ import { useMemo, useState } from "react";
 import { Calendar, ChartSpline, Sheet } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CustomPagination } from "@/components/custom-pagination";
+import { CustomHeader } from "@/components/custom-header";
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -170,20 +171,11 @@ export default function AttendanceSchedules({ schedules, calendarData, filters, 
             <Head title="Attendance Schedules" />
             {/* <CustomToast /> */}
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-                {/* Page Header */}
-                <div className="flex items-center gap-4 ms-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-                        <ChartSpline className="h-6 w-6 text-primary" />
-                    </div>
-                    <div>
-                        <h1 className="text-2xl font-bold tracking-tight">Attendance Schedule</h1>
-                        <p className="text-sm text-muted-foreground mt-1">
-                            Identify and quantify deviations from the expected work schedule, such as late arrivals, early departures, and absences. <br />
-                            The daily breakdown of attendance.
-                        </p>
-                    </div>
-                </div>
-
+                <CustomHeader
+                    icon={<ChartSpline className="h-6 w-6 text-primary" />}
+                    title="Attendance Schedule"
+                    description="Identify and quantify deviations from the expected work schedule, such as late arrivals, early departures, and absences. The daily breakdown of attendance."
+                />
 
                 {/* Combined header row - tabs on left, search on right */}
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 w-full">

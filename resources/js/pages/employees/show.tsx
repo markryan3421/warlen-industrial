@@ -81,8 +81,8 @@ export default function Show({ employee }: PageProps) {
     ];
 
     const statusColor = employee.employee_status === 'active'
-        ? 'bg-green-100 text-green-800 border-green-200'
-        : 'bg-yellow-100 text-yellow-800 border-yellow-200';
+        ? 'bg-yellow-200 text-yellow-800 border-yellow-200'
+        : 'bg-green-200 text-green-800 border-green-200';
 
     // Helper to get initials for avatar placeholder
     const getInitials = (name?: string) => {

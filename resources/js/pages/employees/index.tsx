@@ -45,6 +45,8 @@ import { CustomTable } from '@/components/custom-table';
 import { BranchData, EmployeeFilterBar } from '@/components/employee/employee-filter-bar';
 import { EmployeesTableConfig } from '@/config/tables/employees-table';
 import { CustomPagination } from '@/components/custom-pagination';
+import { toast } from 'sonner';
+import { CustomHeader } from '@/components/custom-header';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Employees', href: '/employees' },
@@ -250,7 +252,16 @@ export default function Index({
     // ── Delete ────────────────────────────────────────────────────────────────
     const handleDelete = (employee: Employee) => {
         if (confirm("Are you sure you want to delete this employee?")) {
-            destroy(EmmployeeController.destroy(employee.slug_emp).url);
+            destroy(EmmployeeController.destroy(employee.slug_emp).url, {
+                onSuccess: (page) => {
+                    const successMessage = (page.props as any).flash?.success || 'Employee deleted successfully.';
+                    toast.success(successMessage);
+                },
+                onError: (errors) => {
+                    const errorMessage = Object.values(errors).flat()[0] || 'Failed to delete employee, please try again.';
+                    toast.error(errorMessage);
+                }
+            });
         }
     };
 
@@ -282,10 +293,11 @@ export default function Index({
 
                 {/* Page header */}
                 <div className="flex justify-between items-center">
-                    <div>
-                        <h1 className="text-2xl font-bold text-gray-900">Employee Management</h1>
-                        <p className="text-sm text-gray-500 mt-1">See who's active on this run.</p>
-                    </div>
+                    <CustomHeader
+                        icon={<Users className="h-6 w-6 text-primary" />}
+                        title="Employees"
+                        description="Manage your workforce: add, edit, and organize employee records with ease."
+                    />
                     <Link href="/employees/create">
                         <Button className="h-14">
                             <UserPlus className="h-5 w-5" />
