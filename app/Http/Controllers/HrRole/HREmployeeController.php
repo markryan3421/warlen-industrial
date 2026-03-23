@@ -12,6 +12,7 @@ use App\Models\Employee;
 use App\Models\Position;
 use App\Models\Site;
 use App\Repository\EmployeeRepository;
+use App\Traits\HasPaginatedIndex;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -20,24 +21,62 @@ use Inertia\Inertia;
 
 class HREmployeeController extends Controller
 {
+    use HasPaginatedIndex;
     public function __construct(private EmployeeRepository $employeeRepository) {}
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         Gate::authorize('viewAny', Employee::class);
+        // Full unfiltered collection — cached
+        $employees = $this->cacheRemember('employees', 60, function () {
+            return $this->employeeRepository->getEmployees();
+        });
 
-        // $employees = $this->cacheRemember('employees', 60, function () {
-        //     return $this->employeeRepository->getEmployees();
-        // });
-        $employees = $this->employeeRepository->getEmployees();
-        $branchesWithSites = $this->employeeRepository->getBranchesWithSites();
+        // ── Derive allPositions from the FULL collection (before filtering) ──────
+        // This gives the Position popover the complete list of options regardless
+        // of what filters are currently active or what page the user is on.
+        $allPositions = $employees
+            ->map(fn($e) => optional($e->position)->pos_name)
+            ->filter()           // remove nulls
+            ->unique()
+            ->sort()
+            ->values()
+            ->all();
 
+        // ── Paginate + filter — the trait now handles all filter params ──────────
+        $result = $this->paginateCollection(
+            items: collect($employees),
+            request: $request,
+            searchColumns: [
+                'emp_code',
+                'user.name',
+                'position.pos_name',
+                'branch.branch_name',
+                'site.site_name',
+                'employee_status',
+            ],
+        );
+
+        $branchesWithSites = $this->cacheRemember('branchesWithSites', 60, function () {
+            return $this->employeeRepository->getBranchesWithSites();
+        });
 
         return Inertia::render('HR/employees/index', [
-            'employees' => $employees,
-            'branchesData' => $branchesWithSites
+            'employees' => [
+                'data'    => $result['data'],
+                'links'   => $result['pagination']['links'] ?? [],
+                'from'    => $result['pagination']['from']  ?? 0,
+                'to'      => $result['pagination']['to']    ?? 0,
+                'total'   => $result['pagination']['total'] ?? 0,
+                'perPage' => (int) ($request->perPage ?? 10),
+            ],
+            'branchesData'  => $branchesWithSites,
+            'allPositions'  => $allPositions,          // ← NEW
+            'filters'       => $result['filters'],     // now includes branch/site/status/positions/dates
+            'totalCount'    => $result['totalCount'],
+            'filteredCount' => $result['filteredCount'],
         ]);
     }
 
@@ -69,7 +108,7 @@ class HREmployeeController extends Controller
     {
         Gate::authorize('create', Employee::class);
 
-        if ($this->limit('create-employee:' . auth()->id(), 60, 25)) {
+        if ($this->limit('hr-create-employee:' . auth()->id(), 60, 25)) {
             return back()->with('error', 'Too many attempts. Please try again later.');
         }
         DB::beginTransaction();
@@ -79,7 +118,7 @@ class HREmployeeController extends Controller
 
             $action->create($validatedData);
 
-            $this->cacheForget('employees');
+            $this->cacheForget('hr-employees');
 
             DB::commit();
 
@@ -136,7 +175,7 @@ class HREmployeeController extends Controller
     {
         Gate::authorize('update', $employee);
 
-        if ($this->limit('update-employee:' . auth()->id(), 60, 25)) {
+        if ($this->limit('-hrupdate-employee:' . auth()->id(), 60, 25)) {
             return back()->with('error', 'Too many attempts. Please try again later.');
         }
         DB::beginTransaction();
@@ -147,7 +186,7 @@ class HREmployeeController extends Controller
             $action->update($validatedData, $employee);
 
             // $this->cacheForget('employees');
-            Cache::forget('employees');
+            Cache::forget('hr-employees');
 
             DB::commit();
 
@@ -165,13 +204,13 @@ class HREmployeeController extends Controller
     {
         Gate::authorize('delete', $employee);
 
-        if ($this->limit('delete-employee:' . auth()->id(), 60, 10)) {
+        if ($this->limit('hr-delete-employee:' . auth()->id(), 60, 10)) {
             return back()->with('error', 'Too many attempts. Please try again later.');
         }
 
         $employee->user()->delete();
 
-        $this->cacheForget('employees');
+        $this->cacheForget('hr-employees');
 
         return to_route('hr.employees.index')->with('success', 'Employee deleted successfully.');
     }

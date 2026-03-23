@@ -24,7 +24,9 @@ class ContributionVersionController extends Controller
         Gate::authorize('viewAny', ContributionVersion::class);
 
         $contributions = $this->cacheRemember('contribution_versions', 60, function () {
-            return ContributionVersion::with('contributionBrackets')->get();
+            return ContributionVersion::with([
+                'contributionBrackets' => fn($query) => $query->getContributionBrackets()
+            ])->get(['id','type']);
         });
 
         $contributionVersions = $this->paginateCollection(
@@ -95,7 +97,10 @@ class ContributionVersionController extends Controller
     public function edit(ContributionVersion $contributionVersion)
     {
         Gate::authorize('update', $contributionVersion);
-        $contributionVersion->load('contributionBrackets');
+
+        $contributionVersion->load([
+            'contributionBrackets' => fn($query) => $query->getContributionBrackets()
+        ]);
 
         return Inertia::render('Contributions/edit', compact('contributionVersion'));
     }
@@ -119,7 +124,6 @@ class ContributionVersionController extends Controller
             DB::commit();
 
             return to_route('contribution-versions.index')->with('success', 'Contribution updated successfully.');
-            
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->withErrors('An error occurred while updating the contribution. Please try again.');

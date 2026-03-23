@@ -4,7 +4,9 @@ namespace App\Models;
 
 use App\Models\Employee;
 use App\Policies\BranchPolicy;
+use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Attributes\UsePolicy;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -48,6 +50,17 @@ class Branch extends Model
     public function getRouteKeyName(): string
     {
         return 'branch_slug';
+    }
+
+    #[Scope]
+    protected function getBranch(Builder $query):void
+    {
+        $query->select(
+            'id',
+            'branch_name',
+            'branch_address',
+            'branch_slug'
+        );
     }
 
 
