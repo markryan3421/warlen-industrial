@@ -110,9 +110,12 @@ export default function Index({ branches, filters, totalCount, filteredCount }: 
         sites: [],
     });
 
-    const handleDelete = (slugOrId: string | number) => {
+    const handleDelete = (branch: Branches) => {
+        // Get the slug from the branch object
+        const slug = branch.branch_slug;
+
         if (confirm("Are you sure you want to delete this branch?")) {
-            destroy(BranchController.destroy(String(slugOrId)).url, {
+            destroy(BranchController.destroy(slug).url, {
                 onSuccess: (page) => {
                     const successMessage = page.props.flash?.success || 'Branch deleted successfully.'
                     toast.success(successMessage, {
@@ -298,7 +301,7 @@ export default function Index({ branches, filters, totalCount, filteredCount }: 
                             />
 
                             <Button
-                                onClick={handleSearchReset} 
+                                onClick={handleSearchReset}
                                 variant="outline"
                                 className="h-10 px-4 mr-4 sm:mr-2 cursor-pointer whitespace-nowrap"
                             >
