@@ -21,7 +21,7 @@ class EmployeePolicy
      */
     public function view(User $user, Employee $employee): bool
     {
-        return false;
+        return $user->hasAnyRole(['admin', 'hr_head']);
     }
 
     /**

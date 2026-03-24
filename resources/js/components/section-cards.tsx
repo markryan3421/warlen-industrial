@@ -260,7 +260,7 @@ export const SectionCards = memo(function SectionCards({
                 title="Total Net Pay"
                 value={totalNetPay}
                 icon={PhilippinePeso}
-                trend="+12.5%"
+                // trend="+12.5%"
                 footer="Tap to view breakdown"
                 iconSize="w-5 h-5 text-blue-800"
                 valuePrefix={<PhilippinePeso className="h-7 w-4 md:-ml-1 md:w-5 lg:-ml-0" />}
@@ -273,7 +273,7 @@ export const SectionCards = memo(function SectionCards({
                 title="Pending Leave Requests"
                 value={pendingApplicationLeave}
                 icon={Inbox}
-                trend="+12.5%"
+                // trend="+12.5%"
                 footer="Need Approvals"
                 iconSize="w-6 h-6 text-blue-800"
             />
@@ -294,7 +294,7 @@ export const SectionCards = memo(function SectionCards({
                 title="Active Employees"
                 value={totalActiveEmployee}
                 icon={UsersRound}
-                trend="+12.5%"
+                // trend="+12.5%"
                 footer="New hires"
                 iconSize="w-6 h-6 text-blue-800"
             />
