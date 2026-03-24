@@ -23,12 +23,13 @@ use App\Http\Controllers\PositionController;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-use Laravel\Fortify\Features;
+// use Laravel\Fortify\Features;
 
 Route::get('/', function () {
-    return Inertia::render('welcome', [
-        'canRegister' => Features::enabled(Features::registration()),
-    ]);
+    // return Inertia::render('welcome', [
+    //     'canRegister' => Features::enabled(Features::registration()),
+    // ]);
+    return Inertia::render('auth/login');
 })->name('home');
 
 

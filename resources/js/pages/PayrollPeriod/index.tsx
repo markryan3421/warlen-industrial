@@ -1,40 +1,22 @@
 import AppLayout from '@/layouts/app-layout';
-import { Button } from "@/components/ui/button";
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm, usePage, router } from '@inertiajs/react';
-import PayrollPeriodController from "@/actions/App/Http/Controllers/PayrollPeriodController";
+import PayrollPeriodController from '@/actions/App/Http/Controllers/PayrollPeriodController';
 import { useState, useMemo, useEffect } from 'react';
-import { CalendarDays, PlusCircle, Clock, CheckCircle2, XCircle, AlertCircle, Filter } from 'lucide-react';
-
 import {
-    Table,
-    TableBody,
-    TableCaption,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table";
-
+    CalendarDays, Plus, Clock, CheckCircle2,
+    AlertCircle, Filter, Pencil, Trash2, Eye, Banknote,
+} from 'lucide-react';
+import { CustomTable } from '@/components/custom-table';
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog";
-
+    Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+} from '@/components/ui/dialog';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
-
+    Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
 import { CustomToast } from '@/components/custom-toast';
 
-// Interface defined inside the component file
+// ── Types ─────────────────────────────────────────────────────────────────────
 interface PayrollPeriod {
     id: number;
     start_date: string;
@@ -45,315 +27,391 @@ interface PayrollPeriod {
     updated_at?: string;
 }
 
-interface PayrollPeriodProps {
-    payrollPeriods: PayrollPeriod[];
-}
-
+interface PayrollPeriodProps { payrollPeriods: PayrollPeriod[]; }
 interface PageProps {
-    payroll_period_enums: Array<{
-        value: string;
-        label: string;
-    }>;
+    payroll_period_enums: Array<{ value: string; label: string; }>;
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Payroll Periods',
-        href: '/payroll-periods',
-    },
+    { title: 'Payroll Periods', href: '/payroll-periods' },
 ];
 
+// ── Status config ─────────────────────────────────────────────────────────
+const STATUS_CONFIG = {
+    open: { icon: AlertCircle, badge: 'bg-secondary text-secondary-foreground', dot: 'bg-secondary' },
+    processing: { icon: Clock, badge: 'bg-primary/10 text-primary border border-primary/20', dot: 'bg-primary' },
+    completed: { icon: CheckCircle2, badge: 'bg-accent/10 text-accent border border-accent/20', dot: 'bg-accent' },
+} as const;
+
+function StatusBadge({ status, label }: { status: PayrollPeriod['payroll_per_status']; label: string }) {
+    const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.open;
+    const Icon = cfg.icon;
+    return (
+        <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wider ${cfg.badge}`}>
+            <Icon className="h-3 w-3" />
+            {label}
+        </span>
+    );
+}
+
+// ── Stat card ───────────────────────────────────────────────────────────────
+function StatCard({ label, count, active, onClick, color }: {
+    label: string; count: number; active: boolean;
+    onClick: () => void; color: 'primary' | 'secondary' | 'accent' | 'muted';
+}) {
+    const colorMap = {
+        primary: { bg: 'bg-primary', text: 'text-primary-foreground', ring: 'ring-primary' },
+        secondary: { bg: 'bg-secondary', text: 'text-secondary-foreground', ring: 'ring-secondary' },
+        accent: { bg: 'bg-accent', text: 'text-accent-foreground', ring: 'ring-accent' },
+        muted: { bg: 'bg-muted', text: 'text-muted-foreground', ring: 'ring-border' },
+    };
+    const c = colorMap[color];
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            className={`flex flex-col gap-1 rounded-2xl p-5 text-left shadow-sm transition-all duration-200 ring-2
+                ${active ? `${c.bg} ${c.text} ${c.ring} shadow-md scale-[1.02]` : 'bg-card text-foreground ring-border hover:ring-primary/40 hover:shadow-md'}`}
+        >
+            <p className={`text-[10px] font-black uppercase tracking-widest ${active ? 'opacity-70' : 'text-muted-foreground'}`}>
+                {label}
+            </p>
+            <p className="text-3xl font-extrabold">{count}</p>
+        </button>
+    );
+}
+
+// ── Main component ──────────────────────────────────────────────────────────
 export default function Index({ payrollPeriods }: PayrollPeriodProps) {
     const { delete: destroy } = useForm();
     const { payroll_period_enums } = usePage<PageProps>().props;
+
     const [selectedPeriod, setSelectedPeriod] = useState<PayrollPeriod | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    
-    // Initialize filter from localStorage or use default
-    const [statusFilter, setStatusFilter] = useState<string>(() => {
-        const savedFilter = localStorage.getItem('payrollPeriods-statusFilter');
-        return savedFilter || 'all';
-    });
+    const [statusFilter, setStatusFilter] = useState<string>(() =>
+        localStorage.getItem('payrollPeriods-statusFilter') || 'all'
+    );
 
-    // Save filter to localStorage whenever it changes
     useEffect(() => {
         localStorage.setItem('payrollPeriods-statusFilter', statusFilter);
     }, [statusFilter]);
 
-    // Listen to payroll channel
+    // Live reload on payroll events
     useEffect(() => {
         if (!window.Echo) return;
-
         const channel = window.Echo.private('payroll');
-        
-        channel.listen('.payroll.completed', (event: any) => {
-            console.log('Payroll event received:', event);
-            router.reload({ only: ['payrollPeriods'] });
-        });
-
-        return () => {
-            channel.stopListening('.payroll.completed');
-            window.Echo.leave('payroll');
-        };
+        channel.listen('.payroll.completed', () => router.reload({ only: ['payrollPeriods'] }));
+        return () => { channel.stopListening('.payroll.completed'); window.Echo.leave('payroll'); };
     }, []);
 
-    const handleDelete = (id: number) => {
-        if (confirm("Are you sure you want to delete this payroll period?")) {
-            destroy(PayrollPeriodController.destroy(id).url);
-        }
-    }
-
-    const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
-    };
-
-    const getStatusIcon = (status: PayrollPeriod['payroll_per_status']) => {
-        switch (status) {
-            case 'open':
-                return <AlertCircle className="h-4 w-4 text-yellow-500" />;
-            case 'processing':
-                return <Clock className="h-4 w-4 text-blue-500" />;
-            case 'completed':
-                return <CheckCircle2 className="h-4 w-4 text-green-500" />;
-            default:
-                return null;
+    const handleDelete = (period: PayrollPeriod) => {
+        if (confirm('Are you sure you want to delete this payroll period?')) {
+            destroy(PayrollPeriodController.destroy(period.id).url);
         }
     };
 
-    const getStatusBadge = (status: PayrollPeriod['payroll_per_status']) => {
-        const baseClasses = "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium";
+    const formatDate = (d: string) =>
+        new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 
-        switch (status) {
-            case 'open':
-                return `${baseClasses} bg-yellow-100 text-yellow-800`;
-            case 'processing':
-                return `${baseClasses} bg-blue-100 text-blue-800`;
-            case 'completed':
-                return `${baseClasses} bg-green-100 text-green-800`;
-            default:
-                return `${baseClasses} bg-gray-100 text-gray-800`;
-        }
-    };
-
-    // Format status text using enum
     const formatStatus = (status: string) => {
-        if (!status) return '';
-        const found = payroll_period_enums?.find(item => item.value.toLowerCase() === status.toLowerCase());
-        return found?.label || status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+        const found = payroll_period_enums?.find((e) => e.value.toLowerCase() === status.toLowerCase());
+        return found?.label || status.charAt(0).toUpperCase() + status.slice(1);
     };
 
-    // Filter payroll periods based on selected status
-    const filteredPayrollPeriods = useMemo(() => {
-        if (statusFilter === 'all') {
-            return payrollPeriods;
-        }
-        return payrollPeriods.filter(period => period.payroll_per_status === statusFilter);
-    }, [payrollPeriods, statusFilter]);
+    const filteredPeriods = useMemo(() =>
+        statusFilter === 'all'
+            ? payrollPeriods
+            : payrollPeriods.filter((p) => p.payroll_per_status === statusFilter),
+        [payrollPeriods, statusFilter]
+    );
 
-    // Get counts for each status
-    const statusCounts = useMemo(() => {
-        return {
-            all: payrollPeriods.length,
-            open: payrollPeriods.filter(p => p.payroll_per_status === 'open').length,
-            processing: payrollPeriods.filter(p => p.payroll_per_status === 'processing').length,
-            completed: payrollPeriods.filter(p => p.payroll_per_status === 'completed').length,
-        };
-    }, [payrollPeriods]);
+    const counts = useMemo(() => ({
+        all: payrollPeriods.length,
+        open: payrollPeriods.filter((p) => p.payroll_per_status === 'open').length,
+        processing: payrollPeriods.filter((p) => p.payroll_per_status === 'processing').length,
+        completed: payrollPeriods.filter((p) => p.payroll_per_status === 'completed').length,
+    }), [payrollPeriods]);
 
-    const viewPeriodDetails = (period: PayrollPeriod) => {
-        setSelectedPeriod(period);
-        setIsModalOpen(true);
-    };
+    // ── Column definitions for CustomTable ─────────────────────────────────
+    const columns = [
+        {
+            label: 'Period',
+            key: 'start_date',
+            render: (row: PayrollPeriod) => (
+                <div className="flex items-center gap-2">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                        <CalendarDays className="h-4 w-4 text-primary" />
+                    </div>
+                    <div>
+                        <p className="text-sm font-semibold text-foreground">{formatDate(row.start_date)}</p>
+                        <p className="text-xs text-muted-foreground">to {formatDate(row.end_date)}</p>
+                    </div>
+                </div>
+            ),
+        },
+        {
+            label: 'Pay Date',
+            key: 'pay_date',
+            render: (row: PayrollPeriod) => (
+                <span className="text-sm text-foreground">{formatDate(row.pay_date)}</span>
+            ),
+        },
+        {
+            label: 'Status',
+            key: 'payroll_per_status',
+            render: (row: PayrollPeriod) => (
+                <StatusBadge status={row.payroll_per_status} label={formatStatus(row.payroll_per_status)} />
+            ),
+        },
+        {
+            label: 'Actions',
+            key: 'actions',
+            isAction: true,
+        },
+    ];
 
-    const clearFilter = () => {
-        setStatusFilter('all');
-    };
+    // Actions – these trigger the callbacks passed to CustomTable
+    const actions = [
+        { label: 'View', icon: 'Eye' as const },
+        { label: 'Edit', icon: 'Pencil' as const },
+        { label: 'Delete', icon: 'Trash' as const },
+    ];
+
+    // Toolbar slot for the filter controls
+    const toolbar = (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-muted-foreground">
+                {statusFilter === 'all'
+                    ? `Showing all ${filteredPeriods.length} periods`
+                    : <>Filtered by <span className="font-semibold text-foreground">{formatStatus(statusFilter)}</span> — {filteredPeriods.length} result{filteredPeriods.length !== 1 ? 's' : ''}</>
+                }
+            </p>
+            <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-muted-foreground" />
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="h-9 w-[180px] rounded-xl border-2 text-sm focus:border-primary">
+                        <SelectValue placeholder="Filter by status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">All Statuses</SelectItem>
+                        {payroll_period_enums?.map(({ value, label }) => (
+                            <SelectItem key={value} value={value}>{label}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+                {statusFilter !== 'all' && (
+                    <button
+                        onClick={() => setStatusFilter('all')}
+                        className="rounded-xl border-2 border-border px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-all hover:border-accent hover:text-accent active:scale-95"
+                    >
+                        Clear
+                    </button>
+                )}
+            </div>
+        </div>
+    );
+
+    // Custom empty state when filter returns no results
+    const filterEmptyState = (
+        <div className="flex flex-col items-center justify-center rounded-2xl py-16 text-center">
+            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
+                <Filter className="h-6 w-6 text-primary/50" />
+            </div>
+            <p className="text-base font-semibold text-muted-foreground">No periods match this filter</p>
+            <button
+                onClick={() => setStatusFilter('all')}
+                className="mt-4 rounded-xl border-2 border-border px-4 py-2 text-sm font-semibold text-foreground transition-all hover:border-primary hover:text-primary active:scale-95"
+            >
+                Clear Filter
+            </button>
+        </div>
+    );
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Payroll Periods" />
             <CustomToast />
-            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-                <div className="flex justify-between items-center">
-                    <h1 className="text-2xl font-bold">Payroll Periods</h1>
-                    <Link
-                        href={PayrollPeriodController.create()}
-                        className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-                    >
-                        + Create Payroll Period
-                    </Link>
-                </div>
 
-                {/* Status Filter Section */}
-                {payrollPeriods.length > 0 && (
-                    <div className="flex justify-end items-center bg-gray-50 p-4 rounded-lg">
-                        <div className="flex items-center gap-2">
-                            <Select value={statusFilter} onValueChange={setStatusFilter}>
-                                <SelectTrigger className="w-[180px]">
-                                    <Filter className="h-4 w-4 text-gray-500" />
-                                    <SelectValue placeholder="Filter by status" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Statuses</SelectItem>
-                                    {payroll_period_enums?.map(({value, label}) => (
-                                        <SelectItem key={value} value={value}>
-                                            {label}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-                )}
+            <style>{`
+                @keyframes fadeUp {
+                    from { opacity: 0; transform: translateY(16px); }
+                    to   { opacity: 1; transform: translateY(0); }
+                }
+                .pp-row { animation: fadeUp 0.3s cubic-bezier(0.22,1,0.36,1) both; }
+                @keyframes headerReveal {
+                    from { opacity: 0; transform: translateY(-10px); }
+                    to   { opacity: 1; transform: translateY(0); }
+                }
+                .pp-header { animation: headerReveal 0.35s cubic-bezier(0.22,1,0.36,1) both; }
+            `}</style>
 
-                {payrollPeriods.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-                        <div className="rounded-full bg-gray-100 p-6 mb-4">
-                            <CalendarDays className="h-12 w-12 text-gray-400" />
-                        </div>
-                        <h3 className="text-lg font-semib text-gray-900 mb-2">No payroll periods yet</h3>
-                        <p className="text-gray-500 mb-6 max-w-sm">
-                            Get started by creating your first payroll period. Define the pay period dates and processing status.
-                        </p>
-                        <Link href={PayrollPeriodController.create()}>
-                            <Button className="gap-2">
-                                <PlusCircle className="h-4 w-4" />
-                                Create Your First Payroll Period
-                            </Button>
-                        </Link>
-                    </div>
-                ) : filteredPayrollPeriods.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-12 px-4 text-center border rounded-lg bg-gray-50">
-                        <Filter className="h-12 w-12 text-gray-400 mb-3" />
-                        <h3 className="text-lg font-medium text-gray-900 mb-1">No periods found</h3>
-                        <p className="text-gray-500 mb-4">
-                            No payroll periods with status "{payroll_period_enums?.find(e => e.value === statusFilter)?.label || statusFilter}" found.
-                        </p>
-                        <Button variant="outline" onClick={clearFilter}>
-                            Clear Filter
-                        </Button>
-                    </div>
-                ) : (
-                    <Table>
-                        <TableCaption>
-                            A list of your Payroll Periods {statusFilter !== 'all' && `- Filtered by: ${payroll_period_enums?.find(e => e.value === statusFilter)?.label || statusFilter}`}
-                        </TableCaption>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Period</TableHead>
-                                <TableHead>Pay Date</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead>Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {filteredPayrollPeriods.map((period) => (
-                                <TableRow key={period.id}>
-                                    <TableCell className="font-medium">
-                                        {formatDate(period.start_date)} - {formatDate(period.end_date)}
-                                    </TableCell>
-                                    <TableCell>{formatDate(period.pay_date)}</TableCell>
-                                    <TableCell>
-                                        <span className={getStatusBadge(period.payroll_per_status)}>
-                                            {getStatusIcon(period.payroll_per_status)}
-                                            {formatStatus(period.payroll_per_status)}
-                                        </span>
-                                    </TableCell>
-                                    <TableCell className="space-x-2">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => viewPeriodDetails(period)}
-                                        >
-                                            View Details
-                                        </Button>
-                                        <Link
-                                            href={PayrollPeriodController.edit(period.id)}
-                                            className="inline-flex items-center justify-center rounded-md bg-secondary px-3 py-1.5 text-sm font-medium text-secondary-foreground hover:bg-secondary/90"
-                                        >
-                                            Edit
-                                        </Link>
-                                        <Button
-                                            variant="destructive"
-                                            size="sm"
-                                            onClick={() => handleDelete(period.id)}
-                                            disabled={period.payroll_per_status === 'completed' || period.payroll_per_status === 'processing'}
-                                        >
-                                            Delete
-                                        </Button>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                )}
+            <div className="min-h-screen py-8 md:py-12">
+                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 
-                {/* Modal for displaying payroll period details */}
-                <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-                    <DialogContent className="sm:max-w-[500px]">
-                        <DialogHeader>
-                            <DialogTitle className="flex items-center gap-2">
-                                <CalendarDays className="h-5 w-5 text-primary" />
-                                Payroll Period Details
-                            </DialogTitle>
-                            <DialogDescription>
-                                Complete information about this payroll period.
-                            </DialogDescription>
-                        </DialogHeader>
-
-                        {selectedPeriod && (
-                            <div className="mt-4 space-y-4">
-                                {/* Period Range */}
-                                <div className="rounded-lg bg-gray-50 p-4">
-                                    <h4 className="text-sm font-medium text-gray-500 mb-3">Period Range</h4>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <p className="text-xs text-gray-500">Start Date</p>
-                                            <p className="font-medium">{formatDate(selectedPeriod.start_date)}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-xs text-gray-500">End Date</p>
-                                            <p className="font-medium">{formatDate(selectedPeriod.end_date)}</p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Pay Date */}
-                                <div className="rounded-lg bg-gray-50 p-4">
-                                    <h4 className="text-sm font-medium text-gray-500 mb-2">Pay Date</h4>
-                                    <p className="font-medium">{formatDate(selectedPeriod.pay_date)}</p>
-                                </div>
-
-                                {/* Status */}
-                                <div className="rounded-lg bg-gray-50 p-4">
-                                    <h4 className="text-sm font-medium text-gray-500 mb-2">Status</h4>
-                                    <div className="flex items-center gap-2">
-                                        <span className={getStatusBadge(selectedPeriod.payroll_per_status)}>
-                                            {getStatusIcon(selectedPeriod.payroll_per_status)}
-                                            {formatStatus(selectedPeriod.payroll_per_status)}
-                                        </span>
-                                    </div>
-                                </div>
-
-                                {/* Summary Info */}
-                                <div className="rounded-lg bg-primary/5 p-4">
-                                    <h4 className="text-sm font-medium text-gray-500 mb-2">Period Summary</h4>
-                                    <p className="text-sm text-gray-600">
-                                        {selectedPeriod.payroll_per_status === 'completed'
-                                            ? 'This payroll period has been completed and processed.'
-                                            : selectedPeriod.payroll_per_status === 'processing'
-                                                ? 'This payroll period is currently being processed.'
-                                                : 'This payroll period is open and pending processing.'}
-                                    </p>
-                                </div>
+                    {/* ── Page header ── */}
+                    <div className="pp-header mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                        <div className="flex items-center gap-4">
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary shadow-lg">
+                                <Banknote className="h-6 w-6 text-primary-foreground" />
                             </div>
-                        )}
-                    </DialogContent>
-                </Dialog>
+                            <div>
+                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
+                                    Payroll
+                                </p>
+                                <h1 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
+                                    Pay{' '}
+                                    <span className="relative inline-block text-primary">
+                                        Periods
+                                        <span className="absolute -bottom-1 left-0 h-[3px] w-full rounded-full bg-secondary" />
+                                    </span>
+                                </h1>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col items-start gap-3 sm:items-end">
+                            <p className="text-sm text-muted-foreground">
+                                <span className="mr-1 inline-block rounded-md bg-secondary px-2 py-0.5 text-xs font-black text-secondary-foreground">
+                                    {payrollPeriods.length}
+                                </span>
+                                periods total
+                            </p>
+                            <Link
+                                href={PayrollPeriodController.create().url}
+                                className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground transition-all duration-200
+                                           active:scale-95 hover:brightness-110 hover:shadow-lg
+                                           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+                            >
+                                <Plus className="h-4 w-4" />
+                                New Period
+                            </Link>
+                        </div>
+                    </div>
+
+                    {/* ── Stat filter cards (only show if there are periods) ── */}
+                    {payrollPeriods.length > 0 && (
+                        <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                            <StatCard label="All" count={counts.all} active={statusFilter === 'all'} onClick={() => setStatusFilter('all')} color="muted" />
+                            <StatCard label="Open" count={counts.open} active={statusFilter === 'open'} onClick={() => setStatusFilter('open')} color="secondary" />
+                            <StatCard label="Processing" count={counts.processing} active={statusFilter === 'processing'} onClick={() => setStatusFilter('processing')} color="primary" />
+                            <StatCard label="Completed" count={counts.completed} active={statusFilter === 'completed'} onClick={() => setStatusFilter('completed')} color="accent" />
+                        </div>
+                    )}
+
+                    {/* ── Data table (or empty states) ── */}
+                    {payrollPeriods.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border py-24 text-center">
+                            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
+                                <CalendarDays className="h-8 w-8 text-primary/50" />
+                            </div>
+                            <p className="text-lg font-semibold text-muted-foreground">No payroll periods yet</p>
+                            <p className="mt-1 max-w-sm text-sm text-muted-foreground">
+                                Get started by creating your first payroll period.
+                            </p>
+                            <Link
+                                href={PayrollPeriodController.create().url}
+                                className="mt-6 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground transition-all hover:brightness-110 hover:shadow-lg active:scale-95"
+                            >
+                                <Plus className="h-4 w-4" />
+                                Create First Period
+                            </Link>
+                        </div>
+                    ) : (
+                        <CustomTable
+                            title="Payroll Periods"
+                            columns={columns}
+                            actions={actions}
+                            data={filteredPeriods}
+                            from={1}
+                            onDelete={handleDelete}
+                            onView={(period) => { setSelectedPeriod(period); setIsModalOpen(true); }}
+                            onEdit={(period) => router.visit(PayrollPeriodController.edit(period.id).url)}
+                            toolbar={toolbar}
+                            filterEmptyState={filterEmptyState}
+                        />
+                    )}
+
+                    {/* ── Detail modal ── */}
+                    <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+                        <DialogContent className="sm:max-w-[480px] rounded-2xl">
+                            <DialogHeader>
+                                <DialogTitle className="flex items-center gap-2 text-base font-extrabold">
+                                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10">
+                                        <CalendarDays className="h-4 w-4 text-primary" />
+                                    </div>
+                                    Payroll Period Details
+                                </DialogTitle>
+                                <DialogDescription className="text-xs text-muted-foreground">
+                                    Full details for this payroll period.
+                                </DialogDescription>
+                            </DialogHeader>
+
+                            {selectedPeriod && (
+                                <div className="space-y-3 pt-2">
+                                    {/* Period range */}
+                                    <div className="rounded-xl border border-border bg-card p-4">
+                                        <p className="mb-3 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                                            Period Range
+                                        </p>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Start</p>
+                                                <p className="text-sm font-semibold text-foreground">{formatDate(selectedPeriod.start_date)}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">End</p>
+                                                <p className="text-sm font-semibold text-foreground">{formatDate(selectedPeriod.end_date)}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Pay date */}
+                                    <div className="rounded-xl border border-border bg-card p-4">
+                                        <p className="mb-1 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Pay Date</p>
+                                        <p className="text-sm font-semibold text-foreground">{formatDate(selectedPeriod.pay_date)}</p>
+                                    </div>
+
+                                    {/* Status */}
+                                    <div className="rounded-xl border border-border bg-card p-4">
+                                        <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Status</p>
+                                        <StatusBadge
+                                            status={selectedPeriod.payroll_per_status}
+                                            label={formatStatus(selectedPeriod.payroll_per_status)}
+                                        />
+                                    </div>
+
+                                    {/* Summary */}
+                                    <div className="rounded-xl bg-primary/5 p-4">
+                                        <p className="mb-1 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Summary</p>
+                                        <p className="text-sm text-foreground">
+                                            {selectedPeriod.payroll_per_status === 'completed'
+                                                ? 'This payroll period has been completed and processed.'
+                                                : selectedPeriod.payroll_per_status === 'processing'
+                                                    ? 'This payroll period is currently being processed.'
+                                                    : 'This payroll period is open and pending processing.'}
+                                        </p>
+                                    </div>
+
+                                    {/* Modal actions */}
+                                    <div className="flex gap-2 pt-1">
+                                        <Link
+                                            href={PayrollPeriodController.edit(selectedPeriod.id).url}
+                                            className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground transition-all hover:brightness-110 active:scale-95"
+                                        >
+                                            <Pencil className="h-4 w-4" />
+                                            Edit Period
+                                        </Link>
+                                        <button
+                                            onClick={() => setIsModalOpen(false)}
+                                            className="flex-1 rounded-xl border-2 border-border py-2.5 text-sm font-semibold text-foreground transition-all hover:border-primary hover:text-primary active:scale-95"
+                                        >
+                                            Close
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </DialogContent>
+                    </Dialog>
+                </div>
             </div>
         </AppLayout>
     );
