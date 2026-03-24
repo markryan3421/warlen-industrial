@@ -19,11 +19,14 @@ import {
 import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
 import AppLogo from './app-logo';
+import PayrollPeriodController from '@/actions/App/Http/Controllers/PayrollPeriodController';
 import { FileBadge, Calendar, UserRoundCog, Contact, BookUser } from 'lucide-react';
 import { Users } from 'lucide-react';
-import { useCurrentUrl } from '@/hooks/use-current-url'; // Add this import
+import ApplicationLeaveController from '@/actions/App/Http/Controllers/ApplicationLeaveController';
 import ContributionVersionController from '@/actions/App/Http/Controllers/ContributionVersionController';
-
+import { useCurrentUrl } from '@/hooks/use-current-url'; // Add this import
+import PayrollController from "@/actions/App/Http/Controllers/PayrollController";
+import LogsController from "@/actions/App/Http/Controllers/ActivityLogController";
 
 const ExpendituresItems: NavItem[] = [
     {
@@ -51,7 +54,7 @@ const ExpendituresItems: NavItem[] = [
 const AccessControlItems: NavItem[] = [
     {
         title: 'Run Payroll',
-        href: '/payrolls',
+        href: PayrollController.index(),
         icon: Banknote,
     },
     {
@@ -61,12 +64,12 @@ const AccessControlItems: NavItem[] = [
     },
     {
         title: 'Application Leaves',
-        href: '/ApplicationLeave',
+        href: ApplicationLeaveController.index(),
         icon: Clipboard,
     },
     {
         title: 'Payroll Periods',
-        href: '/payroll-periods',
+        href: PayrollPeriodController.index(),
         icon: Calendar,
     },
     {
@@ -77,7 +80,7 @@ const AccessControlItems: NavItem[] = [
 
     {
         title: 'Activity Logs',
-        href: '/activity-logs',
+        href: LogsController.index(),
         icon: History,
     },
 ];

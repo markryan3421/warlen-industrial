@@ -99,7 +99,7 @@ class ApplicationLeave extends Model
     protected function reasonToLeave(): Attribute
     {
         return Attribute::make(
-            set: fn($value) => strip_tags($value),
+            set: fn($value) => trim(strip_tags($value)),
         );
     }
 

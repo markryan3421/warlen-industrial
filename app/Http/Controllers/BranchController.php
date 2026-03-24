@@ -29,7 +29,7 @@ class BranchController extends Controller
         Gate::authorize('viewAny', Branch::class);
 
         $branches = $this->cacheRemember('branches', 60, function () {
-            return $this->branchRepository->getBranches()->load('sites');
+            return $this->branchRepository->getBranches();
         });
 
         // $branches = Branch::withCount('sites')->get();

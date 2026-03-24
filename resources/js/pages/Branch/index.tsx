@@ -1,16 +1,9 @@
-<<<<<<< HEAD
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import { Building2, MapPin, Pencil, PlusCircle, X } from 'lucide-react';
-=======
-// pages/branches/index.tsx
-import { Head, Link, router, useForm } from '@inertiajs/react';
-import { Building2 } from 'lucide-react';
->>>>>>> c340bc6f05fcb64bc5d8015d3c5fa3c5ed0f118e
 import { useState } from 'react';
 import BranchController from "@/actions/App/Http/Controllers/BranchController";
 import { CustomTable } from '@/components/custom-table';
 import { CustomToast, toast } from '@/components/custom-toast';
-<<<<<<< HEAD
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -22,14 +15,6 @@ import SiteRepeater from '@/components/site-repeater';
 import { BranchesTableConfig } from '@/config/tables/branch-table';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type BranchWithSites } from '@/types';
-=======
-import { TableSearchHeader } from '@/components/table-search-header';
-import { Pagination } from '@/components/ui/pagination';
-import { BranchesTableConfig } from '@/config/tables/branch-table';
-import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem, type BranchWithSites } from '@/types';
-import { SitesModal } from '@/components/sites-modal';
->>>>>>> c340bc6f05fcb64bc5d8015d3c5fa3c5ed0f118e
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -125,7 +110,6 @@ export default function Index({ branches, filters, totalCount, filteredCount }: 
         sites: [],
     });
 
-<<<<<<< HEAD
     const handleDelete = (slugOrId: string | number) => {
         if (confirm("Are you sure you want to delete this branch?")) {
             destroy(BranchController.destroy(String(slugOrId)).url, {
@@ -229,8 +213,6 @@ export default function Index({ branches, filters, totalCount, filteredCount }: 
         setIsViewModalOpen(true);
     };
 
-=======
->>>>>>> c340bc6f05fcb64bc5d8015d3c5fa3c5ed0f118e
     const { data, setData } = useForm({
         search: filters.search || '',
         perPage: filters.perPage || '10',
@@ -274,37 +256,12 @@ export default function Index({ branches, filters, totalCount, filteredCount }: 
         });
     };
 
-<<<<<<< HEAD
     const setCreateSites = (sites: Array<{ site_name: string }>) => {
         setCreateData('sites', sites);
     };
 
     const setEditSites = (sites: Array<{ id?: number; site_name: string }>) => {
         setEditData('sites', sites);
-=======
-    const handleDelete = (branch: Branches) => {
-        if (confirm("Are you sure you want to delete this branch?")) {
-            destroy(BranchController.destroy(branch.branch_slug).url, {
-                onSuccess: (page) => {
-                    const successMessage = (page.props as any).flash?.success || 'Branch deleted successfully.';
-                    toast.success(successMessage);
-                },
-                onError: (errors) => {
-                    const errorMessage = Object.values(errors).flat()[0] || 'Failed to delete branch.';
-                    toast.error(errorMessage);
-                }
-            });
-        }
-    };
-
-    const editBranch = (branch: Branches) => {
-        router.get(BranchController.edit(branch.branch_slug).url);
-    };
-
-    const viewBranchSites = (branch: BranchWithSites) => {
-        setSelectedBranch(branch);
-        setIsModalOpen(true);
->>>>>>> c340bc6f05fcb64bc5d8015d3c5fa3c5ed0f118e
     };
 
     return (
@@ -326,7 +283,6 @@ export default function Index({ branches, filters, totalCount, filteredCount }: 
                     </div>
                 </div>
 
-<<<<<<< HEAD
                 <div className="flex flex-row sm:flex-row justify-between items-start sm:items-center gap-4">
                     {/* Left side with search */}
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
@@ -335,14 +291,14 @@ export default function Index({ branches, filters, totalCount, filteredCount }: 
                             <Input
                                 type="text"
                                 value={data.search}
-                                onChange={handleChange}
+                                onChange={(e) => handleSearchChange(e.target.value)}
                                 placeholder='Search branches...'
                                 name="search"
                                 className='w-30 sm:w-50 lg:full h-10'
                             />
 
                             <Button
-                                onClick={handleReset}
+                                onClick={handleSearchReset} 
                                 variant="outline"
                                 className="h-10 px-4 mr-4 sm:mr-2 cursor-pointer whitespace-nowrap"
                             >
@@ -355,19 +311,6 @@ export default function Index({ branches, filters, totalCount, filteredCount }: 
                     <Button
                         onClick={() => setIsCreateModalOpen(true)}
                         className="me-4 inline-flex justify-end lg:items-center lg:justify-center gap-2 cursor-pointer"
-=======
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <TableSearchHeader
-                        searchValue={data.search}
-                        onSearchChange={handleSearchChange}
-                        onSearchReset={handleSearchReset}
-                        searchPlaceholder="Search branches..."
-                    />
-
-                    <Link
-                        href={BranchController.create()}
-                        className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 whitespace-nowrap"
->>>>>>> c340bc6f05fcb64bc5d8015d3c5fa3c5ed0f118e
                     >
                         <PlusCircle className="h-4 w-4" />
                         Add Branch
@@ -381,20 +324,11 @@ export default function Index({ branches, filters, totalCount, filteredCount }: 
                     from={branches.from}
                     onDelete={handleDelete}
                     onView={viewBranchSites}
-<<<<<<< HEAD
                     onEdit={handleEditClick}
                     title="Branch"
                 />
 
                 <CustomPagination
-=======
-                    onEdit={editBranch}
-                    title="Branches"
-                />
-
-                {/* Pagination */}
-                <Pagination
->>>>>>> c340bc6f05fcb64bc5d8015d3c5fa3c5ed0f118e
                     pagination={branches}
                     perPage={data.perPage}
                     onPerPageChange={handlePerPageChange}
@@ -404,7 +338,6 @@ export default function Index({ branches, filters, totalCount, filteredCount }: 
                     resourceName='branch'
                 />
 
-<<<<<<< HEAD
                 {/* View Sites Modal */}
                 <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
                     <DialogContent className="sm:max-w-[600px] p-0 gap-0 overflow-hidden">
@@ -819,14 +752,6 @@ export default function Index({ branches, filters, totalCount, filteredCount }: 
                         </form>
                     </DialogContent>
                 </Dialog>
-=======
-                {/* Sites Modal */}
-                <SitesModal
-                    isOpen={isModalOpen}
-                    onClose={() => setIsModalOpen(false)}
-                    branch={selectedBranch}
-                />
->>>>>>> c340bc6f05fcb64bc5d8015d3c5fa3c5ed0f118e
             </div>
         </AppLayout>
     );

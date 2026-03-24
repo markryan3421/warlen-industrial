@@ -22,8 +22,30 @@ class IncentiveController extends Controller
     public function index()
     {
         Gate::authorize('viewAny', Incentive::class);
-        $payroll_periods = PayrollPeriod::get();
-        $incentives = Incentive::with(['payroll_period', 'employees', 'employees.user', 'employees.position', 'employees.branch'])->get();
+
+        $payroll_periods = PayrollPeriod::query()
+            ->get([
+                'id',
+                'start_date',
+                'end_date',
+                'pay_date',
+                'payroll_per_status',
+            ]);
+
+        $incentives = Incentive::query()
+            ->with([
+                'payroll_period',
+                'employees',
+                'employees.user',
+                'employees.position',
+                'employees.branch'
+            ])
+            ->get([
+                'id',
+                'payroll_period_id',
+                'incentive_name',
+                'incentive_amount'
+            ]);
         return Inertia::render('incentives/index', compact('incentives', 'payroll_periods'));
     }
 
@@ -33,8 +55,13 @@ class IncentiveController extends Controller
     public function create()
     {
         Gate::authorize('create', Incentive::class);
-        $payroll_periods = PayrollPeriod::query()->where('payroll_per_status', PayrollPeriodStatusEnum::OPEN->value)->get();
+
+        $payroll_periods = PayrollPeriod::query()
+            ->where('payroll_per_status', PayrollPeriodStatusEnum::OPEN->value)
+            ->get(['id', 'start_date', 'end_date', 'pay_date', 'payroll_per_status']);
+
         $employees = Employee::with('user')->where('employee_status', 'active')->get();
+
         return Inertia::render('incentives/create', compact('payroll_periods', 'employees'));
     }
 

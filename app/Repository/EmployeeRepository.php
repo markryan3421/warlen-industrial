@@ -20,20 +20,11 @@ class EmployeeRepository
     {
         return Employee::query()
             ->with([
-                'position' => function($query) {
-                    $query->withTrashed()->select('id', 'pos_name', 'deleted_at');
-                },
-                 'branch' => function($query) {
-                    $query->select('id', 'branch_name', 'branch_address');
-                },
-                'branch.sites' => function($query) {
-                    $query->select('id', 'branch_id', 'site_name');
-                },
-                'site' => function($query) {
-                    $query->select('id', 'site_name');
-                },
+                'position' => fn($query) => $query->withTrashed()->getPosition(),
+                'branch' => fn($query) => $query->getBranch(),
+                'branch.sites' => fn($query) => $query->getSiteName(),
+                'site' => fn($query) => $query->getSiteName(),
                 'user' => fn($query) => $query->getUserName(),
-
             ])
             ->latest()
             ->get([
@@ -53,11 +44,11 @@ class EmployeeRepository
             ]);
     }
 
-       public function getBranchesWithSites(): Collection
+    public function getBranchesWithSites(): Collection
     {
         return Branch::query()
-            ->with(['sites' => function($query) {
-                $query->select('id', 'branch_id', 'site_name');
+            ->with(['sites' => function ($query) {
+                $query->getSiteName();
             }])
             ->select('id', 'branch_name', 'branch_address')
             ->orderBy('branch_name')

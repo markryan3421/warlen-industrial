@@ -10,6 +10,7 @@ use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\EmployeeRole\ApplicationLeaveController as EmployeeApplicationLeaveController;
 use App\Http\Controllers\HrRole\HRAttendanceController;
 use App\Http\Controllers\HrRole\HRAttendanceImportController;
+use App\Http\Controllers\HrRole\HREmployeeController;
 use App\Http\Controllers\HrRole\HRIncentiveController;
 use App\Http\Controllers\HrRole\PayrollController as HrPayrollController;
 use App\Http\Controllers\HrRole\PayrollPeriodController as HrPayrollPeriodController;
@@ -120,6 +121,15 @@ Route::middleware(['auth', 'verified', 'throttle:limit-actions', 'roleBase'])->g
         'edit' => 'hr.payroll-periods.edit',
         'update' => 'hr.payroll-periods.update',
         'destroy' => 'hr.payroll-periods.destroy',
+    ]);
+
+    Route::resource('hr/employees', HREmployeeController::class)->except(['show'])->names([
+        'index' => 'hr.employees.index',
+        'create' => 'hr.employees.create',
+        'store' => 'hr.employees.store',
+        'edit' => 'hr.employees.edit',
+        'update' => 'hr.employees.update',
+        'destroy' => 'hr.employees.destroy',
     ]);
 });
 

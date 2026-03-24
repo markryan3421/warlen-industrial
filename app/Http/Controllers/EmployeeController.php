@@ -29,27 +29,27 @@ class EmployeeController extends Controller
     public function index(Request $request)
     {
         Gate::authorize('viewAny', Employee::class);
-    
+
         // Full unfiltered collection — cached
         $employees = $this->cacheRemember('employees', 60, function () {
             return $this->employeeRepository->getEmployees();
         });
-    
+
         // ── Derive allPositions from the FULL collection (before filtering) ──────
         // This gives the Position popover the complete list of options regardless
         // of what filters are currently active or what page the user is on.
         $allPositions = $employees
-            ->map(fn ($e) => optional($e->position)->pos_name)
+            ->map(fn($e) => optional($e->position)->pos_name)
             ->filter()           // remove nulls
             ->unique()
             ->sort()
             ->values()
             ->all();
-    
+
         // ── Paginate + filter — the trait now handles all filter params ──────────
         $result = $this->paginateCollection(
-            items:         collect($employees),
-            request:       $request,
+            items: collect($employees),
+            request: $request,
             searchColumns: [
                 'emp_code',
                 'user.name',
@@ -59,11 +59,11 @@ class EmployeeController extends Controller
                 'employee_status',
             ],
         );
-    
+
         $branchesWithSites = $this->cacheRemember('branchesWithSites', 60, function () {
             return $this->employeeRepository->getBranchesWithSites();
         });
-    
+
         return Inertia::render('employees/index', [
             'employees' => [
                 'data'    => $result['data'],
@@ -135,9 +135,14 @@ class EmployeeController extends Controller
      */
     public function show(Employee $employee)
     {
-        // Gate::authorize('view',$employee);
+        Gate::authorize('view', $employee);
 
-        $employee->load(['position', 'branch', 'user', 'site']);
+        $employee->load([
+            'position' => fn($query) => $query->getPosition(),
+            'branch' => fn($query) => $query->getBranch(),
+            'user' => fn($query) => $query->getUserName(),
+            'sites' => fn($query) => $query->getSiteName(),
+        ]);
 
         return Inertia::render('employees/show', [
             'employee' => $employee
@@ -154,12 +159,17 @@ class EmployeeController extends Controller
         $positions = Position::query()
             ->get(['id', 'pos_name']);
 
-            //dd($employee);
+        //dd($employee);
 
         $branches = Branch::query()
             ->get(['id', 'branch_name']);
 
-        $employee->load(['position', 'branch', 'user' => fn($query) => $query->getUserName(), 'sites']);
+        $employee->load([
+            'position' => fn($query) => $query->getPosition(),
+            'branch' => fn($query) => $query->getBranch(),
+            'user' => fn($query) => $query->getUserName(),
+            'sites' => fn($query) => $query->getSiteName(),
+        ]);
 
         return Inertia::render('employees/update', [
             'employee' => $employee,
@@ -183,11 +193,11 @@ class EmployeeController extends Controller
 
         try {
             $validatedData = $request->validated();
-           // dd($validatedData);
+            // dd($validatedData);
             $action->update($validatedData, $employee);
 
-           // $this->cacheForget('employees');
-           Cache::forget('employees');
+            // $this->cacheForget('employees');
+            Cache::forget('employees');
 
             DB::commit();
 
@@ -204,11 +214,11 @@ class EmployeeController extends Controller
     public function destroy(Employee $employee)
     {
         Gate::authorize('delete', $employee);
-        
+
         if ($this->limit('delete-employee:' . auth()->id(), 60, 10)) {
             return back()->with('error', 'Too many attempts. Please try again later.');
         }
-        
+
         $employee->user()->delete();
 
         $this->cacheForget('employees');

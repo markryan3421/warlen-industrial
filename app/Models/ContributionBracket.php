@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Models\ContributionVersion;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -33,6 +35,18 @@ class ContributionBracket extends Model
                 'employer_share',
             ])
             ->logOnlyDirty();
+    }
+
+    #[Scope]
+    protected function getContributionBrackets(Builder $query): void
+    {
+        $query->select(
+            'contribution_version_id',
+            'salary_from',
+            'salary_to',
+            'employee_share',
+            'employer_share',
+        );
     }
 
     public function contributionVersion(): BelongsTo
