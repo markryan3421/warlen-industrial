@@ -233,8 +233,19 @@ const StatCard = memo(({
 })
 
 StatCard.displayName = 'StatCard'
+interface SectionCardsProps {
+    totalNetPay?: number;
+    totalActiveEmployee?: number;
+    openPayrollPeriod?: number;
+    pendingApplicationLeave?: number;
+}
 
-export const SectionCards = memo(function SectionCards() {
+export const SectionCards = memo(function SectionCards({
+    totalNetPay = 0, 
+    totalActiveEmployee = 0 ,
+    openPayrollPeriod = 0,
+    pendingApplicationLeave = 0
+}: SectionCardsProps) {
     // Memoize grid classes to prevent recalculation    
     const gridClasses = "grid grid-cols-2 md:grid-cols-2 lg:grid-cols-1 gap-4 px-4 mt-4 lg:px-10 lg:py-5 @xl/main:grid-cols-4 @5xl/main:grid-cols-4"
 
@@ -244,9 +255,9 @@ export const SectionCards = memo(function SectionCards() {
             <Link href='/payrolls'>
             <StatCard
                 title="Total Net Pay"
-                value="124,000"
+                value={totalNetPay}
                 icon={PhilippinePeso}
-                trend="+12.5%"
+                // trend="+12.5%"
                 footer="Tap to view breakdown"
                 iconSize="w-5 h-5 text-blue-800"
                 valuePrefix={<PhilippinePeso className="h-7 w-4 md:-ml-1 md:w-5 lg:-ml-0" />}
@@ -254,33 +265,37 @@ export const SectionCards = memo(function SectionCards() {
             </Link>
 
             {/* Anomalies Card */}
+            <Link href={ApplicationLeaveController.index()}>
             <StatCard
-                title="Anomalies"
-                value="12"
+                title="Pending Leave Requests"
+                value={pendingApplicationLeave}
                 icon={Inbox}
-                trend="+12.5%"
-                footer="Approvals"
+                // trend="+12.5%"
+                footer="Need Approvals"
                 iconSize="w-6 h-6 text-blue-800"
             />
+            </Link>
 
             {/* Pending Actions Card */}
             <StatCard
                 title="Payroll Activity"
-                value="1"
+                value={openPayrollPeriod}
                 icon={CalendarClock}
                 footer="You haven't run this month's payroll."
                 iconSize="w-6 h-6 text-blue-800"
             />
 
             {/* Total Employees Card */}
+            <Link href={EmployeeController.index()}>
             <StatCard
                 title="Active Employees"
-                value="7"
+                value={totalActiveEmployee}
                 icon={UsersRound}
-                trend="+12.5%"
+                // trend="+12.5%"
                 footer="New hires"
                 iconSize="w-6 h-6 text-blue-800"
             />
+            </Link>
         </div>
     )
 })

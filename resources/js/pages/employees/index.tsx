@@ -42,7 +42,7 @@ import { Users, Search, UserPlus } from 'lucide-react';
 import { format } from 'date-fns';
 
 import { CustomTable } from '@/components/custom-table';
-import { BranchData, EmployeeFilterBar } from '@/components/employee/employee-filter-bar';
+import { EmployeeFilterBar, BranchData } from '@/components/employee/employee-filter-bar';
 import { EmployeesTableConfig } from '@/config/tables/employees-table';
 import { CustomPagination } from '@/components/custom-pagination';
 import { toast } from 'sonner';
@@ -326,13 +326,6 @@ export default function Index({
 
                 ) : (
                     <>
-                        {/*
-                         * data={employees.data}  — the current page from the server.
-                         *   No filteredEmployees memo. The server already filtered + paginated.
-                         *
-                         * from={employees.from}  — correct 1-based row counter per page
-                         *   (e.g. page 2 of 10 starts at row 11, not 1).
-                         */}
                         <CustomTable
                             title="Employees"
                             columns={EmployeesTableConfig.columns}
@@ -342,11 +335,21 @@ export default function Index({
                             onDelete={handleDelete}
                             onView={handleView}
                             onEdit={handleEdit}
-
                             toolbar={
                                 <EmployeeFilterBar
+                                    // Configuration - show all filters for employees
+                                    filters={{
+                                        search: true,
+                                        position: true,
+                                        branch: true,
+                                        site: true,
+                                        date: true,
+                                        status: true,
+                                    }}
+                                    // Data
                                     allPositions={allPositions}
                                     branchesData={branchesData}
+                                    // Filter values
                                     searchTerm={searchTerm}
                                     selectedPositions={selectedPositions}
                                     selectedBranch={selectedBranch}
@@ -354,6 +357,7 @@ export default function Index({
                                     status={status}
                                     dateFrom={dateFrom}
                                     dateTo={dateTo}
+                                    // Handlers
                                     onSearchChange={handleSearchChange}
                                     onPositionsChange={handlePositionsChange}
                                     onBranchChange={handleBranchChange}
@@ -362,9 +366,11 @@ export default function Index({
                                     onDateFromChange={handleDateFromChange}
                                     onDateToChange={handleDateToChange}
                                     onClearAll={clearFilters}
+                                    // Customizations
+                                    searchPlaceholder="Search by ID or name..."
+                                    dateLabel="Hire Date"
                                 />
                             }
-
                             filterEmptyState={
                                 <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
                                     <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center mb-3">

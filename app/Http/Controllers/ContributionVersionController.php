@@ -26,7 +26,7 @@ class ContributionVersionController extends Controller
         $contributions = $this->cacheRemember('contribution_versions', 60, function () {
             return ContributionVersion::with([
                 'contributionBrackets' => fn($query) => $query->getContributionBrackets()
-            ])->get(['id','type']);
+            ])->get();
         });
 
         $contributionVersions = $this->paginateCollection(
@@ -137,7 +137,7 @@ class ContributionVersionController extends Controller
     {
         Gate::authorize('delete', $contributionVersion);
         $contributionVersion->delete();
-        $this->cacheForget('contribution_versions'); // Clear cache after deletion
+        $this->cacheForget('contribution_versions'); 
 
         return to_route('contribution-versions.index')->with('success', 'Contribution deleted successfully.');
     }

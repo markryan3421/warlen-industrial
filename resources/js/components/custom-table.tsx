@@ -34,6 +34,7 @@ interface ActionConfig {
 
 interface TableRow {
     [key: string]: any;
+    id?: string | number;
 }
 
 interface CustomTableProps {
@@ -41,38 +42,11 @@ interface CustomTableProps {
     actions: ActionConfig[];
     data: TableRow[];
     from: number;
-    onDelete: (route: string) => void;
+    onDelete: (id: string | number) => void;
     onView: (row: TableRow) => void;
     onEdit: (row: TableRow) => void;
     title?: string;
-    /**
-     * Optional toolbar slot rendered between the navy header bar and the
-     * column headers, inside the rounded card.
-     *
-     * Use this to embed filters, search, or any controls that belong
-     * visually with the table without the component needing to know
-     * what those controls are.
-     *
-     * Example:
-     *   <CustomTable
-     *     toolbar={<EmployeeFilterBar ... />}
-     *     ...
-     *   />
-     */
     toolbar?: React.ReactNode;
-    /**
-     * Optional custom empty state rendered inside the card when `data`
-     * is empty. Replaces the default "No records found" state.
-     *
-     * Use this to show a filter-aware message when the data array is
-     * empty because of active filters rather than a genuinely empty dataset.
-     *
-     * Example:
-     *   <CustomTable
-     *     filterEmptyState={<FilterEmptyState onClear={clearFilters} />}
-     *     ...
-     *   />
-     */
     filterEmptyState?: React.ReactNode;
 }
 
@@ -191,7 +165,7 @@ function ActionDropdown({
 }: {
     row: TableRow;
     actions: ActionConfig[];
-    onDelete: (v: string) => void;
+    onDelete: (id: string | number) => void;
     onView: (r: TableRow) => void;
     onEdit: (r: TableRow) => void;
     route: ReturnType<typeof useRoute>;
@@ -201,14 +175,21 @@ function ActionDropdown({
 
     const handleAction = (action: ActionConfig) => {
         if (action.label === "Delete") {
-            // onDelete(row.branch_slug || row.id);
-            onDelete?.(row);
+            if (row.id !== undefined && row.id !== null) {
+                onDelete(row.id);
+            } else {
+                console.error('Cannot delete: row has no id', row);
+            }
         } else if (action.label === "View") {
-            onView?.(row);
+            onView(row);
         } else if (action.label === "Edit") {
-            onEdit?.(row);
-        } else {
-            window.location.href = route(action.route, row.id);
+            onEdit(row);
+        } else if (action.route) {
+            if (row.id !== undefined && row.id !== null) {
+                window.location.href = route(action.route, row.id);
+            } else {
+                console.error('Cannot navigate: row has no id', row);
+            }
         }
     };
 
@@ -225,15 +206,7 @@ function ActionDropdown({
                 <DropdownMenuContent
                     align="end"
                     className="min-w-[160px] rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl shadow-slate-900/10 dark:shadow-slate-950/40 p-1"
-                    style={{ animation: "dropdownIn 0.14s cubic-bezier(0.16,1,0.3,1) both" }}
                 >
-                    <style>{`
-                        @keyframes dropdownIn {
-                            from { opacity: 0; transform: scale(0.95) translateY(-4px); }
-                            to   { opacity: 1; transform: scale(1)    translateY(0);    }
-                        }
-                    `}</style>
-
                     {/* Non-destructive actions */}
                     {nonDestructive.map((action, i) => {
                         const Icon = LucidIcons[action.icon] as React.ElementType;
@@ -290,12 +263,51 @@ export const CustomTable = ({
     const dataColumns = columns.filter(col => !col.isAction);
     const hasActions = columns.some(col => col.isAction);
 
-    const actionProps = { row: {} as TableRow, actions, onDelete, onView, onEdit, route };
+    // Prepare action props for reuse
+    const actionProps = { actions, onDelete, onView, onEdit, route };
+
+    // If no data, show empty state
+    if (!data || data.length === 0) {
+        return (
+            <div className="w-full font-sans">
+                <div className="rounded-2xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
+                    {/* Header bar */}
+                    <div className="flex items-center gap-3 px-5 py-4 bg-[#1d4791] dark:bg-[#1d4791]">
+                        <div className="w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center flex-shrink-0">
+                            <LucidIcons.Table2 className="w-4 h-4 text-white" strokeWidth={1.75} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-[13px] font-bold text-white leading-tight truncate">
+                                {title ?? "Data Table"}
+                            </p>
+                            <p className="text-[11px] text-blue-200/60 mt-0.5">
+                                0 records
+                            </p>
+                        </div>
+                    </div>
+                    
+                    {/* Toolbar if provided */}
+                    {toolbar && (
+                        <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40">
+                            {toolbar}
+                        </div>
+                    )}
+                    
+                    {/* Empty state */}
+                    {filterEmptyState ?? <EmptyState />}
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="w-full font-sans">
+<<<<<<< HEAD
             <div className="rounded-2xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-900 shadow-sm overflow-hidden mx-4">
 
+=======
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
+>>>>>>> dc3bfc26892dee744c5ff62d72a5be6ffd0297f3
                 {/* ── Header bar — 30% navy ─────────────────────────────────── */}
                 <div className="flex items-center gap-3 px-5 py-4 bg-[#1d4791] dark:bg-[#1d4791]">
                     <div className="w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center flex-shrink-0">
@@ -322,94 +334,78 @@ export const CustomTable = ({
                     MOBILE  (< 768px) — stacked field cards
                 ══════════════════════════════════════════════════════════════ */}
                 <div className="block md:hidden">
-                    {data.length === 0 ? (
-                        filterEmptyState ?? <EmptyState />
-                    ) : (
-                        <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                            {data.map((row, index) => (
-                                <div
-                                    key={index}
-                                    className="px-4 py-4 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors duration-150"
-                                    style={{
-                                        animation: "rowIn 0.35s cubic-bezier(0.16,1,0.3,1) both",
-                                        animationDelay: `${index * 45}ms`,
-                                    }}
-                                >
-                                    {/* Card header */}
-                                    <div className="flex items-center justify-between mb-3">
-                                        <IndexBadge value={from + index} />
-                                        {hasActions && (
-                                            <ActionDropdown
-                                                {...actionProps}
-                                                row={row}
-                                            />
-                                        )}
-                                    </div>
-
-                                    {/* Field grid */}
-                                    <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
-                                        {dataColumns.map(col => (
-                                            <div key={col.key} className="flex flex-col min-w-0">
-                                                <dt className="text-[10px] font-bold tracking-widest uppercase text-slate-400 dark:text-slate-500 mb-0.5 truncate">
-                                                    {col.label}
-                                                </dt>
-                                                <dd className="text-[13px] text-slate-700 dark:text-slate-300 overflow-hidden">
-                                                    <CellValue col={col} row={row} />
-                                                </dd>
-                                            </div>
-                                        ))}
-                                    </dl>
+                    <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                        {data.map((row, index) => (
+                            <div
+                                key={row.id || index}
+                                className="px-4 py-4 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors duration-150"
+                            >
+                                {/* Card header */}
+                                <div className="flex items-center justify-between mb-3">
+                                    <IndexBadge value={from + index} />
+                                    {hasActions && (
+                                        <ActionDropdown
+                                            {...actionProps}
+                                            row={row}
+                                        />
+                                    )}
                                 </div>
-                            ))}
-                        </div>
-                    )}
+
+                                {/* Field grid */}
+                                <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
+                                    {dataColumns.map(col => (
+                                        <div key={col.key} className="flex flex-col min-w-0">
+                                            <dt className="text-[10px] font-bold tracking-widest uppercase text-slate-400 dark:text-slate-500 mb-0.5 truncate">
+                                                {col.label}
+                                            </dt>
+                                            <dd className="text-[13px] text-slate-700 dark:text-slate-300 overflow-hidden">
+                                                <CellValue col={col} row={row} />
+                                            </dd>
+                                        </div>
+                                    ))}
+                                </dl>
+                            </div>
+                        ))}
+                    </div>
                 </div>
 
                 {/* ══════════════════════════════════════════════════════════════
                     TABLET  (768px – 1023px) — 2-col card grid
                 ══════════════════════════════════════════════════════════════ */}
                 <div className="hidden md:block lg:hidden">
-                    {data.length === 0 ? (
-                        filterEmptyState ?? <EmptyState />
-                    ) : (
-                        <div className="p-4 grid grid-cols-2 gap-3">
-                            {data.map((row, index) => (
-                                <div
-                                    key={index}
-                                    className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/60 p-4 hover:border-[#1d4791]/40 dark:hover:border-[#1d4791]/50 hover:shadow-md transition-all duration-200 group"
-                                    style={{
-                                        animation: "rowIn 0.35s cubic-bezier(0.16,1,0.3,1) both",
-                                        animationDelay: `${index * 40}ms`,
-                                    }}
-                                >
-                                    {/* Card header */}
-                                    <div className="flex items-center justify-between mb-3 pb-3 border-b border-slate-100 dark:border-slate-700/60">
-                                        <IndexBadge value={from + index} />
-                                        {hasActions && (
-                                            <ActionDropdown
-                                                {...actionProps}
-                                                row={row}
-                                            />
-                                        )}
-                                    </div>
-
-                                    {/* Field list */}
-                                    <dl className="space-y-2">
-                                        {dataColumns.map(col => (
-                                            <div key={col.key} className="flex items-start justify-between gap-3 min-w-0">
-                                                <dt className="text-[10px] font-bold tracking-widest uppercase text-slate-400 dark:text-slate-500 shrink-0 pt-0.5">
-                                                    {col.label}
-                                                </dt>
-                                                <dd className="text-[12.5px] font-medium text-slate-700 dark:text-slate-300 text-right overflow-hidden max-w-[55%]">
-                                                    <CellValue col={col} row={row} />
-                                                </dd>
-                                            </div>
-                                        ))}
-                                    </dl>
+                    <div className="p-4 grid grid-cols-2 gap-3">
+                        {data.map((row, index) => (
+                            <div
+                                key={row.id || index}
+                                className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/60 p-4 hover:border-[#1d4791]/40 dark:hover:border-[#1d4791]/50 hover:shadow-md transition-all duration-200 group"
+                            >
+                                {/* Card header */}
+                                <div className="flex items-center justify-between mb-3 pb-3 border-b border-slate-100 dark:border-slate-700/60">
+                                    <IndexBadge value={from + index} />
+                                    {hasActions && (
+                                        <ActionDropdown
+                                            {...actionProps}
+                                            row={row}
+                                        />
+                                    )}
                                 </div>
-                            ))}
-                        </div>
-                    )}
+
+                                {/* Field list */}
+                                <dl className="space-y-2">
+                                    {dataColumns.map(col => (
+                                        <div key={col.key} className="flex items-start justify-between gap-3 min-w-0">
+                                            <dt className="text-[10px] font-bold tracking-widest uppercase text-slate-400 dark:text-slate-500 shrink-0 pt-0.5">
+                                                {col.label}
+                                            </dt>
+                                            <dd className="text-[12.5px] font-medium text-slate-700 dark:text-slate-300 text-right overflow-hidden max-w-[55%]">
+                                                <CellValue col={col} row={row} />
+                                            </dd>
+                                        </div>
+                                    ))}
+                                </dl>
+                            </div>
+                        ))}
+                    </div>
                 </div>
 
                 {/* ══════════════════════════════════════════════════════════════
@@ -417,8 +413,7 @@ export const CustomTable = ({
                 ══════════════════════════════════════════════════════════════ */}
                 <div className="hidden lg:block overflow-x-auto">
                     <table className="w-full border-collapse text-[13px] text-slate-700 dark:text-slate-300">
-
-                        {/* Column headers — neutral bg, NOT dark navy (avoid the clashing header-on-header look) */}
+                        {/* Column headers */}
                         <thead>
                             <tr className="border-b border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-800/80">
                                 {/* # column */}
@@ -438,69 +433,55 @@ export const CustomTable = ({
                         </thead>
 
                         <tbody>
-                            {data.length > 0 ? (
-                                data.map((row, index) => (
-                                    <tr
-                                        key={index}
-                                        className="group border-b border-slate-100 dark:border-slate-800 last:border-0 bg-white dark:bg-slate-900 hover:bg-[#1d4791]/[0.03] dark:hover:bg-[#1d4791]/10 transition-colors duration-150"
-                                        style={{
-                                            animation: "rowIn 0.4s cubic-bezier(0.16,1,0.3,1) both",
-                                            animationDelay: `${index * 40}ms`,
-                                        }}
-                                    >
-                                        {/* Row index */}
-                                        <td className="px-5 py-3.5 text-center align-middle">
-                                            <IndexBadge value={from + index} />
-                                        </td>
-
-                                        {/* Data cells */}
-                                        {columns.map(col => (
-                                            <td
-                                                key={col.key}
-                                                className={`px-4 py-3.5 align-middle text-left text-slate-700 dark:text-slate-300 overflow-hidden ${col.className ?? ""}`}
-                                            >
-                                                {col.isAction ? (
-                                                    <ActionDropdown
-                                                        {...actionProps}
-                                                        row={row}
-                                                    />
-                                                ) : (
-                                                    <CellValue col={col} row={row} />
-                                                )}
-                                            </td>
-                                        ))}
-                                    </tr>
-                                ))
-                            ) : (
-                                <tr>
-                                    <td colSpan={columns.length + 1}>
-                                        {filterEmptyState ?? <EmptyState />}
+                            {data.map((row, index) => (
+                                <tr
+                                    key={row.id || index}
+                                    className="group border-b border-slate-100 dark:border-slate-800 last:border-0 bg-white dark:bg-slate-900 hover:bg-[#1d4791]/[0.03] dark:hover:bg-[#1d4791]/10 transition-colors duration-150"
+                                >
+                                    {/* Row index */}
+                                    <td className="px-5 py-3.5 text-center align-middle">
+                                        <IndexBadge value={from + index} />
                                     </td>
+
+                                    {/* Data cells */}
+                                    {columns.map(col => (
+                                        <td
+                                            key={col.key}
+                                            className={`px-4 py-3.5 align-middle text-left text-slate-700 dark:text-slate-300 overflow-hidden ${col.className ?? ""}`}
+                                        >
+                                            {col.isAction ? (
+                                                <ActionDropdown
+                                                    {...actionProps}
+                                                    row={row}
+                                                />
+                                            ) : (
+                                                <CellValue col={col} row={row} />
+                                            )}
+                                        </td>
+                                    ))}
                                 </tr>
-                            )}
+                            ))}
                         </tbody>
                     </table>
                 </div>
 
                 {/* ── Footer ────────────────────────────────────────────────── */}
-                {data.length > 0 && (
-                    <div className="flex items-center justify-between gap-2 px-5 py-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40">
-                        <div className="flex items-center gap-1.5">
-                            {/* 10% orange accent on the record count */}
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#d85e39]" />
-                            <p className="text-[11px] font-medium text-slate-400 dark:text-slate-500">
-                                Showing{" "}
-                                <span className="font-black text-slate-600 dark:text-slate-300">
-                                    {data.length}
-                                </span>{" "}
-                                {data.length === 1 ? "record" : "records"}
-                            </p>
-                        </div>
-                        <p className="text-[11px] text-slate-300 dark:text-slate-600">
-                            Row {from} – {from + data.length - 1}
+                <div className="flex items-center justify-between gap-2 px-5 py-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40">
+                    <div className="flex items-center gap-1.5">
+                        {/* 10% orange accent on the record count */}
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#d85e39]" />
+                        <p className="text-[11px] font-medium text-slate-400 dark:text-slate-500">
+                            Showing{" "}
+                            <span className="font-black text-slate-600 dark:text-slate-300">
+                                {data.length}
+                            </span>{" "}
+                            {data.length === 1 ? "record" : "records"}
                         </p>
                     </div>
-                )}
+                    <p className="text-[11px] text-slate-300 dark:text-slate-600">
+                        Row {from} – {from + data.length - 1}
+                    </p>
+                </div>
             </div>
 
             {/* Global keyframes — injected once */}

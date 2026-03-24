@@ -83,7 +83,7 @@ interface FormData {
 // =============================================================================
 
 const getContributionTypeColor = (type: string) => {
-    switch(type) {
+    switch (type) {
         case 'sss':
             return 'bg-blue-100 text-blue-800';
         case 'philhealth':
@@ -96,7 +96,7 @@ const getContributionTypeColor = (type: string) => {
 };
 
 const getContributionTypeLabel = (type: string) => {
-    switch(type) {
+    switch (type) {
         case 'sss':
             return 'SSS';
         case 'philhealth':
@@ -128,7 +128,7 @@ export default function Index({
     const [hasActiveFilters, setHasActiveFilters] = useState(false);
 
     console.log('contributionVersions', contributionVersions);
-    
+
     // Safely ensure data is an array and remove duplicates based on ID
     const versions = useMemo(() => {
         if (!contributionVersions?.data) return [];
@@ -168,7 +168,20 @@ export default function Index({
     };
 
     // ── Delete ─────────────────────────────────────────────────────────────
-    const handleDelete = (id: number | string) => {
+    const handleDelete = (version: ContributionVersion | number | string) => {
+        // Extract the ID from the version object
+        let id: number;
+
+        if (typeof version === 'object' && version !== null && 'id' in version) {
+            id = version.id;
+        } else if (typeof version === 'number') {
+            id = version;
+        } else if (typeof version === 'string') {
+            id = parseInt(version, 10);
+        } else {
+            return;
+        }
+
         if (confirm('Are you sure you want to delete this contribution version?')) {
             destroy(ContributionVersionController.destroy(id).url, {
                 onSuccess: (page) => {
@@ -182,7 +195,6 @@ export default function Index({
             });
         }
     };
-
     // ── View brackets ──────────────────────────────────────────────────────
     const viewBrackets = (version: ContributionVersion) => {
         setSelectedVersion(version);
@@ -234,29 +246,6 @@ export default function Index({
                 {/* Filters and Create button */}
                 {hasRecords && (
                     <div className="flex justify-between items-center gap-4">
-                        <div className="flex items-center gap-2">
-                            <Select
-                                value={typeFilter || 'all'}
-                                onValueChange={handleTypeFilterChange}
-                            >
-                                <SelectTrigger className="w-[180px]">
-                                    <SelectValue placeholder="Filter by type" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Types</SelectItem>
-                                    <SelectItem value="sss">SSS</SelectItem>
-                                    <SelectItem value="philhealth">PhilHealth</SelectItem>
-                                    <SelectItem value="pagibig">Pag-IBIG</SelectItem>
-                                </SelectContent>
-                            </Select>
-                            
-                            {hasActiveFilters && (
-                                <Button variant="ghost" size="sm" onClick={handleClearAllFilters}>
-                                    Clear Filter
-                                </Button>
-                            )}
-                        </div>
-                        
                         <Button
                             onClick={() => setIsCreateModalOpen(true)}
                             className="inline-flex items-center justify-center gap-2"
@@ -305,7 +294,7 @@ export default function Index({
                                 </CardContent>
                             </Card>
                         ) : (
-                            <Card>
+                            
                                 <CardContent className="p-0">
                                     <CustomTable
                                         columns={ContributionTableConfig.columns}
@@ -318,7 +307,7 @@ export default function Index({
                                         title="Contribution Table"
                                     />
                                 </CardContent>
-                            </Card>
+                            
                         )}
 
                         {/* Pagination */}
@@ -384,7 +373,7 @@ export default function Index({
                             View salary brackets and contribution percentages for this contribution type.
                         </DialogDescription>
                     </DialogHeader>
-                    
+
                     <div className="mt-4">
                         {selectedVersion?.contribution_brackets && selectedVersion.contribution_brackets.length > 0 ? (
                             <div className="rounded-md border">
@@ -398,7 +387,7 @@ export default function Index({
                                     </TableHeader>
                                     <TableBody>
                                         {selectedVersion.contribution_brackets
-                                            .filter((bracket, index, self) => 
+                                            .filter((bracket, index, self) =>
                                                 index === self.findIndex(b => b.id === bracket.id)
                                             )
                                             .map((bracket) => {
@@ -808,7 +797,7 @@ function EditContributionModal({ isOpen, onClose, contributionVersion, existingT
                                 <SelectItem value={contributionVersion.type}>
                                     {getContributionTypeLabel(contributionVersion.type)}
                                 </SelectItem>
-                                
+
                                 {/* Show other types only if they're not taken */}
                                 {!existingTypes.includes('sss') && contributionVersion.type !== 'sss' && (
                                     <SelectItem value="sss">SSS</SelectItem>

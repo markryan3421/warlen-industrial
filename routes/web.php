@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\ApplicationLeaveController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AttendanceImportController;
@@ -22,12 +23,13 @@ use App\Http\Controllers\PositionController;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-use Laravel\Fortify\Features;
+// use Laravel\Fortify\Features;
 
 Route::get('/', function () {
-    return Inertia::render('welcome', [
-        'canRegister' => Features::enabled(Features::registration()),
-    ]);
+    // return Inertia::render('welcome', [
+    //     'canRegister' => Features::enabled(Features::registration()),
+    // ]);
+    return Inertia::render('auth/login');
 })->name('home');
 
 
@@ -38,9 +40,7 @@ Route::middleware(['auth', 'verified', 'throttle:limit-actions', 'roleBase'])->g
     });
 
     //admin dashboard
-    Route::get('dashboard', function () {
-        return Inertia::render('dashboard');
-    })->name('dashboard');
+    Route::get('dashboard',AdminDashboardController::class)->name('dashboard');
 
     //employee dashboard
     Route::get('employee/dashboard', function () {

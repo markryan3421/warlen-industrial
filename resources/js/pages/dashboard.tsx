@@ -31,13 +31,12 @@ const lineChartData = [
     { month: "December", desktop: 214, mobile: 140 },
 ];
 
-// ✅ Sample pie chart data - moved outside component
-const pieChartData = [
-    { name: "Full-Time", value: 245, color: "#2563eb" },
-    { name: "Part-Time", value: 120, color: "#60a5fa" },
-    { name: "Contract", value: 85, color: "#93c5fd" },
-    { name: "Intern", value: 42, color: "#bfdbfe" },
-];
+// Default colors for pay frequencies
+const defaultColors = {
+    weekender: "#2563eb",    // Blue
+    monthly: "#60a5fa",      // Light blue
+    semi_monthly: "#93c5fd", // Lighter blue
+};
 
 const chartConfig = {
     desktop: {
@@ -160,14 +159,14 @@ const StableLineChart = memo(
                         tickFormatter={(value) => value.toLocaleString()}
                         width={35}
                     />
-                    <Tooltip 
+                    <Tooltip
                         content={({ active, payload, label }) => {
                             if (active && payload && payload.length) {
                                 return (
                                     <div className="bg-black/90 text-white rounded-lg px-3 py-2 shadow-lg border border-white/10">
                                         <p className="font-semibold text-sm">{label}</p>
                                         <p className="text-xs text-gray-300">
-                                            Total Revenue: ${payload[0]?.value?.toLocaleString()}
+                                            Total Net Pay: ₱ {payload[0]?.value?.toLocaleString()}
                                         </p>
                                     </div>
                                 );
@@ -187,15 +186,15 @@ const StableLineChart = memo(
                         onAnimationEnd={() => {
                             hasAnimatedLineChart = true;
                         }}
-                        activeDot={{ 
-                            r: 6, 
-                            stroke: 'white', 
+                        activeDot={{
+                            r: 6,
+                            stroke: 'white',
                             strokeWidth: 2,
                             fill: chartConfig.desktop.color,
                         }}
                     />
                 </LineChart>
-                
+
                 {/* Custom floating label (alternative to default tooltip) */}
                 {activePoint && (
                     <div
@@ -262,10 +261,11 @@ const LineChartComponent = memo(({ data }: { data: typeof lineChartData }) => {
 });
 
 LineChartComponent.displayName = 'LineChartComponent';
-const PieChartComponent = memo(({ data }: { data: typeof pieChartData }) => {
+
+const PieChartComponent = memo(({ data }: { data: Array<{ name: string; value: number; color?: string }> }) => {
     const animationPlayed = useRef(false);
     const { ref: containerRef, width, height } = useDebouncedElementSize(120);
-    
+
     return (
         <div ref={containerRef} className="w-full h-full">
             {width > 0 && height > 0 && (
@@ -288,7 +288,7 @@ const PieChartComponent = memo(({ data }: { data: typeof pieChartData }) => {
                         {data.map((entry, index) => (
                             <Cell
                                 key={`cell-${index}`}
-                                fill={entry.color}
+                                fill={entry.color || defaultColors.monthly}
                             />
                         ))}
                     </Pie>
@@ -310,10 +310,10 @@ const PieChartComponent = memo(({ data }: { data: typeof pieChartData }) => {
 
 PieChartComponent.displayName = 'PieChartComponent';
 
-const DesktopPieChartComponent = memo(({ data }: { data: typeof pieChartData }) => {
+const DesktopPieChartComponent = memo(({ data }: { data: Array<{ name: string; value: number; color?: string }> }) => {
     const animationPlayed = useRef(false);
     const { ref: containerRef, width, height } = useDebouncedElementSize(120);
-    
+
     return (
         <div ref={containerRef} className="w-full h-full">
             {width > 0 && height > 0 && (
@@ -336,7 +336,7 @@ const DesktopPieChartComponent = memo(({ data }: { data: typeof pieChartData }) 
                         {data.map((entry, index) => (
                             <Cell
                                 key={`cell-${index}`}
-                                fill={entry.color}
+                                fill={entry.color || defaultColors.monthly}
                             />
                         ))}
                     </Pie>
@@ -358,25 +358,64 @@ const DesktopPieChartComponent = memo(({ data }: { data: typeof pieChartData }) 
 
 DesktopPieChartComponent.displayName = 'DesktopPieChartComponent';
 
-export default function Dashboard() {
+interface DashboardProps {
+    totalNetPay?: number;
+    totalActiveEmployee?: number;
+    openPayrollPeriod?: number;
+    pendingApplicationLeave?: number;
+    payrollTrend?: Array<{ month: string; desktop: number; mobile: number }>;
+    employee_pay_frequency?: Array<{ name: string; value: number }>;
+}
+
+export default function Dashboard({ 
+    totalNetPay = 0, 
+    totalActiveEmployee = 0, 
+    openPayrollPeriod = 0, 
+    pendingApplicationLeave = 0, 
+    payrollTrend = [],
+    employee_pay_frequency = []
+}: DashboardProps) {
+    // Prepare pie chart data with colors
+    const pieData = useMemo(() => {
+        return employee_pay_frequency.map(item => {
+            // Assign color based on pay frequency name
+            let color = defaultColors.monthly;
+            if (item.name === 'Weekender') {
+                color = defaultColors.weekender;
+            } else if (item.name === 'Monthly') {
+                color = defaultColors.monthly;
+            } else if (item.name === 'Semi-Monthly') {
+                color = defaultColors.semi_monthly;
+            }
+            return { ...item, color };
+        });
+    }, [employee_pay_frequency]);
+
     // Memoize calculations
-    const totalEmployees = useMemo(() => 
-        pieChartData.reduce((sum, item) => sum + item.value, 0), 
-    []);
+    const totalEmployees = useMemo(() =>
+        pieData.reduce((sum, item) => sum + item.value, 0),
+        [pieData]);
 
     // Memoize percentage calculations for legend items
-    const legendItems = useMemo(() => 
-        pieChartData.map(item => ({
+    const legendItems = useMemo(() =>
+        pieData.map(item => ({
             ...item,
-            percentage: ((item.value / totalEmployees) * 100).toFixed(1)
-        })), 
-    [totalEmployees]);
+            percentage: totalEmployees > 0 ? ((item.value / totalEmployees) * 100).toFixed(1) : '0'
+        })),
+        [pieData, totalEmployees]);
+
+    const chartData = payrollTrend.length > 0 ? payrollTrend : lineChartData;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard" />
             <div className="@container/main flex flex-1 flex-col gap-2">
-                <SectionCards />
+                <SectionCards
+                    totalNetPay={totalNetPay}
+                    totalActiveEmployee={totalActiveEmployee}
+                    openPayrollPeriod={openPayrollPeriod}
+                    pendingApplicationLeave={pendingApplicationLeave}
+                />
 
                 <div className="my-4 relative flex-1 overflow-hidden rounded-xl border border-sidebar-border/70 md:min-h-min dark:border-sidebar-border mx-2 sm:mx-4 lg:mx-10">
 
@@ -394,8 +433,8 @@ export default function Dashboard() {
                                 {/* Chart Container */}
                                 <div className="w-full transition-all duration-300 ease-in-out flex-1">
                                     <div className="relative h-[200px] md:h-[250px] lg:h-[300px] lg:mt-5 w-full">
-                                        <LineChartComponent 
-                                            data={lineChartData} 
+                                        <LineChartComponent
+                                            data={chartData}
                                         />
                                     </div>
                                 </div>
@@ -430,13 +469,13 @@ export default function Dashboard() {
                             <div className="block lg:hidden w-full px-3">
                                 <div className="p-3 rounded-md border flex flex-col justify-center items-center w-full max-w-[600px] mx-auto">
                                     <header className='flex justify-center mt-1 font-bold text-sm'>
-                                        Employee Distribution
+                                        Employee Distribution by Pay Frequency
                                     </header>
 
                                     <div className="flex flex-col sm:flex-row items-center gap-4 w-full mt-2">
                                         <div className="w-full sm:w-[50%] md:w-[40%]">
                                             <div className="w-full h-[140px]">
-                                                <PieChartComponent data={pieChartData} />
+                                                <PieChartComponent data={pieData} />
                                             </div>
                                         </div>
 
@@ -454,7 +493,7 @@ export default function Dashboard() {
                                     </div>
 
                                     <p className="text-xs text-gray-500 mt-3 text-center">
-                                        2% increase in employee count this month
+                                        Total Active Employees: {totalEmployees}
                                     </p>
                                 </div>
                             </div>
@@ -463,11 +502,11 @@ export default function Dashboard() {
                             <div className="hidden lg:block">
                                 <div className="p-5 mt-2 rounded-md border flex flex-col justify-center items-center w-[240px]">
                                     <header className='flex justify-center mt-1 font-bold text-sm'>
-                                        Employee Distribution
+                                        Pay Frequency Distribution
                                     </header>
 
                                     <div className="w-full h-[160px]">
-                                        <DesktopPieChartComponent data={pieChartData} />
+                                        <DesktopPieChartComponent data={pieData} />
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-1 mt-2 w-full px-2">
@@ -480,7 +519,7 @@ export default function Dashboard() {
                                     </div>
 
                                     <p className="text-[9px] text-gray-500 mt-2 text-center px-2">
-                                        2% increase in employee count this month
+                                        Total: {totalEmployees} employees
                                     </p>
                                 </div>
                             </div>
