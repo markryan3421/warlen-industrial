@@ -98,19 +98,19 @@ class PayrollItemService
     ): void {
         $earnings = [
             [
-                'code' => 'BASE',
+                'code' => 'Basic Pay',
                 'type' => 'earning',
                 'amount' => $basePay,
                 'description' => "Basic Pay - " . number_format($regularDays, 3) . " days @ ₱" . number_format($employee->position->basic_salary, 2) . "/day"
             ],
             [
-                'code' => 'OVERTIME',
+                'code' => 'Overtime Pay',
                 'type' => 'earning',
                 'amount' => $overtimePay,
                 'description' => "Overtime Pay - " . number_format($overtimeDecimal, 3) . " days ({$overtimePercentage}% of a day) @ ₱" . number_format($overtimeRate, 2) . "/day (includes 25% additional)"
             ],
             [
-                'code' => 'HOLIDAY OT',
+                'code' => 'Holiday Overtime Pay',
                 'type' => 'earning',
                 'amount' => $holidayOvertimePay,
                 'description' => "Holiday Overtime Pay - " . number_format($holidayDecimal, 3) . " days ({$holidayPercentage}% of a day) @ ₱" . number_format($holidayOvertimeRate, 2) . "/day (includes 30% additional)"

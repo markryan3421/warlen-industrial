@@ -107,6 +107,14 @@ export function EmployeeFilterBar({
     dateLabel = "Date",
 }: EmployeeFilterBarProps) {
 
+    // searchTerm + onSearchChange
+    // selectedPositions + onPositionChange
+    // selectedBranch + onBranchChange
+    // selectedSite + onSiteChange
+    // status + onStatusChange
+    // dateFrom + onDateFromChange
+    // dateTo + onDateToChange
+
     const branchOptions = useMemo(
         () => branchesData.map(b => ({ value: b.branch_name, label: b.branch_name })),
         [branchesData],

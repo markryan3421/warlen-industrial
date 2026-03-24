@@ -34,19 +34,17 @@
 
 import { Head, Link, useForm, router } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
-import AppLayout from '@/layouts/app-layout';
+import HrLayout from '@/layouts/hr-layout';
 import { useState, useRef } from 'react';
 import type { BreadcrumbItem } from '@/types';
-import EmmployeeController from '@/actions/App/Http/Controllers/EmployeeController';
 import { Users, Search, UserPlus } from 'lucide-react';
 import { format } from 'date-fns';
 
 import { CustomTable } from '@/components/custom-table';
-import { EmployeeFilterBar, BranchData } from '@/components/employee/employee-filter-bar';
+import { BranchData, EmployeeFilterBar } from '@/components/employee/employee-filter-bar';
 import { EmployeesTableConfig } from '@/config/tables/employees-table';
 import { CustomPagination } from '@/components/custom-pagination';
-import { toast } from 'sonner';
-import { CustomHeader } from '@/components/custom-header';
+import HREmployeeController from '@/actions/App/Http/Controllers/HrRole/HREmployeeController';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Employees', href: '/employees' },
@@ -121,7 +119,6 @@ export default function Index({
     filteredCount,
 }: PageProps) {
     const { delete: destroy } = useForm();
-    console.log(EmployeesTableConfig.actions);
 
     // ── Filter state — initialised from URL params so the UI reflects the
     //    current server-side filter on first render / browser back-forward.
@@ -188,14 +185,14 @@ export default function Index({
         });
     }
 
-    // ── Search debounce — 100 ms so we don't hit the server on every keystroke
+    // ── Search debounce — 300 ms so we don't hit the server on every keystroke
     const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const handleSearchChange = (value: string) => {
         setSearchTerm(value);
         if (searchTimer.current) clearTimeout(searchTimer.current);
         searchTimer.current = setTimeout(() => {
             applyFilters({ search: value });
-        }, 100);
+        }, 300);
     };
 
     // ── Branch change resets site ────────────────────────────────────────────
@@ -250,18 +247,10 @@ export default function Index({
     };
 
     // ── Delete ────────────────────────────────────────────────────────────────
-    const handleDelete = (employee: Employee) => {
-        if (confirm("Are you sure you want to delete this employee?")) {
-            destroy(EmmployeeController.destroy(employee.slug_emp).url, {
-                onSuccess: (page) => {
-                    const successMessage = (page.props as any).flash?.success || 'Employee deleted successfully.';
-                    toast.success(successMessage);
-                },
-                onError: (errors) => {
-                    const errorMessage = Object.values(errors).flat()[0] || 'Failed to delete employee, please try again.';
-                    toast.error(errorMessage);
-                }
-            });
+    const handleDelete = (slug_emp: string) => {
+        if (confirm('Are you sure you want to delete this employee?')) {
+            destroy(HREmployeeController.destroy(slug_emp).url);
+
         }
     };
 
@@ -276,29 +265,19 @@ export default function Index({
         dateTo,
     ].filter(Boolean).length;
 
-    const handleView = (employee: Employee) => {
-        // Use your existing helper or router
-        router.get(EmmployeeController.show(employee.slug_emp).url);
-    };
-
-    const handleEdit = (employee: Employee) => {
-        router.get(EmmployeeController.edit(employee.slug_emp).url);
-    };
-
     // ─── Render ───────────────────────────────────────────────────────────────
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <HrLayout breadcrumbs={breadcrumbs}>
             <Head title="Employees" />
             <div className="flex flex-1 flex-col gap-4 p-4">
 
                 {/* Page header */}
                 <div className="flex justify-between items-center">
-                    <CustomHeader
-                        icon={<Users className="h-6 w-6 text-primary" />}
-                        title="Employees"
-                        description="Manage your workforce: add, edit, and organize employee records with ease."
-                    />
-                    <Link href="/employees/create">
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-900">Employee Management</h1>
+                        <p className="text-sm text-gray-500 mt-1">See who's active on this run.</p>
+                    </div>
+                    <Link href={HREmployeeController.create().url}>
                         <Button className="h-14">
                             <UserPlus className="h-5 w-5" />
                             <div className="flex flex-col items-start leading-tight">
@@ -319,13 +298,20 @@ export default function Index({
                         <p className="text-gray-500 mb-6 max-w-sm">
                             Get started by creating your first employee.
                         </p>
-                        <Link href="/employees/create">
+                        <Link href={HREmployeeController.create().url}>
                             <Button>Create Your First Employee</Button>
                         </Link>
                     </div>
 
                 ) : (
                     <>
+                        {/*
+                         * data={employees.data}  — the current page from the server.
+                         *   No filteredEmployees memo. The server already filtered + paginated.
+                         *
+                         * from={employees.from}  — correct 1-based row counter per page
+                         *   (e.g. page 2 of 10 starts at row 11, not 1).
+                         */}
                         <CustomTable
                             title="Employees"
                             columns={EmployeesTableConfig.columns}
@@ -333,23 +319,13 @@ export default function Index({
                             data={employees.data}
                             from={employees.from ?? 1}
                             onDelete={handleDelete}
-                            onView={() => {}}
-                            onEdit={() => {}}
+                            onView={() => { }}
+                            onEdit={() => { }}
+
                             toolbar={
                                 <EmployeeFilterBar
-                                    // Configuration - show all filters for employees
-                                    filters={{
-                                        search: true,
-                                        position: true,
-                                        branch: true,
-                                        site: true,
-                                        date: true,
-                                        status: true,
-                                    }}
-                                    // Data
                                     allPositions={allPositions}
                                     branchesData={branchesData}
-                                    // Filter values
                                     searchTerm={searchTerm}
                                     selectedPositions={selectedPositions}
                                     selectedBranch={selectedBranch}
@@ -357,7 +333,6 @@ export default function Index({
                                     status={status}
                                     dateFrom={dateFrom}
                                     dateTo={dateTo}
-                                    // Handlers
                                     onSearchChange={handleSearchChange}
                                     onPositionsChange={handlePositionsChange}
                                     onBranchChange={handleBranchChange}
@@ -366,11 +341,9 @@ export default function Index({
                                     onDateFromChange={handleDateFromChange}
                                     onDateToChange={handleDateToChange}
                                     onClearAll={clearFilters}
-                                    // Customizations
-                                    searchPlaceholder="Search by ID or name..."
-                                    dateLabel="Hire Date"
                                 />
                             }
+
                             filterEmptyState={
                                 <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
                                     <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center mb-3">
@@ -411,6 +384,6 @@ export default function Index({
                     </>
                 )}
             </div>
-        </AppLayout>
+        </HrLayout>
     );
 }

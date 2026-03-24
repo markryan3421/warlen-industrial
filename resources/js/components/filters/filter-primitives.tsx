@@ -502,7 +502,7 @@ export function DateRangePicker({
 const STATUS_OPTIONS = [
     { value: '', label: 'All', dot: 'bg-slate-400', style: 'text-slate-600 dark:text-slate-300' },
     { value: 'active', label: 'Active', dot: 'bg-emerald-500', style: 'text-emerald-700 dark:text-emerald-400' },
-    { value: 'inactive', label: 'Inactive', dot: 'bg-[#d85e39]', style: 'text-[#d85e39] dark:text-orange-400' },
+    { value: 'inactive', label: 'Inactive', dot: 'bg-orange-300', style: 'text-orange-700 dark:text-orange-400' },
 ] as const;
 
 type StatusValue = '' | 'active' | 'inactive';

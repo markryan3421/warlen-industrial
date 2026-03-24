@@ -35,18 +35,32 @@ type SidebarContext = {
     state: "expanded" | "collapsed"
     open: boolean
     setOpen: (open: boolean) => void
-    openMobile: boolean
-    setOpenMobile: (open: boolean) => void
     isMobile: boolean
     toggleSidebar: () => void
 }
 
 const SidebarContext = React.createContext<SidebarContext | null>(null)
 
+type SidebarMobileContext = {
+    openMobile: boolean
+    setOpenMobile: (open: boolean) => void
+}
+
+const SidebarMobileContext = React.createContext<SidebarMobileContext | null>(null)
+
 function useSidebar() {
     const context = React.useContext(SidebarContext)
     if (!context) {
         throw new Error("useSidebar must be used within a SidebarProvider.")
+    }
+
+    return context
+}
+
+function useSidebarMobile() {
+    const context = React.useContext(SidebarMobileContext)
+    if (!context) {
+        throw new Error("useSidebarMobile must be used within a SidebarProvider.")
     }
 
     return context
@@ -112,39 +126,47 @@ const SidebarProvider = React.forwardRef<
 
         const state = open ? "expanded" : "collapsed"
 
+        const mobileContextValue = React.useMemo<SidebarMobileContext>(
+            () => ({
+                openMobile,
+                setOpenMobile,
+            }),
+            [openMobile, setOpenMobile],
+        )
+
         const contextValue = React.useMemo<SidebarContext>(
             () => ({
                 state,
                 open,
                 setOpen,
                 isMobile,
-                openMobile,
-                setOpenMobile,
                 toggleSidebar,
             }),
-            [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar]
+            [state, open, setOpen, isMobile, toggleSidebar]
         )
 
         return (
             <SidebarContext.Provider value={contextValue}>
-                <TooltipProvider delayDuration={0}>
-                    <div
-                        ref={ref}
-                        data-slot="sidebar-wrapper"
-                        style={{
-                            "--sidebar-width": SIDEBAR_WIDTH,
-                            "--sidebar-width-icon": SIDEBAR_WIDTH_ICON,
-                            ...style,
-                        } as React.CSSProperties}
-                        className={cn(
-                            "group/sidebar-wrapper has-data-[variant=inset]:bg-sidebar flex min-h-svh w-full",
-                            className
-                        )}
-                        {...props}
-                    >
-                        {children}
-                    </div>
-                </TooltipProvider>
+                <SidebarMobileContext.Provider value={mobileContextValue}>
+                    <TooltipProvider delayDuration={0}>
+                        <div
+                            ref={ref}
+                            data-slot="sidebar-wrapper"
+                            style={{
+                                "--sidebar-width": SIDEBAR_WIDTH,
+                                "--sidebar-width-icon": SIDEBAR_WIDTH_ICON,
+                                ...style,
+                            } as React.CSSProperties}
+                            className={cn(
+                                "group/sidebar-wrapper has-data-[variant=inset]:bg-sidebar flex min-h-svh w-full",
+                                className
+                            )}
+                            {...props}
+                        >
+                            {children}
+                        </div>
+                    </TooltipProvider>
+                </SidebarMobileContext.Provider>
             </SidebarContext.Provider>
         )
     }
@@ -170,7 +192,8 @@ const Sidebar = React.forwardRef<
         },
         ref
     ) => {
-        const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
+        const { isMobile, state } = useSidebar()
+        const { openMobile, setOpenMobile } = useSidebarMobile()
 
         if (collapsible === "none") {
             return (
@@ -206,6 +229,7 @@ const Sidebar = React.forwardRef<
                             } as React.CSSProperties
                         }
                         side={side}
+                        forceMount
                     >
                         <div className="flex h-full w-full flex-col">{children}</div>
                     </SheetContent>
@@ -317,7 +341,7 @@ const SidebarRail = React.forwardRef<
 SidebarRail.displayName = "SidebarRail"
 
 const SidebarInset = React.forwardRef<
-    HTMLMainElement,
+    HTMLElement,
     React.ComponentProps<"main">
 >(({ className, ...props }, ref) => {
     return (
@@ -376,7 +400,7 @@ const SidebarFooter = React.forwardRef<
             ref={ref}
             data-slot="sidebar-footer"
             data-sidebar="footer"
-            className={cn("flex flex-col gap-2 p-2", className)}
+            className={cn("flex flex-col gap-2 p-2 ml-3", className)}
             {...props}
         />
     )
@@ -526,7 +550,7 @@ const SidebarMenuItem = React.forwardRef<
 SidebarMenuItem.displayName = "SidebarMenuItem"
 
 const sidebarMenuButtonVariants = cva(
-    "peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-hidden ring-sidebar-ring transition-[width,height,padding] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-data-[sidebar=menu-action]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-blue-600 data-[active=true]:font-semibold data-[active=true]:text-white data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2! [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0",
+    "peer/menu-button flex w-full items-center gap-2 -ml-1 overflow-hidden rounded-md p-2 text-left text-sm outline-hidden ring-sidebar-ring transition-[width,height,padding] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-data-[sidebar=menu-action]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-blue-600 data-[active=true]:text-white   data-[active=true]:font-semibold data-[active=true]:text-white data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2! [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:ml-2",
     {
         variants: {
             variant: {
@@ -629,7 +653,7 @@ const SidebarMenuAction = React.forwardRef<
                 "peer-data-[size=lg]/menu-button:top-2.5",
                 "group-data-[collapsible=icon]:hidden",
                 showOnHover &&
-                    "peer-data-[active=true]/menu-button:text-white group-focus-within/menu-item:opacity-100 group-hover/menu-item:opacity-100 data-[state=open]:opacity-100 md:opacity-0",
+                "peer-data-[active=true]/menu-button:text-white group-focus-within/menu-item:opacity-100 group-hover/menu-item:opacity-100 data-[state=open]:opacity-100 md:opacity-0",
                 className
             )}
             {...props}

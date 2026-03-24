@@ -201,7 +201,8 @@ function ActionDropdown({
 
     const handleAction = (action: ActionConfig) => {
         if (action.label === "Delete") {
-            onDelete(row.branch_slug || row.id);
+            // onDelete(row.branch_slug || row.id);
+            onDelete?.(row);
         } else if (action.label === "View") {
             onView?.(row);
         } else if (action.label === "Edit") {

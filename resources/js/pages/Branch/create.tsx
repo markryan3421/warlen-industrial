@@ -47,11 +47,23 @@ export default function Create() {
         post(store().url, {
             onSuccess: (page) => {
                 const successMessage = page.props.flash?.success || 'Branch created successfully.'
-                toast.success(successMessage);
+                toast.success(successMessage, {
+                    style: {
+                        backgroundColor: 'white',
+                        color: '#00ca00',
+                        border: '1px solid #d5d8d5'
+                    }
+                });
             },
             onError: (errors) => {
                 const errorMessage = Object.values(errors).flat()[0] || 'Failed to create branch.';
-                toast.error(errorMessage);
+                toast.error(errorMessage, {
+                    style: {
+                        backgroundColor: 'white',
+                        color: '#ff0000',
+                        border: '1px solid #d5d8d5'
+                    }
+                });
             }
         });
     }
@@ -84,7 +96,7 @@ export default function Create() {
                         {/* Branch Information Card - Left Column */}
                         <Card className="border shadow-sm overflow-hidden h-fit">
                             <CardHeader className="border-b">
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-3 mt-3">
                                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
                                         <Building2 className="h-4 w-4 text-primary" />
                                     </div>
@@ -97,7 +109,7 @@ export default function Create() {
                                 </div>
                             </CardHeader>
 
-                            <CardContent className="p-6">
+                            <CardContent className="p-6 -mt-7">
                                 <div className="space-y-5">
                                     {/* Branch Name Field */}
                                     <div className="space-y-2">
@@ -141,10 +153,10 @@ export default function Create() {
                         </Card>
 
                         {/* Branch Sites Card - Right Column */}
-                        <Card className="border shadow-sm overflow-hidden h-fit">
+                        <Card className="border shadow-sm overflow-hidden h-full">
                             <CardHeader className="border-b">
                                 <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-3 mt-3">
                                         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
                                             <PlusCircle className="h-4 w-4 text-primary" />
                                         </div>
@@ -154,7 +166,7 @@ export default function Create() {
                                                 Add sites under this branch
                                             </CardDescription>
                                         </div>
-                                    </div>
+                                    </div   >
 
                                     {/* Show count of sites */}
                                     {data.sites.length > 0 && (
@@ -165,7 +177,7 @@ export default function Create() {
                                 </div>
                             </CardHeader>
 
-                            <CardContent className="p-6">
+                            <CardContent className="p-6 -mt-7">
                                 <SiteRepeater
                                     sites={data.sites}
                                     setSites={setSites}
@@ -181,14 +193,14 @@ export default function Create() {
                             type="button"
                             variant="outline"
                             onClick={() => window.history.back()}
-                            className="min-w-[100px]"
+                            className="min-w-[100px] gap-2 hover:cursor-pointer"
                         >
                             Cancel
                         </Button>
                         <Button
                             type="submit"
                             disabled={processing}
-                            className="min-w-[140px] gap-2"
+                            className="min-w-[140px] gap-2 hover:cursor-pointer"
                         >
                             {processing ? (
                                 <>

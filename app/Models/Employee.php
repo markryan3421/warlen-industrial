@@ -7,7 +7,9 @@ use App\Models\Branch;
 use App\Models\Position;
 use App\Models\User;
 use App\Policies\EmployeePolicy;
+use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Attributes\UsePolicy;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -172,28 +174,26 @@ class Employee extends Model
         return $this->belongsToMany(Employee::class, 'employee_incentives', 'employee_id', 'incentive_id');
     }
 
-
-
     // Accessors and Mutators
     protected function employeeStatus(): Attribute
     {
         return Attribute::make(
             get: fn($value) => Str::title($value),
-            set: fn($value) => strtolower(strip_tags($value)),
+            set: fn($value) => strtolower(trim(strip_tags($value))),
         );
     }
 
     protected function employeeNumber(): Attribute
     {
         return Attribute::make(
-            set: fn($value) => strip_tags($value),
+            set: fn($value) => trim(strip_tags($value)),
         );
     }
 
     protected function emergencyContactNumber(): Attribute
     {
         return Attribute::make(
-            set: fn($value) => strip_tags($value),
+            set: fn($value) => trim(strip_tags($value)),
         );
     }
 
@@ -201,7 +201,7 @@ class Employee extends Model
     {
         return Attribute::make(
             // get: fn($value) => preg_replace('/[^a-zA-Z0-9\s]/', '-', Str::title($value)),
-            set: fn($value) => strtolower(strip_tags($value)),
+            set: fn($value) => strtolower(trim(strip_tags($value))),
         );
     }
 

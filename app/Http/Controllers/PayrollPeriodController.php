@@ -21,7 +21,14 @@ class PayrollPeriodController extends Controller
     {
         Gate::authorize('viewAny', PayrollPeriod::class);
 
-        $payrollPeriods = PayrollPeriod::query()->get();
+        $payrollPeriods = PayrollPeriod::query()
+            ->get([
+                'id',
+                'start_date',
+                'end_date',
+                'pay_date',
+                'payroll_per_status',
+            ]);
 
         $payroll_period_enums = PayrollPeriodStatusEnum::options();
 

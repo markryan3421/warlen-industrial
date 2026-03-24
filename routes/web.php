@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\ApplicationLeaveController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AttendanceImportController;
@@ -10,6 +11,7 @@ use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\EmployeeRole\ApplicationLeaveController as EmployeeApplicationLeaveController;
 use App\Http\Controllers\HrRole\HRAttendanceController;
 use App\Http\Controllers\HrRole\HRAttendanceImportController;
+use App\Http\Controllers\HrRole\HREmployeeController;
 use App\Http\Controllers\HrRole\HRIncentiveController;
 use App\Http\Controllers\HrRole\PayrollController as HrPayrollController;
 use App\Http\Controllers\HrRole\PayrollPeriodController as HrPayrollPeriodController;
@@ -30,9 +32,6 @@ Route::get('/', function () {
     return Inertia::render('auth/login');
 })->name('home');
 
-// Route::get('dashboard', function () {
-//     return Inertia::render('dashboard');
-// })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware(['auth', 'verified', 'throttle:limit-actions', 'roleBase'])->group(function () {
 
@@ -44,9 +43,7 @@ Route::middleware(['auth', 'verified', 'throttle:limit-actions', 'roleBase'])->g
         return Inertia::render('multipletables/index');
     });
     //admin dashboard
-    Route::get('dashboard', function () {
-        return Inertia::render('dashboard');
-    })->name('dashboard');
+    Route::get('dashboard',AdminDashboardController::class)->name('dashboard');
 
     //employee dashboard
     Route::get('employee/dashboard', function () {
@@ -61,7 +58,7 @@ Route::middleware(['auth', 'verified', 'throttle:limit-actions', 'roleBase'])->g
     Route::resource('branches', BranchController::class)->except(['show']);
     Route::delete('/branches/{branch:branch_slug}', [BranchController::class, 'destroy'])->name('branches.destroy');
     Route::resource('positions', PositionController::class)->except(['show']);
-    Route::resource('employees', EmployeeController::class)->except(['show']);
+    Route::resource('employees', EmployeeController::class);
     Route::resource('permissions', PermissionController::class);
     Route::resource('incentives', IncentiveController::class)->except(['show']);
 
@@ -81,10 +78,11 @@ Route::middleware(['auth', 'verified', 'throttle:limit-actions', 'roleBase'])->g
 
     Route::resource('payrolls', PayrollController::class)->except(['show']);
 
-    Route::get('/attendance-schedules', [AttendanceController::class, 'attendanceSchedules'])->name('admin.attendance-schedules');
-    Route::get('/attendance-period-stats', [AttendanceController::class, 'attendancePeriodStats'])->name('admin.attendance-period-stats');
-    Route::get('/attendance-logs', [AttendanceController::class, 'attendanceLogs'])->name('admin.attendance-logs');
-    Route::get('/attendance-exception-stats', [AttendanceController::class, 'attendanceExceptionStats'])->name('admin.attendance-exception-stats');
+    Route::get('/attendances', [AttendanceController::class, 'attendanceManagement'])->name('attendances.index');
+    Route::get('/attendance-schedules', [AttendanceController::class, 'attendanceSchedules']);
+    Route::get('/attendance-period-stats', [AttendanceController::class, 'attendancePeriodStats']);
+    Route::get('/attendance-logs', [AttendanceController::class, 'attendanceLogs']);
+    Route::get('/attendance-exception-stats', [AttendanceController::class, 'attendanceExceptionStats']);
 
     Route::get('/coming-soon', function () {
         return Inertia::render('coming-soon');
@@ -126,6 +124,15 @@ Route::middleware(['auth', 'verified', 'throttle:limit-actions', 'roleBase'])->g
         'edit' => 'hr.payroll-periods.edit',
         'update' => 'hr.payroll-periods.update',
         'destroy' => 'hr.payroll-periods.destroy',
+    ]);
+
+    Route::resource('hr/employees', HREmployeeController::class)->except(['show'])->names([
+        'index' => 'hr.employees.index',
+        'create' => 'hr.employees.create',
+        'store' => 'hr.employees.store',
+        'edit' => 'hr.employees.edit',
+        'update' => 'hr.employees.update',
+        'destroy' => 'hr.employees.destroy',
     ]);
 });
 

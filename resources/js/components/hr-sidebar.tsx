@@ -35,6 +35,7 @@ import PayrollController from "@/actions/App/Http/Controllers/HrRole/PayrollCont
 import PayrollPeriodController from "@/actions/App/Http/Controllers/HrRole/PayrollPeriodController";
 import AttendanceController from "@/actions/App/Http/Controllers/HrRole/HRAttendanceController";
 import IncentiveController from "@/actions/App/Http/Controllers/HrRole/HRIncentiveController";
+import HREmployeeController from '@/actions/App/Http/Controllers/HrRole/HREmployeeController';
 
 // HR-specific menu items
 const hrExpendituresItems: NavItem[] = [
@@ -44,10 +45,15 @@ const hrExpendituresItems: NavItem[] = [
         icon: Airplay,
     },
 
-      {
+    {
         title: 'Incentives',
         href: IncentiveController.index(),
         icon: FileBadge,
+    },
+    {
+        title: 'Employees',
+        href: HREmployeeController.index(),
+        icon: CircleUser,
     },
     {
         title: 'Run Payroll',
@@ -59,7 +65,7 @@ const hrExpendituresItems: NavItem[] = [
         href: PayrollPeriodController.index(),
         icon: Calendar,
     },
-       {
+    {
         title: 'Attendance',
         href: '/hr/attendances',
         icon: Users,

@@ -1,7 +1,6 @@
 import { Head, router, useForm } from '@inertiajs/react';
 import { Clock, ScrollText } from 'lucide-react';
-import { useMemo, useState } from 'react';
-
+import { useMemo, useState, useEffect } from 'react';
 import { AttendanceLogTimeline } from '@/components/attendance/attendance-log-view';
 import { CustomPagination } from '@/components/custom-pagination';
 import { CustomTable } from '@/components/custom-table';
@@ -67,9 +66,64 @@ export default function AttendanceLogs({ logs, timelineData, filters, totalCount
     perPage: filters.perPage || '5',
   });
 
+  const [activeTab, setActiveTab] = useState('table');
+
+  // Log logs data whenever it changes
+  useEffect(() => {
+    console.log('========== ATTENDANCE LOGS DEBUG ==========');
+    console.log('Full logs object:', logs);
+    console.log('Logs data array:', logs?.data);
+    console.log('Number of records in logs:', logs?.data?.length);
+    console.log('First log record (if exists):', logs?.data?.[0]);
+    console.log('Last log record (if exists):', logs?.data?.[logs?.data?.length - 1]);
+    console.log('Pagination info:', {
+        from: logs?.from,
+        to: logs?.to,
+        total: logs?.total,
+        currentPage: logs?.current_page,
+        lastPage: logs?.last_page,
+        perPage: logs?.per_page
+    });
+    console.log('Logs links:', logs?.links);
+    console.log('===========================================');
+  }, [logs]);
+
+  // Log timeline data whenever it changes
+  useEffect(() => {
+    console.log('========== TIMELINE DATA DEBUG ==========');
+    console.log('Raw timelineData:', timelineData);
+    console.log('Is timelineData array?', Array.isArray(timelineData));
+    console.log('Timeline data length:', timelineData?.length);
+    if (timelineData && timelineData.length > 0) {
+      console.log('First timeline record:', timelineData[0]);
+      console.log('Sample date format:', timelineData[0]?.date);
+    }
+    console.log('=========================================');
+  }, [timelineData]);
+
+  // Log filters and form data
+  useEffect(() => {
+    console.log('========== FILTERS DEBUG ==========');
+    console.log('Filters from props:', filters);
+    console.log('Form data:', data);
+    console.log('Total count:', totalCount);
+    console.log('Filtered count:', filteredCount);
+    console.log('====================================');
+  }, [filters, data, totalCount, filteredCount]);
+
+  // Log component mount
+  useEffect(() => {
+    console.log('AttendanceLogs component mounted');
+    console.log('Initial state - activeTab:', 'table');
+    return () => {
+      console.log('AttendanceLogs component unmounted');
+    };
+  }, []);
+
   // Handle search input change
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
+    console.log('Search input changed to:', value);
     setData('search', value);
 
     // Update the URL with the search query value
@@ -77,6 +131,7 @@ export default function AttendanceLogs({ logs, timelineData, filters, totalCount
       ...(value && { search: value }),
       ...(data.perPage && { perPage: data.perPage }),
     };
+    console.log('Search query string:', queryString);
 
     // Pass the search query to the backend to filter permissions
     router.get(AttendanceController.attendanceLogs.url(), queryString, {
@@ -87,6 +142,7 @@ export default function AttendanceLogs({ logs, timelineData, filters, totalCount
 
   // Clears the search bar and resets the list
   const handleReset = () => {
+    console.log('Reset filters clicked');
     setData('search', '');
     setData('perPage', '5');
 
@@ -98,6 +154,7 @@ export default function AttendanceLogs({ logs, timelineData, filters, totalCount
 
   // Handle number of permissions to display per page
   const handlePerPageChange = (value: string) => {
+    console.log('Per page changed to:', value);
     setData('perPage', value);
 
     // Update the URL with the per page value
@@ -105,6 +162,7 @@ export default function AttendanceLogs({ logs, timelineData, filters, totalCount
       ...(data.search && { search: data.search }),
       ...(value && { perPage: value }),
     };
+    console.log('Per page query string:', queryString);
 
     router.get(AttendanceController.attendanceLogs.url(), queryString, {
       preserveState: true,
@@ -112,20 +170,53 @@ export default function AttendanceLogs({ logs, timelineData, filters, totalCount
     });
   }
 
-  const [activeTab, setActiveTab] = useState('table');
+  // Handle tab change
+  const handleTabChange = (value: string) => {
+    console.log('Tab changed from', activeTab, 'to', value);
+    setActiveTab(value);
+  };
+
+  // Format timeline data with error handling
   const timelineDataFormat = useMemo(() => {
-    return timelineData.map(record => ({
-      ...record,
-      date: record.date.split('T')[0],         // keep only YYYY-MM-DD
-      employee_id: record.employee_id,
-      employeeName: record.employee_name,
-      department: record.department,
-      timeIn: record.time_in,
-      timeOut: record.time_out,
-      totalHours: record.total_hours,
-      isOvertime: record.is_overtime,
-    }));
+    console.log('Formatting timeline data...');
+    if (!timelineData || !Array.isArray(timelineData)) {
+      console.log('No timeline data to format');
+      return [];
+    }
+    
+    try {
+      const formatted = timelineData.map(record => {
+        const formattedRecord = {
+          ...record,
+          date: record.date ? record.date.split('T')[0] : '', // keep only YYYY-MM-DD
+          employee_id: record.employee_id,
+          employeeName: record.employee_name,
+          department: record.department,
+          timeIn: record.time_in,
+          timeOut: record.time_out,
+          totalHours: record.total_hours,
+          isOvertime: record.is_overtime,
+        };
+        return formattedRecord;
+      });
+      
+      console.log('Formatted timeline data count:', formatted.length);
+      if (formatted.length > 0) {
+        console.log('Sample formatted record:', formatted[0]);
+      }
+      
+      return formatted;
+    } catch (error) {
+      console.error('Error formatting timeline data:', error);
+      return [];
+    }
   }, [timelineData]);
+
+  // Log whenever formatted data changes
+  useEffect(() => {
+    console.log('timelineDataFormat updated:', timelineDataFormat);
+    console.log('Formatted data length:', timelineDataFormat.length);
+  }, [timelineDataFormat]);
 
   return (
     <AppLayout breadcrumbs={breadcrumbs}>
@@ -145,10 +236,17 @@ export default function AttendanceLogs({ logs, timelineData, filters, totalCount
           </div>
         </div>
 
+        {/* Debug info - can be removed after testing */}
+        <div className="text-xs text-gray-500 ms-4 flex gap-4">
+          <span>Logs: {logs?.data?.length || 0} records</span>
+          <span>Timeline: {timelineData?.length || 0} records</span>
+          <span>Active Tab: {activeTab}</span>
+        </div>
+
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 w-full">
           <Tabs
             value={activeTab}
-            onValueChange={setActiveTab}
+            onValueChange={handleTabChange}
             defaultValue="table"
             className="w-full sm:w-auto"
           >
@@ -157,14 +255,14 @@ export default function AttendanceLogs({ logs, timelineData, filters, totalCount
                 value="table"
                 className="rounded-full px-6 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
               >
-                <Sheet className="h-4 w-4" />
+                <Sheet className="h-4 w-4 mr-2" />
                 Table
               </TabsTrigger>
               <TabsTrigger
                 value="timeline"
                 className="rounded-full px-6 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
               >
-                <Clock className="h-4 w-4" />
+                <Clock className="h-4 w-4 mr-2" />
                 Timeline
               </TabsTrigger>
             </TabsList>
@@ -185,21 +283,21 @@ export default function AttendanceLogs({ logs, timelineData, filters, totalCount
                 onClick={handleReset}
                 className="bg-primary h-10 px-5 cursor-pointer whitespace-nowrap"
               >
-                clear
+                Clear
               </Button>
             </div>
           )}
         </div>
 
-        {/* Table/Calendar content */}
+        {/* Table/Timeline content */}
         {activeTab === 'table' ? (
           <>
             {/* Custom Table */}
             <CustomTable
               columns={AttendanceLogsTableConfig.columns}
               actions={AttendanceLogsTableConfig.actions}
-              data={logs.data}
-              from={logs.from}
+              data={logs?.data || []}
+              from={logs?.from || 0}
               onDelete={() => { }}   // no delete for attendance records
               onView={() => { }}  // wire up a modal here later if needed
               onEdit={() => { }}     // no edit for attendance records
@@ -217,8 +315,8 @@ export default function AttendanceLogs({ logs, timelineData, filters, totalCount
           </>
         ) : activeTab === 'timeline' ? (
           <AttendanceLogTimeline
-            logs={timelineData} // Make sure this is always an array
-            isLoading={false} // Add loading state if needed
+            logs={timelineDataFormat} // Use formatted data
+            isLoading={false}
             onEmployeeSelect={(employeeId) => {
               console.log('Selected employee:', employeeId);
             }}

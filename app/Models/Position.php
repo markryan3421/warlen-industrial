@@ -3,7 +3,9 @@
 namespace App\Models;
 
 use App\Policies\PositionPolicy;
+use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Attributes\UsePolicy;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -44,6 +46,17 @@ class Position extends Model
     public function getRouteKeyName(): string
     {
         return 'pos_slug';
+    }
+
+    #[Scope]
+    protected function getPosition(Builder $query):void
+    {
+        $this->select(
+            'id',
+            'pos_name',
+            'basic_salary',
+            'pos_slug'
+        );
     }
 
     // In App\Models\Position
