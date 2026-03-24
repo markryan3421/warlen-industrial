@@ -11,7 +11,7 @@ export const AttendanceExceptionStatsTableConfig = {
       className: 'border px-4 py-3',
     },
     {
-      label: 'Department',
+      label: 'Project Site',
       key: 'department',
       className: 'border px-4 py-3',
     },
