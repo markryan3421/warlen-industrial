@@ -333,8 +333,8 @@ export default function Index({
                             data={employees.data}
                             from={employees.from ?? 1}
                             onDelete={handleDelete}
-                            onView={() => {}}
-                            onEdit={() => {}}
+                            onView={handleView}
+                            onEdit={handleEdit}
                             toolbar={
                                 <EmployeeFilterBar
                                     // Configuration - show all filters for employees
