@@ -1,16 +1,17 @@
 // pages/branches/index.tsx
 import { Head, Link, router, useForm } from '@inertiajs/react';
-import { Building2 } from 'lucide-react';
+import { Building2, Search } from 'lucide-react';
 import { useState } from 'react';
 import BranchController from "@/actions/App/Http/Controllers/BranchController";
 import { CustomTable } from '@/components/custom-table';
 import { CustomToast, toast } from '@/components/custom-toast';
-import { TableSearchHeader } from '@/components/table-search-header';
 import { Pagination } from '@/components/ui/pagination';
 import { BranchesTableConfig } from '@/config/tables/branch-table';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type BranchWithSites } from '@/types';
 import { SitesModal } from '@/components/sites-modal';
+import { EmployeeFilterBar } from '@/components/employee/employee-filter-bar';
+import { Button } from '@/components/ui/button';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -80,7 +81,7 @@ export default function Index({ branches, filters, totalCount, filteredCount }: 
         });
     };
 
-    const handleSearchReset = () => {
+    const handleClearAll = () => {
         setData('search', '');
         setData('perPage', '10');
 
@@ -128,6 +129,8 @@ export default function Index({ branches, filters, totalCount, filteredCount }: 
         setIsModalOpen(true);
     };
 
+    const hasActiveFilters = !!data.search.trim();
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Branches" />
@@ -147,14 +150,7 @@ export default function Index({ branches, filters, totalCount, filteredCount }: 
                     </div>
                 </div>
 
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <TableSearchHeader
-                        searchValue={data.search}
-                        onSearchChange={handleSearchChange}
-                        onSearchReset={handleSearchReset}
-                        searchPlaceholder="Search branches..."
-                    />
-                    
+                <div className="flex justify-end">
                     <Link
                         href={BranchController.create()}
                         className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 whitespace-nowrap"
@@ -172,6 +168,40 @@ export default function Index({ branches, filters, totalCount, filteredCount }: 
                     onView={viewBranchSites}
                     onEdit={editBranch}
                     title="Branches"
+                    toolbar={
+                        <EmployeeFilterBar
+                            filters={{
+                                search: true,
+                                position: false,
+                                branch: false,
+                                site: false,
+                                date: false,
+                                status: false,
+                            }}
+                            searchTerm={data.search}
+                            onSearchChange={handleSearchChange}
+                            onClearAll={hasActiveFilters ? handleClearAll : undefined}
+                            searchPlaceholder="Search by branch name or address..."
+                        />
+                    }
+                    filterEmptyState={
+                        hasActiveFilters && branches.data.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
+                                <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center mb-3">
+                                    <Search className="h-5 w-5 text-slate-400 dark:text-slate-500" />
+                                </div>
+                                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1">
+                                    No results found
+                                </h3>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 max-w-xs">
+                                    No branches matching "{data.search}".
+                                </p>
+                                <Button variant="outline" size="sm" onClick={handleClearAll}>
+                                    Clear search
+                                </Button>
+                            </div>
+                        ) : undefined
+                    }
                 />
 
                 {/* Pagination */}
@@ -182,7 +212,7 @@ export default function Index({ branches, filters, totalCount, filteredCount }: 
                     totalCount={totalCount}
                     filteredCount={filteredCount}
                     search={data.search}
-                    resourceName='branch'
+                    resourceName='branches'
                 />
 
                 {/* Sites Modal */}
