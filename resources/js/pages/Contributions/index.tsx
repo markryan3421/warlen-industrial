@@ -246,29 +246,6 @@ export default function Index({
                 {/* Filters and Create button */}
                 {hasRecords && (
                     <div className="flex justify-between items-center gap-4">
-                        <div className="flex items-center gap-2">
-                            <Select
-                                value={typeFilter || 'all'}
-                                onValueChange={handleTypeFilterChange}
-                            >
-                                <SelectTrigger className="w-[180px]">
-                                    <SelectValue placeholder="Filter by type" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Types</SelectItem>
-                                    <SelectItem value="sss">SSS</SelectItem>
-                                    <SelectItem value="philhealth">PhilHealth</SelectItem>
-                                    <SelectItem value="pagibig">Pag-IBIG</SelectItem>
-                                </SelectContent>
-                            </Select>
-
-                            {hasActiveFilters && (
-                                <Button variant="ghost" size="sm" onClick={handleClearAllFilters}>
-                                    Clear Filter
-                                </Button>
-                            )}
-                        </div>
-
                         <Button
                             onClick={() => setIsCreateModalOpen(true)}
                             className="inline-flex items-center justify-center gap-2"
@@ -317,7 +294,7 @@ export default function Index({
                                 </CardContent>
                             </Card>
                         ) : (
-                            <Card>
+                            
                                 <CardContent className="p-0">
                                     <CustomTable
                                         columns={ContributionTableConfig.columns}
@@ -330,7 +307,7 @@ export default function Index({
                                         title="Contribution Table"
                                     />
                                 </CardContent>
-                            </Card>
+                            
                         )}
 
                         {/* Pagination */}

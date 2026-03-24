@@ -2,11 +2,11 @@ import { Head, Link, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import { Briefcase, Eye, Pencil, Trash2, Search } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { format } from 'date-fns';
+import { Card, CardContent } from '@/components/ui/card';
+import { format, isWithinInterval, parseISO } from 'date-fns';
 import { CustomTable } from '@/components/custom-table';
 import { EmployeeFilterBar } from '@/components/employee/employee-filter-bar';
 import { CustomPagination } from '@/components/custom-pagination';
@@ -40,7 +40,7 @@ interface Props {
         current_page: number;
         last_page: number;
         links: any[];
-    };
+    } | Incentive[];
     filters?: { date_from?: string; date_to?: string; search?: string };
     totalCount: number;
     filteredCount: number;
@@ -48,54 +48,126 @@ interface Props {
 
 export default function Index({ incentives, filters = {}, totalCount, filteredCount }: Props) {
     const [selected, setSelected] = useState<Incentive | null>(null);
-    const [search, setSearch] = useState(filters.search ?? '');
-    const [dateFrom, setDateFrom] = useState<Date | undefined>(
-        filters.date_from ? new Date(filters.date_from) : undefined
-    );
-    const [dateTo, setDateTo] = useState<Date | undefined>(
-        filters.date_to ? new Date(filters.date_to) : undefined
-    );
+    const [searchTerm, setSearchTerm] = useState('');
+    const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
+    const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
 
-    // Debug: Log the incoming data
-    useEffect(() => {
-        console.log('Incentives data:', incentives);
-        console.log('Incentives data array:', incentives?.data);
-        console.log('Total count:', totalCount);
-        console.log('Filtered count:', filteredCount);
-    }, [incentives]);
+    // Process all data from props
+    let allData: Incentive[] = [];
+    let originalPaginationData: any = {
+        data: [],
+        perPage: 10,
+        total: 0,
+        from: 1,
+        current_page: 1,
+        last_page: 1,
+        links: []
+    };
+    
+    if (Array.isArray(incentives)) {
+        allData = incentives;
+        originalPaginationData = {
+            data: incentives,
+            perPage: 10,
+            total: incentives.length,
+            from: 1,
+            current_page: 1,
+            last_page: 1,
+            links: []
+        };
+    } else if (incentives && incentives.data && Array.isArray(incentives.data)) {
+        allData = incentives.data;
+        originalPaginationData = incentives;
+    }
 
-    let searchTimer: NodeJS.Timeout;
+    // Frontend filtering logic
+    const filteredData = useMemo(() => {
+        let filtered = [...allData];
+        
+        // Filter by search term (incentive name)
+        if (searchTerm.trim()) {
+            filtered = filtered.filter(incentive =>
+                incentive.incentive_name.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+        }
+        
+        // Filter by date range
+        if (dateFrom || dateTo) {
+            filtered = filtered.filter(incentive => {
+                if (!incentive.payroll_period) return false;
+                
+                const startDate = parseISO(incentive.payroll_period.start_date);
+                const endDate = parseISO(incentive.payroll_period.end_date);
+                
+                if (dateFrom && dateTo) {
+                    // Both dates selected - check if period overlaps with range
+                    return startDate >= dateFrom && endDate <= dateTo;
+                } else if (dateFrom) {
+                    // Only from date - check if period starts after or on from date
+                    return startDate >= dateFrom;
+                } else if (dateTo) {
+                    // Only to date - check if period ends before or on to date
+                    return endDate <= dateTo;
+                }
+                return true;
+            });
+        }
+        
+        return filtered;
+    }, [allData, searchTerm, dateFrom, dateTo]);
 
-    const applyFilters = (overrides: any = {}) => {
-        const params: any = {};
-        const s = overrides.search ?? search;
-        const from = overrides.from ?? dateFrom;
-        const to = overrides.to ?? dateTo;
-        const perPage = overrides.perPage ?? String(incentives.perPage ?? 10);
-
-        if (s?.trim()) params.search = s.trim();
-        if (from) params.date_from = format(from, 'yyyy-MM-dd');
-        if (to) params.date_to = format(to, 'yyyy-MM-dd');
-        if (perPage && perPage !== '10') params.perPage = perPage;
-
-        router.get('/incentives', params, { preserveState: true, replace: true });
+    // Pagination logic
+    const totalFilteredCount = filteredData.length;
+    const totalPages = Math.ceil(totalFilteredCount / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const currentData = filteredData.slice(startIndex, endIndex);
+    
+    // Update pagination data for CustomPagination component
+    const paginationData = {
+        ...originalPaginationData,
+        data: currentData,
+        total: totalFilteredCount,
+        from: startIndex + 1,
+        current_page: currentPage,
+        last_page: totalPages,
+        perPage: itemsPerPage
     };
 
+    // Reset to first page when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, dateFrom, dateTo]);
+
     const handleSearch = (value: string) => {
-        setSearch(value);
-        clearTimeout(searchTimer);
-        searchTimer = setTimeout(() => applyFilters({ search: value }), 300);
+        setSearchTerm(value);
+    };
+
+    const handleDateFromChange = (date: Date | undefined) => {
+        setDateFrom(date);
+    };
+
+    const handleDateToChange = (date: Date | undefined) => {
+        setDateTo(date);
     };
 
     const clearFilters = () => {
-        setSearch('');
+        setSearchTerm('');
         setDateFrom(undefined);
         setDateTo(undefined);
-        router.get('/incentives', {}, { preserveState: true, replace: true });
+        setCurrentPage(1);
+    };
+
+    const handlePerPageChange = (value: string | number) => {
+        const newPerPage = Number(value);
+        setItemsPerPage(newPerPage);
+        setCurrentPage(1); // Reset to first page when changing items per page
     };
 
     const handleDelete = (id: string | number) => {
-        if (confirm('Delete this incentive?')) {
+        if (confirm('Are you sure you want to delete this incentive?')) {
             router.delete(`/incentives/${id}`);
         }
     };
@@ -116,6 +188,9 @@ export default function Index({ incentives, filters = {}, totalCount, filteredCo
         year: 'numeric', month: 'long', day: 'numeric' 
     });
 
+    const hasFilters = !!(searchTerm || dateFrom || dateTo);
+    const hasNoDataAtAll = allData.length === 0;
+
     const columns = [
         { 
             key: 'incentive_name', 
@@ -125,7 +200,6 @@ export default function Index({ incentives, filters = {}, totalCount, filteredCo
         { 
             key: 'incentive_amount', 
             label: 'Amount',
-            isBadge: true,
             render: (row: Incentive) => formatCurrency(row.incentive_amount)
         },
         {
@@ -141,8 +215,14 @@ export default function Index({ incentives, filters = {}, totalCount, filteredCo
         { 
             key: 'employees', 
             label: 'Employees',
-            isBadge: true,
-            render: (row: Incentive) => String(row.employees?.length || 0)
+            render: (row: Incentive) => {
+                const count = row.employees?.length || 0;
+                return (
+                    <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                        {count} {count === 1 ? 'Employee' : 'Employees'}
+                    </Badge>
+                );
+            }
         },
         {
             key: 'actions',
@@ -169,12 +249,6 @@ export default function Index({ incentives, filters = {}, totalCount, filteredCo
         }
     ];
 
-    const data = incentives?.data ?? [];
-    const hasFilters = !!(search || dateFrom || dateTo);
-
-    console.log('Data being passed to CustomTable:', data);
-    console.log('Data length:', data.length);
-
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Incentives" />
@@ -186,110 +260,147 @@ export default function Index({ incentives, filters = {}, totalCount, filteredCo
                         <p className="text-muted-foreground mt-1">Manage employee incentives across payroll periods</p>
                     </div>
                     <Link href="/incentives/create">
-                        <Button><Briefcase className="h-4 w-4 mr-2" />Add Incentive</Button>
+                        <Button className="bg-[#1d4791] hover:bg-[#1d4791]/90">
+                            <Briefcase className="h-4 w-4 mr-2" />
+                            Add Incentive
+                        </Button>
                     </Link>
                 </div>
 
-                {incentives?.total === 0 && !hasFilters ? (
-                    <Card className="border-dashed">
-                        <CardContent className="flex flex-col items-center py-16">
-                            <div className="rounded-full bg-primary/10 p-6 mb-4">
-                                <Briefcase className="h-12 w-12 text-primary" />
-                            </div>
-                            <h3 className="text-xl font-semibold mb-2">No incentives yet</h3>
-                            <Link href="/incentives/create">
-                                <Button>Create First Incentive</Button>
-                            </Link>
-                        </CardContent>
-                    </Card>
-                ) : (
-                    <Card>
-                        
-                        <CardContent className="p-0">
-                            <CustomTable
-                                columns={columns}
-                                actions={actions}
-                                data={data}
-                                from={incentives?.from ?? 1}
-                                onDelete={handleDelete}
-                                onView={handleView}
-                                onEdit={handleEdit}
-                                title="Incentives"
-                                toolbar={
-                                    <EmployeeFilterBar
-                                        filters={{
-                                            search: true,
-                                            position: false,
-                                            branch: false,
-                                            site: false,
-                                            date: true,
-                                            status: false,
-                                        }}
-                                        searchTerm={search}
-                                        onSearchChange={handleSearch}
-                                        dateFrom={dateFrom}
-                                        dateTo={dateTo}
-                                        onDateFromChange={setDateFrom}
-                                        onDateToChange={setDateTo}
-                                        onClearAll={clearFilters}
-                                        searchPlaceholder="Search by incentive name..."
-                                        dateLabel="Date Range"
-                                        allPositions={[]}
-                                        branchesData={[]}
-                                        selectedPositions={[]}
-                                        selectedBranch={undefined}
-                                        selectedSite={undefined}
-                                        status=""
-                                        onPositionsChange={() => {}}
-                                        onBranchChange={() => {}}
-                                        onSiteChange={() => {}}
-                                        onStatusChange={() => {}}
-                                    />
-                                }
-                            />
-                            {data.length > 0 && (
-                                <div className="px-6 pb-4">
-                                    <CustomPagination
-                                        pagination={incentives}
-                                        perPage={String(incentives?.perPage ?? 10)}
-                                        onPerPageChange={(v) => applyFilters({ perPage: v })}
-                                        totalCount={totalCount}
-                                        filteredCount={filteredCount}
-                                        search={search}
-                                        resourceName="incentive"
-                                    />
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
-                )}
 
-                <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>{selected?.incentive_name}</DialogTitle>
-                            <Badge variant="secondary">{formatCurrency(selected?.incentive_amount ?? 0)}</Badge>
-                        </DialogHeader>
-                        <div>
-                            <h4 className="font-medium mb-2">Assigned Employees ({selected?.employees?.length || 0})</h4>
-                            {selected?.employees?.length ? (
-                                <div className="border rounded-md divide-y">
-                                    {selected.employees.map(emp => (
-                                        <div key={emp.id} className="p-3 text-sm">
-                                            <div className="font-medium">{emp.user?.name || `Employee #${emp.id}`}</div>
-                                            <div className="text-muted-foreground">
-                                                {emp.position?.pos_name} • {emp.branch?.branch_name}
-                                            </div>
+                    <CardContent className="p-0">
+                        <CustomTable
+                            columns={columns}
+                            actions={actions}
+                            data={currentData}
+                            from={startIndex + 1}
+                            onDelete={handleDelete}
+                            onView={handleView}
+                            onEdit={handleEdit}
+                            title="Incentives List"
+                            toolbar={
+                                <EmployeeFilterBar
+                                    filters={{
+                                        search: true,
+                                        position: false,
+                                        branch: false,
+                                        site: false,
+                                        date: true,
+                                        status: false,
+                                    }}
+                                    searchTerm={searchTerm}
+                                    onSearchChange={handleSearch}
+                                    dateFrom={dateFrom}
+                                    dateTo={dateTo}
+                                    onDateFromChange={handleDateFromChange}
+                                    onDateToChange={handleDateToChange}
+                                    onClearAll={clearFilters}
+                                    searchPlaceholder="Search by incentive name..."
+                                    dateLabel="Payroll Period Date Range"
+                                    allPositions={[]}
+                                    branchesData={[]}
+                                    selectedPositions={[]}
+                                    selectedBranch={undefined}
+                                    selectedSite={undefined}
+                                    status=""
+                                    onPositionsChange={() => {}}
+                                    onBranchChange={() => {}}
+                                    onSiteChange={() => {}}
+                                    onStatusChange={() => {}}
+                                />
+                            }
+                            emptyState={
+                                hasNoDataAtAll && !hasFilters ? (
+                                    // Empty state when no data exists at all
+                                    <div className="flex flex-col items-center justify-center py-16">
+                                        <div className="rounded-full bg-primary/10 p-6 mb-4">
+                                            <Briefcase className="h-12 w-12 text-primary" />
                                         </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="text-center py-8 text-muted-foreground">No employees assigned</div>
-                            )}
-                        </div>
-                    </DialogContent>
-                </Dialog>
+                                        <h3 className="text-xl font-semibold mb-2">No incentives yet</h3>
+                                        <p className="text-muted-foreground mb-4">Create your first incentive to get started</p>
+                                        <Link href="/incentives/create">
+                                            <Button className="bg-[#1d4791] hover:bg-[#1d4791]/90">Create First Incentive</Button>
+                                        </Link>
+                                    </div>
+                                ) : filteredData.length === 0 && hasFilters ? (
+                                    // No results state when filters are applied but no matches
+                                    <div className="flex flex-col items-center justify-center py-16">
+                                        <div className="rounded-full bg-muted p-6 mb-4">
+                                            <Search className="h-12 w-12 text-muted-foreground" />
+                                        </div>
+                                        <h3 className="text-xl font-semibold mb-2">No results found</h3>
+                                        <p className="text-muted-foreground mb-4">
+                                            No incentives match "{searchTerm}" {dateFrom || dateTo ? 'in the selected date range' : ''}
+                                        </p>
+                                        <Button variant="outline" onClick={clearFilters}>
+                                            Clear all filters
+                                        </Button>
+                                    </div>
+                                ) : null
+                            }
+                        />
+                        {allData.length > 0 && (
+                            <div className="px-6 pb-4">
+                                <CustomPagination
+                                    pagination={paginationData}
+                                    perPage={String(itemsPerPage)}
+                                    onPerPageChange={handlePerPageChange}
+                                    totalCount={allData.length}
+                                    filteredCount={filteredData.length}
+                                    search={searchTerm}
+                                    resourceName="incentive"
+                                />
+                            </div>
+                        )}
+                    </CardContent>
             </div>
+
+            {/* View Dialog */}
+            <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
+                <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle className="text-2xl">{selected?.incentive_name}</DialogTitle>
+                        <div className="mt-2">
+                            <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-lg px-4 py-1">
+                                {formatCurrency(selected?.incentive_amount ?? 0)}
+                            </Badge>
+                        </div>
+                    </DialogHeader>
+                    <div className="mt-4">
+                        {selected?.payroll_period && (
+                            <div className="mb-4 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                                <h4 className="font-semibold mb-2">Payroll Period</h4>
+                                <p className="text-sm">
+                                    {formatDate(selected.payroll_period.start_date)} - {formatDate(selected.payroll_period.end_date)}
+                                </p>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                    Payment Date: {formatDate(selected.payroll_period.pay_date)}
+                                </p>
+                            </div>
+                        )}
+                        
+                        <h4 className="font-semibold mb-3">Assigned Employees ({selected?.employees?.length || 0})</h4>
+                        {selected?.employees && selected.employees.length > 0 ? (
+                            <div className="border rounded-md divide-y max-h-96 overflow-y-auto">
+                                {selected.employees.map(emp => (
+                                    <div key={emp.id} className="p-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                                        <div className="font-medium">{emp.user?.name || `Employee #${emp.id}`}</div>
+                                        <div className="text-sm text-muted-foreground mt-1">
+                                            {emp.position?.pos_name && <span>{emp.position.pos_name}</span>}
+                                            {emp.position?.pos_name && emp.branch?.branch_name && <span> • </span>}
+                                            {emp.branch?.branch_name && <span>{emp.branch.branch_name}</span>}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center py-8 text-muted-foreground border rounded-md">
+                                No employees assigned to this incentive
+                            </div>
+                        )}
+                    </div>
+                </DialogContent>
+            </Dialog>
         </AppLayout>
     );
 }
