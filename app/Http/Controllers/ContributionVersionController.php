@@ -64,6 +64,7 @@ class ContributionVersionController extends Controller
     public function store(StoreContributionRequest $request, CreateNewContribution $action)
     {
         Gate::authorize('create', ContributionVersion::class);
+
         if ($this->limit('store-contribution:' . auth()->id(), 60, 20)) {
             return back()->with('error', 'Too many attempts. Please try again later.');
         }
@@ -136,8 +137,14 @@ class ContributionVersionController extends Controller
     public function destroy(ContributionVersion $contributionVersion)
     {
         Gate::authorize('delete', $contributionVersion);
+
+        if ($this->limit('delete-contribution:' . auth()->id(), 60, 20)) {
+            return back()->with('error', 'Too many attempts. Please try again later.');
+        }
+
         $contributionVersion->delete();
-        $this->cacheForget('contribution_versions'); 
+
+        $this->cacheForget('contribution_versions');
 
         return to_route('contribution-versions.index')->with('success', 'Contribution deleted successfully.');
     }
