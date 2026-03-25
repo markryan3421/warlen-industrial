@@ -11,9 +11,6 @@ import { Button } from "@headlessui/react"
 import { Link } from "@inertiajs/react"
 import { useEffect, useState, useRef, memo, useCallback, useMemo, useLayoutEffect } from "react"
 import { cn } from "@/lib/utils"
-import PayrollController from "@/actions/App/Http/Controllers/PayrollController"
-import ApplicationLeaveController from "@/actions/App/Http/Controllers/ApplicationLeaveController";
-import EmployeeController from '@/actions/App/Http/Controllers/EmployeeController';
 
 // In React 18 dev/StrictMode, components can mount/unmount/mount again.
 // This ensures the count-up animation only runs once per value+duration.
@@ -255,7 +252,7 @@ export const SectionCards = memo(function SectionCards({
     return (
         <div className={gridClasses}>
             {/* Total Revenue Card */}
-            <Link href={PayrollController.index()}>
+            <Link href='/payrolls'>
             <StatCard
                 title="Total Net Pay"
                 value={totalNetPay}

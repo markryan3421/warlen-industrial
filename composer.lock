@@ -1562,6 +1562,12 @@
                 "type": "zip",
                 "url": "https://api.github.com/repos/laravel/framework/zipball/6d9185a248d101b07eecaf8fd60b18129545fd33",
                 "reference": "6d9185a248d101b07eecaf8fd60b18129545fd33",
+            "version": "v12.55.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/laravel/framework.git",
+                "reference": "6d9185a248d101b07eecaf8fd60b18129545fd33"
+            },
                 "shasum": ""
             },
             "require": {

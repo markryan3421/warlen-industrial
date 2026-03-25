@@ -39,9 +39,6 @@ Route::middleware(['auth', 'verified', 'roleBase'])->group(function () {
         return Inertia::render('payroll/index');
     });
 
-    Route::get('multipletables', function () {
-        return Inertia::render('multipletables/index');
-    });
     //admin dashboard
     Route::get('dashboard',AdminDashboardController::class)->name('dashboard');
 
@@ -88,7 +85,7 @@ Route::middleware(['auth', 'verified', 'roleBase'])->group(function () {
         return Inertia::render('coming-soon');
     });
     Route::resource('/activity-logs', ActivityLogController::class)->only(['index']);
-
+    Route::resource('/contributions', ContributionVersionController::class);
 
 
     //intended for HR

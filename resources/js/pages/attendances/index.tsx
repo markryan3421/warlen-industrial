@@ -18,7 +18,7 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog";
-import { ExceptionStatsTimeline} from '@/components/attendance/exception-stats-view';
+import { ExceptionStatsTimeline } from '@/components/attendance/exception-stats-view';
 import { AttendanceLogTimeline } from '@/components/attendance/attendance-log-view';
 
 // Types
@@ -981,10 +981,8 @@ export default function AttendanceManagement({
                         />
                     ) : activeMainTab === 'exceptions' && activeSubTab === 'calendar' ? (
                         <ExceptionStatsTimeline
-                            calendarData={calendarDataFormatted}
-                            onDayClick={(dateKey, records) => console.log('Selected:', dateKey, records)}
-                            maxVisible={3}
-                            title="Attendance Exception Stats"
+                            exceptions={calendarDataFormatted}
+                            onExceptionClick={(record) => console.log('Selected:', record)}
                         />
                     ) : null}
                 </div>

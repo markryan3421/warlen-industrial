@@ -46,15 +46,33 @@ class PayrollItemService
         $holidayPercentage = $holidayDecimal * 100;
 
         // Create earnings items
-        $this->createEarningItems($payroll, $employee, $basePay, $overtimePay, $holidayOvertimePay, 
-                                   $subsidyPay, $regularDays, $overtimeDecimal, $overtimePercentage, 
-                                   $overtimeRate, $holidayDecimal, $holidayPercentage, $holidayOvertimeRate, 
-                                   $incentives);
+        $this->createEarningItems(
+            $payroll,
+            $employee,
+            $basePay,
+            $overtimePay,
+            $holidayOvertimePay,
+            $subsidyPay,
+            $regularDays,
+            $overtimeDecimal,
+            $overtimePercentage,
+            $overtimeRate,
+            $holidayDecimal,
+            $holidayPercentage,
+            $holidayOvertimeRate,
+            $incentives
+        );
 
         // Create deduction items
-        $this->createDeductionItems($payroll, $lateDeduction, $aflDeduction, $cutPayment, 
-                                     $lateMinutes, $contributions);
-        
+        $this->createDeductionItems(
+            $payroll,
+            $lateDeduction,
+            $aflDeduction,
+            $cutPayment,
+            $lateMinutes,
+            $contributions
+        );
+
         // Log summary
         $this->logSummary($employee, $incentives, $contributions);
     }
@@ -185,11 +203,11 @@ class PayrollItemService
                     'code' => 'SSS',
                     'type' => 'deduction',
                     'amount' => $contributions['sss']['employee'],
-                    'description' => 'SSS Contribution (Employee Share) - ' . 
+                    'description' => 'SSS Contribution (Employee Share) - ' .
                         number_format(($contributions['sss']['employee'] / ($payroll->gross_pay ?? 1) * 100), 2) . '% of gross pay'
                 ];
             }
-            
+
             if ($contributions['pagibig']['employee'] > 0) {
                 $deductions[] = [
                     'code' => 'PAGIBIG',
@@ -198,13 +216,13 @@ class PayrollItemService
                     'description' => 'Pag-IBIG Contribution (Employee Share)'
                 ];
             }
-            
+
             if ($contributions['philhealth']['employee'] > 0) {
                 $deductions[] = [
                     'code' => 'PHILHEALTH',
                     'type' => 'deduction',
                     'amount' => $contributions['philhealth']['employee'],
-                    'description' => 'PhilHealth Contribution (Employee Share) - ' . 
+                    'description' => 'PhilHealth Contribution (Employee Share) - ' .
                         number_format(($contributions['philhealth']['employee'] / ($payroll->gross_pay ?? 1) * 100), 2) . '% of gross pay'
                 ];
             }
@@ -230,22 +248,22 @@ class PayrollItemService
     {
         Log::info("Payroll items created for employee {$employee->emp_code} with status {$employee->employee_status}, " .
             "position {$employee->position->pos_name} (Daily Rate: ₱{$employee->position->basic_salary})");
-        
+
         // Log incentive totals
         if (!empty($incentives)) {
             $totalIncentives = array_sum(array_column($incentives, 'amount'));
             Log::info("Incentives for {$employee->emp_code}: Total ₱{$totalIncentives}");
         }
-        
+
         // Log contribution totals
         if (!empty($contributions)) {
             Log::info("Government contributions for {$employee->emp_code}:", [
                 'sss' => $contributions['sss']['employee'] ?? 0,
                 'pagibig' => $contributions['pagibig']['employee'] ?? 0,
                 'philhealth' => $contributions['philhealth']['employee'] ?? 0,
-                'total_deductions' => ($contributions['sss']['employee'] ?? 0) + 
-                                     ($contributions['pagibig']['employee'] ?? 0) + 
-                                     ($contributions['philhealth']['employee'] ?? 0)
+                'total_deductions' => ($contributions['sss']['employee'] ?? 0) +
+                    ($contributions['pagibig']['employee'] ?? 0) +
+                    ($contributions['philhealth']['employee'] ?? 0)
             ]);
         }
     }
