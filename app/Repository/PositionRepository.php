@@ -15,7 +15,7 @@ class PositionRepository
 
     public function getPositions()
     {
-        return Position::query()->get(['id', 'pos_name','basic_salary', 'pos_slug']);
+        return Position::query()->get(['id', 'pos_name','basic_salary', 'pos_slug','is_salary_fixed']);
             
     }
 

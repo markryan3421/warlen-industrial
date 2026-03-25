@@ -4,7 +4,6 @@ namespace App\Policies;
 
 use App\Models\ApplicationLeave;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
 
 class ApplicationLeavePolicy
 {
@@ -19,7 +18,7 @@ class ApplicationLeavePolicy
 
         return $user->hasRole('employee')
             && $user->employee
-            && $user->employee->employee_status == 'Active';
+            && $user->employee->employee_status == 'Active' || 'active';
     }
 
     /**
@@ -38,7 +37,7 @@ class ApplicationLeavePolicy
         return $user->hasRole('employee')
             &&
             $user->employee &&
-            $user->employee->employee_status == 'Active';
+            $user->employee->employee_status == 'Active' || 'active';
     }
 
     /**

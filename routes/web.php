@@ -33,7 +33,7 @@ Route::get('/', function () {
 })->name('home');
 
 
-Route::middleware(['auth', 'verified', 'throttle:limit-actions', 'roleBase'])->group(function () {
+Route::middleware(['auth', 'verified', 'roleBase'])->group(function () {
 
     Route::get('payroll', function () {
         return Inertia::render('payroll/index');
