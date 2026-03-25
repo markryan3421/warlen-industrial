@@ -178,7 +178,7 @@ export default function Index({
         if (to) params.date_to = format(to, 'yyyy-MM-dd');
         if (pp && pp !== '10') params.perPage = pp;     // omit when default
 
-        router.get('/employees', params, {
+        router.get('/hr/employees', params, {
             preserveState: true,
             preserveScroll: true,
             replace: true,
@@ -243,7 +243,7 @@ export default function Index({
         setDateFrom(undefined);
         setDateTo(undefined);
         // Navigate to a clean URL — no filter params at all
-        router.get('/employees', {}, { preserveState: true, replace: true });
+        router.get('/hr/employees', {}, { preserveState: true, replace: true });
     };
 
     // ── Delete ────────────────────────────────────────────────────────────────
