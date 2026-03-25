@@ -41,7 +41,7 @@ const ExpendituresItems: NavItem[] = [
     },
     {
         title: 'Contributions',
-        href: '/contributions',
+        href: ContributionVersionController.index(),
         icon: Handshake,
     },
     {
