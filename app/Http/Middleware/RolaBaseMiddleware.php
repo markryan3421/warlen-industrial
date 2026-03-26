@@ -85,6 +85,7 @@ class RolaBaseMiddleware
                 'employee.destroy',
                 'permissions.*',
                 'incentives.*',
+                'attendances.*',
                 'contribution-versions.*',
                 'employee.application-leave.*',
                 'payroll-periods.*',

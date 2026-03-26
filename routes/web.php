@@ -94,9 +94,11 @@ Route::middleware(['auth', 'verified', 'roleBase'])->group(function () {
     Route::get('/hr/attendance-period-stats', [HRAttendanceController::class, 'attendancePeriodStats'])->name('hr.attendance-period-stats');
     Route::get('/hr/attendance-schedules', [HRAttendanceController::class, 'attendanceSchedules'])->name('hr.attendance-schedules');
 
-    Route::resource('/hr/attendances', HRAttendanceImportController::class, [
-        'as' => 'hr'
-    ]);
+    Route::get('hr/attendances', [HRAttendanceController::class, 'attendanceManagement'])->name('hr.attendances.index');
+
+    // Route::resource('/hr/attendances', HRAttendanceImportController::class, [
+    //     'as' => 'hr'
+    // ]);
 
     Route::resource('hr/incentives', HRIncentiveController::class)->except(['show'])->names([
         'index' => 'hr.incentives.index',
