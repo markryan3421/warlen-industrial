@@ -926,7 +926,7 @@ function EditContributionModal({ isOpen, onClose, contributionVersion, existingT
                             onClick={handleClose}
                             className='hover:cursor-pointer'
                         >
-                            Cancel
+                             Cancel
                         </Button>
                         <Button
                             type="submit"
