@@ -11,8 +11,8 @@ import { Button } from "@headlessui/react"
 import { Link } from "@inertiajs/react"
 import { useEffect, useState, useRef, memo, useCallback, useMemo, useLayoutEffect } from "react"
 import { cn } from "@/lib/utils"
-import ApplicationLeaveController from '@/actions/App/Http/Controllers/ApplicationLeaveController';
-import EmployeeController from "@/actions/App/Http/Controllers/EmployeeController";
+import ApplicationLeaveController from "@/actions/App/Http/Controllers/ApplicationLeaveController"
+import EmployeeController from "@/actions/App/Http/Controllers/EmployeeController"
 
 // In React 18 dev/StrictMode, components can mount/unmount/mount again.
 // This ensures the count-up animation only runs once per value+duration.

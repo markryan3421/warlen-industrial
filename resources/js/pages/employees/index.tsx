@@ -47,6 +47,7 @@ import { EmployeesTableConfig } from '@/config/tables/employees-table';
 import { CustomPagination } from '@/components/custom-pagination';
 import { toast } from 'sonner';
 import { CustomHeader } from '@/components/custom-header';
+import EmployeeController from '@/actions/App/Http/Controllers/EmployeeController';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Employees', href: '/employees' },
@@ -250,17 +251,17 @@ export default function Index({
     };
 
     // ── Delete ────────────────────────────────────────────────────────────────
-    const handleDelete = (employee: Employee) => {
+    const handleDelete = (id: number) => {
+        // Find the employee in the current page data
+        const employee = employees.data.find(emp => emp.id === id);
+        if (!employee?.slug_emp) {
+            console.error('Employee not found or missing slug', id);
+            toast.error('Cannot delete employee: missing identifier');
+            return;
+        }
         if (confirm("Are you sure you want to delete this employee?")) {
-            destroy(EmmployeeController.destroy(employee.slug_emp).url, {
-                onSuccess: (page) => {
-                    const successMessage = (page.props as any).flash?.success || 'Employee deleted successfully.';
-                    toast.success(successMessage);
-                },
-                onError: (errors) => {
-                    const errorMessage = Object.values(errors).flat()[0] || 'Failed to delete employee, please try again.';
-                    toast.error(errorMessage);
-                }
+            destroy(EmployeeController.destroy(employee.slug_emp).url, {
+                // onSuccess and onError callbacks (optional)
             });
         }
     };
@@ -285,6 +286,8 @@ export default function Index({
         router.get(EmmployeeController.edit(employee.slug_emp).url);
     };
 
+    console.log(employees.data);
+
     // ─── Render ───────────────────────────────────────────────────────────────
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -294,12 +297,12 @@ export default function Index({
                 {/* Page header */}
                 <div className="flex justify-between items-center">
                     <CustomHeader
-                        icon={<Users className="h-6 w-6 text-primary" />}
+                        icon={<Users />}
                         title="Employees"
                         description="Manage your workforce: add, edit, and organize employee records with ease."
                     />
                     <Link href="/employees/create">
-                        <Button className="h-14">
+                        <Button className="h-14 mr-4">
                             <UserPlus className="h-5 w-5" />
                             <div className="flex flex-col items-start leading-tight">
                                 <span className="text-sm font-medium">Create</span>
@@ -325,7 +328,7 @@ export default function Index({
                     </div>
 
                 ) : (
-                    <>
+                    <div className='mx-4'>
                         <CustomTable
                             title="Employees"
                             columns={EmployeesTableConfig.columns}
@@ -408,7 +411,7 @@ export default function Index({
                             search={searchTerm}
                             resourceName="employee"
                         />
-                    </>
+                    </div>
                 )}
             </div>
         </AppLayout>
