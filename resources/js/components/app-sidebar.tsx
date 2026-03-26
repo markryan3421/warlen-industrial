@@ -41,7 +41,7 @@ const ExpendituresItems: NavItem[] = [
     },
     {
         title: 'Contributions',
-        href: '/contributions',
+        href: '/contribution-versions',
         icon: Handshake,
     },
     {
@@ -91,26 +91,26 @@ const AttendanceItems: NavItem[] = [
         href: '/attendances',
         icon: Users,
     },
-    {
-        title: 'Attendance Exception Stats',
-        href: '/attendance-exception-stats',
-        icon: CircleUser,
-    },
-    {
-        title: 'Attendance Logs',
-        href: '/attendance-logs',
-        icon: Contact,
-    },
-    {
-        title: 'Attendance Period Stats',
-        href: '/attendance-period-stats',
-        icon: BookUser,
-    },
-    {
-        title: 'Attendance Schedules',
-        href: '/attendance-schedules',
-        icon: UserRoundCog,
-    },
+    // {
+    //     title: 'Attendance Exception Stats',
+    //     href: '/attendance-exception-stats',
+    //     icon: CircleUser,
+    // },
+    // {
+    //     title: 'Attendance Logs',
+    //     href: '/attendance-logs',
+    //     icon: Contact,
+    // },
+    // {
+    //     title: 'Attendance Period Stats',
+    //     href: '/attendance-period-stats',
+    //     icon: BookUser,
+    // },
+    // {
+    //     title: 'Attendance Schedules',
+    //     href: '/attendance-schedules',
+    //     icon: UserRoundCog,
+    // },
 ];
 
 const footerNavItems: NavItem[] = [];

@@ -19,6 +19,7 @@ interface Position {
     pos_name: string;
     basic_salary: number;
     pos_slug: string;
+    is_salary_fixed: boolean;
 }
 
 interface Props {
@@ -135,6 +136,7 @@ export default function Index({ positions, filters = { search: '', perPage: '10'
                                     <TableRow>
                                         <TableHead className="text-left">Position Name</TableHead>
                                         <TableHead className="text-left">Basic Salary</TableHead>
+                                        <TableHead className='text-let'>Is salary Fixed?</TableHead>
                                         <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -146,6 +148,9 @@ export default function Index({ positions, filters = { search: '', perPage: '10'
                                             </TableCell>
                                             <TableCell className="text-left">
                                                 ₱ {Number(position.basic_salary).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            </TableCell>
+                                            <TableCell className="text-left">
+                                                {position.is_salary_fixed ? 'Yes' : 'No'}
                                             </TableCell>
                                             <TableCell className="text-right">
                                                 <div className="flex items-center justify-end gap-2">

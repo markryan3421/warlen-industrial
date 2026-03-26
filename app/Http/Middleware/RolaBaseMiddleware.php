@@ -32,10 +32,11 @@ class RolaBaseMiddleware
             'hr.payroll.*',
             'hr.payroll-periods.*',
             'hr.attendances.*',
-            'hr.attendance-logs',          
-            'hr.attendance-exception-stats', 
-            'hr.attendance-period-stats',    
-            'hr.attendance-schedules'      
+            'hr.attendance-logs',
+            'hr.attendance-exception-stats',
+            'hr.attendance-period-stats',
+            'hr.attendance-schedules',
+            'hr.employees.*'
         ))) {
             abort(401);
         }
@@ -56,11 +57,11 @@ class RolaBaseMiddleware
                 'hr.payroll.*',
                 'hr.payroll-periods.*',
                 'hr.attendances.*',
-                'hr.attendance-logs',           
+                'hr.attendance-logs',
                 'hr.attendance-exception-stats',
                 'hr.attendance-period-stats',
                 'hr.attendance-schedules',
-                'admin.attendance-logs',           
+                'admin.attendance-logs',
                 'admin.attendance-exception-stats',
                 'admin.attendance-period-stats',
                 'admin.attendance-schedules'
@@ -84,10 +85,11 @@ class RolaBaseMiddleware
                 'employee.destroy',
                 'permissions.*',
                 'incentives.*',
+                'attendances.*',
                 'contribution-versions.*',
                 'employee.application-leave.*',
                 'payroll-periods.*',
-                'admin.attendance-logs',           
+                'admin.attendance-logs',
                 'admin.attendance-exception-stats',
                 'admin.attendance-period-stats',
                 'admin.attendance-schedules'
