@@ -1,7 +1,7 @@
 import { ArrowUpRight, Circle, Minus } from 'lucide-react';
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import {
-    CartesianGrid, Cell, Line, LineChart, Pie, PieChart, Tooltip,
+    CartesianGrid, Cell, Line, LineChart, Pie, PieChart, Tooltip, TooltipProps,
     XAxis, YAxis
 } from 'recharts';
 
@@ -33,9 +33,9 @@ const lineChartData = [
 
 // Default colors for pay frequencies
 const defaultColors = {
-    weekender: "#2563eb",    // Blue
-    monthly: "#60a5fa",      // Light blue
-    semi_monthly: "#93c5fd", // Lighter blue
+    weekender: "#0031d2",    // Blue
+    monthly: "#007bff",      // Light blue
+    semi_monthly: "#00ccff", // Lighter blue
 };
 
 const chartConfig = {
@@ -129,7 +129,7 @@ const StableLineChart = memo(
                     width={width}
                     height={height}
                     data={data}
-                    margin={{ top: 30, right: 20, left: 0, bottom: 0 }}
+                    margin={{ top: 30, right: 20, left: 15, bottom: 0 }}
                     onMouseMove={(state) => {
                         if (state && state.activeTooltipIndex !== undefined && state.activePayload) {
                             const payload = state.activePayload[0]?.payload;
@@ -236,7 +236,7 @@ const LineChartComponent = memo(({ data }: { data: typeof lineChartData }) => {
     const scaleY = stableHeight > 0 && liveHeight > 0 ? liveHeight / stableHeight : 1;
 
     return (
-        <div ref={containerRef} className="relative w-full h-full overflow-hidden">
+        <div ref={containerRef} className="relative w-full h-full overflow-hidden mt-10">
             {stableWidth > 0 && stableHeight > 0 && (
                 <div
                     style={{
@@ -341,7 +341,34 @@ const DesktopPieChartComponent = memo(({ data }: { data: Array<{ name: string; v
                         ))}
                     </Pie>
                     <Tooltip
-                        formatter={(value: any) => [`${value} employees`, '']}
+                        formatter={(value: any, name: any, props: any) => {
+                            // Get the segment name (frequency type)
+                            const frequencyType = String(name || 'Unknown');
+                            const count = value;
+
+                            // Format the label based on frequency type
+                            let label = '';
+
+                            switch (frequencyType) {
+                                case 'Monthly':
+                                    label = 'Monthly Employees';
+                                    break;
+                                case 'Semi-Monthly':
+                                    label = 'Semi-Monthly Employees';
+                                    break;
+                                case 'Weekender':
+                                    label = 'Weekender Employees';
+                                    break;
+                                case 'Daily':
+                                    label = 'Daily Employees';
+                                    break;
+                                default:
+                                    label = 'Employees';
+                            }
+
+                            // Return as array: [formatted value, label]
+                            return [`${label} : ${count}`];
+                        }}
                         contentStyle={{
                             fontSize: '11px',
                             padding: '4px 8px',
@@ -367,11 +394,11 @@ interface DashboardProps {
     employee_pay_frequency?: Array<{ name: string; value: number }>;
 }
 
-export default function Dashboard({ 
-    totalNetPay = 0, 
-    totalActiveEmployee = 0, 
-    openPayrollPeriod = 0, 
-    pendingApplicationLeave = 0, 
+export default function Dashboard({
+    totalNetPay = 0,
+    totalActiveEmployee = 0,
+    openPayrollPeriod = 0,
+    pendingApplicationLeave = 0,
     payrollTrend = [],
     employee_pay_frequency = []
 }: DashboardProps) {
@@ -417,110 +444,128 @@ export default function Dashboard({
                     pendingApplicationLeave={pendingApplicationLeave}
                 />
 
-                <div className="my-4 relative flex-1 overflow-hidden rounded-xl border border-sidebar-border/70 md:min-h-min dark:border-sidebar-border mx-2 sm:mx-4 lg:mx-10">
+                {/* Main Container with Border */}
+                <div className="mx-2 sm:mx-4 lg:mx-10 my-4">
+                    <div className="relative overflow-hidden rounded-xl border border-sidebar-border/70 bg-white dark:bg-gray-900 shadow-sm">
 
-                    {/* Main 3-column grid layout */}
-                    <div className='grid grid-cols-1 lg:grid-cols-9 gap-4 p-3 sm:p-5 lg:p-8'>
+                        {/* Main 3-column grid layout */}
+                        <div className='grid grid-cols-1 lg:grid-cols-9 gap-4 p-3 sm:p-5 lg:p-8'>
 
-                        {/* Column 1: System Alert */}
-                        <div className="col-span-1 md:col-span-1 lg:col-span-3">
-                            <SystemAlert />
-                        </div>
-
-                        {/* Column 2: Line Chart */}
-                        <div className="col-span-1 md:col-span-1 lg:col-span-4">
-                            <div className='rounded-lg text-xs h-full flex flex-col'>
-                                {/* Chart Container */}
-                                <div className="w-full transition-all duration-300 ease-in-out flex-1">
-                                    <div className="relative h-[200px] md:h-[250px] lg:h-[300px] lg:mt-5 w-full">
-                                        <LineChartComponent
-                                            data={chartData}
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Footer with Total Revenue text */}
-                                <div className="flex flex-row sm:flex-row items-start sm:items-center justify-between gap-2 px-2 sm:px-4 mt-2">
-                                    <div className="flex items-center gap-4">
-                                        <div className="flex items-center gap-1">
-                                            <div className="relative text-blue-800">
-                                                <Minus className='h-6 w-6 sm:h-8 sm:w-8' />
-                                                <Circle className='absolute -mt-[18px] sm:-mt-[22px] h-2 w-[8px] sm:h-3 sm:w-[10px] ml-[8px] sm:ml-[10.5px] font-bold bg-white' />
-                                            </div>
-                                            <span className="text-xs text-gray-600 font-medium">Total Revenue</span>
-                                        </div>
-                                    </div>
-
-                                    {/* View Full Analysis Link */}
-                                    <Link
-                                        href="/reports/analysis"
-                                        className="inline-flex items-center text-xs text-blue-600 hover:text-blue-800 hover:underline font-medium transition-colors duration-200 group"
-                                    >
-                                        <span>View Full Analysis</span>
-                                        <ArrowUpRight className="w-4 h-4 ml-1 transition-transform duration-200 group-hover:translate-x-[2px] group-hover:translate-y-[-2px]" />
-                                    </Link>
+                            {/* Column 1: System Alert */}
+                            <div className="col-span-1 md:col-span-1 lg:col-span-3">
+                                <div className="h-full">
+                                    <SystemAlert />
                                 </div>
                             </div>
-                        </div>
 
-                        {/* Column 3: Pie Chart */}
-                        <div className="col-span-1 md:col-span-1 lg:col-span-2 flex items-center justify-center">
-                            {/* Mobile & Tablet Layout */}
-                            <div className="block lg:hidden w-full px-3">
-                                <div className="p-3 rounded-md border flex flex-col justify-center items-center w-full max-w-[600px] mx-auto">
-                                    <header className='flex justify-center mt-1 font-bold text-sm'>
-                                        Employee Distribution by Pay Frequency
-                                    </header>
+                            {/* Column 2: Line Chart */}
+                            <div className="col-span-1 md:col-span-1 lg:col-span-4 -mt-4">
+                                <div className='rounded-lg h-full flex flex-col'>
+                                    {/* Chart Container */}
+                                    <div className="w-full transition-all duration-300 ease-in-out flex-1">
+                                        <div className="relative h-[200px] md:h-[250px] lg:h-[300px] w-full">
+                                            <LineChartComponent data={chartData} />
+                                        </div>
+                                    </div>
 
-                                    <div className="flex flex-col sm:flex-row items-center gap-4 w-full mt-2">
-                                        <div className="w-full sm:w-[50%] md:w-[40%]">
-                                            <div className="w-full h-[140px]">
-                                                <PieChartComponent data={pieData} />
+                                    {/* Footer with Total Revenue text */}
+                                    <div className="flex flex-row items-start sm:items-center justify-between gap-2 px-2 sm:px-4 mt-2 pt-2 border-t border-gray-100 dark:border-gray-800">
+                                        <div className="flex items-center gap-4">
+                                            <div className="flex items-center gap-1">
+                                                <div className="relative text-blue-800">
+                                                    <Minus className='h-6 w-6 sm:h-8 sm:w-8' />
+                                                    <Circle className='absolute -mt-[18px] sm:-mt-[22px] h-2 w-[8px] sm:h-3 sm:w-[10px] ml-[8px] sm:ml-[10.5px] font-bold bg-white dark:bg-gray-900' />
+                                                </div>
+                                                <span className="text-xs text-gray-600 font-medium">Total Revenue</span>
                                             </div>
                                         </div>
 
-                                        <div className="w-full sm:w-[50%]">
-                                            <div className="grid grid-cols-2 sm:grid-cols-1 gap-2">
+                                        {/* View Full Analysis Link */}
+                                        <Link
+                                            href="/reports/analysis"
+                                            className="inline-flex items-center text-xs text-blue-600 hover:text-blue-800 hover:underline font-medium transition-colors duration-200 group"
+                                        >
+                                            <span>View Full Analysis</span>
+                                            <ArrowUpRight className="w-4 h-4 ml-1 transition-transform duration-200 group-hover:translate-x-[2px] group-hover:translate-y-[-2px]" />
+                                        </Link>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Column 3: Pie Chart */}
+                            <div className="col-span-1 md:col-span-1 lg:col-span-2 flex items-center justify-center">
+                                {/* Mobile & Tablet Layout */}
+                                <div className="block lg:hidden w-full">
+                                    <div className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50 w-full">
+                                        <header className='flex justify-center mb-3 font-semibold text-sm text-gray-700 dark:text-gray-300'>
+                                            Employee Distribution by Pay Frequency
+                                        </header>
+
+                                        <div className="flex flex-col sm:flex-row items-center gap-4 w-full">
+                                            <div className="w-full sm:w-[50%] md:w-[40%]">
+                                                <div className="w-full h-[140px]">
+                                                    <PieChartComponent data={pieData} />
+                                                </div>
+                                            </div>
+
+                                            <div className="w-full sm:w-[50%]">
+                                                <div className="grid grid-cols-2 sm:grid-cols-1 gap-2">
+                                                    {legendItems.map((item) => (
+                                                        <div key={item.name} className="flex items-center justify-between gap-2 text-xs">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="w-3 h-3 rounded-full flex-shrink-0 ml-7" style={{ backgroundColor: item.color }} />
+                                                                <span className="text-gray-600 dark:text-gray-400 w-[130px]">
+                                                                {item.name} : 
+                                                                <span className="font-semibold text-gray-800 dark:text-gray-200">
+                                                                    &nbsp;{item.percentage}%
+                                                                </span> 
+                                                            </span>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-4 text-center pt-2 border-t border-gray-100 dark:border-gray-700">
+                                            Total Active Employees: {totalEmployees}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Desktop Layout */}
+                                <div className="hidden lg:block max-w-[350px] mt-4">
+                                    <div className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50">
+                                        <header className='flex justify-center mb-3 font-semibold text-sm text-gray-700 dark:text-gray-300'>
+                                            Pay Frequency Distribution
+                                        </header>
+
+                                        <div className="flex flex-col items-center">
+                                            <div className="w-full h-[160px]">
+                                                <DesktopPieChartComponent data={pieData} />
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-x-9 gap-y-1 mt-4 w-full">
                                                 {legendItems.map((item) => (
-                                                    <div key={item.name} className="flex items-center gap-2 text-xs">
-                                                        <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }}></div>
-                                                        <span className="truncate">{item.name}</span>
-                                                        <span className="font-semibold ml-auto">{item.percentage}%</span>
+                                                    <div key={item.name} className="flex items-center justify-between gap-1 text-[10px]">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
+                                                            <span className="text-gray-600 dark:text-gray-400 w-[105px]">
+                                                                {item.name} : 
+                                                                <span className="font-semibold text-gray-800 dark:text-gray-200">
+                                                                    &nbsp;{item.percentage}%
+                                                                </span> 
+                                                            </span>
+                                                        </div>
                                                     </div>
                                                 ))}
                                             </div>
+
+                                            <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-3 border-t-1 pt-2 border-gray-200 text-center w-full">
+                                                Total: {totalEmployees} employees
+                                            </p>
                                         </div>
                                     </div>
-
-                                    <p className="text-xs text-gray-500 mt-3 text-center">
-                                        Total Active Employees: {totalEmployees}
-                                    </p>
-                                </div>
-                            </div>
-
-                            {/* Desktop Layout */}
-                            <div className="hidden lg:block">
-                                <div className="p-5 mt-2 rounded-md border flex flex-col justify-center items-center w-[240px]">
-                                    <header className='flex justify-center mt-1 font-bold text-sm'>
-                                        Pay Frequency Distribution
-                                    </header>
-
-                                    <div className="w-full h-[160px]">
-                                        <DesktopPieChartComponent data={pieData} />
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-1 mt-2 w-full px-2">
-                                        {legendItems.map((item) => (
-                                            <div key={item.name} className="flex items-center gap-1 text-[10px]">
-                                                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }}></div>
-                                                <span className="truncate">{item.name}: {item.percentage}%</span>
-                                            </div>
-                                        ))}
-                                    </div>
-
-                                    <p className="text-[9px] text-gray-500 mt-2 text-center px-2">
-                                        Total: {totalEmployees} employees
-                                    </p>
                                 </div>
                             </div>
                         </div>

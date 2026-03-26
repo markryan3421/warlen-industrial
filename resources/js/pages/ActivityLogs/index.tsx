@@ -134,26 +134,15 @@ const FormatChanges = React.memo(({ log }: { log: ActivityLog }) => {
 
         // Common field name mappings for better readability
         const fieldMappings: Record<string, string> = {
-            // IDs and keys
-            'id': 'ID',
-            'uuid': 'UUID',
-            'slug': 'Slug',
 
             // Personal information
-            'name': 'Name',
+            'user.name': 'Name',
             'first_name': 'First Name',
             'last_name': 'Last Name',
             'middle_name': 'Middle Name',
             'full_name': 'Full Name',
             'email': 'Email Address',
             'phone': 'Phone Number',
-            'mobile': 'Mobile Number',
-            'address': 'Address',
-            'city': 'City',
-            'state': 'State/Province',
-            'country': 'Country',
-            'zip_code': 'ZIP Code',
-            'postal_code': 'Postal Code',
 
             // Dates
             'created_at': 'Created Date',
@@ -180,42 +169,6 @@ const FormatChanges = React.memo(({ log }: { log: ActivityLog }) => {
             'permission': 'Permission',
             'permissions': 'Permissions',
 
-            // Status and flags
-            'status': 'Status',
-            'is_active': 'Active Status',
-            'is_approved': 'Approval Status',
-            'is_verified': 'Verification Status',
-            'is_deleted': 'Deleted Status',
-            'is_archived': 'Archived Status',
-
-            // Content
-            'title': 'Title',
-            'description': 'Description',
-            'content': 'Content',
-            'summary': 'Summary',
-            'notes': 'Notes',
-            'remarks': 'Remarks',
-            'comments': 'Comments',
-
-            // Categories and types
-            'type': 'Type',
-            'category': 'Category',
-            'tags': 'Tags',
-            'priority': 'Priority',
-            'level': 'Level',
-
-            // Financial
-            'price': 'Price',
-            'cost': 'Cost',
-            'amount': 'Amount',
-            'quantity': 'Quantity',
-            'total': 'Total Amount',
-            'subtotal': 'Subtotal',
-            'tax': 'Tax',
-            'tax_rate': 'Tax Rate',
-            'discount': 'Discount',
-            'discount_rate': 'Discount Rate',
-
             // User related
             'user_id': 'User ID',
             'user_name': 'User Name',
@@ -223,14 +176,6 @@ const FormatChanges = React.memo(({ log }: { log: ActivityLog }) => {
             'password': 'Password',
             'avatar': 'Avatar',
             'profile_picture': 'Profile Picture',
-
-            // System
-            'ip_address': 'IP Address',
-            'user_agent': 'User Agent',
-            'device': 'Device',
-            'browser': 'Browser',
-            'os': 'Operating System',
-            'session_id': 'Session ID',
 
             // Default fallback
             'default': 'Field'
@@ -445,7 +390,7 @@ const FormatChanges = React.memo(({ log }: { log: ActivityLog }) => {
 
 // Stats card
 const StatsCard = React.memo(({ title, value, color = '', icon: Icon, iconColor = '' }: any) => (
-    <Card className="overflow-hidden hover:shadow-md transition-shadow duration-200 pt-2 px-0">
+    <Card className="overflow-hidden hover:shadow-md transition-shadow duration-200 border-2 pt-2 px-0">
         <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
             <CardTitle className="text-[17px] font-bold text-black">{title}</CardTitle>
             {Icon && (
@@ -610,7 +555,7 @@ export default function Index({ activityLogs, filters = { search: '', perPage: '
     const ActivityLogHeader = React.memo(() => {
         return (
             <CustomHeader
-                icon={<History className="text-blue-800 h-6 w-6" />}
+                icon={<History className="text-white h-6 w-6" />}
                 title="Activity Logs"
                 description="View and manage activity logs"
             />
@@ -926,13 +871,14 @@ export default function Index({ activityLogs, filters = { search: '', perPage: '
                 <ActivityLogHeader />
 
                 {/* Stats */}
-                <div className="grid grid-cols-4 gap-4 my-2 mx-4">
+                <div className="grid grid-cols-4 gap-4 my-5 mx-4">
                     <StatsCard title="Total Activities" icon = {Activity} iconColor="text-gray-600" value={stats.total} />
                     <StatsCard title="Created" icon = {PlusCircle} iconColor="text-green-600" value={stats.created} color="text-green-600" />
                     <StatsCard title="Updated" icon = {Pencil} iconColor="text-blue-600" value={stats.updated} color="text-blue-600" />
                     <StatsCard title="Deleted" icon = {Trash2} iconColor="text-red-600" value={stats.deleted} color="text-red-600" />
                 </div>
 
+                <div className='mx-4'>
                 {/* Custom Table with Toolbar */}
                 <CustomTable
                     columns={columns}
@@ -942,6 +888,7 @@ export default function Index({ activityLogs, filters = { search: '', perPage: '
                     title="Activity Logs"
                     toolbar={<FilterToolbar />}
                 />
+                </div>
 
                 {/* Custom Pagination */}
                 {pagination.total > 0 && (
