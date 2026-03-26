@@ -294,12 +294,12 @@ export default function Index({
                 {/* Page header */}
                 <div className="flex justify-between items-center">
                     <CustomHeader
-                        icon={<Users className="h-6 w-6 text-primary" />}
+                        icon={<Users />}
                         title="Employees"
                         description="Manage your workforce: add, edit, and organize employee records with ease."
                     />
                     <Link href="/employees/create">
-                        <Button className="h-14">
+                        <Button className="h-14 mr-4">
                             <UserPlus className="h-5 w-5" />
                             <div className="flex flex-col items-start leading-tight">
                                 <span className="text-sm font-medium">Create</span>
@@ -325,7 +325,7 @@ export default function Index({
                     </div>
 
                 ) : (
-                    <>
+                    <div className='mx-4'>
                         <CustomTable
                             title="Employees"
                             columns={EmployeesTableConfig.columns}
@@ -408,7 +408,7 @@ export default function Index({
                             search={searchTerm}
                             resourceName="employee"
                         />
-                    </>
+                    </div>
                 )}
             </div>
         </AppLayout>
