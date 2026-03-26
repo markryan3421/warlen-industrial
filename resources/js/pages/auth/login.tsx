@@ -47,7 +47,7 @@ export default function Login({
                                         <div>Warlen Industrial Sales Corporation
                                             <span className="text-[#FD0C0B] lg:text-2xl mt-1 "> DEKA Sales</span>
                                         </div>
-                                        
+
                                         <div className="text-sm md:text-base lg:text-xl font-['Inter'] text-gray-700 font-black">
                                             Payroll Management System
                                         </div>
@@ -62,7 +62,7 @@ export default function Login({
                                     </div>
                                 </div>
                             </CardHeader>
-                            
+
                             <CardContent className="px-0 pb-0">
                                 {status && (
                                     <div className="font-medium text-sm text-green-600 mb-4 text-center">
@@ -83,7 +83,7 @@ export default function Login({
                                                     Email Address
                                                 </Label>
                                                 <div className="relative">
-                                                    <Mail className='absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500'/>
+                                                    <Mail className='absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500' />
                                                     <Input
                                                         id="email"
                                                         name="email"
@@ -100,7 +100,7 @@ export default function Login({
                                                     )}
                                                 </div>
                                             </div>
-                                                    
+
                                             {/* Password Field */}
                                             <div className="space-y-2">
                                                 <div className="flex items-center justify-between">
@@ -108,9 +108,9 @@ export default function Login({
                                                         Password
                                                     </Label>
                                                 </div>
-                                                
+
                                                 <div className="relative">
-                                                    <Lock className='absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500'/>
+                                                    <Lock className='absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500' />
                                                     <Input
                                                         id="password"
                                                         name="password"
@@ -151,7 +151,7 @@ export default function Login({
                                                         Remember me
                                                     </Label>
                                                 </div>
-                                                
+
                                                 <TextLink
                                                     href={request()}
                                                     className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline"
@@ -160,10 +160,10 @@ export default function Login({
                                                     Forgot password?
                                                 </TextLink>
                                             </div>
-                                                    
+
                                             {/* Login Button */}
                                             <div className='pt-2'>
-                                                <Button 
+                                                <Button
                                                     type="submit"
                                                     className="w-full py-5 bg-blue-800 border-2 border-blue-300 text-white font-bold text-sm shadow-md hover:bg-blue-900 hover:border-blue-200 hover:translate-y-[2px] transition-all duration-100"
                                                     tabIndex={4}
@@ -174,7 +174,7 @@ export default function Login({
                                                     Login
                                                 </Button>
                                             </div>
-                                            
+
                                             {/* Copyright */}
                                             <p className='text-xs text-gray-600 text-center -mt-2'>
                                                 © 2026 Warlen Industrial Sales Corporation, DEKA Sales. All rights reserved.
@@ -192,18 +192,18 @@ export default function Login({
             <div className="hidden md:block md:w-1/2 relative">
                 <div className="relative h-full">
                     <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 to-blue-700/10 z-10" />
-                    <div 
+                    <div
                         className="absolute inset-0 bg-cover bg-center"
                         style={{
                             backgroundImage: 'url(images/loginbackground.jpg)',
                         }}
                     />
-                    
+
                     {/* Centered Logo */}
                     <div className="absolute inset-0 flex items-center justify-center z-20">
-                        <img 
-                            src="/images/dekalogo.png" 
-                            alt="DEKA Logo" 
+                        <img
+                            src="/images/dekalogo.png"
+                            alt="DEKA Logo"
                             className="w-32 h-32 md:w-40 md:h-40 lg:w-60 lg:h-60 drop-shadow-2xl"
                         />
                     </div>

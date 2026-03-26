@@ -43,9 +43,16 @@ class PayrollCalculatorService
     /**
      * Calculate overtime pay with 25% additional rate
      * Only calculates if overtime is 1 hour or more
+     * Returns 0 if position has fixed salary
      */
     public function calculateOvertimePay(AttendancePeriodStat $stats, Employee $employee): float
     {
+        // Check if position has fixed salary
+        if ($employee->position->is_salary_fixed) {
+            Log::info("Skipping overtime pay for {$employee->emp_code} - Position has fixed salary");
+            return 0;
+        }
+
         // Get overtime workday (in hours:minutes format)
         $overtimeWorkday = $stats->overtime_workday ?? '0:00';
 
@@ -82,9 +89,16 @@ class PayrollCalculatorService
     /**
      * Calculate holiday overtime pay with 30% additional rate
      * Only calculates if holiday overtime is 1 hour or more
+     * Returns 0 if position has fixed salary
      */
     public function calculateHolidayOvertimePay(AttendancePeriodStat $stats, Employee $employee): float
     {
+        // Check if position has fixed salary
+        if ($employee->position->is_salary_fixed) {
+            Log::info("Skipping holiday overtime pay for {$employee->emp_code} - Position has fixed salary");
+            return 0;
+        }
+
         // Get holiday overtime (in hours:minutes format)
         $holidayOvertime = $stats->overtime_holiday ?? '0:00';
 

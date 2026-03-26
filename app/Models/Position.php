@@ -23,12 +23,14 @@ class Position extends Model
     protected $casts = [
         'deleted_at' => 'datetime',
         'basic_salary' => 'decimal:2',
+        'is_salary_fixed' => 'boolean'
     ];
 
     protected $fillable = [
         'pos_name',
         'basic_salary',
-        'pos_slug'
+        'pos_slug',
+        'is_salary_fixed'
     ];
 
     public function getActivitylogOptions(): LogOptions

@@ -27,6 +27,7 @@ import {
 } from "./ui/select"
 import { Label } from "@/components/ui/label"
 import { useEffect, useState, useRef } from "react"
+import { CustomHeader } from '@/components/custom-header'
 
 // Define the Payroll interface to match the one from the index page
 interface PayrollItem {
@@ -275,18 +276,25 @@ export default function PayrollProcessingCards({
 
     return (
         <>
-            {/* Page Header */}
-            <div className="flex items-center gap-4 ms-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-                    <Banknote className="h-6 w-6 text-primary" />
-                </div>
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight">Payroll Management</h1>
-                    <p className="text-sm text-muted-foreground mt-1">
-                        Process and manage employee payroll efficiently
-                    </p>
-                </div>
-            </div>
+        <style>{`
+                @keyframes fadeUp {
+                    from { opacity: 0; transform: translateY(16px); }
+                    to   { opacity: 1; transform: translateY(0); }
+                }
+                .pp-row { animation: fadeUp 0.3s cubic-bezier(0.22,1,0.36,1) both; }
+                @keyframes headerReveal {
+                    from { opacity: 0; transform: translateY(-10px); }
+                    to   { opacity: 1; transform: translateY(0); }
+                }
+                .pp-header { animation: headerReveal 0.35s cubic-bezier(0.22,1,0.36,1) both; }
+            `}</style>
+        <div className = "pp-header" >
+            <CustomHeader
+                className = "mx-4"
+                icon={<Banknote className="h-6 w-6" />}
+                title="Run Payroll"
+                description="Manage and organize payroll periods with ease. Create, edit, and close payroll cycles."
+            />
 
             <section className="flex flex-wrap items-end gap-4 px-7 py-5 pb-9 mx-4 border border-gray-300 rounded-lg">
                 {/* Date Range Picker */}
@@ -312,7 +320,7 @@ export default function PayrollProcessingCards({
                                 </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-auto p-0" align="start">
-                                <div className="flex">
+                                <div className="flex">ac
                                     <div className="border-r">
                                         <Calendar
                                             mode="range"
@@ -429,7 +437,7 @@ export default function PayrollProcessingCards({
                 </div>
             )}
 
-            <div className="grid grid-cols-4 gap-4 p-3 px-7 mt-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-3 lg:mx-2 lg:mt-5">
                 <Card className="
                 @container/card
                 animate-in fade-in slide-in-from-bottom-4 duration-400
@@ -557,6 +565,7 @@ export default function PayrollProcessingCards({
                     </CardFooter>
                 </Card>
             </div>
+        </div>
         </>
     )
 }

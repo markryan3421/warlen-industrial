@@ -13,6 +13,9 @@ use Inertia\Inertia;
 
 class AttendanceController extends Controller
 {
+    /**
+     * Display attendance schedules with calendar view
+     */
     public function attendanceSchedules(Request $request)
     {
         $schedules = PaginatedTableService::make(
@@ -29,7 +32,6 @@ class AttendanceController extends Controller
             searchColumns: ['employee_name', 'department', 'shift_label'],
         );
 
-
         $calendarData = AttendanceSchedule::query()
             ->select([
                 'employee_id', 'employee_name', 'department',
@@ -40,13 +42,16 @@ class AttendanceController extends Controller
 
         return Inertia::render('attendances/ScheduleInfo/index', [
             'schedules'         => $schedules,
-            'calendarData' => $calendarData,
-            'filters'       => $request->only(['search', 'perPage']),
-            'totalCount'    => $schedules['totalCount'],
-            'filteredCount' => $schedules['filteredCount'],
+            'calendarData'      => $calendarData,
+            'filters'           => $request->only(['search', 'perPage']),
+            'totalCount'        => $schedules['totalCount'],
+            'filteredCount'     => $schedules['filteredCount'],
         ]);
     }
 
+    /**
+     * Display attendance period statistics with visual data
+     */
     public function attendancePeriodStats(Request $request)
     {
         $stats = PaginatedTableService::make(
@@ -90,6 +95,9 @@ class AttendanceController extends Controller
         ]);
     }
 
+    /**
+     * Display attendance logs with timeline view
+     */
     public function attendanceLogs(Request $request)
     {
         $logs = PaginatedTableService::make(
@@ -123,17 +131,19 @@ class AttendanceController extends Controller
             ->get();
 
         return Inertia::render('attendances/AttendanceLogs/index', [
-            'logs'         => $logs,
-            'timelineData' => $timelineData,
+            'logs'          => $logs,
+            'timelineData'  => $timelineData,
             'filters'       => $request->only(['search', 'perPage']),
             'totalCount'    => $logs['totalCount'],
             'filteredCount' => $logs['filteredCount'],
         ]);
     }
 
+    /**
+     * Display attendance exception statistics with calendar view
+     */
     public function attendanceExceptionStats(Request $request)
     {
-        // Paginated data — for the table view
         $stats = PaginatedTableService::make(
             model: AttendanceExceptionStat::class,
             request: $request,
@@ -154,8 +164,6 @@ class AttendanceController extends Controller
             searchColumns: ['employee_name', 'department'],
         );
 
-
-        // Only fetch the columns the calendar actually needs
         $calendarData = AttendanceExceptionStat::query()
             ->select([
                 'employee_id',
@@ -181,11 +189,15 @@ class AttendanceController extends Controller
         ]);
     }
 
+    /**
+     * Combined attendance management dashboard
+     * Includes all attendance data types with tab navigation
+     */
     public function attendanceManagement(Request $request)
     {
         $tab = $request->get('tab', 'logs');
 
-        // Fetch all data
+        // Fetch logs data with pagination
         $logs = PaginatedTableService::make(
             model: AttendanceLog::class,
             request: $request,
@@ -202,9 +214,7 @@ class AttendanceController extends Controller
             searchColumns: ['employee_name', 'department'],
         );
 
-        // Add debugging
-        \Log::info('Logs data structure:', ['logs' => $logs]);
-
+        // Fetch exception statistics with pagination
         $exceptionStats = PaginatedTableService::make(
             model: AttendanceExceptionStat::class,
             request: $request,
@@ -225,6 +235,7 @@ class AttendanceController extends Controller
             searchColumns: ['employee_name', 'department'],
         );
 
+        // Fetch period statistics with pagination
         $periodStats = PaginatedTableService::make(
             model: AttendancePeriodStat::class,
             request: $request,
@@ -245,6 +256,7 @@ class AttendanceController extends Controller
             searchColumns: ['employee_name', 'department'],
         );
 
+        // Fetch schedules with pagination
         $schedules = PaginatedTableService::make(
             model: AttendanceSchedule::class,
             request: $request,
@@ -259,46 +271,96 @@ class AttendanceController extends Controller
             searchColumns: ['employee_name', 'department', 'shift_label'],
         );
 
-        // Fetch timeline data for logs
-        $timelineData = AttendanceLog::query()
-            ->select([
-                'employee_id',
-                'employee_name',
-                'department',
-                'date',
-                'time_in',
-                'time_out',
-                'total_hours',
-                'is_overtime',
-            ])
-            ->orderBy('date')
-            ->get();
+        // Fetch timeline data for logs (only when needed)
+        $timelineData = [];
+        if ($tab === 'logs') {
+            $timelineData = AttendanceLog::query()
+                ->select([
+                    'employee_id',
+                    'employee_name',
+                    'department',
+                    'date',
+                    'time_in',
+                    'time_out',
+                    'total_hours',
+                    'is_overtime',
+                ])
+                ->orderBy('date')
+                ->get();
+        }
 
-        // Fetch calendar data for exception stats
-        $calendarData = AttendanceExceptionStat::query()
-            ->select([
-                'employee_id',
-                'employee_name',
-                'department',
-                'date',
-                'am_time_in',
-                'am_time_out',
-                'pm_time_in',
-                'pm_time_out',
-                'absence_minutes',
-                'total_exception_minutes',
-            ])
-            ->orderBy('date')
-            ->get();
+        // Fetch calendar data for exception stats (only when needed)
+        $calendarData = [];
+        if ($tab === 'exception_stats') {
+            $calendarData = AttendanceExceptionStat::query()
+                ->select([
+                    'employee_id',
+                    'employee_name',
+                    'department',
+                    'date',
+                    'am_time_in',
+                    'am_time_out',
+                    'pm_time_in',
+                    'pm_time_out',
+                    'absence_minutes',
+                    'total_exception_minutes',
+                ])
+                ->orderBy('date')
+                ->get();
+        }
+
+        // Fetch visual data for period stats (only when needed)
+        $visualData = [];
+        if ($tab === 'period_stats') {
+            $visualData = AttendancePeriodStat::query()
+                ->select([
+                    'employee_id', 'employee_name', 'department',
+                    'period_start', 'period_end',
+                    'normal_work_hours', 'real_work_hours',
+                    'late_times', 'late_minutes',
+                    'attended_days', 'absent_days',
+                    'real_pay', 'scheduled_days',
+                ])
+                ->orderBy('period_start')
+                ->get();
+        }
+
+        // Fetch calendar data for schedules (only when needed)
+        $scheduleCalendarData = [];
+        if ($tab === 'schedules') {
+            $scheduleCalendarData = AttendanceSchedule::query()
+                ->select([
+                    'employee_id', 'employee_name', 'department',
+                    'date', 'shift_code', 'shift_label', 
+                ])
+                ->orderBy('date')
+                ->get();
+        }
 
         return Inertia::render('attendances/index', [
+            // Current active tab
+            'currentTab' => $tab,
+            
+            // Logs data
             'logs' => $logs,
             'timelineData' => $timelineData,
+            
+            // Exception stats data
             'exceptionStats' => $exceptionStats,
             'calendarData' => $calendarData,
+            
+            // Period stats data
             'periodStats' => $periodStats,
+            'visualData' => $visualData,
+            
+            // Schedules data
             'schedules' => $schedules,
+            'scheduleCalendarData' => $scheduleCalendarData,
+            
+            // Common filters
             'filters' => $request->only(['search', 'perPage']),
+            
+            // Counts for each data type
             'totalCounts' => [
                 'logs' => $logs['totalCount'] ?? 0,
                 'exceptionStats' => $exceptionStats['totalCount'] ?? 0,

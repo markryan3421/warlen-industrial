@@ -15,6 +15,7 @@ import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { CustomToast } from '@/components/custom-toast';
+import { CustomHeader } from '@/components/custom-header';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface PayrollPeriod {
@@ -232,6 +233,7 @@ export default function Index({ payrollPeriods }: PayrollPeriodProps) {
             <Head title="Payroll Periods" />
             <CustomToast />
 
+            {/* style animations */}
             <style>{`
                 @keyframes fadeUp {
                     from { opacity: 0; transform: translateY(16px); }
@@ -245,32 +247,20 @@ export default function Index({ payrollPeriods }: PayrollPeriodProps) {
                 .pp-header { animation: headerReveal 0.35s cubic-bezier(0.22,1,0.36,1) both; }
             `}</style>
 
-            <div className="min-h-screen py-8 md:py-12">
+            <div className="min-h-screen py-8 -mt-9 md:py-12">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 
                     {/* ── Page header ── */}
                     <div className="pp-header mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                        <div className="flex items-center gap-4">
-                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary shadow-lg">
-                                <Banknote className="h-6 w-6 text-primary-foreground" />
-                            </div>
-                            <div>
-                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
-                                    Payroll
-                                </p>
-                                <h1 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
-                                    Pay{' '}
-                                    <span className="relative inline-block text-primary">
-                                        Periods
-                                        <span className="absolute -bottom-1 left-0 h-[3px] w-full rounded-full bg-secondary" />
-                                    </span>
-                                </h1>
-                            </div>
-                        </div>
+                        <CustomHeader
+                            icon={<Banknote className="h-6 w-6" />}
+                            title="Payroll Periods"
+                            description="Manage and organize payroll periods with ease. Create, edit, and close payroll cycles."
+                        />
 
                         <div className="flex flex-col items-start gap-3 sm:items-end">
                             <p className="text-sm text-muted-foreground">
-                                <span className="mr-1 inline-block rounded-md bg-secondary px-2 py-0.5 text-xs font-black text-secondary-foreground">
+                                <span className="mr-1 mt-2 inline-block rounded-md bg-secondary px-2 py-0.5 text-xs font-black text-secondary-foreground">
                                     {payrollPeriods.length}
                                 </span>
                                 periods total

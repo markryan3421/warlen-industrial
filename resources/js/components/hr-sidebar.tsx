@@ -70,27 +70,27 @@ const hrExpendituresItems: NavItem[] = [
         href: '/hr/attendances',
         icon: Users,
     },
-    {
-        title: 'Attendance Logs',
-        href: AttendanceController.attendanceLogs(),
-        icon: Contact,
-    },
-    {
-        title: 'Attendance Exception Stats',
-        href: AttendanceController.attendanceExceptionStats(),
-        icon: Calendar,
-    },
-    {
-        title: 'Attendance Period Stats',
-        href: AttendanceController.attendancePeriodStats(),
-        icon: BookUser,
-    },
+    // {
+    //     title: 'Attendance Logs',
+    //     href: AttendanceController.attendanceLogs(),
+    //     icon: Contact,
+    // },
+    // {
+    //     title: 'Attendance Exception Stats',
+    //     href: AttendanceController.attendanceExceptionStats(),
+    //     icon: Calendar,
+    // },
+    // {
+    //     title: 'Attendance Period Stats',
+    //     href: AttendanceController.attendancePeriodStats(),
+    //     icon: BookUser,
+    // },
 
-    {
-        title: 'Attendance Schedules',
-        href: AttendanceController.attendanceSchedules(),
-        icon: UserRoundCog,
-    }
+    // {
+    //     title: 'Attendance Schedules',
+    //     href: AttendanceController.attendanceSchedules(),
+    //     icon: UserRoundCog,
+    // }
 
 ];
 

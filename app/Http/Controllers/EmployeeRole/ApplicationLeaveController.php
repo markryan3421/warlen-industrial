@@ -20,7 +20,7 @@ class ApplicationLeaveController extends Controller
      */
     public function index(CreateNewApplication $action)
     {
-        Gate::authorize('viewAny', ApplicationLeave::class);
+       Gate::authorize('viewAny', ApplicationLeave::class);
 
         $applicationLeaves = ApplicationLeave::whereHas('employee', function ($query) {
             $query->where('user_id', auth()->id());
@@ -45,7 +45,7 @@ class ApplicationLeaveController extends Controller
      */
     public function store(StoreApplicationLeaveRequest $request, CreateNewApplication $action)
     {
-        Gate::authorize('create', ApplicationLeave::class);
+       Gate::authorize('create', ApplicationLeave::class);
         if ($this->limit('create-application-leave:' . auth()->id(), 60, 20)) {
             return back()->with('error', 'Too many attempts. Please try again later.');
         }
