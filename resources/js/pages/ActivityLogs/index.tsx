@@ -555,7 +555,7 @@ export default function Index({ activityLogs, filters = { search: '', perPage: '
     const ActivityLogHeader = React.memo(() => {
         return (
             <CustomHeader
-                icon={<History className="text-white h-6 w-6" />}
+                icon={<History className="text-white h-6 w-6 " />}
                 title="Activity Logs"
                 description="View and manage activity logs"
             />
@@ -852,8 +852,28 @@ export default function Index({ activityLogs, filters = { search: '', perPage: '
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
+
+            {/* style animations */}
+            <style>{`
+                @keyframes fadeUp {
+                    from { opacity: 0; transform: translateY(16px); }
+                    to   { opacity: 1; transform: translateY(0); }
+                }
+                .pp-row { animation: fadeUp 0.3s cubic-bezier(0.22,1,0.36,1) both; }
+                @keyframes headerReveal {
+                    from { opacity: 0; transform: translateY(-10px); }
+                    to   { opacity: 1; transform: translateY(0); }
+                }
+                .pp-header { animation: headerReveal 0.35s cubic-bezier(0.22,1,0.36,1) both; }
+            `}</style>
+
             <Head title="Activity Logs" />
-            <div className="flex flex-1 flex-col gap-2 p-4">
+
+            {/* Header Section */}
+            <div className='pp-header mx-8 -mb-6 my-4'>
+                <ActivityLogHeader />
+            </div>
+            <div className="flex flex-1 flex-col gap-2 p-4 pp-row">
                 {notify && (
                     <div className="fixed top-4 right-4 z-50 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 max-w-md">
                         <Bell className="h-5 w-5 flex-shrink-0" />
@@ -867,27 +887,25 @@ export default function Index({ activityLogs, filters = { search: '', perPage: '
                     </div>
                 )}
 
-                {/* Header Section */}
-                <ActivityLogHeader />
-
                 {/* Stats */}
                 <div className="grid grid-cols-4 gap-4 my-5 mx-4">
-                    <StatsCard title="Total Activities" icon = {Activity} iconColor="text-gray-600" value={stats.total} />
-                    <StatsCard title="Created" icon = {PlusCircle} iconColor="text-green-600" value={stats.created} color="text-green-600" />
-                    <StatsCard title="Updated" icon = {Pencil} iconColor="text-blue-600" value={stats.updated} color="text-blue-600" />
-                    <StatsCard title="Deleted" icon = {Trash2} iconColor="text-red-600" value={stats.deleted} color="text-red-600" />
+                    <StatsCard title="Total Activities" icon={Activity} iconColor="text-gray-600" value={stats.total} />
+                    <StatsCard title="Created" icon={PlusCircle} iconColor="text-green-600" value={stats.created} color="text-green-600" />
+                    <StatsCard title="Updated" icon={Pencil} iconColor="text-blue-600" value={stats.updated} color="text-blue-600" />
+                    <StatsCard title="Deleted" icon={Trash2} iconColor="text-red-600" value={stats.deleted} color="text-red-600" />
                 </div>
 
                 <div className='mx-4'>
-                {/* Custom Table with Toolbar */}
-                <CustomTable
-                    columns={columns}
-                    actions={actions}
-                    data={filteredLogs}
-                    from={pagination.from || 0}
-                    title="Activity Logs"
-                    toolbar={<FilterToolbar />}
-                />
+                    {/* Custom Table with Toolbar */}
+                    <CustomTable
+                        columns={columns}
+                        actions={actions}
+                        data={filteredLogs}
+                        from={pagination.from || 0}
+                        total={pagination.total || 0}
+                        title="Activity Log Lists"
+                        toolbar={<FilterToolbar />}
+                    />
                 </div>
 
                 {/* Custom Pagination */}

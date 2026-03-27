@@ -35,8 +35,8 @@ Route::get('/', function () {
 
 Route::middleware(['auth', 'verified', 'roleBase'])->group(function () {
 
-    Route::get('payroll', function () {
-        return Inertia::render('payroll/index');
+    Route::get('payrolls', function () {
+        return Inertia::render('payrolls/index');
     });
 
     //admin dashboard

@@ -42,6 +42,11 @@ interface CustomTableProps {
     actions: ActionConfig[];
     data: TableRow[];
     from: number;
+    to?: number;
+    total?: number;
+    filteredCount?: number;
+    totalCount?: number;
+    searchTerm?: string;
     onDelete: (id: string | number) => void;
     onView: (row: TableRow) => void;
     onEdit: (row: TableRow) => void;
@@ -246,11 +251,17 @@ function ActionDropdown({
 }
 
 // ─── Main component ────────────────────────────────────────────────────────────
+// ─── Main component ────────────────────────────────────────────────────────────
 export const CustomTable = ({
     columns,
     actions,
     data,
     from,
+    to,
+    total,
+    filteredCount,
+    totalCount,
+    searchTerm,
     onDelete,
     onView,
     onEdit,
@@ -265,6 +276,66 @@ export const CustomTable = ({
 
     // Prepare action props for reuse
     const actionProps = { actions, onDelete, onView, onEdit, route };
+
+    // Determine display text for record count with header styling
+    const getHeaderRecordDisplayText = () => {
+        if (searchTerm && filteredCount !== undefined && totalCount !== undefined) {
+            return (
+                <>
+                    Showing <span className="font-black text-white">{data.length}</span> of{' '}
+                    <span className="font-black text-white">{filteredCount.toLocaleString()}</span> filtered records
+                    <span className="text-blue-200/60 ml-1">
+                        (from {totalCount.toLocaleString()} total)
+                    </span>
+                </>
+            );
+        }
+        
+        if (total !== undefined && total > 0) {
+            return (
+                <>
+                    Showing <span className="font-black text-white">{to || from + data.length - 1}</span> of{' '}
+                    <span className="font-black text-white">{total.toLocaleString()}</span> records
+                </>
+            );
+        }
+        
+        return (
+            <>
+                Showing <span className="font-black text-white">{data.length}</span> records
+            </>
+        );
+    };
+
+    // Determine display text for record count with footer styling
+    const getFooterRecordDisplayText = () => {
+        if (searchTerm && filteredCount !== undefined && totalCount !== undefined) {
+            return (
+                <>
+                    Showing <span className="font-black text-gray-600 dark:text-gray-300">{data.length}</span> of{' '}
+                    <span className="font-black text-gray-600 dark:text-gray-300">{filteredCount.toLocaleString()}</span> filtered records
+                    <span className="text-gray-400 dark:text-gray-500 ml-1">
+                        (from {totalCount.toLocaleString()} total)
+                    </span>
+                </>
+            );
+        }
+        
+        if (total !== undefined && total > 0) {
+            return (
+                <>
+                    Showing <span className="font-black text-gray-600 dark:text-gray-300">{to || from + data.length - 1}</span> of{' '}
+                    <span className="font-black text-gray-600 dark:text-gray-300">{total.toLocaleString()}</span> records
+                </>
+            );
+        }
+        
+        return (
+            <>
+                Showing <span className="font-black text-gray-600 dark:text-gray-300">{data.length}</span> records
+            </>
+        );
+    };
 
     // If no data, show empty state
     if (!data || data.length === 0) {
@@ -314,7 +385,7 @@ export const CustomTable = ({
                             {title ?? "Data Table"}
                         </p>
                         <p className="text-[11px] text-blue-200/60 mt-0.5">
-                            {data.length} {data.length === 1 ? "record" : "records"}
+                            {getHeaderRecordDisplayText()}
                         </p>
                     </div>
                 </div>
@@ -461,22 +532,23 @@ export const CustomTable = ({
                     </table>
                 </div>
 
-                {/* ── Footer ────────────────────────────────────────────────── */}
-                <div className="flex items-center justify-between gap-2 px-5 py-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40">
-                    <div className="flex items-center gap-1.5">
-                        {/* 10% orange accent on the record count */}
+                {/* ── Footer with Enhanced Record Information ────────────────── */}
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-5 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40">
+                    <div className="flex items-center gap-2">
+                        {/* 10% orange accent */}
                         <span className="w-1.5 h-1.5 rounded-full bg-[#d85e39]" />
-                        <p className="text-[11px] font-medium text-slate-400 dark:text-slate-500">
-                            Showing{" "}
-                            <span className="font-black text-slate-600 dark:text-slate-300">
-                                {data.length}
-                            </span>{" "}
-                            {data.length === 1 ? "record" : "records"}
+                        <p className="text-[11px] font-medium text-gray-600 dark:text-gray-400">
+                            {getFooterRecordDisplayText()}
                         </p>
                     </div>
-                    <p className="text-[11px] text-slate-300 dark:text-slate-600">
-                        Row {from} – {from + data.length - 1}
-                    </p>
+                    <div className="flex items-center gap-3 text-[11px] text-slate-400 dark:text-slate-500">
+                        <span>Row {from} – {to || from + data.length - 1}</span>
+                        {totalCount !== undefined && totalCount > 0 && (
+                            <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-700 rounded-full">
+                                Total: {totalCount.toLocaleString()}
+                            </span>
+                        )}
+                    </div>
                 </div>
             </div>
 

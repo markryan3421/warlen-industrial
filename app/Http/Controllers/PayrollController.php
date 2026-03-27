@@ -16,7 +16,7 @@ class PayrollController extends Controller
     public function __construct(protected PayrollService $payrollService) {}
     /**
      * Display a listing of the resource.
-     */ 
+     */
     public function index(Request $request)
     {
         Gate::authorize('viewAny', Payroll::class);
@@ -32,10 +32,10 @@ class PayrollController extends Controller
                 'employee.position.pos_name',
                 'payroll_period.period_name',
                 'employee.pay_frequency'
-                ],
+            ],
         );
 
-        return Inertia::render('payroll/index', [
+        return Inertia::render('payrolls/index', [
             'payrolls' => $result['data'], // Only paginated data
             'pagination' => $result['pagination'], // Pagination metadata
             'filters' => $result['filters'],
@@ -46,9 +46,8 @@ class PayrollController extends Controller
             'totalDeductions' => $this->payrollService->calculateTotalDeductions($payrolls),
             'totalNetPay' => $this->payrollService->calculateTotalNetPay($payrolls),
             'totalGrossPay' => $this->payrollService->calculateTotalGrossPay($payrolls),
-            'activeEmployee' => $this->payrollService->getActiveEmployeesInPayroll($payrolls)
-            
-            ]);
+            'activeEmployee' => $this->payrollService->getActiveEmployeesInPayroll($payrolls),
+        ]);
     }
 
     /**

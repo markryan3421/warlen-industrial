@@ -1,7 +1,7 @@
 import { Head, Link, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
-import { Briefcase, Eye, Pencil, Trash2, Search } from 'lucide-react';
+import { Briefcase, Eye, Plus, Coins, Search } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +11,7 @@ import { CustomTable } from '@/components/custom-table';
 import { EmployeeFilterBar } from '@/components/employee/employee-filter-bar';
 import { CustomPagination } from '@/components/custom-pagination';
 import type { BreadcrumbItem } from '@/types';
+import { CustomHeader } from '@/components/custom-header';
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Incentives', href: '/incentives' }];
 
@@ -65,7 +66,7 @@ export default function Index({ incentives, filters = {}, totalCount, filteredCo
         last_page: 1,
         links: []
     };
-    
+
     if (Array.isArray(incentives)) {
         allData = incentives;
         originalPaginationData = {
@@ -85,22 +86,22 @@ export default function Index({ incentives, filters = {}, totalCount, filteredCo
     // Frontend filtering logic
     const filteredData = useMemo(() => {
         let filtered = [...allData];
-        
+
         // Filter by search term (incentive name)
         if (searchTerm.trim()) {
             filtered = filtered.filter(incentive =>
                 incentive.incentive_name.toLowerCase().includes(searchTerm.toLowerCase())
             );
         }
-        
+
         // Filter by date range
         if (dateFrom || dateTo) {
             filtered = filtered.filter(incentive => {
                 if (!incentive.payroll_period) return false;
-                
+
                 const startDate = parseISO(incentive.payroll_period.start_date);
                 const endDate = parseISO(incentive.payroll_period.end_date);
-                
+
                 if (dateFrom && dateTo) {
                     // Both dates selected - check if period overlaps with range
                     return startDate >= dateFrom && endDate <= dateTo;
@@ -114,7 +115,7 @@ export default function Index({ incentives, filters = {}, totalCount, filteredCo
                 return true;
             });
         }
-        
+
         return filtered;
     }, [allData, searchTerm, dateFrom, dateTo]);
 
@@ -124,7 +125,7 @@ export default function Index({ incentives, filters = {}, totalCount, filteredCo
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     const currentData = filteredData.slice(startIndex, endIndex);
-    
+
     // Update pagination data for CustomPagination component
     const paginationData = {
         ...originalPaginationData,
@@ -184,26 +185,26 @@ export default function Index({ incentives, filters = {}, totalCount, filteredCo
         return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'PHP' }).format(Number(amount));
     };
 
-    const formatDate = (date: string) => new Date(date).toLocaleDateString('en-US', { 
-        year: 'numeric', month: 'long', day: 'numeric' 
+    const formatDate = (date: string) => new Date(date).toLocaleDateString('en-US', {
+        year: 'numeric', month: 'long', day: 'numeric'
     });
 
     const hasFilters = !!(searchTerm || dateFrom || dateTo);
     const hasNoDataAtAll = allData.length === 0;
 
     const columns = [
-        { 
-            key: 'incentive_name', 
+        {
+            key: 'incentive_name',
             label: 'Incentive Name',
             render: (row: Incentive) => <span className="font-medium">{row.incentive_name}</span>
         },
-        { 
-            key: 'incentive_amount', 
+        {
+            key: 'incentive_amount',
             label: 'Amount',
             render: (row: Incentive) => formatCurrency(row.incentive_amount)
         },
         {
-            key: 'payroll_period', 
+            key: 'payroll_period',
             label: 'Payroll Period',
             render: (row: Incentive) => row.payroll_period ? (
                 <div>
@@ -212,8 +213,8 @@ export default function Index({ incentives, filters = {}, totalCount, filteredCo
                 </div>
             ) : <span className="text-muted-foreground">N/A</span>
         },
-        { 
-            key: 'employees', 
+        {
+            key: 'employees',
             label: 'Employees',
             render: (row: Incentive) => {
                 const count = row.employees?.length || 0;
@@ -232,18 +233,18 @@ export default function Index({ incentives, filters = {}, totalCount, filteredCo
     ];
 
     const actions = [
-        { 
-            label: 'View', 
+        {
+            label: 'View',
             icon: 'Eye' as const,
             route: '',
         },
-        { 
-            label: 'Edit', 
+        {
+            label: 'Edit',
             icon: 'Pencil' as const,
             route: '',
         },
-        { 
-            label: 'Delete', 
+        {
+            label: 'Delete',
             icon: 'Trash2' as const,
             route: '',
         }
@@ -252,107 +253,123 @@ export default function Index({ incentives, filters = {}, totalCount, filteredCo
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Incentives" />
-            <div className="flex flex-1 flex-col gap-4 p-4">
+
+            {/* style animations */}
+            <style>{`
+                @keyframes fadeUp {
+                    from { opacity: 0; transform: translateY(16px); }
+                    to   { opacity: 1; transform: translateY(0); }
+                }
+                .pp-row { animation: fadeUp 0.3s cubic-bezier(0.22,1,0.36,1) both; }
+                @keyframes headerReveal {
+                    from { opacity: 0; transform: translateY(-10px); }
+                    to   { opacity: 1; transform: translateY(0); }
+                }
+                .pp-header { animation: headerReveal 0.35s cubic-bezier(0.22,1,0.36,1) both; }
+            `}</style>
+
+            <div className="flex flex-1 flex-col gap-4 p-4 mx-4">
                 {/* Header */}
-                <div className="flex justify-between items-center">
-                    <div>
-                        <h1 className="text-3xl font-bold">Incentives</h1>
-                        <p className="text-muted-foreground mt-1">Manage employee incentives across payroll periods</p>
-                    </div>
+                <div className="flex justify-between items-center pp-header">
+                    <CustomHeader
+                        title="Incentives"
+                        icon={<Coins className="h-6 w-6" />}
+                        description='Manage employee incentives across payroll periods'
+                    />
                     <Link href="/incentives/create">
                         <Button className="bg-[#1d4791] hover:bg-[#1d4791]/90">
-                            <Briefcase className="h-4 w-4 mr-2" />
+                            <Plus className="h-4 w-4 mr-2" />
                             Add Incentive
                         </Button>
                     </Link>
                 </div>
 
 
-                    <CardContent className="p-0">
-                        <CustomTable
-                            columns={columns}
-                            actions={actions}
-                            data={currentData}
-                            from={startIndex + 1}
-                            onDelete={handleDelete}
-                            onView={handleView}
-                            onEdit={handleEdit}
-                            title="Incentives List"
-                            toolbar={
-                                <EmployeeFilterBar
-                                    filters={{
-                                        search: true,
-                                        position: false,
-                                        branch: false,
-                                        site: false,
-                                        date: true,
-                                        status: false,
-                                    }}
-                                    searchTerm={searchTerm}
-                                    onSearchChange={handleSearch}
-                                    dateFrom={dateFrom}
-                                    dateTo={dateTo}
-                                    onDateFromChange={handleDateFromChange}
-                                    onDateToChange={handleDateToChange}
-                                    onClearAll={clearFilters}
-                                    searchPlaceholder="Search by incentive name..."
-                                    dateLabel="Payroll Period Date Range"
-                                    allPositions={[]}
-                                    branchesData={[]}
-                                    selectedPositions={[]}
-                                    selectedBranch={undefined}
-                                    selectedSite={undefined}
-                                    status=""
-                                    onPositionsChange={() => {}}
-                                    onBranchChange={() => {}}
-                                    onSiteChange={() => {}}
-                                    onStatusChange={() => {}}
-                                />
-                            }
-                            emptyState={
-                                hasNoDataAtAll && !hasFilters ? (
-                                    // Empty state when no data exists at all
-                                    <div className="flex flex-col items-center justify-center py-16">
-                                        <div className="rounded-full bg-primary/10 p-6 mb-4">
-                                            <Briefcase className="h-12 w-12 text-primary" />
-                                        </div>
-                                        <h3 className="text-xl font-semibold mb-2">No incentives yet</h3>
-                                        <p className="text-muted-foreground mb-4">Create your first incentive to get started</p>
-                                        <Link href="/incentives/create">
-                                            <Button className="bg-[#1d4791] hover:bg-[#1d4791]/90">Create First Incentive</Button>
-                                        </Link>
+                <CardContent className="p-0 pp-row">
+                    <CustomTable
+                        columns={columns}
+                        actions={actions}
+                        data={currentData}
+                        from={startIndex + 1}
+                        onDelete={handleDelete}
+                        onView={handleView}
+                        onEdit={handleEdit}
+                        title="Incentive Lists"
+                        toolbar={
+                            <EmployeeFilterBar
+                                filters={{
+                                    search: true,
+                                    position: false,
+                                    branch: false,
+                                    site: false,
+                                    date: true,
+                                    status: false,
+                                }}
+                                searchTerm={searchTerm}
+                                onSearchChange={handleSearch}
+                                dateFrom={dateFrom}
+                                dateTo={dateTo}
+                                onDateFromChange={handleDateFromChange}
+                                onDateToChange={handleDateToChange}
+                                onClearAll={clearFilters}
+                                searchPlaceholder="Search by incentive name..."
+                                dateLabel="Payroll Period Date Range"
+                                allPositions={[]}
+                                branchesData={[]}
+                                selectedPositions={[]}
+                                selectedBranch={undefined}
+                                selectedSite={undefined}
+                                status=""
+                                onPositionsChange={() => { }}
+                                onBranchChange={() => { }}
+                                onSiteChange={() => { }}
+                                onStatusChange={() => { }}
+                            />
+                        }
+                        emptyState={
+                            hasNoDataAtAll && !hasFilters ? (
+                                // Empty state when no data exists at all
+                                <div className="flex flex-col items-center justify-center py-16">
+                                    <div className="rounded-full bg-primary/10 p-6 mb-4">
+                                        <Briefcase className="h-12 w-12 text-primary" />
                                     </div>
-                                ) : filteredData.length === 0 && hasFilters ? (
-                                    // No results state when filters are applied but no matches
-                                    <div className="flex flex-col items-center justify-center py-16">
-                                        <div className="rounded-full bg-muted p-6 mb-4">
-                                            <Search className="h-12 w-12 text-muted-foreground" />
-                                        </div>
-                                        <h3 className="text-xl font-semibold mb-2">No results found</h3>
-                                        <p className="text-muted-foreground mb-4">
-                                            No incentives match "{searchTerm}" {dateFrom || dateTo ? 'in the selected date range' : ''}
-                                        </p>
-                                        <Button variant="outline" onClick={clearFilters}>
-                                            Clear all filters
-                                        </Button>
+                                    <h3 className="text-xl font-semibold mb-2">No incentives yet</h3>
+                                    <p className="text-muted-foreground mb-4">Create your first incentive to get started</p>
+                                    <Link href="/incentives/create">
+                                        <Button className="bg-[#1d4791] hover:bg-[#1d4791]/90">Create First Incentive</Button>
+                                    </Link>
+                                </div>
+                            ) : filteredData.length === 0 && hasFilters ? (
+                                // No results state when filters are applied but no matches
+                                <div className="flex flex-col items-center justify-center py-16">
+                                    <div className="rounded-full bg-muted p-6 mb-4">
+                                        <Search className="h-12 w-12 text-muted-foreground" />
                                     </div>
-                                ) : null
-                            }
-                        />
-                        {allData.length > 0 && (
-                            <div className="px-6 pb-4">
-                                <CustomPagination
-                                    pagination={paginationData}
-                                    perPage={String(itemsPerPage)}
-                                    onPerPageChange={handlePerPageChange}
-                                    totalCount={allData.length}
-                                    filteredCount={filteredData.length}
-                                    search={searchTerm}
-                                    resourceName="incentive"
-                                />
-                            </div>
-                        )}
-                    </CardContent>
+                                    <h3 className="text-xl font-semibold mb-2">No results found</h3>
+                                    <p className="text-muted-foreground mb-4">
+                                        No incentives match "{searchTerm}" {dateFrom || dateTo ? 'in the selected date range' : ''}
+                                    </p>
+                                    <Button variant="outline" onClick={clearFilters}>
+                                        Clear all filters
+                                    </Button>
+                                </div>
+                            ) : null
+                        }
+                    />
+                    {allData.length > 0 && (
+                        <div className="px-6 pb-4 pp-row">
+                            <CustomPagination
+                                pagination={paginationData}
+                                perPage={String(itemsPerPage)}
+                                onPerPageChange={handlePerPageChange}
+                                totalCount={allData.length}
+                                filteredCount={filteredData.length}
+                                search={searchTerm}
+                                resourceName="incentive"
+                            />
+                        </div>
+                    )}
+                </CardContent>
             </div>
 
             {/* View Dialog */}
@@ -378,7 +395,7 @@ export default function Index({ incentives, filters = {}, totalCount, filteredCo
                                 </p>
                             </div>
                         )}
-                        
+
                         <h4 className="font-semibold mb-3">Assigned Employees ({selected?.employees?.length || 0})</h4>
                         {selected?.employees && selected.employees.length > 0 ? (
                             <div className="border rounded-md divide-y max-h-96 overflow-y-auto">

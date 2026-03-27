@@ -12,7 +12,6 @@ import { CustomPagination } from '@/components/custom-pagination';
 import { toast } from 'sonner';
 import { TableSkeleton } from '@/components/table-skeleton';
 
-// Declare global window interface for Echo
 declare global {
     interface Window {
         Pusher: any;
@@ -99,9 +98,6 @@ interface PageProps {
     activeEmployee: number;
 }
 
-// Helper function to get skeleton columns based on active tab
-const getSkeletonColumns = () => 8; // Default columns for payroll table
-
 export default function Index({
     payrolls = [],
     pagination: serverPagination = {
@@ -131,7 +127,7 @@ export default function Index({
     const [echoInitialized, setEchoInitialized] = useState(false);
     const [isTableLoading, setIsTableLoading] = useState(true);
 
-    // Filter states - initialized from server filters
+    // Filter states - initialize from server filters
     const [dateFrom, setDateFrom] = useState<Date | undefined>(
         serverFilters?.date_from ? new Date(serverFilters.date_from) : undefined
     );
@@ -145,23 +141,25 @@ export default function Index({
 
     // Debounce timer refs
     const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const dateFromTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const dateToTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const frequencyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const positionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const filterTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    // Set initial loading to false after data is loaded
+    useEffect(() => {
+        if (payrolls !== undefined) {
+            const timer = setTimeout(() => {
+                setIsTableLoading(false);
+            }, 100);
+            return () => clearTimeout(timer);
+        }
+    }, [payrolls]);
 
     // Handle loading state for table skeleton
     useEffect(() => {
         let timeoutId: NodeJS.Timeout;
 
-        const onStart = (event: { visit: { data: any } }) => {
+        const onStart = () => {
             if (timeoutId) clearTimeout(timeoutId);
-
-            // Only show loading for non-pagination requests
-            const isPaginationRequest = event.visit?.data?.page || event.visit?.data?.perPage;
-            if (!isPaginationRequest) {
-                setIsTableLoading(false);
-            }
+            setIsTableLoading(true);
         };
 
         const onFinish = () => {
@@ -180,16 +178,40 @@ export default function Index({
         };
     }, []);
 
-    // Function to apply filters - sends request to server
+    // Function to apply filters - sends request to server with all parameters
     const applyFilters = useCallback(() => {
         const params: Record<string, string> = {};
 
-        if (searchTerm.trim()) params.search = searchTerm.trim();
-        if (dateFrom) params.date_from = dateFrom.toISOString().split('T')[0];
-        if (dateTo) params.date_to = dateTo.toISOString().split('T')[0];
-        if (selectedFrequency !== "all") params.frequency = selectedFrequency;
-        if (selectedPosition !== "all") params.position = selectedPosition;
-        if (perPage && perPage !== "10") params.perPage = perPage;
+        // Only add parameters if they have values
+        if (searchTerm && searchTerm.trim()) {
+            params.search = searchTerm.trim();
+        }
+
+        if (dateFrom) {
+            params.date_from = dateFrom.toISOString().split('T')[0];
+        }
+        if (dateTo) {
+            params.date_to = dateTo.toISOString().split('T')[0];
+        }
+
+        if (selectedFrequency && selectedFrequency !== "all") {
+            params.frequency = selectedFrequency;
+        }
+
+        if (selectedPosition && selectedPosition !== "all") {
+            params.position = selectedPosition;
+        }
+
+        // Handle per page
+        let perPageValue = perPage;
+        if (perPageValue === 'all') {
+            perPageValue = '10000';
+        }
+        if (perPageValue && perPageValue !== "10") {
+            params.perPage = perPageValue;
+        }
+
+        console.log('Applying filters:', params);
 
         router.get('/payroll', params, {
             preserveState: true,
@@ -201,45 +223,38 @@ export default function Index({
         });
     }, [searchTerm, dateFrom, dateTo, selectedFrequency, selectedPosition, perPage]);
 
-    // Debounced handlers for each filter
+    // Debounced search handler
     const handleSearchChange = useCallback((value: string) => {
         setSearchTerm(value);
-        if (searchTimer.current) clearTimeout(searchTimer.current);
+
+        if (searchTimer.current) {
+            clearTimeout(searchTimer.current);
+        }
+
         searchTimer.current = setTimeout(() => {
             applyFilters();
-        }, 300);
+        }, 500);
     }, [applyFilters]);
 
+    // Filter handlers - each triggers applyFilters immediately
     const handleDateFromChange = useCallback((date: Date | undefined) => {
         setDateFrom(date);
-        if (dateFromTimer.current) clearTimeout(dateFromTimer.current);
-        dateFromTimer.current = setTimeout(() => {
-            applyFilters();
-        }, 300);
+        applyFilters();
     }, [applyFilters]);
 
     const handleDateToChange = useCallback((date: Date | undefined) => {
         setDateTo(date);
-        if (dateToTimer.current) clearTimeout(dateToTimer.current);
-        dateToTimer.current = setTimeout(() => {
-            applyFilters();
-        }, 300);
+        applyFilters();
     }, [applyFilters]);
 
     const handleFrequencyChange = useCallback((frequency: string) => {
         setSelectedFrequency(frequency);
-        if (frequencyTimer.current) clearTimeout(frequencyTimer.current);
-        frequencyTimer.current = setTimeout(() => {
-            applyFilters();
-        }, 300);
+        applyFilters();
     }, [applyFilters]);
 
     const handlePositionChange = useCallback((position: string) => {
         setSelectedPosition(position);
-        if (positionTimer.current) clearTimeout(positionTimer.current);
-        positionTimer.current = setTimeout(() => {
-            applyFilters();
-        }, 300);
+        applyFilters();
     }, [applyFilters]);
 
     // Handle per page change
@@ -248,7 +263,7 @@ export default function Index({
         applyFilters();
     }, [applyFilters]);
 
-    // Handle page change - uses server pagination
+    // Handle page change
     const handlePageChange = useCallback((url: string | null) => {
         if (url) {
             router.get(url, {}, {
@@ -259,18 +274,15 @@ export default function Index({
         }
     }, []);
 
-    // Cleanup timers on unmount
+    // Cleanup timers
     useEffect(() => {
         return () => {
             if (searchTimer.current) clearTimeout(searchTimer.current);
-            if (dateFromTimer.current) clearTimeout(dateFromTimer.current);
-            if (dateToTimer.current) clearTimeout(dateToTimer.current);
-            if (frequencyTimer.current) clearTimeout(frequencyTimer.current);
-            if (positionTimer.current) clearTimeout(positionTimer.current);
+            if (filterTimer.current) clearTimeout(filterTimer.current);
         };
     }, []);
 
-    // Initialize Echo with Reverb configuration
+    // Initialize Echo
     useEffect(() => {
         const key = import.meta.env.VITE_REVERB_APP_KEY;
         const host = import.meta.env.VITE_REVERB_HOST || 'localhost';
@@ -309,7 +321,7 @@ export default function Index({
         };
     }, []);
 
-    // Listen to payroll channel after Echo is initialized
+    // Listen to payroll channel
     useEffect(() => {
         if (!echoInitialized || !window.Echo) return;
 
@@ -334,7 +346,7 @@ export default function Index({
         };
     }, [echoInitialized]);
 
-    // Function to check if any filter is applied
+    // Check if any filter is applied
     const hasActiveFilters = useMemo(() => {
         return dateFrom !== undefined || dateTo !== undefined ||
             selectedFrequency !== "all" || selectedPosition !== "all" || searchTerm !== "";
@@ -357,8 +369,7 @@ export default function Index({
         return [...Array.from(new Set(positions))];
     }, [payrolls]);
 
-
-    // payroll table headers
+    // Skeleton columns
     const skeletonColumns = [
         { label: 'EMPLOYEE', key: 'employee', className: '' },
         { label: 'PERIOD', key: 'period', className: '' },
@@ -389,7 +400,7 @@ export default function Index({
         }));
     }, [payrolls]);
 
-    // Handle refresh button click - clear all filters
+    // Handle refresh
     const handleRefresh = () => {
         setDateFrom(undefined);
         setDateTo(undefined);
@@ -422,7 +433,7 @@ export default function Index({
         }).format(amount);
     };
 
-    // Handle view payroll details
+    // Handle view
     const handleViewPayroll = (row: any) => {
         if (row?._original) {
             setSelectedPayroll(row._original);
@@ -430,12 +441,10 @@ export default function Index({
         }
     };
 
-    // Handle edit payroll (optional)
     const handleEditPayroll = (row: any) => {
         console.log('Edit payroll:', row);
     };
 
-    // Handle delete payroll (optional)
     const handleDeletePayroll = (id: string | number) => {
         if (confirm("Are you sure you want to delete this payroll record?")) {
             destroy(`/payroll/${id}`, {
@@ -450,7 +459,7 @@ export default function Index({
         }
     };
 
-    // Define columns for CustomTable
+    // Columns
     const columns = [
         {
             label: 'EMPLOYEE',
@@ -519,7 +528,6 @@ export default function Index({
         }
     ];
 
-    // Define actions for CustomTable
     const actions = [
         { label: 'View', icon: 'Eye', route: '', className: '' },
     ];
@@ -528,6 +536,7 @@ export default function Index({
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Payroll" />
             <div className="flex flex-1 flex-col gap-4 p-4">
+                {/* Payroll Processing Cards with Filters */}
                 <PayrollProcessingCards
                     payrolls={payrolls}
                     totalOvertimePay={initialOvertimePay}
@@ -538,25 +547,17 @@ export default function Index({
                     activeEmployee={initialActiveEmployee}
                     formatCurrency={formatCurrency}
                     formatNumber={formatNumber}
-
-                    // Filter props
                     dateFrom={dateFrom}
                     dateTo={dateTo}
                     selectedFrequency={selectedFrequency}
                     selectedPosition={selectedPosition}
-                    searchTerm={searchTerm}
-                    onSearchChange={handleSearchChange}
                     onDateFromChange={handleDateFromChange}
                     onDateToChange={handleDateToChange}
                     onFrequencyChange={handleFrequencyChange}
                     onPositionChange={handlePositionChange}
                     onRefresh={handleRefresh}
-
-                    // Options for dropdowns
                     frequencyOptions={uniqueFrequencies}
                     positionOptions={uniquePositions}
-
-                    // Filtered counts
                     totalFilteredPayrolls={filteredCount}
                     totalOriginalPayrolls={totalCount}
                 />
@@ -575,7 +576,7 @@ export default function Index({
                     </div>
                 )}
 
-                {/* CustomTable Integration */}
+                {/* Table Section */}
                 {isTableLoading ? (
                     <div className='mx-4'>
                         <TableSkeleton
@@ -616,6 +617,7 @@ export default function Index({
                                 onDelete={handleDeletePayroll}
                             />
 
+                            {/* Pagination */}
                             <CustomPagination
                                 pagination={serverPagination}
                                 perPage={perPage}
