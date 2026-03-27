@@ -16,6 +16,7 @@ use App\Http\Controllers\HrRole\HRIncentiveController;
 use App\Http\Controllers\HrRole\PayrollController as HrPayrollController;
 use App\Http\Controllers\HrRole\PayrollPeriodController as HrPayrollPeriodController;
 use App\Http\Controllers\IncentiveController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\PayrollPeriodController;
 use App\Http\Controllers\PermissionController;
@@ -133,6 +134,8 @@ Route::middleware(['auth', 'verified', 'roleBase'])->group(function () {
         'update' => 'hr.employees.update',
         'destroy' => 'hr.employees.destroy',
     ]);
+
+    Route::resource('notifications', NotificationController::class)->only(['index', 'store', 'destroy']);
 });
 
 
