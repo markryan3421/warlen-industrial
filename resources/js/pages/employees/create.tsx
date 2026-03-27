@@ -8,18 +8,13 @@ import type { BreadcrumbItem } from '@/types';
 import InputError from '@/components/input-error';
 import { store } from '@/actions/App/Http/Controllers/EmployeeController';
 import { useEffect, useState } from 'react';
-import { Search, ChevronDown } from 'lucide-react';
+import { Search, ChevronDown, User, Briefcase, MapPin, Calendar, Phone, Mail, Hash, Clock, LoaderCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { DatePicker } from '@/components/ui/date-picker';
 
 const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Employees',
-        href: '/employees',
-    },
-    {
-        title: 'Create',
-        href: '/employees/create',
-    },
+    { title: 'Employees', href: '/employees' },
+    { title: 'Create', href: '/employees/create' },
 ];
 
 interface Site {
@@ -40,25 +35,151 @@ interface Props {
     site: Site[];
 }
 
-export default function Create({ positions, branches, site = [] }: Props) {
-    const [availableSites, setAvailableSites] = useState<any[]>([]);
-    const [positionSearch, setPositionSearch] = useState('');
-    const [showPositionDropdown, setShowPositionDropdown] = useState(false);
-    const [siteSearch, setSiteSearch] = useState('');
-    const [showSiteDropdown, setShowSiteDropdown] = useState(false);
-    const [branchSearch, setBranchSearch] = useState('');
-    const [showBranchDropdown, setShowBranchDropdown] = useState(false);
+// ── Helper: calculate status from dates ──────────────────────────────────────
+const getStatusFromDates = (start: string, end: string) => {
+    if (!start || !end) return 'Inactive';
+    const today = new Date();
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    today.setHours(0, 0, 0, 0);
+    startDate.setHours(0, 0, 0, 0);
+    endDate.setHours(0, 0, 0, 0);
+    return (today >= startDate && today <= endDate) ? 'Active' : 'Inactive';
+};
 
-    const getStatusFromDates = (start: string, end: string) => {
-        if (!start || !end) return '';
-        const today = new Date();
-        const startDate = new Date(start);
-        const endDate = new Date(end);
-        today.setHours(0, 0, 0, 0);
-        startDate.setHours(0, 0, 0, 0);
-        endDate.setHours(0, 0, 0, 0);
-        return (today >= startDate && today <= endDate) ? 'Active' : 'Inactive';
-    };
+// ── Section card component ────────────────────────────────────────────────────
+function FormSection({ icon: Icon, title, children, index = 0 }: {
+    icon: React.ElementType; title: string; children: React.ReactNode; index?: number;
+}) {
+    return (
+        <div
+            className="form-section space-y-4 rounded-2xl border border-border bg-card p-5 shadow-sm"
+            style={{ animationDelay: `${index * 80}ms` }}
+        >
+            <div className="flex items-center gap-2 border-b border-border pb-3">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10">
+                    <Icon className="h-4 w-4 text-primary" />
+                </div>
+                <h3 className="text-sm font-bold text-foreground">{title}</h3>
+            </div>
+            {children}
+        </div>
+    );
+}
+
+// ── Custom dropdown with search ──────────────────────────────────────────────
+interface DropdownItem {
+    id: number | string;
+    name: string;
+}
+
+interface DropdownProps {
+    label: string;
+    items: DropdownItem[];
+    selectedId: string;
+    onSelect: (id: string, name: string) => void;
+    searchValue: string;
+    onSearchChange: (value: string) => void;
+    placeholder?: string;
+    disabled?: boolean;
+    error?: string;
+    required?: boolean;
+    searchPlaceholder?: string;
+    showAllResults?: boolean;
+}
+
+function SearchableDropdown({
+    label,
+    items,
+    selectedId,
+    onSelect,
+    searchValue,
+    onSearchChange,
+    placeholder = 'Select an option',
+    disabled = false,
+    error,
+    required = false,
+    searchPlaceholder = 'Search...',
+    showAllResults = false,
+}: DropdownProps) {
+    const [isOpen, setIsOpen] = useState(false);
+    const selectedItem = items.find(i => i.id.toString() === selectedId);
+
+    return (
+        <div className="space-y-2">
+            <Label className="text-sm font-semibold">
+                {label} {required && <span className="text-accent">*</span>}
+            </Label>
+            <div className="relative">
+                <div
+                    className={`flex cursor-pointer items-center justify-between rounded-xl border-2 bg-background px-4 py-2.5 transition-all ${isOpen ? 'border-primary ring-2 ring-primary/20' : 'border-border hover:border-primary/50'
+                        } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    onClick={() => !disabled && setIsOpen(!isOpen)}
+                >
+                    <span className={`text-sm ${!selectedItem ? 'text-muted-foreground' : 'text-foreground'}`}>
+                        {selectedItem?.name || placeholder}
+                    </span>
+                    <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                </div>
+
+                {isOpen && !disabled && (
+                    <>
+                        <div className="absolute z-10 mt-2 w-full rounded-xl border border-border bg-card shadow-lg">
+                            <div className="p-2 border-b border-border">
+                                <div className="relative">
+                                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                                    <Input
+                                        value={searchValue}
+                                        onChange={(e) => onSearchChange(e.target.value)}
+                                        placeholder={searchPlaceholder}
+                                        className="pl-9"
+                                        autoFocus
+                                        onClick={(e) => e.stopPropagation()}
+                                    />
+                                </div>
+                            </div>
+                            <div className="max-h-60 overflow-auto p-1">
+                                {items.length > 0 ? (
+                                    items.map((item) => (
+                                        <div
+                                            key={item.id}
+                                            className="cursor-pointer rounded-lg px-3 py-2 text-sm hover:bg-muted transition-colors"
+                                            onClick={() => {
+                                                onSelect(item.id.toString(), item.name);
+                                                setIsOpen(false);
+                                            }}
+                                        >
+                                            {item.name}
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="px-3 py-2 text-sm text-muted-foreground">No results found</div>
+                                )}
+                                {!showAllResults && items.length === 5 && (
+                                    <div className="px-3 py-2 text-xs text-muted-foreground border-t mt-1 pt-2">
+                                        Showing top 5 results. Use search to find more.
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                        <div
+                            className="fixed inset-0 z-0"
+                            onClick={() => setIsOpen(false)}
+                        />
+                    </>
+                )}
+            </div>
+            {error && <InputError message={error} />}
+        </div>
+    );
+}
+
+// ── Main Component ────────────────────────────────────────────────────────────
+export default function Create({ positions, branches, site = [] }: Props) {
+    const [availableSites, setAvailableSites] = useState<Site[]>([]);
+    const [positionSearch, setPositionSearch] = useState('');
+    const [branchSearch, setBranchSearch] = useState('');
+    const [siteSearch, setSiteSearch] = useState('');
 
     const { data, setData, post, processing, errors } = useForm({
         name: '',
@@ -71,17 +192,16 @@ export default function Create({ positions, branches, site = [] }: Props) {
         emp_code: '',
         contract_start_date: '',
         contract_end_date: '',
-        emergency_contact_number: '',
         pay_frequency: '',
+        emergency_contact_number: '',
         employee_status: '',
     });
 
+    // Update available sites when branch changes
     useEffect(() => {
         if (data.branch_id) {
-            const filteredSites = site.filter(
-                (site: any) => site.branch_id === parseInt(data.branch_id)
-            );
-            setAvailableSites(filteredSites);
+            const filtered = site.filter(s => s.branch_id === parseInt(data.branch_id));
+            setAvailableSites(filtered);
             setData('site_id', '');
             setSiteSearch('');
         } else {
@@ -89,43 +209,20 @@ export default function Create({ positions, branches, site = [] }: Props) {
         }
     }, [data.branch_id]);
 
+    // Auto‑calculate employee status from contract dates
     useEffect(() => {
         if (data.contract_start_date && data.contract_end_date) {
             setData('employee_status', getStatusFromDates(data.contract_start_date, data.contract_end_date));
+        } else {
+            setData('employee_status', 'Inactive');
         }
     }, [data.contract_start_date, data.contract_end_date]);
 
-    // Filter positions based on search, limit to 5
-    const filteredPositions = positions
-        ?.filter(position =>
-            position.pos_name.toLowerCase().includes(positionSearch.toLowerCase())
-        )
-        .slice(0, 5);
-
-    // Filter branches based on search, limit to 5
-    const filteredBranches = branches
-        ?.filter(branch =>
-            branch.branch_name.toLowerCase().includes(branchSearch.toLowerCase())
-        )
-        .slice(0, 5);
-
-    // Filter sites based on search, limit to 5
-    const filteredSites = availableSites
-        ?.filter(site => {
-            const siteName = site.site_name || site.name || '';
-            return siteName.toLowerCase().includes(siteSearch.toLowerCase());
-        })
-        .slice(0, 5);
-
-    const selectedPosition = positions?.find(p => p.id === parseInt(data.position_id));
-    const selectedBranch = branches?.find(b => b.id === parseInt(data.branch_id));
-    const selectedSite = availableSites?.find(s => s.id === parseInt(data.site_id));
-
+    // Format phone number display
     const handlePhoneChange = (field: 'employee_number' | 'emergency_contact_number', value: string) => {
         const digits = value.replace(/\D/g, '').slice(0, 10);
         setData(field, digits ? `+63${digits}` : '');
     };
-
     const getDisplayValue = (field: 'employee_number' | 'emergency_contact_number') => {
         return data[field] ? data[field].replace('+63', '') : '';
     };
@@ -134,114 +231,173 @@ export default function Create({ positions, branches, site = [] }: Props) {
         e.preventDefault();
         post(store().url, {
             onSuccess: (page) => {
-                const successMessage = (page.props as any).flash?.success || 'Employee created successfully.'
-                toast.success(successMessage);
+                toast.success((page.props as any).flash?.success || 'Employee created successfully.');
             },
             onError: (errors) => {
-                const errorMessage = Object.values(errors).flat()[0] || 'Failed to create employee.';
-                toast.error(errorMessage);
-            }
+                toast.error(Object.values(errors).flat()[0] || 'Failed to create employee.');
+            },
         });
     };
 
-    const selectPosition = (positionId: string, positionName: string) => {
-        setData('position_id', positionId);
-        setPositionSearch(positionName);
-        setShowPositionDropdown(false);
-    };
+    // Prepare dropdown items
+    const positionItems = positions.map(p => ({ id: p.id, name: p.pos_name }));
+    const branchItems = branches.map(b => ({ id: b.id, name: b.branch_name }));
+    const siteItems = availableSites.map(s => ({ id: s.id, name: s.site_name || s.site_name || '' }));
 
-    const selectBranch = (branchId: string, branchName: string) => {
-        setData('branch_id', branchId);
-        setBranchSearch(branchName);
-        setShowBranchDropdown(false);
-        setData('site_id', '');
-        setSiteSearch('');
-    };
-
-    const selectSite = (siteId: string, siteName: string) => {
-        setData('site_id', siteId);
-        setSiteSearch(siteName);
-        setShowSiteDropdown(false);
-    };
+    const filteredPositions = positionItems.filter(p =>
+        p.name.toLowerCase().includes(positionSearch.toLowerCase())
+    ).slice(0, 5);
+    const filteredBranches = branchItems.filter(b =>
+        b.name.toLowerCase().includes(branchSearch.toLowerCase())
+    ).slice(0, 5);
+    const filteredSites = siteItems.filter(s =>
+        s.name.toLowerCase().includes(siteSearch.toLowerCase())
+    ).slice(0, 5);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Create Employee" />
-            <div className="p-6">
-                <h1 className="text-2xl font-bold mb-6">Create New Employee</h1>
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-4">
-                            <h2 className="text-lg font-semibold border-b pb-2">User Details</h2>
-                            <div className="space-y-4">
+
+            <style>{`
+                @keyframes formFadeUp {
+                    from { opacity: 0; transform: translateY(20px); }
+                    to   { opacity: 1; transform: translateY(0); }
+                }
+                .form-section { animation: formFadeUp 0.45s cubic-bezier(0.22,1,0.36,1) both; }
+            `}</style>
+
+            <div className="min-h-screen py-8 md:py-10">
+                <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+                    {/* Page header */}
+                    <div className="mb-8 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary shadow-md">
+                                <User className="h-5 w-5 text-primary-foreground" />
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
+                                    HR Management
+                                </p>
+                                <h1 className="text-xl font-extrabold tracking-tight text-foreground">
+                                    Create New Employee
+                                </h1>
+                            </div>
+                        </div>
+                        <Button
+                            variant="outline"
+                            onClick={() => window.history.back()}
+                            className="rounded-xl border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                        >
+                            Cancel
+                        </Button>
+                    </div>
+
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        {/* 1. User Details */}
+                        <FormSection icon={User} title="User Details" index={0}>
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div className="space-y-2">
-                                    <Label htmlFor="emp_code">Employee Code <span className="text-red-500">*</span></Label>
-                                    <Input id="emp_code" type="number" value={data.emp_code} onChange={e => setData('emp_code', e.target.value)} className="w-full" placeholder="Enter employee code" />
+                                    <Label className="text-sm font-semibold">
+                                        Employee Code <span className="text-accent">*</span>
+                                    </Label>
+                                    <Input
+                                        value={data.emp_code}
+                                        onChange={e => setData('emp_code', e.target.value)}
+                                        placeholder="e.g., EMP001"
+                                        className="rounded-xl"
+                                    />
                                     <InputError message={errors.emp_code} />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="name">Name <span className="text-red-500">*</span></Label>
-                                    <Input id="name" value={data.name} onChange={e => setData('name', e.target.value)} className="w-full" placeholder="Enter full name" />
+                                    <Label className="text-sm font-semibold">
+                                        Full Name <span className="text-accent">*</span>
+                                    </Label>
+                                    <Input
+                                        value={data.name}
+                                        onChange={e => setData('name', e.target.value)}
+                                        placeholder="John Doe"
+                                        className="rounded-xl"
+                                    />
                                     <InputError message={errors.name} />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="email">Email <span className="text-red-500">*</span></Label>
-                                    <Input id="email" type="email" value={data.email} onChange={e => setData('email', e.target.value)} className="w-full" placeholder="Enter email address" />
+                                    <Label className="text-sm font-semibold">
+                                        Email <span className="text-accent">*</span>
+                                    </Label>
+                                    <Input
+                                        type="email"
+                                        value={data.email}
+                                        onChange={e => setData('email', e.target.value)}
+                                        placeholder="john@example.com"
+                                        className="rounded-xl"
+                                    />
                                     <InputError message={errors.email} />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="password">Password <span className="text-red-500">*</span></Label>
-                                    <Input id="password" type="password" value={data.password} onChange={e => setData('password', e.target.value)} className="w-full" placeholder="Enter password" />
+                                    <Label className="text-sm font-semibold">
+                                        Password <span className="text-accent">*</span>
+                                    </Label>
+                                    <Input
+                                        type="password"
+                                        value={data.password}
+                                        onChange={e => setData('password', e.target.value)}
+                                        placeholder="••••••••"
+                                        className="rounded-xl"
+                                    />
                                     <InputError message={errors.password} />
                                 </div>
                             </div>
-                        </div>
-                        <div className="space-y-4">
-                            <h2 className="text-lg font-semibold pb-2 border-b">Employee Details</h2>
-                            <div className="space-y-4">
+                        </FormSection>
+
+                        {/* 2. Employee Details */}
+                        <FormSection icon={Briefcase} title="Employee Details" index={1}>
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div className="space-y-2">
-                                    <Label htmlFor="employee_number">Contact Number <span className="text-red-500">*</span></Label>
+                                    <Label className="text-sm font-semibold">
+                                        Contact Number <span className="text-accent">*</span>
+                                    </Label>
                                     <div className="flex">
-                                        <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm">+63</span>
-                                        <Input id="employee_number" type="text" value={getDisplayValue('employee_number')} onChange={e => handlePhoneChange('employee_number', e.target.value)} className="w-full rounded-l-none" placeholder="XXX XXX XXXX" maxLength={10} />
+                                        <span className="inline-flex items-center rounded-l-xl border border-r-0 border-border bg-muted px-3 text-sm text-muted-foreground">
+                                            +63
+                                        </span>
+                                        <Input
+                                            type="text"
+                                            value={getDisplayValue('employee_number')}
+                                            onChange={e => handlePhoneChange('employee_number', e.target.value)}
+                                            placeholder="XXX XXX XXXX"
+                                            maxLength={10}
+                                            className="rounded-l-none rounded-r-xl"
+                                        />
                                     </div>
                                     <InputError message={errors.employee_number} />
                                 </div>
+
+                                <SearchableDropdown
+                                    label="Position"
+                                    items={filteredPositions}
+                                    selectedId={data.position_id}
+                                    onSelect={(id, name) => {
+                                        setData('position_id', id);
+                                        setPositionSearch(name);
+                                    }}
+                                    searchValue={positionSearch}
+                                    onSearchChange={setPositionSearch}
+                                    required
+                                    error={errors.position_id}
+                                    placeholder="Select a position"
+                                    searchPlaceholder="Search positions..."
+                                    showAllResults={false}
+                                />
+
                                 <div className="space-y-2">
-                                    <Label htmlFor="position_id">Position <span className="text-red-500">*</span></Label>
-                                    <div className="relative">
-                                        <div className="flex items-center border border-input rounded-md cursor-pointer" onClick={() => setShowPositionDropdown(!showPositionDropdown)}>
-                                            <div className="flex-1 px-3 py-2 text-sm">{selectedPosition?.pos_name || 'Select a Position'}</div>
-                                            <ChevronDown className="h-4 w-4 mr-2 text-muted-foreground" />
-                                        </div>
-                                        {showPositionDropdown && (
-                                            <div className="absolute z-10 w-full mt-1 bg-white border border-input rounded-md shadow-lg">
-                                                <div className="p-2 border-b">
-                                                    <div className="relative">
-                                                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                                                        <Input value={positionSearch} onChange={(e) => setPositionSearch(e.target.value)} placeholder="Search positions..." className="pl-8" autoFocus onClick={(e) => e.stopPropagation()} />
-                                                    </div>
-                                                </div>
-                                                <div className="max-h-60 overflow-auto">
-                                                    {filteredPositions.length > 0 ? (
-                                                        filteredPositions.map((position) => (
-                                                            <div key={position.id} className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm" onClick={() => selectPosition(position.id.toString(), position.pos_name)}>{position.pos_name}</div>
-                                                        ))
-                                                    ) : (
-                                                        <div className="px-3 py-2 text-sm text-gray-500">No positions found</div>
-                                                    )}
-                                                    {filteredPositions.length === 5 && positions.length > 5 && (
-                                                        <div className="px-3 py-2 text-xs text-gray-400 border-t">Showing top 5 results</div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                    <InputError message={errors.position_id} />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="pay_frequency">Pay Frequency <span className="text-red-500">*</span></Label>
-                                    <select id="pay_frequency" value={data.pay_frequency} onChange={e => setData('pay_frequency', e.target.value)} className="w-full h-10 px-3 rounded-md border border-input bg-background">
+                                    <Label className="text-sm font-semibold">
+                                        Pay Frequency <span className="text-accent">*</span>
+                                    </Label>
+                                    <select
+                                        value={data.pay_frequency}
+                                        onChange={e => setData('pay_frequency', e.target.value)}
+                                        className="w-full rounded-xl border-2 border-border bg-background px-4 py-2.5 text-sm focus:border-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                                    >
                                         <option value="">Select a Pay Frequency</option>
                                         <option value="weekender">Weekender</option>
                                         <option value="monthly">Monthly</option>
@@ -249,139 +405,122 @@ export default function Create({ positions, branches, site = [] }: Props) {
                                     </select>
                                     <InputError message={errors.pay_frequency} />
                                 </div>
+
                                 <div className="space-y-2">
-                                    <Label htmlFor="employee_status">Status <span className="text-red-500">*</span></Label>
-                                    <Input id="employee_status" type="text" value={data.employee_status} className="w-full h-10 px-3 rounded-md border border-input bg-background" readOnly placeholder="Employee Status" />
+                                    <Label className="text-sm font-semibold">
+                                        Status
+                                    </Label>
+                                    <div className="flex h-11 items-center rounded-xl border-2 border-border bg-muted/30 px-4 text-sm text-foreground">
+                                        <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
+                                        {data.employee_status || 'Inactive'}
+                                    </div>
                                     <InputError message={errors.employee_status} />
                                 </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="emergency_contact_number">Emergency Contact</Label>
+
+                                <div className="space-y-2 sm:col-span-2">
+                                    <Label className="text-sm font-semibold">Emergency Contact</Label>
                                     <div className="flex">
-                                        <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm">+63</span>
-                                        <Input id="emergency_contact_number" type="text" value={getDisplayValue('emergency_contact_number')} onChange={e => handlePhoneChange('emergency_contact_number', e.target.value)} className="w-full rounded-l-none" placeholder="XXX XXX XXXX" maxLength={10} />
+                                        <span className="inline-flex items-center rounded-l-xl border border-r-0 border-border bg-muted px-3 text-sm text-muted-foreground">
+                                            +63
+                                        </span>
+                                        <Input
+                                            type="text"
+                                            value={getDisplayValue('emergency_contact_number')}
+                                            onChange={e => handlePhoneChange('emergency_contact_number', e.target.value)}
+                                            placeholder="XXX XXX XXXX"
+                                            maxLength={10}
+                                            className="rounded-l-none rounded-r-xl"
+                                        />
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                    <div className="space-y-4">
-                        <h2 className="text-lg font-semibold border-b pb-2">Location Assignment</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="branch_id">Branch <span className="text-red-500">*</span></Label>
-                                <div className="relative">
-                                    <div className="flex items-center border border-input rounded-md cursor-pointer" onClick={() => setShowBranchDropdown(!showBranchDropdown)}>
-                                        <div className="flex-1 px-3 py-2 text-sm">{selectedBranch?.branch_name || 'Select a Branch'}</div>
-                                        <ChevronDown className="h-4 w-4 mr-2 text-muted-foreground" />
-                                    </div>
-                                    {showBranchDropdown && (
-                                        <div className="absolute z-10 w-full mt-1 bg-white border border-input rounded-md shadow-lg">
-                                            <div className="p-2 border-b">
-                                                <div className="relative">
-                                                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                                                    <Input
-                                                        value={branchSearch}
-                                                        onChange={(e) => setBranchSearch(e.target.value)}
-                                                        placeholder="Search branches..."
-                                                        className="pl-8"
-                                                        autoFocus
-                                                        onClick={(e) => e.stopPropagation()}
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div className="max-h-60 overflow-auto">
-                                                {filteredBranches.length > 0 ? (
-                                                    filteredBranches.map((branch) => (
-                                                        <div
-                                                            key={branch.id}
-                                                            className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
-                                                            onClick={() => selectBranch(branch.id.toString(), branch.branch_name)}
-                                                        >
-                                                            {branch.branch_name}
-                                                        </div>
-                                                    ))
-                                                ) : (
-                                                    <div className="px-3 py-2 text-sm text-gray-500">No branches found</div>
-                                                )}
-                                                {filteredBranches.length === 5 && branches.length > 5 && (
-                                                    <div className="px-3 py-2 text-xs text-gray-400 border-t">Showing top 5 results</div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                                <InputError message={errors.branch_id} />
-                            </div>
-                            {data.branch_id && (
+                        </FormSection>
+
+                        {/* 3. Contract Period */}
+                        <FormSection icon={Calendar} title="Contract Period" index={3}>
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div className="space-y-2">
-                                    <Label htmlFor="site_id">Site <span className="text-red-500">*</span></Label>
-                                    <div className="relative">
-                                        <div className="flex items-center border border-input rounded-md cursor-pointer" onClick={() => setShowSiteDropdown(!showSiteDropdown)}>
-                                            <div className="flex-1 px-3 py-2 text-sm">{selectedSite?.site_name || selectedSite?.name || 'Select a Site'}</div>
-                                            <ChevronDown className="h-4 w-4 mr-2 text-muted-foreground" />
-                                        </div>
-                                        {showSiteDropdown && (
-                                            <div className="absolute z-10 w-full mt-1 bg-white border border-input rounded-md shadow-lg">
-                                                <div className="p-2 border-b">
-                                                    <div className="relative">
-                                                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                                                        <Input value={siteSearch} onChange={(e) => setSiteSearch(e.target.value)} placeholder="Search sites..." className="pl-8" autoFocus onClick={(e) => e.stopPropagation()} />
-                                                    </div>
-                                                </div>
-                                                <div className="max-h-60 overflow-auto">
-                                                    {filteredSites.length > 0 ? (
-                                                        filteredSites.map((site) => {
-                                                            const siteName = site.site_name || site.name || '';
-                                                            return (
-                                                                <div key={site.id} className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm" onClick={() => selectSite(site.id.toString(), siteName)}>{siteName}</div>
-                                                            );
-                                                        })
-                                                    ) : (
-                                                        <div className="px-3 py-2 text-sm text-gray-500">No sites found</div>
-                                                    )}
-                                                    {filteredSites.length === 5 && availableSites.length > 5 && (
-                                                        <div className="px-3 py-2 text-xs text-gray-400 border-t">Showing top 5 results</div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                    <InputError message={errors.site_id} />
-                                    {availableSites.length === 0 && (
-                                        <p className="text-sm text-amber-600 mt-1">No sites available for this branch</p>
-                                    )}
+                                    <Label className="text-sm font-semibold">
+                                        Start Date <span className="text-accent">*</span>
+                                    </Label>
+                                    <DatePicker
+                                        value={data.contract_start_date}
+                                        onChange={(date) => setData('contract_start_date', date)}
+                                        placeholder='Select contract start date'
+                                    />
+                                    <InputError message={errors.contract_start_date} />
                                 </div>
-                            )}
-                        </div>
-                    </div>
-                    <div className="space-y-4">
-                        <h2 className="text-lg font-semibold border-b pb-2">Date of Contract</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="start_date">Start Date <span className="text-red-500">*</span></Label>
-                                <Input id="start_date" type="date" value={data.contract_start_date} onChange={e => setData('contract_start_date', e.target.value)} className="w-full h-10 px-3 rounded-md border border-input bg-background" />
-                                <InputError message={errors.contract_start_date} />
+                                <div className="space-y-2">
+                                    <Label className="text-sm font-semibold">
+                                        End Date <span className="text-accent">*</span>
+                                    </Label>
+                                    <DatePicker
+                                        value={data.contract_end_date}
+                                        onChange={(date) => setData('contract_end_date', date)}
+                                        placeholder='Select contract end date'
+                                        minDate={data.contract_start_date ? new Date(data.contract_start_date) : undefined}
+                                    />
+                                    <InputError message={errors.contract_end_date} />
+                                </div>
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="end_date">End Date <span className="text-red-500">*</span></Label>
-                                <Input id="end_date" type="date" value={data.contract_end_date} onChange={e => setData('contract_end_date', e.target.value)} className="w-full h-10 px-3 rounded-md border border-input bg-background" min={data.contract_start_date} />
-                                <InputError message={errors.contract_end_date} />
+                        </FormSection>
+
+                        {/* 4. Location Assignment */}
+                        <FormSection icon={MapPin} title="Location Assignment" index={2}>
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                <SearchableDropdown
+                                    label="Branch"
+                                    items={filteredBranches}
+                                    selectedId={data.branch_id}
+                                    onSelect={(id, name) => {
+                                        setData('branch_id', id);
+                                        setBranchSearch(name);
+                                    }}
+                                    searchValue={branchSearch}
+                                    onSearchChange={setBranchSearch}
+                                    required
+                                    error={errors.branch_id}
+                                    placeholder="Select a branch"
+                                    searchPlaceholder="Search branches..."
+                                    showAllResults={false}
+                                />
+
+                                {data.branch_id && (
+                                    <SearchableDropdown
+                                        label="Site"
+                                        items={filteredSites}
+                                        selectedId={data.site_id}
+                                        onSelect={(id, name) => {
+                                            setData('site_id', id);
+                                            setSiteSearch(name);
+                                        }}
+                                        searchValue={siteSearch}
+                                        onSearchChange={setSiteSearch}
+                                        required
+                                        error={errors.site_id}
+                                        placeholder="Select a site"
+                                        searchPlaceholder="Search sites..."
+                                        showAllResults={false}
+                                        disabled={availableSites.length === 0}
+                                    />
+                                )}
                             </div>
+                        </FormSection>
+
+                        {/* Submit button */}
+                        <div className="flex justify-end pt-4">
+                            <Button
+                                type="submit"
+                                disabled={processing}
+                                className="min-w-[140px] rounded-xl bg-primary px-6 py-2.5 text-sm font-bold text-primary-foreground transition-all hover:brightness-110 active:scale-95 disabled:opacity-60"
+                            >
+                                {processing && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
+                                {processing ? 'Creating...' : 'Create Employee'}
+                            </Button>
                         </div>
-                    </div>
-                    <div className="flex gap-3 pt-4">
-                        <Button type="submit" disabled={processing}>{processing ? 'Creating...' : 'Create Employee'}</Button>
-                        <Button type="button" variant="outline" onClick={() => window.history.back()}>Cancel</Button>
-                    </div>
-                </form>
+                    </form>
+                </div>
             </div>
-            {(showPositionDropdown || showSiteDropdown || showBranchDropdown) && (
-                <div className="fixed inset-0 z-0" onClick={() => {
-                    setShowPositionDropdown(false);
-                    setShowSiteDropdown(false);
-                    setShowBranchDropdown(false);
-                }} />
-            )}
         </AppLayout>
     );
 }
