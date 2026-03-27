@@ -3,7 +3,6 @@ import { Calculator, Percent, Plus, Trash2, LoaderCircle, Filter, Handshake } fr
 import { useState, useMemo, useEffect } from 'react';
 import { format, isToday } from 'date-fns';
 
-import ContributionVersionController from '@/actions/App/Http/Controllers/ContributionVersionController';
 import { CustomTable } from '@/components/custom-table';
 import { Button } from '@/components/ui/button';
 import {
@@ -30,6 +29,22 @@ import { Badge } from "@/components/ui/badge";
 import InputError from '@/components/input-error';
 import { CustomPagination } from '@/components/custom-pagination';
 import { CustomHeader } from '@/components/custom-header';
+
+// Helper function to generate route URLs
+const route = (name: string, params?: any) => {
+    // If you have ziggy-js installed, use it
+    if (window.route) {
+        return window.route(name, params);
+    }
+    // Fallback to hardcoded URLs with correct parameter names
+    const urls: Record<string, string> = {
+        'contribution-versions.index': '/contributions',
+        'contribution-versions.store': '/contributions',
+        'contribution-versions.update': `/contributions/${params?.contribution_version || ''}`,
+        'contribution-versions.destroy': `/contributions/${params?.contribution_version || ''}`,
+    };
+    return urls[name] || '/contributions';
+};
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Contributions', href: '/contributions' },
@@ -184,7 +199,7 @@ export default function Index({
         }
 
         if (confirm('Are you sure you want to delete this contribution version?')) {
-            destroy(ContributionVersionController.destroy(id).url, {
+            router.delete(route('contribution-versions.destroy', { contribution_version: id }), {
                 onSuccess: (page) => {
                     const successMessage = page.props.flash?.success || 'Contribution version deleted successfully.';
                     toast.success(successMessage);
@@ -196,11 +211,12 @@ export default function Index({
             });
         }
     };
+    
     // ── View brackets ──────────────────────────────────────────────────────
-    const viewBrackets = (version: ContributionVersion) => {
-        setSelectedVersion(version);
-        setIsBracketsModalOpen(true);
-    };
+   const viewBrackets = (version: ContributionVersion) => {
+       setSelectedVersion(version);
+       setIsBracketsModalOpen(true);
+   }
 
     // ── View details ───────────────────────────────────────────────────────
     const viewDetails = (version: ContributionVersion) => {
@@ -340,7 +356,7 @@ export default function Index({
                                 onPerPageChange={(value) => {
                                     // Handle per page change
                                     router.get(
-                                        ContributionVersionController.index.url(),
+                                        route('contribution-versions.index'),
                                         { perPage: value, type: typeFilter !== 'all' ? typeFilter : undefined },
                                         { preserveState: true }
                                     );
@@ -470,7 +486,7 @@ function CreateContributionModal({ isOpen, onClose, existingTypes }: CreateContr
 
     function submitContributionVersion(e: React.FormEvent) {
         e.preventDefault();
-        post(ContributionVersionController.store().url, {
+        post(route('contribution-versions.store'), {
             onSuccess: (page) => {
                 const successMessage = page.props.flash?.success || 'Contribution version created successfully.';
                 toast.success(successMessage);
@@ -739,7 +755,7 @@ function EditContributionModal({ isOpen, onClose, contributionVersion, existingT
 
     function submitContributionVersion(e: React.FormEvent) {
         e.preventDefault();
-        put(ContributionVersionController.update(contributionVersion.id).url, {
+        put(route('contribution-versions.update', { contribution_version: contributionVersion.id }), {
             onSuccess: (page) => {
                 const successMessage = page.props.flash?.success || 'Contribution version updated successfully.';
                 toast.success(successMessage);

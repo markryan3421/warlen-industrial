@@ -5,7 +5,7 @@ import PayrollPeriodController from '@/actions/App/Http/Controllers/PayrollPerio
 import { useState, useMemo, useEffect } from 'react';
 import {
     CalendarDays, Plus, Clock, CheckCircle2,
-    AlertCircle, Filter, Pencil, Trash2, Eye, Banknote,
+    AlertCircle, Filter, Pencil, Trash2, Eye, Banknote, XCircle,
 } from 'lucide-react';
 import { CustomTable } from '@/components/custom-table';
 import {
@@ -24,6 +24,7 @@ interface PayrollPeriod {
     end_date: string;
     pay_date: string;
     payroll_per_status: 'open' | 'processing' | 'completed';
+    is_paid: boolean;
     created_at?: string;
     updated_at?: string;
 }
@@ -51,6 +52,20 @@ function StatusBadge({ status, label }: { status: PayrollPeriod['payroll_per_sta
         <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wider ${cfg.badge}`}>
             <Icon className="h-3 w-3" />
             {label}
+        </span>
+    );
+}
+
+function PaymentBadge({ isPaid }: { isPaid: boolean }) {
+    return isPaid ? (
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-green-700">
+            <CheckCircle2 className="h-3 w-3" />
+            Paid
+        </span>
+    ) : (
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-gray-600">
+            <XCircle className="h-3 w-3" />
+            Unpaid
         </span>
     );
 }
@@ -162,6 +177,13 @@ export default function Index({ payrollPeriods }: PayrollPeriodProps) {
             key: 'payroll_per_status',
             render: (row: PayrollPeriod) => (
                 <StatusBadge status={row.payroll_per_status} label={formatStatus(row.payroll_per_status)} />
+            ),
+        },
+        {
+            label: 'Payment',
+            key: 'is_paid',
+            render: (row: PayrollPeriod) => (
+                <PaymentBadge isPaid={row.is_paid} />
             ),
         },
         {
@@ -369,12 +391,20 @@ export default function Index({ payrollPeriods }: PayrollPeriodProps) {
                                         />
                                     </div>
 
+                                    {/* Payment Status */}
+                                    <div className="rounded-xl border border-border bg-card p-4">
+                                        <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Payment Status</p>
+                                        <PaymentBadge isPaid={selectedPeriod.is_paid} />
+                                    </div>
+
                                     {/* Summary */}
                                     <div className="rounded-xl bg-primary/5 p-4">
                                         <p className="mb-1 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Summary</p>
                                         <p className="text-sm text-foreground">
                                             {selectedPeriod.payroll_per_status === 'completed'
-                                                ? 'This payroll period has been completed and processed.'
+                                                ? selectedPeriod.is_paid
+                                                    ? 'This payroll period has been completed and the payout has been processed.'
+                                                    : 'This payroll period has been completed but payout has not been confirmed.'
                                                 : selectedPeriod.payroll_per_status === 'processing'
                                                     ? 'This payroll period is currently being processed.'
                                                     : 'This payroll period is open and pending processing.'}

@@ -28,6 +28,7 @@ class PayrollPeriodController extends Controller
                 'end_date',
                 'pay_date',
                 'payroll_per_status',
+                'is_paid'
             ]);
 
         $payroll_period_enums = PayrollPeriodStatusEnum::options();
@@ -88,6 +89,12 @@ class PayrollPeriodController extends Controller
     public function edit(PayrollPeriod $payrollPeriod)
     {
         Gate::authorize('update', $payrollPeriod);
+        // Load employees with their payroll data for this period
+        $payrollPeriod->load(['payrolls' => function ($query) {
+            $query->with(['employee' => function ($query) {
+                $query->with('user'); // Load user to get employee name
+            }]);
+        }]);
         $payroll_period_enums = PayrollPeriodStatusEnum::options();
         return Inertia::render('PayrollPeriod/edit', compact('payrollPeriod', 'payroll_period_enums'));
     }

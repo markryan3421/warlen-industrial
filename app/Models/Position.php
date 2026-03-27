@@ -36,7 +36,7 @@ class Position extends Model
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['pos_name', 'basic_salary', 'pos_slug'])
+            ->logOnly(['pos_name', 'basic_salary'])
             ->logOnlyDirty();
     }
 

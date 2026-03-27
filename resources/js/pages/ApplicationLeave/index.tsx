@@ -28,6 +28,8 @@ import { Input } from "@/components/ui/input";
 // Import Echo and Pusher for Reverb
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
+import { ApplicationLeavesTableConfig } from '@/config/tables/application-leave';
+import { CustomTable } from '@/components/custom-table';
 
 // Declare global window interface for Echo
 declare global {
@@ -188,6 +190,7 @@ export default function Index({ applicationLeaves }: ApplicationLeaveProps) {
         localStorage.setItem('applicationLeaves-statusFilter', statusFilter);
     }, [statusFilter]);
 
+<<<<<<< HEAD
     // Handle delete
     const handleDelete = (slug_app: string) => {
         if (confirm("Are you sure you want to delete this application leave?")) {
@@ -208,6 +211,21 @@ export default function Index({ applicationLeaves }: ApplicationLeaveProps) {
     };
 
     // Filter and search leaves
+=======
+    // const handleDelete = (slug_app: string) => {
+    //     if (confirm("Are you sure you want to delete this application leave?")) {
+    //         destroy(ApplicationLeaveController.destroy(slug_app).url, {
+    //             onSuccess: () => {
+    //                 // After successful deletion, update local state immediately
+    //                 setLeaves(prevLeaves =>
+    //                     prevLeaves.filter(leave => leave.slug_app !== slug_app)
+    //                 );
+    //             }
+    //         });
+    //     }
+    // }
+    // Filter application leaves based on status
+>>>>>>> 9823c01910d4ee87bd34ad229256def3f7585815
     const filteredLeaves = useMemo(() => {
         let result = leaves;
 

@@ -17,6 +17,7 @@ return new class extends Migration
             $table->date('end_date');
             $table->date('pay_date')->nullable();
             $table->enum('payroll_per_status', ['open', 'processing', 'completed'])->default('open');
+            $table->boolean('is_paid')->default(false);
             $table->timestamps();
         });
         /*
