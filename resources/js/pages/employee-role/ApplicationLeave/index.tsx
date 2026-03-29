@@ -6,10 +6,6 @@ import ApplicationLeaveController from '@/actions/App/Http/Controllers/EmployeeR
 import { useState, useEffect } from 'react';
 import { CalendarDays, PlusCircle, Bell, X } from 'lucide-react';
 
-// Import Echo and Pusher for Reverb
-import Echo from 'laravel-echo';
-import Pusher from 'pusher-js';
-
 import {
     Table,
     TableBody,
@@ -31,7 +27,6 @@ import {
 // Declare global window interface for Echo
 declare global {
     interface Window {
-        Pusher: any;
         Echo: any;
     }
 }
@@ -55,56 +50,10 @@ export default function Index({ applicationLeaves, approvedCount = 0 }: Applicat
     const [leaves, setLeaves] = useState(applicationLeaves);
     const [notification, setNotification] = useState<{message: string, timestamp: string} | null>(null);
     const [showNotification, setShowNotification] = useState(false);
-    const [echoInitialized, setEchoInitialized] = useState(false);
 
-    // Initialize Echo with Reverb configuration
+    // Listen to application-leave channel (Echo is already initialized globally)
     useEffect(() => {
-        // Set Pusher on window (required for Echo)
-        window.Pusher = Pusher;
-
-        // Get Reverb configuration from environment variables
-        const key = import.meta.env.VITE_REVERB_APP_KEY;
-        const host = import.meta.env.VITE_REVERB_HOST || 'localhost';
-        const port = import.meta.env.VITE_REVERB_PORT || '8080';
-        const scheme = import.meta.env.VITE_REVERB_SCHEME || 'http';
-        
-        console.log('Reverb Config:', { key, host, port, scheme });
-
-        if (!key) {
-            console.error('VITE_REVERB_APP_KEY is not defined in your .env file');
-            return;
-        }
-
-        // Initialize Echo with Reverb configuration
-        window.Echo = new Echo({
-            broadcaster: 'reverb',
-            key: key,
-            wsHost: host,
-            wsPort: Number(port),
-            wssPort: Number(port),
-            forceTLS: scheme === 'https',
-            enabledTransports: ['ws', 'wss'],
-            authEndpoint: '/broadcasting/auth',
-            auth: {
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
-                },
-            },
-        });
-
-        setEchoInitialized(true);
-
-        // Cleanup on unmount
-        return () => {
-            if (window.Echo) {
-                window.Echo.leave('application-leave');
-            }
-        };
-    }, []);
-
-    // Listen to application-leave channel after Echo is initialized
-    useEffect(() => {
-        if (!echoInitialized || !window.Echo) return;
+        if (!window.Echo) return;
 
         console.log('Listening to application-leave channel...');
 
@@ -124,7 +73,7 @@ export default function Index({ applicationLeaves, approvedCount = 0 }: Applicat
                     // This is an UPDATE
                     console.log('Updating existing leave:', event.id);
                     
-                    // Show update notification
+                    // Show update notification (commented out to match original)
                     // setNotification({
                     //     message: `Application leave was updated`,
                     //     timestamp: new Date().toLocaleString()
@@ -170,7 +119,7 @@ export default function Index({ applicationLeaves, approvedCount = 0 }: Applicat
         return () => {
             channel.stopListening('.ApplicationLeaveEvent');
         };
-    }, [echoInitialized]);
+    }, []);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>

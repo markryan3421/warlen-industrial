@@ -32,16 +32,12 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 
-// Import Echo and Pusher for Reverb
-import Echo from 'laravel-echo';
-import Pusher from 'pusher-js';
 import { ApplicationLeavesTableConfig } from '@/config/tables/application-leave';
 import { CustomTable } from '@/components/custom-table';
 
 // Declare global window interface for Echo
 declare global {
     interface Window {
-        Pusher: any;
         Echo: any;
     }
 }
@@ -72,7 +68,6 @@ export default function Index({ applicationLeaves }: ApplicationLeaveProps) {
     const [leaves, setLeaves] = useState(applicationLeaves);
     const [notification, setNotification] = useState<{ message: string, timestamp: string } | null>(null);
     const [showNotification, setShowNotification] = useState(false);
-    const [echoInitialized, setEchoInitialized] = useState(false);
 
     // Initialize filter from localStorage or use default
     const [statusFilter, setStatusFilter] = useState<string>(() => {
@@ -80,54 +75,9 @@ export default function Index({ applicationLeaves }: ApplicationLeaveProps) {
         return savedFilter || 'all';
     });
 
-    // Initialize Echo with Reverb configuration
+    // Listen to application-leave channel (Echo is already initialized globally)
     useEffect(() => {
-        // Set Pusher on window (required for Echo)
-        window.Pusher = Pusher;
-
-        // Get Reverb configuration from environment variables
-        const key = import.meta.env.VITE_REVERB_APP_KEY;
-        const host = import.meta.env.VITE_REVERB_HOST || 'localhost';
-        const port = import.meta.env.VITE_REVERB_PORT || '8080';
-        const scheme = import.meta.env.VITE_REVERB_SCHEME || 'http';
-
-        console.log('Reverb Config:', { key, host, port, scheme }); // Debug log
-
-        if (!key) {
-            console.error('VITE_REVERB_APP_KEY is not defined in your .env file');
-            return;
-        }
-
-        // Initialize Echo with Reverb configuration
-        window.Echo = new Echo({
-            broadcaster: 'reverb',
-            key: key,
-            wsHost: host,
-            wsPort: port,
-            wssPort: port,
-            forceTLS: scheme === 'https',
-            enabledTransports: ['ws', 'wss'],
-            authEndpoint: '/broadcasting/auth',
-            auth: {
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
-                },
-            },
-        });
-
-        setEchoInitialized(true);
-
-        // Cleanup on unmount
-        return () => {
-            if (window.Echo) {
-                window.Echo.leave('application-leave');
-            }
-        };
-    }, []);
-
-    // Listen to application-leave channel after Echo is initialized
-    useEffect(() => {
-        if (!echoInitialized || !window.Echo) return;
+        if (!window.Echo) return;
 
         console.log('Listening to application-leave channel...'); // Debug log
 
@@ -138,11 +88,11 @@ export default function Index({ applicationLeaves }: ApplicationLeaveProps) {
             console.log('Application leave event received:', event);
 
             // Show notification
-            // setNotification({
-            //     message: `New application leave created`,
-            //     timestamp: new Date().toLocaleString()
-            // });
-            // setShowNotification(true);
+            setNotification({
+                message: `New application leave created`,
+                timestamp: new Date().toLocaleString()
+            });
+            setShowNotification(true);
 
             // Auto-hide notification after 5 seconds
             setTimeout(() => {
@@ -184,25 +134,13 @@ export default function Index({ applicationLeaves }: ApplicationLeaveProps) {
         return () => {
             channel.stopListening('.ApplicationLeaveEvent');
         };
-    }, [echoInitialized]);
+    }, []);
 
     // Save filter to localStorage whenever it changes
     useEffect(() => {
         localStorage.setItem('applicationLeaves-statusFilter', statusFilter);
     }, [statusFilter]);
 
-    // const handleDelete = (slug_app: string) => {
-    //     if (confirm("Are you sure you want to delete this application leave?")) {
-    //         destroy(ApplicationLeaveController.destroy(slug_app).url, {
-    //             onSuccess: () => {
-    //                 // After successful deletion, update local state immediately
-    //                 setLeaves(prevLeaves =>
-    //                     prevLeaves.filter(leave => leave.slug_app !== slug_app)
-    //                 );
-    //             }
-    //         });
-    //     }
-    // }
     // Filter application leaves based on status
     const filteredLeaves = useMemo(() => {
         if (statusFilter === 'all') {
