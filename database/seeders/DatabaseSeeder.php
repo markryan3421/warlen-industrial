@@ -30,7 +30,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
            // PositionSeeder::class, // Make sure this runs first
             //DeductionSeeder::class,
-            UserSeeder::class,
+            //UserSeeder::class,
             EmployeeSeeder::class
         ]);
     }

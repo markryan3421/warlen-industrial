@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Attributes\UsePolicy;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Cache;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
@@ -20,13 +21,13 @@ class PayrollPeriod extends Model
         'end_date',
         'pay_date',
         'payroll_per_status',
+        'is_paid',
     ];
 
-    // protected $casts = [
-    //     'start_date' => 'date',
-    //     'end_date' => 'date',
-    //     'pay_date' => 'date'
-    // ];
+    protected $casts = [
+        'is_paid' => 'boolean',
+    ];
+
 
     public function payrolls(): HasMany
     {

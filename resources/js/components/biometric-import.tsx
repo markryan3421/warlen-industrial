@@ -133,9 +133,9 @@ export default function BiometricImport() {
     // Render
     // ─────────────────────────────────────────────────────────────────────────
     return (
-        <div className="mx-auto max-w-xl space-y-4 p-4">
+        <div className="mx-auto max-w-md space-y-4 p-4">
 
-            {/* ── Title ─────────────────────────────────────────────────────────── */}
+            {/* ── Title ───────────────────────────────────────────────────────────
             <div className="mb-2">
                 <h2 className="text-lg font-bold text-stone-800 dark:text-stone-100">
                     Biometric Attendance Import
@@ -143,7 +143,7 @@ export default function BiometricImport() {
                 <p className="text-sm text-stone-400 dark:text-stone-500">
                     Upload the XLS file exported from the biometric device.
                 </p>
-            </div>
+            </div> */}
 
             {/* ── Drop zone ─────────────────────────────────────────────────────── */}
             <div
@@ -154,9 +154,14 @@ export default function BiometricImport() {
                 className={[
                     "relative flex cursor-pointer flex-col items-center justify-center gap-3",
                     "rounded-2xl border-2 border-dashed px-6 py-10 transition-all duration-200",
-                    dragging
-                        ? "border-orange-400 bg-orange-50 dark:border-orange-500 dark:bg-orange-950/30"
-                        : "border-stone-200 bg-stone-50 hover:border-orange-300 hover:bg-orange-50/50 dark:border-stone-700 dark:bg-stone-900 dark:hover:border-orange-600",
+                    // Loading state
+                    loading
+                        ? "border-blue-400 bg-blue-100 dark:border-blue-400 dark:bg-blue-950/50"
+                        : file && !dragging
+                            ? "border-blue-400 bg-blue-50 dark:border-blue-500 dark:bg-blue-950/30"
+                            : dragging
+                                ? "border-blue-300 bg-blue-50 dark:border-blue-500 dark:bg-blue-950/30"
+                                : "border-stone-200 bg-stone-50 hover:border-blue-300 hover:bg-blue-50/50 dark:border-stone-700 dark:bg-stone-900 dark:hover:border-orange-600",
                 ].join(" ")}
             >
                 <Input
@@ -165,11 +170,28 @@ export default function BiometricImport() {
                     accept=".xls,.xlsx"
                     className="hidden"
                     onChange={onInputChange}
+                    disabled={loading}
                 />
 
-                {file ? (
+                {loading ? (
+                    // Loading animation
+                    <div className="flex flex-col items-center justify-center gap-3">
+                        <div className="relative">
+                            <div className="h-12 w-12 rounded-full border-4 border-blue-200 dark:border-blue-800"></div>
+                            <div className="absolute top-0 left-0 h-12 w-12 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
+                        </div>
+                        <div className="text-center">
+                            <p className="text-sm font-semibold text-blue-600 dark:text-blue-400">
+                                Processing file...
+                            </p>
+                            <p className="text-xs text-stone-500 dark:text-stone-400 mt-1">
+                                Please wait while we import your data
+                            </p>
+                        </div>
+                    </div>
+                ) : file ? (
                     <>
-                        <FileSpreadsheet className="h-10 w-10 text-orange-500" />
+                        <FileSpreadsheet className="h-10 w-10 text-blue-600" />
                         <div className="text-center">
                             <p className="text-sm font-semibold text-stone-700 dark:text-stone-200">
                                 {file.name}
@@ -180,7 +202,7 @@ export default function BiometricImport() {
                         </div>
                         <Button
                             onClick={(e) => { e.stopPropagation(); reset(); }}
-                            className="absolute right-3 top-3 rounded-full p-1 text-stone-400 hover:bg-stone-200 hover:text-stone-600 dark:hover:bg-stone-700"
+                            className="absolute right-3 top-3 rounded-full p-1 text-stone-400 hover:bg-stone-200 hover:cursor-pointer hover:text-stone-600 dark:hover:bg-stone-700"
                         >
                             <X className="h-4 w-4" />
                         </Button>
@@ -188,20 +210,20 @@ export default function BiometricImport() {
                 ) : (
                     <>
                         <UploadCloud
-                            className={`h-10 w-10 transition-colors ${dragging ? "text-orange-400" : "text-stone-300 dark:text-stone-600"
+                            className={`h-10 w-10 transition-colors ${dragging ? "text-orange-400" : "text-stone-400 dark:text-stone-600"
                                 }`}
                         />
                         <div className="text-center">
                             <p className="text-sm font-medium text-stone-600 dark:text-stone-300">
                                 Drop your{" "}
-                                <span className="font-bold text-orange-600 dark:text-orange-400">.xls</span>{" "}
+                                <span className="font-bold text-blue-800 dark:text-blue-400">.xls</span>{" "}
                                 file here
                             </p>
                             <p className="text-xs text-stone-400">or click to browse</p>
                         </div>
                     </>
                 )}
-            </div>
+            </div>  
 
             {/* ── Validation / network error ─────────────────────────────────────── */}
             {error && (
@@ -215,7 +237,7 @@ export default function BiometricImport() {
             <button
                 onClick={handleUpload}
                 disabled={!file || loading}
-                className="flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold bg-orange-600 text-white hover:bg-orange-700 active:bg-orange-800 disabled:cursor-not-allowed disabled:opacity-40 transition-all duration-150"
+                className="flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold bg-blue-800 text-white/90 hover:bg-blue-700 hover:cursor-pointer hover:text-white active:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-40 transition-all duration-150"
             >
                 {loading
                     ? <><Loader2 className="h-4 w-4 animate-spin" /> Importing…</>

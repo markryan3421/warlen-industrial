@@ -20,7 +20,8 @@ class UpdatePayrollPeriod
             'start_date' => $data['start_date'],
             'end_date' => $data['end_date'],
             'pay_date' => $data['pay_date'],
-            'payroll_per_status' => $data['payroll_per_status']
+            'payroll_per_status' => $data['payroll_per_status'],
+            'is_paid' => $data['is_paid']
         ]);
 
         return $payrollPeriod;  

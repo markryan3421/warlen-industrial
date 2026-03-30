@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Actions\PayrollPeriod\CreateNewPayrollPeriod;
 use App\Actions\PayrollPeriod\UpdatePayrollPeriod;
 use App\Enums\PayrollPeriodStatusEnum;
+use App\Events\PayrollProcessingEvent;
 use App\Http\Requests\PayrollPeriod\StorePayrollPeriodRequest;
 use App\Http\Requests\PayrollPeriod\UpdatePayrollPeriodRequest;
 use App\Models\PayrollPeriod;
@@ -28,7 +29,9 @@ class PayrollPeriodController extends Controller
                 'end_date',
                 'pay_date',
                 'payroll_per_status',
+                'is_paid'
             ]);
+
 
         $payroll_period_enums = PayrollPeriodStatusEnum::options();
 
@@ -88,6 +91,12 @@ class PayrollPeriodController extends Controller
     public function edit(PayrollPeriod $payrollPeriod)
     {
         Gate::authorize('update', $payrollPeriod);
+        // Load employees with their payroll data for this period
+        $payrollPeriod->load(['payrolls' => function ($query) {
+            $query->with(['employee' => function ($query) {
+                $query->with('user'); // Load user to get employee name
+            }]);
+        }]);
         $payroll_period_enums = PayrollPeriodStatusEnum::options();
         return Inertia::render('PayrollPeriod/edit', compact('payrollPeriod', 'payroll_period_enums'));
     }
@@ -106,9 +115,23 @@ class PayrollPeriodController extends Controller
         DB::beginTransaction();
 
         try {
-            $action->update($request->validated(), $payrollPeriod);
+            $oldStatus = $payrollPeriod->payroll_per_status;
+
+            
+            $payroll_updated = $action->update($request->validated(), $payrollPeriod);
+
+           
+            $newStatus = $payroll_updated->payroll_per_status;
 
             DB::commit();
+
+            // Dispatch event ONLY if status changed to processing
+            if (
+                $newStatus === PayrollPeriodStatusEnum::PROCESSING->value &&
+                $oldStatus !== PayrollPeriodStatusEnum::PROCESSING->value
+            ) {
+                PayrollProcessingEvent::dispatch($payroll_updated);
+            }
 
             return redirect()->route('payroll-periods.index')->with('success', 'Payroll period updated successfully.');
         } catch (\Exception $e) {
@@ -116,6 +139,7 @@ class PayrollPeriodController extends Controller
             return back()->with('error', $e->getMessage());
         }
     }
+
 
     /**
      * Remove the specified resource from storage.

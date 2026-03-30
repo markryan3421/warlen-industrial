@@ -23,11 +23,11 @@ class UpdatePayrollPeriodRequest extends FormRequest
      */
     public function rules(): array
     {
-       return $this->payrollPeriodRules();
+       return $this->payrollPeriodUpdateRules();
     }
 
     public function attributes(): array
     {
-       return $this->payrollPeriodAttributes();
+       return $this->payrollPeriodUpdateAttributes();
     }
 }

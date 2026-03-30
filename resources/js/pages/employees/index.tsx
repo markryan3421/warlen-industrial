@@ -292,25 +292,40 @@ export default function Index({
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Employees" />
-            <div className="flex flex-1 flex-col gap-4 p-4">
 
-                {/* Page header */}
-                <div className="flex justify-between items-center">
-                    <CustomHeader
-                        icon={<Users />}
-                        title="Employees"
-                        description="Manage your workforce: add, edit, and organize employee records with ease."
-                    />
-                    <Link href="/employees/create">
-                        <Button className="h-14 mr-4">
-                            <UserPlus className="h-5 w-5" />
-                            <div className="flex flex-col items-start leading-tight">
-                                <span className="text-sm font-medium">Create</span>
-                                <span className="text-xs font-normal">Employee</span>
-                            </div>
-                        </Button>
-                    </Link>
-                </div>
+            {/* style animations */}
+            <style>{`
+                @keyframes fadeUp {
+                    from { opacity: 0; transform: translateY(16px); }
+                    to   { opacity: 1; transform: translateY(0); }
+                }
+                .pp-row { animation: fadeUp 0.3s cubic-bezier(0.22,1,0.36,1) both; }
+                @keyframes headerReveal {
+                    from { opacity: 0; transform: translateY(-10px); }
+                    to   { opacity: 1; transform: translateY(0); }
+                }
+                .pp-header { animation: headerReveal 0.35s cubic-bezier(0.22,1,0.36,1) both; }
+            `}</style>
+
+
+            {/* Page header */}
+            <div className="flex justify-between items-center mx-8 mt-4 -mb-2 pp-header">
+                <CustomHeader
+                    icon={<Users />}
+                    title="Employees"
+                    description="Manage your workforce: add, edit, and organize employee records with ease."
+                />
+                <Link href="/employees/create">
+                    <Button className="hover:cursor-pointer">
+                        <UserPlus className="h-5 w-5" />
+                        <div className="flex flex-col items-start leading-tight">
+                            <span className="text-sm font-medium">Create Employee</span>
+                        </div>
+                    </Button>
+                </Link>
+            </div>
+
+            <div className="flex flex-1 flex-col gap-4 p-4 pp-row">
 
                 {/* Empty dataset (no employees exist at all) */}
                 {employees.total === 0 && activeFiltersCount === 0 ? (
@@ -330,7 +345,7 @@ export default function Index({
                 ) : (
                     <div className='mx-4'>
                         <CustomTable
-                            title="Employees"
+                            title="Employee Lists"
                             columns={EmployeesTableConfig.columns}
                             actions={EmployeesTableConfig.actions}
                             data={employees.data}

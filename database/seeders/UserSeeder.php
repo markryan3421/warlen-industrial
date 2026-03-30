@@ -15,30 +15,42 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
-        $adminUser = User::factory()->create([
-            'name' => 'admin',
-            'email' => 'admin@gmail.com',
-            'password' => Hash::make('admin123'),
-        ]);
+        // $adminUser = User::factory()->create([
+        //     'name' => 'Warlito',
+        //     'email' => 'warlito@gmail.com',
+        //     'password' => Hash::make('12345678'),
+        // ]);
 
-        $adminRole = Role::create(['name' => 'admin']);
-        $adminUser->assignRole($adminRole);
+        // $elenaUser = User::factory()->create([
+        //     'name' => 'Elena',
+        //     'email' => 'elena@gmail.com',
+        //     'password' => Hash::make('12345678'),
+        // ]);
 
-        $empUser = User::factory()->create([
-            'name' => 'employee',
-            'email' => 'employee@gmail.com',
-            'password' => Hash::make('employee123'),
-        ]);
+        // $adminRole = Role::create(['name' => 'admin']);
+        // $adminUser->assignRole($adminRole);
 
-        $empRole = Role::create(['name' => 'employee']);
-        $empUser->assignRole($empRole);
+        // $elenaUser->assignRole($adminRole);
 
-        $hr_user = User::factory()->create([
-            'name' => 'Hr Head',
-            'email' => 'hr@gmail.com',
-            'password' => Hash::make('hr123456'),
-        ]);
-        $hrRole = Role::create(['name' => 'hr_head']);
-        $hr_user->assignRole($hrRole);
+        // $empUser = User::factory()->create([
+        //     'name' => 'employee',
+        //     'email' => 'employee@gmail.com',
+        //     'password' => Hash::make('12345678'),
+        // ]);
+
+        // $empRole = Role::create(['name' => 'employee']);
+        // $empUser->assignRole($empRole);
+
+        // $hr_user = User::factory()->create([
+        //     'name' => 'Jona',
+        //     'email' => 'jona@gmail.com',
+        //     'password' => Hash::make('1234568'),
+        // ]);
+        // $hrRole = Role::create(['name' => 'hr_head']);
+        // $hr_user->assignRole($hrRole);
+
+        Role::create(['name' => 'admin']);
+        Role::create(['name' => 'employee']);
+        Role::create(['name' => 'hr_head']);
     }
 }

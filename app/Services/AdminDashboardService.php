@@ -22,7 +22,16 @@ class AdminDashboardService
     }
     public function getTotalNetPay(): float
     {
-        $sumNetPay = Payroll::query()->sum('net_pay');
+        // $sumNetPay = Payroll::query()->sum('net_pay');
+
+         $payrollPeriods = PayrollPeriod::query()
+            ->where('payroll_per_status', PayrollPeriodStatusEnum::COMPLETED->value)
+            ->pluck('id');
+
+        // Sum net pay from payrolls that belong to completed payroll periods
+        $sumNetPay = Payroll::query()
+            ->whereIn('payroll_period_id', $payrollPeriods)
+            ->sum('net_pay');
 
         return (float) number_format($sumNetPay, 2, '.', '');
     }
