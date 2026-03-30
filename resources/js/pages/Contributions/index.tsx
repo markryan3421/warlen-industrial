@@ -1,5 +1,5 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
-import { Calculator, Percent, Plus, Trash2, LoaderCircle, Filter } from 'lucide-react';
+import { Calculator, Percent, Plus, Trash2, LoaderCircle, Filter, Handshake } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 import { format, isToday } from 'date-fns';
 
@@ -28,6 +28,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import InputError from '@/components/input-error';
 import { CustomPagination } from '@/components/custom-pagination';
+import { CustomHeader } from '@/components/custom-header';
 
 // Helper function to generate route URLs
 const route = (name: string, params?: any) => {
@@ -244,33 +245,45 @@ export default function Index({
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Contributions" />
-            <CustomToast />
-            <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
-                {/* Page header */}
-                <div className="flex items-center gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-                        <Calculator className="h-6 w-6 text-primary" />
-                    </div>
-                    <div>
-                        <h1 className="text-2xl font-bold tracking-tight">Contribution Versions</h1>
-                        <p className="text-sm text-muted-foreground mt-1">
-                            Manage SSS, PhilHealth, and Pag-IBIG contribution tables
-                        </p>
-                    </div>
-                </div>
 
-                {/* Filters and Create button */}
-                {hasRecords && (
-                    <div className="flex justify-between items-center gap-4">
-                        <Button
-                            onClick={() => setIsCreateModalOpen(true)}
-                            className="inline-flex items-center justify-center gap-2"
-                        >
-                            <Plus className="h-4 w-4" />
-                            Create Contribution Version
-                        </Button>
-                    </div>
-                )}
+            {/* style animations */}
+            <style>{`
+                @keyframes fadeUp {
+                    from { opacity: 0; transform: translateY(16px); }
+                    to   { opacity: 1; transform: translateY(0); }
+                }
+                .pp-row { animation: fadeUp 0.3s cubic-bezier(0.22,1,0.36,1) both; }
+                @keyframes headerReveal {
+                    from { opacity: 0; transform: translateY(-10px); }
+                    to   { opacity: 1; transform: translateY(0); }
+                }
+                .pp-header { animation: headerReveal 0.35s cubic-bezier(0.22,1,0.36,1) both; }
+            `}</style>
+
+            <CustomToast />
+            <div className="flex h-full flex flex-col gap-4 rounded-xl p-4 mx-4">
+                
+                <div className="flex flex-row justify-between gap-4 mt-2 pp-header">
+                    {/* Page header */}
+                    <CustomHeader
+                        icon={<Handshake className="h-6 w-6" />}
+                        title="Employees"
+                        description="Manage your workforce: add, edit, and organize employee records with ease."
+                    />
+
+                    {/* Filters and Create button */}
+                    {hasRecords && (
+                        <div className="flex justify-end items-center gap-4">
+                            <Button
+                                onClick={() => setIsCreateModalOpen(true)}
+                                className="inline-flex items-center justify-center gap-2"
+                            >
+                                <Plus className="h-4 w-4" />
+                                Create Contribution Version
+                            </Button>
+                        </div>
+                    )}
+                </div>
 
                 {/* Empty state */}
                 {!hasRecords ? (
@@ -310,24 +323,25 @@ export default function Index({
                                 </CardContent>
                             </Card>
                         ) : (
-                                <CardContent className="p-0">
-                                    <CustomTable
-                                        columns={ContributionTableConfig.columns}
-                                        actions={ContributionTableConfig.actions}
-                                        data={displayData}
-                                        from={contributionVersions.from}
-                                        onDelete={handleDelete}
-                                        onView={viewDetails}
-                                        onEdit={handleEdit}
-                                        title="Contribution Table"
-                                    />
-                                </CardContent>
-                       
+
+                            <CardContent className="p-0 pp-row">
+                                <CustomTable
+                                    columns={ContributionTableConfig.columns}
+                                    actions={ContributionTableConfig.actions}
+                                    data={displayData}
+                                    from={contributionVersions.from}
+                                    onDelete={handleDelete}
+                                    onView={viewDetails}
+                                    onEdit={handleEdit}
+                                    title="Contribution Table"
+                                />
+                            </CardContent>
+
                         )}
 
                         {/* Pagination */}
                         {displayData.length > 0 && contributionVersions && (
-                            <CustomPagination
+                            <CustomPagination className = "pp-row"
                                 pagination={{
                                     data: displayData,
                                     from: contributionVersions.from,

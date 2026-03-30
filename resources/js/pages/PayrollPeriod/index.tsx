@@ -488,7 +488,7 @@ export default function Index({ payrollPeriods }: PayrollPeriodProps) {
                         </div>
                     ) : (
                         <CustomTable
-                            title="Payroll Periods"
+                            title="Payroll Period Lists"
                             columns={columns}
                             actions={actions}
                             data={filteredPeriods}
