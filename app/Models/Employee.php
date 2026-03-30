@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Spatie\Activitylog\LogOptions;
@@ -25,7 +26,7 @@ use Spatie\Permission\Traits\HasRoles;
 #[UsePolicy(EmployeePolicy::class)]
 class Employee extends Model
 {
-    use HasRoles, HasFactory, SoftDeletes,  LogsActivity;
+    use HasRoles, HasFactory, SoftDeletes,  LogsActivity, Notifiable;
 
     protected $table = 'employees';
 
