@@ -4,18 +4,20 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
+// use Spatie\Activitylog\Traits\LogsActivity;
 
 class Deduction extends Model
 {
+    
     protected $fillable = [
-        'payroll_id',
+        'payroll_period_id',
         'deduction_name',
         'deduction_amount'
     ];
 
-    public function payroll()
+    public function payroll_period()
     {
-        return $this->belongsTo(Payroll::class);
+        return $this->belongsTo(PayrollPeriod::class);
     }
 
     public function employees()

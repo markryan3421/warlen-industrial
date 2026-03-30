@@ -48,6 +48,11 @@ const ExpendituresItems: NavItem[] = [
         title: 'Incentives',
         href: '/incentives',
         icon: Coins,
+    },
+    {
+        title: 'Deduction',
+        href: '/deductions',
+        icon: HandCoins,
     }
 ];
 
