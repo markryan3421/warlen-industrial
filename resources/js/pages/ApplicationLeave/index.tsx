@@ -36,8 +36,8 @@ declare global {
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'Application Leaves',
-        href: '/application-leaves',
+        title: 'Application Leave',
+        href: '/application-leave',
     },
 ];
 
