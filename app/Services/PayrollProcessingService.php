@@ -8,7 +8,6 @@ use App\Models\Payroll;
 use App\Models\PayrollPeriod;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Collection;
 
 class PayrollProcessingService
@@ -16,6 +15,7 @@ class PayrollProcessingService
     protected EmployeeLookupService $employeeLookupService;
     protected ContributionService $contributionService;
     protected IncentiveService $incentiveService;
+    protected DeductionService $deductionService; 
     protected PayrollCalculatorService $payrollCalculatorService;
     protected PayrollItemService $payrollItemService;
     
@@ -27,6 +27,7 @@ class PayrollProcessingService
         $this->employeeLookupService = new EmployeeLookupService();
         $this->contributionService = new ContributionService();
         $this->incentiveService = new IncentiveService();
+        $this->deductionService = new DeductionService();
         $this->payrollCalculatorService = new PayrollCalculatorService();
         $this->payrollItemService = new PayrollItemService();
     }
@@ -256,7 +257,8 @@ class PayrollProcessingService
                 $employee,
                 $payrollData['lateMinutes'],
                 $payrollData['contributions'],
-                $payrollData['incentives']
+                $payrollData['incentives'],
+                $payrollData['deductions'] // Add this
             );
 
             return true;
@@ -304,13 +306,17 @@ class PayrollProcessingService
         $aflDeduction = $stats->afl_deduction ?? 0;
         $cutPayment = $stats->cut_payment ?? 0;
 
+        // Get incentives and deductions
         $incentives = $this->incentiveService->getEmployeeIncentives($payrollPeriod->id, $employee->id);
-        $totalIncentives = array_sum(array_column($incentives, 'amount'));
+        $deductions = $this->deductionService->getEmployeeDeductions($payrollPeriod->id, $employee->id);
+        
+        $totalIncentives = $this->incentiveService->calculateTotalIncentives($incentives);
+        $totalCustomDeductions = $this->deductionService->calculateTotalDeductions($deductions);
 
         $grossPay = $basePay + $overtimePay + $holidayOvertimePay + $subsidyPay + $totalIncentives;
         $contributions = $this->contributionService->calculateGovernmentContributions($grossPay);
         
-        $totalDeductions = $lateDeduction + $aflDeduction + $cutPayment + 
+        $totalDeductions = $lateDeduction + $aflDeduction + $cutPayment + $totalCustomDeductions +
                           $contributions['sss']['employee'] + 
                           $contributions['pagibig']['employee'] + 
                           $contributions['philhealth']['employee'];
@@ -327,7 +333,9 @@ class PayrollProcessingService
             'aflDeduction' => $aflDeduction,
             'cutPayment' => $cutPayment,
             'incentives' => $incentives,
+            'deductions' => $deductions, // Add this
             'totalIncentives' => $totalIncentives,
+            'totalCustomDeductions' => $totalCustomDeductions, // Add this
             'grossPay' => $grossPay,
             'contributions' => $contributions,
             'totalDeductions' => $totalDeductions,

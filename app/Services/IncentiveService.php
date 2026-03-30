@@ -38,4 +38,12 @@ class IncentiveService
         
         return $incentives;
     }
+    
+    /**
+     * Calculate total incentives amount for an employee
+     */
+    public function calculateTotalIncentives(array $incentives): float
+    {
+        return array_sum(array_column($incentives, 'amount'));
+    }
 }
