@@ -131,6 +131,7 @@ class EmployeeSeeder extends Seeder
                 'name' => $userData['name'],
                 'email' => $userData['email'],
                 'password' => Hash::make('12345678'),
+                'email_verified_at' => now(),
             ]);
             
             $user->assignRole($roles[$userData['role']]);
@@ -142,10 +143,16 @@ class EmployeeSeeder extends Seeder
     }
 
     /**
-     * Create employee record
+     * Create employee record (exclude only admin users)
      */
     private function createEmployeeRecord(Position $position, User $user, Branch $branch, int $empId, ?Site $site = null): void
     {
+        // Only skip if user is admin - HR and employees will get employee records
+        if ($user->hasRole('admin')) {
+            $this->command->info("Skipping employee record for admin: {$user->name} ({$user->email})");
+            return;
+        }
+        
         Employee::firstOrCreate(
             ['user_id' => $user->id],
             [
@@ -181,19 +188,36 @@ class EmployeeSeeder extends Seeder
         $this->command->info('========================================');
         
         // List users by role
-        $this->command->info("\nAdmin Users:");
+        $this->command->info("\nAdmin Users (No employee records):");
         foreach (User::role('admin')->get() as $admin) {
-            $this->command->info("  - {$admin->name} ({$admin->email})");
+            $employeeRecord = Employee::where('user_id', $admin->id)->first();
+            $hasEmployeeRecord = $employeeRecord ? '⚠️ Has employee record' : '✓ No employee record';
+            $this->command->info("  - {$admin->name} ({$admin->email}) - {$hasEmployeeRecord}");
         }
         
-        $this->command->info("\nHR Users:");
+        $this->command->info("\nHR Users (With employee records):");
         foreach (User::role('hr_head')->get() as $hr) {
-            $this->command->info("  - {$hr->name} ({$hr->email})");
+            $employeeRecord = Employee::where('user_id', $hr->id)->first();
+            $hasEmployeeRecord = $employeeRecord ? '✓ Has employee record' : '✗ Missing employee record';
+            $this->command->info("  - {$hr->name} ({$hr->email}) - {$hasEmployeeRecord}");
         }
         
-        $this->command->info("\nSample Employee Users (first 5):");
+        $this->command->info("\nEmployee Users (first 5):");
         foreach (User::role('employee')->limit(5)->get() as $employee) {
-            $this->command->info("  - {$employee->name} ({$employee->email})");
+            $employeeRecord = Employee::where('user_id', $employee->id)->first();
+            $hasEmployeeRecord = $employeeRecord ? '✓' : '✗';
+            $this->command->info("  - {$employee->name} ({$employee->email}) - Employee Record: {$hasEmployeeRecord}");
+        }
+        
+        // Show only admins that were skipped
+        $this->command->info("\nSkipped Users (Admins only):");
+        $admins = User::role('admin')->get();
+        if ($admins->count() > 0) {
+            foreach ($admins as $admin) {
+                $this->command->info("  - {$admin->name} ({$admin->email}) - Admin (No employee record created)");
+            }
+        } else {
+            $this->command->info("  No admin users found");
         }
     }
 
@@ -223,7 +247,7 @@ class EmployeeSeeder extends Seeder
         $usersData = $this->getUsersData();
         $totalUsers = count($usersData);
         
-        // Progress bar
+        // Progress bar for creating users
         $this->command->info('Starting Employee Seeder...');
         $this->command->info("Total users to process: {$totalUsers}");
         $progressBar = $this->command->getOutput()->createProgressBar($totalUsers);
@@ -233,21 +257,32 @@ class EmployeeSeeder extends Seeder
 
         foreach ($usersData as $data) {
             $user = $this->getOrCreateUser($data, $roleMap);
-            $processedUsers[] = ['user' => $user, 'emp_id' => $data['emp_id']];
+            $processedUsers[] = ['user' => $user, 'emp_id' => $data['emp_id'], 'role' => $data['role']];
             $progressBar->advance();
         }
         
         $progressBar->finish();
         $this->command->newLine(2);
         
-        // Create employee records
-        $this->command->info('Creating employee records...');
-        $employeeProgressBar = $this->command->getOutput()->createProgressBar(count($processedUsers));
+        // Create employee records (exclude only admin users)
+        $this->command->info('Creating employee records (excluding admin users)...');
+        
+        // Count non-admin users for progress bar
+        $nonAdminUsers = array_filter($processedUsers, function($item) {
+            return $item['role'] !== 'admin';
+        });
+        
+        $nonAdminCount = count($nonAdminUsers);
+        $this->command->info("Creating employee records for {$nonAdminCount} non-admin users...");
+        
+        $employeeProgressBar = $this->command->getOutput()->createProgressBar($nonAdminCount);
         $employeeProgressBar->start();
 
         foreach ($processedUsers as $item) {
             $this->createEmployeeRecord($position, $item['user'], $branch, $item['emp_id'], $site);
-            $employeeProgressBar->advance();
+            if ($item['role'] !== 'admin') {
+                $employeeProgressBar->advance();
+            }
         }
         
         $employeeProgressBar->finish();
