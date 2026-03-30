@@ -267,7 +267,7 @@ export default function Index({
                     {/* Page header */}
                     <CustomHeader
                         icon={<Handshake className="h-6 w-6" />}
-                        title="Employees"
+                        title="Contributions"
                         description="Manage your workforce: add, edit, and organize employee records with ease."
                     />
 
