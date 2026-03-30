@@ -1,7 +1,7 @@
 import { Head, Link, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
-import { Briefcase, Search } from 'lucide-react';
+import { Briefcase, HandCoins, Search } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
@@ -10,6 +10,7 @@ import { CustomTable } from '@/components/custom-table';
 import { EmployeeFilterBar } from '@/components/employee/employee-filter-bar';
 import { CustomPagination } from '@/components/custom-pagination';
 import type { BreadcrumbItem } from '@/types';
+import { CustomHeader } from '@/components/custom-header';
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Deductions', href: '/deductions' }];
 
@@ -142,8 +143,11 @@ export default function Index({ deductions }: Props) {
                 {/* Header */}
                 <div className="flex justify-between items-center">
                     <div>
-                        <h1 className="text-3xl font-bold">Deductions</h1>
-                        <p className="text-muted-foreground mt-1">Manage employee deductions across payroll periods</p>
+                       <CustomHeader
+                            title='Deductions'
+                            icon={<HandCoins className="h-6 w-6" />}
+                            description='Manage and track employee deductions'
+                        />
                     </div>
                     <Link href="/deductions/create">
                         <Button className="bg-[#1d4791] hover:bg-[#1d4791]/90">
