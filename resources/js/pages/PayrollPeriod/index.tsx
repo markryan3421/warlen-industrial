@@ -14,8 +14,9 @@ import {
 import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { CustomToast } from '@/components/custom-toast';
+import { CustomToast, toast } from '@/components/custom-toast';
 import { CustomHeader } from '@/components/custom-header';
+import { DeleteConfirmationDialog } from '@/components/delete-confirmation-modal';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface PayrollPeriod {
@@ -32,6 +33,7 @@ interface PayrollPeriod {
 interface PayrollPeriodProps { payrollPeriods: PayrollPeriod[]; }
 interface PageProps {
     payroll_period_enums: Array<{ value: string; label: string; }>;
+    [key: string]: any;
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -138,11 +140,11 @@ export default function Index({ payrollPeriods }: PayrollPeriodProps) {
     // Listen to both payroll and payroll-period channels
     useEffect(() => {
         if (!window.Echo) {
-            console.warn('❌ Echo is not initialized');
+            console.warn('Echo is not initialized');
             return;
         }
         
-        console.log('✅ Setting up Echo listeners for payroll channels...');
+        console.log('Setting up Echo listeners for payroll channels...');
         
         // Listen to payroll channel for general updates
         const payrollChannel = window.Echo.private('payroll');
@@ -164,7 +166,7 @@ export default function Index({ payrollPeriods }: PayrollPeriodProps) {
             if (event.progress !== undefined && event.payroll_period_id) {
                 const isStillProcessing = event.progress < 100;
                 
-                console.log('🔄 Updating processing state:', {
+                console.log('Updating processing state:', {
                     periodId: event.payroll_period_id,
                     progress: event.progress,
                     isProcessing: isStillProcessing,
@@ -228,14 +230,46 @@ export default function Index({ payrollPeriods }: PayrollPeriodProps) {
         };
     }, []); // Empty dependency array to run once
 
+    // Delete confirmation states
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [itemToDelete, setItemToDelete] = useState<any>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const handleDeleteClick = (payrollPeriod: PayrollPeriod) => {
+        setItemToDelete(payrollPeriod);
+        setDeleteDialogOpen(true);
+    };
+
+    const confirmDelete = () => {
+        if(!itemToDelete) return;
+
+
+        setIsDeleting(true);
+        destroy(PayrollPeriodController.destroy(itemToDelete.id).url, {
+            onSuccess: (page) => {
+                const successMessage = (page.props as any).flash?.success || 'Payroll Period deleted successfully';
+                toast.success(successMessage);
+                setDeleteDialogOpen(false);
+                setItemToDelete(null);
+            },
+            onError: (errors) => {
+                const errorMessage = Object.values(errors).flat()[0] || 'Failed to delete payroll period';
+                toast.error(errorMessage);
+                setIsDeleting(false);
+            },
+            onFinish: () => {
+                setIsDeleting(false);
+            },
+        });
+    }
+
     const handleDelete = (period: PayrollPeriod) => {
         if (confirm('Are you sure you want to delete this payroll period?')) {
             destroy(PayrollPeriodController.destroy(period.id).url);
         }
     };
 
-    const formatDate = (d: string) =>
-        new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    const formatDate = (d: string) => new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 
     const formatStatus = (status: string) => {
         const found = payroll_period_enums?.find((e) => e.value.toLowerCase() === status.toLowerCase());
@@ -487,21 +521,36 @@ export default function Index({ payrollPeriods }: PayrollPeriodProps) {
                             </Link>
                         </div>
                     ) : (
-                        <CustomTable
-                            title="Payroll Period Lists"
-                            columns={columns}
-                            actions={actions}
-                            data={filteredPeriods}
-                            from={1}
-                            onDelete={handleDelete}
-                            onView={(period) => { setSelectedPeriod(period); setIsModalOpen(true); }}
-                            onEdit={(period) => router.visit(PayrollPeriodController.edit(period.id).url)}
-                            toolbar={toolbar}
-                            filterEmptyState={filterEmptyState}
-                        />
+                        <>
+                            <CustomTable
+                                title="Payroll Period Lists"
+                                columns={columns}
+                                actions={actions}
+                                data={filteredPeriods}
+                                from={1}
+                                onDelete={handleDeleteClick}
+                                onView={(period) => { setSelectedPeriod(period); setIsModalOpen(true); }}
+                                onEdit={(period) => router.visit(PayrollPeriodController.edit(period.id).url)}
+                                toolbar={toolbar}
+                                filterEmptyState={filterEmptyState}
+                            />
+
+                            <DeleteConfirmationDialog 
+                                isOpen={deleteDialogOpen}
+                                onClose={() => {
+                                    setDeleteDialogOpen(false);
+                                    setItemToDelete(null);
+                                }}
+                                onConfirm={confirmDelete}
+                                title='Delete employee'
+                                itemName={itemToDelete?.name || 'this employee'}
+                                isLoading={isDeleting}
+                                confirmText='Delete employee'
+                            />
+                        </>
                     )}
 
-                    {/* ── Detail modal ── */}
+                    {/* ── Detail modal view ── */}
                     <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
                         <DialogContent className="sm:max-w-[480px] rounded-2xl">
                             <DialogHeader>
