@@ -33,21 +33,22 @@
  */
 
 import { Head, Link, useForm, router } from '@inertiajs/react';
+import { format } from 'date-fns';
+import { Users, Search, UserPlus } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { toast } from 'sonner';
+import EmmployeeController from '@/actions/App/Http/Controllers/EmployeeController';
+import EmployeeController from '@/actions/App/Http/Controllers/EmployeeController';
+import { CustomHeader } from '@/components/custom-header';
+import { CustomPagination } from '@/components/custom-pagination';
+import { CustomTable } from '@/components/custom-table';
+import type { BranchData } from '@/components/employee/employee-filter-bar';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
-import { useState, useRef } from 'react';
 import type { BreadcrumbItem } from '@/types';
-import EmmployeeController from '@/actions/App/Http/Controllers/EmployeeController';
-import { Users, Search, UserPlus } from 'lucide-react';
-import { format } from 'date-fns';
 
-import { CustomTable } from '@/components/custom-table';
-import { EmployeeFilterBar, BranchData } from '@/components/employee/employee-filter-bar';
+import { EmployeeFilterBar } from '@/components/employee/employee-filter-bar';
 import { EmployeesTableConfig } from '@/config/tables/employees-table';
-import { CustomPagination } from '@/components/custom-pagination';
-import { toast } from 'sonner';
-import { CustomHeader } from '@/components/custom-header';
-import EmployeeController from '@/actions/App/Http/Controllers/EmployeeController';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Employees', href: '/employees' },

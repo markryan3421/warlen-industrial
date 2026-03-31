@@ -1,9 +1,9 @@
 // layouts/hr-layout.tsx
-import { SidebarProvider } from '@/components/ui/sidebar';
+import { Head } from '@inertiajs/react';
 import { HrSidebar } from '@/components/hr-sidebar';
+import { SidebarProvider } from '@/components/ui/sidebar';
 import { Toaster } from '@/components/ui/sonner';
 import type { BreadcrumbItem } from '@/types';
-import { Head } from '@inertiajs/react';
 
 interface HrLayoutProps {
     children: React.ReactNode;

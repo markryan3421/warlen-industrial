@@ -4,9 +4,7 @@ import AppLayout from '@/layouts/app-layout';
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import type { BreadcrumbItem } from '@/types';
 import { CreditCard, X, Bell, Eye, User, Calendar, DollarSign, FileText, Pencil, Trash2 } from 'lucide-react';
-import Echo from 'laravel-echo';
 import PayrollProcessingCards from '@/components/payroll-processing-cards';
-import Pusher from 'pusher-js';
 import { CustomTable } from '@/components/custom-table';
 import { CustomPagination } from '@/components/custom-pagination';
 import { toast } from 'sonner';
@@ -14,7 +12,6 @@ import { TableSkeleton } from '@/components/table-skeleton';
 
 declare global {
     interface Window {
-        Pusher: any;
         Echo: any;
     }
 }
@@ -22,7 +19,7 @@ declare global {
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Payroll',
-        href: '/payroll',
+        href: '/payrolls',
     },
 ];
 
@@ -124,7 +121,6 @@ export default function Index({
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [notification, setNotification] = useState<{ message: string, timestamp: string } | null>(null);
     const [showNotification, setShowNotification] = useState(false);
-    const [echoInitialized, setEchoInitialized] = useState(false);
     const [isTableLoading, setIsTableLoading] = useState(true);
 
     // Filter states - initialize from server filters
@@ -213,7 +209,7 @@ export default function Index({
 
         console.log('Applying filters:', params);
 
-        router.get('/payroll', params, {
+        router.get('/payrolls', params, {
             preserveState: true,
             preserveScroll: true,
             replace: true,
@@ -282,48 +278,9 @@ export default function Index({
         };
     }, []);
 
-    // Initialize Echo
+    // Listen to payroll channel (Echo is already initialized globally)
     useEffect(() => {
-        const key = import.meta.env.VITE_REVERB_APP_KEY;
-        const host = import.meta.env.VITE_REVERB_HOST || 'localhost';
-        const port = import.meta.env.VITE_REVERB_PORT || '8080';
-        const scheme = import.meta.env.VITE_REVERB_SCHEME || 'http';
-
-        if (!key) {
-            console.warn('VITE_REVERB_APP_KEY is not defined. Real-time updates disabled.');
-            return;
-        }
-
-        window.Pusher = Pusher;
-
-        window.Echo = new Echo({
-            broadcaster: 'reverb',
-            key: key,
-            wsHost: host,
-            wsPort: port,
-            wssPort: port,
-            forceTLS: scheme === 'https',
-            enabledTransports: ['ws', 'wss'],
-            authEndpoint: '/broadcasting/auth',
-            auth: {
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
-                },
-            },
-        });
-
-        setEchoInitialized(true);
-
-        return () => {
-            if (window.Echo) {
-                window.Echo.leave('payroll');
-            }
-        };
-    }, []);
-
-    // Listen to payroll channel
-    useEffect(() => {
-        if (!echoInitialized || !window.Echo) return;
+        if (!window.Echo) return;
 
         const channel = window.Echo.private('payroll');
 
@@ -344,7 +301,7 @@ export default function Index({
         return () => {
             channel.stopListening('.payroll.completed');
         };
-    }, [echoInitialized]);
+    }, []);
 
     // Check if any filter is applied
     const hasActiveFilters = useMemo(() => {
@@ -408,7 +365,7 @@ export default function Index({
         setSelectedPosition("all");
         setSearchTerm("");
 
-        router.get('/payroll', {}, {
+        router.get('/payrolls', {}, {
             preserveState: true,
             preserveScroll: true,
             replace: true,
@@ -447,7 +404,7 @@ export default function Index({
 
     const handleDeletePayroll = (id: string | number) => {
         if (confirm("Are you sure you want to delete this payroll record?")) {
-            destroy(`/payroll/${id}`, {
+            destroy(`/payrolls/${id}`, {
                 onSuccess: () => {
                     toast.success('Payroll record deleted successfully');
                     applyFilters();

@@ -3,16 +3,16 @@ import { Head, Link, router, useForm } from '@inertiajs/react';
 import { Building2, Search } from 'lucide-react';
 import { useState } from 'react';
 import BranchController from "@/actions/App/Http/Controllers/BranchController";
+import { CustomHeader } from '@/components/custom-header';
 import { CustomTable } from '@/components/custom-table';
 import { CustomToast, toast } from '@/components/custom-toast';
+import { EmployeeFilterBar } from '@/components/employee/employee-filter-bar';
+import { SitesModal } from '@/components/sites-modal';
+import { Button } from '@/components/ui/button';
 import { Pagination } from '@/components/ui/pagination';
 import { BranchesTableConfig } from '@/config/tables/branch-table';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type BranchWithSites } from '@/types';
-import { SitesModal } from '@/components/sites-modal';
-import { EmployeeFilterBar } from '@/components/employee/employee-filter-bar';
-import { Button } from '@/components/ui/button';
-import { CustomHeader } from '@/components/custom-header';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {

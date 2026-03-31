@@ -1,16 +1,16 @@
 import { Head } from '@inertiajs/react';
 import { useForm } from '@inertiajs/react';
-import AppLayout from '@/layouts/app-layout';
+import { Search, ChevronDown, User, Briefcase, MapPin, Calendar, Phone, Mail, Hash, Clock, LoaderCircle } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+import { update } from '@/actions/App/Http/Controllers/EmployeeController';
+import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
-import InputError from '@/components/input-error';
-import { update } from '@/actions/App/Http/Controllers/EmployeeController';
-import { useEffect, useState } from 'react';
-import { Search, ChevronDown, User, Briefcase, MapPin, Calendar, Phone, Mail, Hash, Clock, LoaderCircle } from 'lucide-react';
-import { toast } from 'sonner';
-import { DatePicker } from '@/components/ui/date-picker';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Employees', href: '/employees' },

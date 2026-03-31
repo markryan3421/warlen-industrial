@@ -9,9 +9,8 @@
  * by the parent component (like employees/index.tsx or branches/index.tsx).
  */
 
-import { useMemo } from 'react';
 import { X } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { useMemo } from 'react';
 import {
     SearchInput,
     MultiSelectPopover,
@@ -19,6 +18,7 @@ import {
     DateRangePicker,
     StatusFilter,
 } from '@/components/filters/filter-primitives';
+import { cn } from '@/lib/utils';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export interface BranchData {

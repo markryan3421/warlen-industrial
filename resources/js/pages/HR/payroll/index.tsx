@@ -1,16 +1,16 @@
 import { Head, Link, useForm, usePage, router } from '@inertiajs/react';
+import Echo from 'laravel-echo';
+import { CreditCard, Eye, X, Bell } from 'lucide-react';
+import Pusher from 'pusher-js';
+import { useState, useEffect, useMemo } from 'react';
+import PayrollProcessingCards from '@/components/payroll-processing-cards';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import HrLayout from '@/layouts/hr-layout';
-import { useState, useEffect, useMemo } from 'react';
 import type { BreadcrumbItem } from '@/types';
-import { CreditCard, Eye, X, Bell } from 'lucide-react';
-import Echo from 'laravel-echo';
 
 // IMPORTANT: For Reverb, we need to import Pusher with a different name
 // Reverb uses the Pusher protocol but connects to your Reverb server
-import Pusher from 'pusher-js';
-import PayrollProcessingCards from '@/components/payroll-processing-cards';
 
 // Declare global window interface for Echo
 declare global {

@@ -1,17 +1,17 @@
 import { Head, Link, useForm } from '@inertiajs/react';
+import InputError from '@/components/input-error';
 import { SectionCards } from '@/components/section-cards';
 import { ChartAreaInteractive } from '@/components/section-chart';
 // import { PlaceholderPattern } from '@/components/ui/placeholder-pattern';
 import { StaticTable } from '@/components/static-table';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch'; // Import Switch component if available
 import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes';
 import type { BreadcrumbItem } from '@/types';
 
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import InputError from '@/components/input-error';
-import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch'; // Import Switch component if available
 
 const breadcrumbs: BreadcrumbItem[] = [
     {

@@ -1,11 +1,11 @@
+import { router, useForm } from '@inertiajs/react';
+import axios from 'axios';
 import { useState, useEffect } from 'react';
 import { CustomTable } from "@/components/custom-table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Pagination } from "@/components/ui/pagination";
 import { AttendanceLogsTableConfig } from "@/config/tables/attendace-logs";
-import { router, useForm } from '@inertiajs/react';
-import axios from 'axios';
 
 // Attendance Logs Interfaces
 interface Logs {

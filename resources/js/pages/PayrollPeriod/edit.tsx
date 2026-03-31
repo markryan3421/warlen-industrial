@@ -1,23 +1,12 @@
-import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
-import InputError from '@/components/input-error';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-    Select, SelectContent, SelectItem,
-    SelectTrigger, SelectValue,
-} from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { update } from '@/actions/App/Http/Controllers/PayrollPeriodController';
+import { format } from 'date-fns';
 import { ArrowLeft, Banknote, CalendarDays, LoaderCircle, RefreshCw, CalendarIcon, CheckCircle2, XCircle, Users, Eye, Search } from 'lucide-react';
+import { useEffect, useState, useMemo } from 'react';
+import { type DateRange } from 'react-day-picker';
+import { update } from '@/actions/App/Http/Controllers/PayrollPeriodController';
+import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from '@/components/ui/popover';
 import {
     Dialog,
     DialogContent,
@@ -25,9 +14,20 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { format } from 'date-fns';
-import { type DateRange } from 'react-day-picker';
-import { useEffect, useState, useMemo } from 'react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+    Select, SelectContent, SelectItem,
+    SelectTrigger, SelectValue,
+} from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from '@/components/ui/popover';
+import AppLayout from '@/layouts/app-layout';
+import { type BreadcrumbItem } from '@/types';
 
 interface FormData {
     start_date: string;

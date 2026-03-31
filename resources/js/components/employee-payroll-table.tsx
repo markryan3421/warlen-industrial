@@ -1,6 +1,7 @@
 // components/employee-payroll-table.tsx
-import React, { useState, useMemo, useRef } from 'react';
 import { Eye, X } from 'lucide-react';
+import React, { useState, useMemo, useRef } from 'react';
+import { CustomPagination } from "@/components/custom-pagination";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
@@ -10,7 +11,6 @@ import {
     DialogTitle,
     DialogFooter,
 } from "@/components/ui/dialog";
-import { CustomPagination } from "@/components/custom-pagination";
 
 interface PayrollItem {
     id: number;
@@ -240,7 +240,7 @@ export default function EmployeePayrollTable({
         
         const maxVisible = 5;
         let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
-        let endPage = Math.min(lastPage, startPage + maxVisible - 1);
+        const endPage = Math.min(lastPage, startPage + maxVisible - 1);
         
         if (endPage - startPage + 1 < maxVisible) {
             startPage = Math.max(1, endPage - maxVisible + 1);

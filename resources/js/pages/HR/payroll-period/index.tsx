@@ -1,21 +1,11 @@
-import HrLayout from '@/layouts/hr-layout';
-import { Button } from "@/components/ui/button";
-import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm, usePage, router } from '@inertiajs/react';
-import PayrollPeriodController from "@/actions/App/Http/Controllers/HrRole/PayrollPeriodController";
-import { useState, useMemo, useEffect } from 'react';
 import { CalendarDays, PlusCircle, Clock, CheckCircle2, XCircle, AlertCircle, Filter } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import PayrollPeriodController from "@/actions/App/Http/Controllers/HrRole/PayrollPeriodController";
 
-import {
-    Table,
-    TableBody,
-    TableCaption,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table";
 
+import { CustomToast } from '@/components/custom-toast';
+import { Button } from "@/components/ui/button";
 import {
     Dialog,
     DialogContent,
@@ -32,7 +22,17 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 
-import { CustomToast } from '@/components/custom-toast';
+import {
+    Table,
+    TableBody,
+    TableCaption,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
+import HrLayout from '@/layouts/hr-layout';
+import { type BreadcrumbItem } from '@/types';
 
 // Interface defined inside the component file
 interface PayrollPeriod {

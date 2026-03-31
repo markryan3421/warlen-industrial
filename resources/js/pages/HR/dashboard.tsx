@@ -1,3 +1,5 @@
+import { Head, Link } from '@inertiajs/react';
+import { RechartsDevtools } from '@recharts/devtools';
 import { ArrowUpRight, Circle, Minus } from 'lucide-react';
 import { useState } from 'react';
 import {
@@ -8,11 +10,10 @@ import {
 import Footer from '@/components/footer';
 import { SectionCards } from '@/components/section-cards';
 import SystemAlert from '@/components/system-alert';
-import { ChartConfig, type } from '@/components/ui/chart';
+import type { ChartConfig} from '@/components/ui/chart';
+import { type } from '@/components/ui/chart';
 import HrLayout from '@/layouts/hr-layout';
 import { dashboard } from '@/routes';
-import { Head, Link } from '@inertiajs/react';
-import { RechartsDevtools } from '@recharts/devtools';
 
 import type { BreadcrumbItem } from '@/types';
 // Line chart data

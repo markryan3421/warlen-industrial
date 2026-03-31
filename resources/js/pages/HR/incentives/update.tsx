@@ -1,12 +1,12 @@
 import { Head, Link, useForm } from '@inertiajs/react';
-import HrLayout from '@/layouts/hr-layout';
-import type { BreadcrumbItem } from '@/types';
-import { useState, useRef, useEffect } from 'react';
 import { Search, ChevronDown, X, Users, UserCheck, AlertTriangle } from 'lucide-react';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
+import { useState, useRef, useEffect } from 'react';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import HrLayout from '@/layouts/hr-layout';
+import type { BreadcrumbItem } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {

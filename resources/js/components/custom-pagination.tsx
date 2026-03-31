@@ -1,6 +1,6 @@
     import { Link } from '@inertiajs/react';
-    import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
     import { ChevronLeft, ChevronRight } from 'lucide-react';
+    import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
     interface LinkProps {
         active: boolean;
