@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\LogsActivityTrait;
 use App\Policies\PositionPolicy;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Attributes\UsePolicy;
@@ -11,6 +12,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
+use Spatie\Activitylog\Contracts\Activity;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
@@ -19,6 +21,8 @@ class Position extends Model
 {
     //
     use SoftDeletes, HasFactory, LogsActivity;
+
+    use LogsActivityTrait;
 
     protected $casts = [
         'deleted_at' => 'datetime',
@@ -40,6 +44,14 @@ class Position extends Model
             ->logOnlyDirty();
     }
 
+    protected function getActivityDisplayNames(): array
+    {
+        return [
+            'pos_name' => 'Position Name',
+            'basic_salary' => 'Basic Salary',
+        ];
+    }
+
     public function employees()
     {
         return $this->hasMany(Employee::class);
@@ -51,7 +63,7 @@ class Position extends Model
     }
 
     #[Scope]
-    protected function getPosition(Builder $query):void
+    protected function getPosition(Builder $query): void
     {
         $this->select(
             'id',

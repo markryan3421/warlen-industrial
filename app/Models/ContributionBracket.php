@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\LogsActivityTrait;
 use App\Models\ContributionVersion;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
@@ -9,12 +10,15 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Spatie\Activitylog\Contracts\Activity;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
 class ContributionBracket extends Model
 {
     use HasFactory, LogsActivity;
+
+    use LogsActivityTrait;
 
     protected $fillable = [
         'contribution_version_id',
@@ -35,6 +39,17 @@ class ContributionBracket extends Model
                 'employer_share',
             ])
             ->logOnlyDirty();
+    }
+
+    protected function getActivityDisplayNames(): array
+    {
+        return [
+            'contributionVersion.type' => 'Contribution Type',
+            'salary_from' => 'Salary From',
+            'salary_to' => 'Salary To',
+            'employee_share' => 'Employee Share',
+            'employer_share' => 'Employer Share',
+        ];
     }
 
     #[Scope]
