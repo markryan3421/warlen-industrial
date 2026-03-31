@@ -8,23 +8,45 @@ use App\Http\Requests\Position\StorePositionRequest;
 use App\Http\Requests\Position\UpdatePositionRequest;
 use App\Models\Position;
 use App\Repository\PositionRepository;
+use App\Traits\HasPaginatedIndex;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Testing\Fluent\Concerns\Has;
 use Inertia\Inertia;
 
 class PositionController extends Controller
 {
+    use HasPaginatedIndex;
+
     public function __construct(private PositionRepository $positionRepository) {}
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         Gate::authorize('viewAny', Position::class);
 
         $positions= $this->positionRepository->getPositions();
 
-        return Inertia::render('positions/index', compact('positions'));
+        $result = $this->paginateCollection(
+            items: collect($positions), // wrap in Collection if not already
+            request: $request,
+            searchColumns: ['pos_name', 'basic_salary'], 
+        );
+
+        return Inertia::render('positions/index', [
+            'positions'      => [
+                'data' => $result['data'],
+                'links' => $result['pagination']['links'] ?? [],
+                'from' => $result['pagination']['from'] ?? 0,
+                'to' => $result['pagination']['to'] ?? 0,
+                'total' => $result['totalCount'],
+            ],
+            'filters'       => $result['filters'],
+            'totalCount'    => $result['totalCount'],
+            'filteredCount' => $result['filteredCount'],
+        ]);
     }
 
     /**
