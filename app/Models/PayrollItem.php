@@ -2,15 +2,19 @@
 
 namespace App\Models;
 
+use App\Concerns\LogsActivityTrait;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Spatie\Activitylog\Contracts\Activity;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
 class PayrollItem extends Model
 {
     use LogsActivity;
+
+    use LogsActivityTrait;
 
     protected $fillable = [
         'payroll_id',
@@ -36,6 +40,16 @@ class PayrollItem extends Model
             ->logOnlyDirty();
     }
 
+    protected function getActivityDisplayNames(): array
+    {
+        return [
+            'payroll.employee.user.name' => 'Employee Name',
+            'code' => 'Code',
+            'type' => 'Type',
+            'amount' => 'Amount',
+        ];
+    }
+
     protected function code(): Attribute
     {
         return Attribute::make(
@@ -43,7 +57,7 @@ class PayrollItem extends Model
         );
     }
 
-    
+
     protected function type(): Attribute
     {
         return Attribute::make(
