@@ -42,8 +42,6 @@ class AppServiceProvider extends ServiceProvider
 
         $this->configureRateLimiting();
 
-        Employee::observe(new \App\Observers\EmployeeObserver());
-
         $this->observer();
 
         $this->enforceMorphMap();
@@ -124,6 +122,7 @@ class AppServiceProvider extends ServiceProvider
         // PayrollPeriod::observe(PayrollPeriodObserver::class);
 
         ApplicationLeave::observe(ApplicationLeaveObserver::class);
+        Employee::observe(new \App\Observers\EmployeeObserver());
     }
 
     private function configureRateLimiting(): void
