@@ -226,31 +226,6 @@ export default function Index({ deductions }: Props) {
                             onStatusChange={() => {}}
                         />
                     }
-                    emptyState={
-                        allData.length === 0 && !hasFilters ? (
-                            <div className="flex flex-col items-center justify-center py-16">
-                                <div className="rounded-full bg-primary/10 p-6 mb-4">
-                                    <Briefcase className="h-12 w-12 text-primary" />
-                                </div>
-                                <h3 className="text-xl font-semibold mb-2">No deductions yet</h3>
-                                <p className="text-muted-foreground mb-4">Create your first deduction to get started</p>
-                                <Link href="/deductions/create">
-                                    <Button className="bg-[#1d4791] hover:bg-[#1d4791]/90">Create First Deduction</Button>
-                                </Link>
-                            </div>
-                        ) : filteredData.length === 0 && hasFilters ? (
-                            <div className="flex flex-col items-center justify-center py-16">
-                                <div className="rounded-full bg-muted p-6 mb-4">
-                                    <Search className="h-12 w-12 text-muted-foreground" />
-                                </div>
-                                <h3 className="text-xl font-semibold mb-2">No results found</h3>
-                                <p className="text-muted-foreground mb-4">
-                                    No deductions match "{searchTerm}"{(dateFrom || dateTo) ? ' in the selected date range' : ''}
-                                </p>
-                                <Button variant="outline" onClick={clearFilters}>Clear all filters</Button>
-                            </div>
-                        ) : null
-                    }
                 />
 
                 {allData.length > 0 && (
