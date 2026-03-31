@@ -3,9 +3,10 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Spatie\Activitylog\Models\Activity;
-use Illuminate\Pagination\LengthAwarePaginator;
 
 class ActivityLogController extends Controller
 {
@@ -89,42 +90,49 @@ class ActivityLogController extends Controller
      */
     protected function getModelName($activity): string
     {
+        $modelName = '';
+
         // Try subject_type first
         if ($activity->subject_type) {
-            return class_basename($activity->subject_type);
+            $modelName = class_basename($activity->subject_type);
         }
-
         // Try loaded subject relationship
-        if ($activity->subject) {
-            return class_basename($activity->subject);
+        elseif ($activity->subject) {
+            $modelName = class_basename($activity->subject);
         }
-
         // Try to infer from properties
-        if ($activity->properties) {
+        elseif ($activity->properties) {
             if (isset($activity->properties['subject_type'])) {
-                return class_basename($activity->properties['subject_type']);
+                $modelName = class_basename($activity->properties['subject_type']);
             }
-
             // For CRUD operations without explicit type
-            if (in_array($activity->description, ['created', 'updated', 'deleted'])) {
-                return 'Record';
+            elseif (in_array($activity->description, ['created', 'updated', 'deleted'])) {
+                $modelName = 'Record';
             }
         }
-
         // Fallback to log name
-        if ($activity->log_name) {
+        elseif ($activity->log_name) {
             $name = strtolower($activity->log_name);
             $models = ['user', 'branch', 'site', 'role', 'permission'];
 
             foreach ($models as $model) {
                 if (str_contains($name, $model)) {
-                    return ucfirst($model);
+                    $modelName = ucfirst($model);
+                    break;
                 }
             }
 
-            return ucfirst($activity->log_name);
+            if (empty($modelName)) {
+                $modelName = ucfirst($activity->log_name);
+            }
         }
 
-        return 'Activity';
+        // Default fallback
+        if (empty($modelName)) {
+            $modelName = 'Activity';
+        }
+
+        // Remove special characters and apply title case
+        return preg_replace('/[^a-zA-Z0-9\s]/', ' ', Str::title($modelName));
     }
 }
