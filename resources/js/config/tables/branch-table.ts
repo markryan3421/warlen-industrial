@@ -14,6 +14,6 @@ export const BranchesTableConfig = {
   actions: [
     { label: 'View', icon: 'Eye', className: 'bg-transparent hover:bg-transparent text-gray-600 hover:text-gray-900 cursor-pointer' },
     { label: 'Edit', icon: 'Pencil', route: 'BranchController.edit(branch.branch_slug)', className: 'bg-transparent hover:bg-transparent text-gray-600 hover:text-gray-900 cursor-pointer' },
-    { label: 'Delete', icon: 'Trash', route: 'branches.destroy', className: 'bg-transparent hover:bg-transparent text-gray-600 hover:text-gray-900 cursor-pointer' },
+    { label: 'Delete', icon: 'Trash', className: 'bg-transparent hover:bg-transparent text-gray-600 hover:text-gray-900 cursor-pointer' },
   ],
 }

@@ -47,7 +47,7 @@ interface CustomTableProps {
     filteredCount?: number;
     totalCount?: number;
     searchTerm?: string;
-    onDelete: (id: string | number) => void;
+    onDelete: (row: TableRow) => void;
     onView: (row: TableRow) => void;
     onEdit: (row: TableRow) => void;
     title?: string;
@@ -170,7 +170,7 @@ function ActionDropdown({
 }: {
     row: TableRow;
     actions: ActionConfig[];
-    onDelete: (id: string | number) => void;
+    onDelete: (r: TableRow) => void;
     onView: (r: TableRow) => void;
     onEdit: (r: TableRow) => void;
     route: ReturnType<typeof useRoute>;
@@ -181,7 +181,8 @@ function ActionDropdown({
     const handleAction = (action: ActionConfig) => {
         if (action.label === "Delete") {
             if (row.id !== undefined && row.id !== null) {
-                onDelete(row.id);
+                // Pass the entire row to onDelete
+                onDelete(row);
             } else {
                 console.error('Cannot delete: row has no id', row);
             }

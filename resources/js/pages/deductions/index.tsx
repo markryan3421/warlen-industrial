@@ -1,4 +1,4 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import { Briefcase, HandCoins, Search } from 'lucide-react';
@@ -11,6 +11,9 @@ import { EmployeeFilterBar } from '@/components/employee/employee-filter-bar';
 import { CustomPagination } from '@/components/custom-pagination';
 import type { BreadcrumbItem } from '@/types';
 import { CustomHeader } from '@/components/custom-header';
+import DeductionController from '@/actions/App/Http/Controllers/DeductionController';
+import { toast } from 'sonner';
+import { DeleteConfirmationDialog } from '@/components/delete-confirmation-modal';
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Deductions', href: '/deductions' }];
 
@@ -40,12 +43,44 @@ const formatDate = (date: string) =>
     new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
 export default function Index({ deductions }: Props) {
+    const { delete: destroy } = useForm();
     const [selected, setSelected] = useState<Deduction | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [dateFrom, setDateFrom] = useState<Date | undefined>();
     const [dateTo, setDateTo] = useState<Date | undefined>();
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
+
+    // Delete confirmation states
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [itemToDelete, setItemToDelete] = useState<any>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const handleDeleteClick = (deduction: Deduction) => {
+        setItemToDelete(deduction);
+        setDeleteDialogOpen(true);
+    };
+
+    const confirmDelete = () => {
+        if (!itemToDelete) return;
+
+        setIsDeleting(true);
+        destroy(DeductionController.destroy(itemToDelete.id).url, {
+            onSuccess: (page) => {
+                const successMessage = (page.props as any).flash?.success || 'Deduction deleted successfully.';
+                toast.success(successMessage);
+                setDeleteDialogOpen(false);
+                setItemToDelete(null);
+            },
+            onError: (errors) => {
+                const errorMessage = Object.values(errors).flat()[0] || 'Failed to delete deduction.';
+                toast.error(errorMessage);
+            },
+            onFinish: () => {
+                setIsDeleting(false);
+            },
+        });
+    }
 
     const allData: Deduction[] = Array.isArray(deductions) ? deductions : deductions?.data ?? [];
 
@@ -163,7 +198,7 @@ export default function Index({ deductions }: Props) {
                     actions={actions}
                     data={currentData}
                     from={startIndex + 1}
-                    onDelete={(id) => confirm('Are you sure you want to delete this deduction?') && router.delete(`/deductions/${id}`)}
+                    onDelete={handleDeleteClick}
                     onView={setSelected}
                     onEdit={(item) => router.get(`/deductions/${item.id}/edit`)}
                     title="Deductions List"
@@ -191,31 +226,6 @@ export default function Index({ deductions }: Props) {
                             onStatusChange={() => {}}
                         />
                     }
-                    emptyState={
-                        allData.length === 0 && !hasFilters ? (
-                            <div className="flex flex-col items-center justify-center py-16">
-                                <div className="rounded-full bg-primary/10 p-6 mb-4">
-                                    <Briefcase className="h-12 w-12 text-primary" />
-                                </div>
-                                <h3 className="text-xl font-semibold mb-2">No deductions yet</h3>
-                                <p className="text-muted-foreground mb-4">Create your first deduction to get started</p>
-                                <Link href="/deductions/create">
-                                    <Button className="bg-[#1d4791] hover:bg-[#1d4791]/90">Create First Deduction</Button>
-                                </Link>
-                            </div>
-                        ) : filteredData.length === 0 && hasFilters ? (
-                            <div className="flex flex-col items-center justify-center py-16">
-                                <div className="rounded-full bg-muted p-6 mb-4">
-                                    <Search className="h-12 w-12 text-muted-foreground" />
-                                </div>
-                                <h3 className="text-xl font-semibold mb-2">No results found</h3>
-                                <p className="text-muted-foreground mb-4">
-                                    No deductions match "{searchTerm}"{(dateFrom || dateTo) ? ' in the selected date range' : ''}
-                                </p>
-                                <Button variant="outline" onClick={clearFilters}>Clear all filters</Button>
-                            </div>
-                        ) : null
-                    }
                 />
 
                 {allData.length > 0 && (
@@ -231,6 +241,19 @@ export default function Index({ deductions }: Props) {
                         />
                     </div>
                 )}
+
+                <DeleteConfirmationDialog 
+                    isOpen={deleteDialogOpen}
+                    onClose={() => {
+                        setDeleteDialogOpen(false);
+                        setItemToDelete(null);
+                    }}
+                    onConfirm={confirmDelete}
+                    title='Delete deduction'
+                    itemName={itemToDelete?.deduction_name || 'this deduction'}
+                    isLoading={isDeleting}
+                    confirmText='Delete deduction'
+                />
             </div>
 
             {/* View Dialog */}

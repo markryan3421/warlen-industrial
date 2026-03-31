@@ -1,4 +1,4 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import { Briefcase, Eye, Plus, Coins, Search } from 'lucide-react';
@@ -12,6 +12,9 @@ import { EmployeeFilterBar } from '@/components/employee/employee-filter-bar';
 import { CustomPagination } from '@/components/custom-pagination';
 import type { BreadcrumbItem } from '@/types';
 import { CustomHeader } from '@/components/custom-header';
+import IncentiveController from '@/actions/App/Http/Controllers/IncentiveController';
+import { toast } from '@/components/custom-toast';
+import { DeleteConfirmationDialog } from '@/components/delete-confirmation-modal';
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Incentives', href: '/incentives' }];
 
@@ -48,6 +51,7 @@ interface Props {
 }
 
 export default function Index({ incentives, filters = {}, totalCount, filteredCount }: Props) {
+    const { delete: destroy } = useForm();
     const [selected, setSelected] = useState<Incentive | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
@@ -126,6 +130,37 @@ export default function Index({ incentives, filters = {}, totalCount, filteredCo
     const endIndex = startIndex + itemsPerPage;
     const currentData = filteredData.slice(startIndex, endIndex);
 
+    // Delete confirmation states
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [itemToDelete, setItemToDelete] = useState<any>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const handleDeleteClick = (incentive: Incentive) => {
+        setItemToDelete(incentive);
+        setDeleteDialogOpen(true);
+    };
+
+    const confirmDelete = () => {
+        if (!itemToDelete) return;
+        
+        setIsDeleting(true);
+        destroy(IncentiveController.destroy(itemToDelete.id).url, {
+            onSuccess: (page) => {
+                const successMessage = (page.props as any).flash?.success || 'Incentive deleted successfully.';
+                toast.success(successMessage);
+                setDeleteDialogOpen(false);
+                setItemToDelete(null);
+            },
+            onError: (errors) => {
+                const errorMessage = Object.values(errors).flat()[0] || 'Failed to delete incentive.';
+                toast.error(errorMessage);
+            },
+            onFinish: () => {
+                setIsDeleting(false);
+            },
+        });
+    };
+
     // Update pagination data for CustomPagination component
     const paginationData = {
         ...originalPaginationData,
@@ -167,11 +202,11 @@ export default function Index({ incentives, filters = {}, totalCount, filteredCo
         setCurrentPage(1); // Reset to first page when changing items per page
     };
 
-    const handleDelete = (id: string | number) => {
-        if (confirm('Are you sure you want to delete this incentive?')) {
-            router.delete(`/incentives/${id}`);
-        }
-    };
+    // const handleDelete = (id: string | number) => {
+    //     if (confirm('Are you sure you want to delete this incentive?')) {
+    //         router.delete(`/incentives/${id}`);
+    //     }
+    // };
 
     const handleView = (incentive: Incentive) => {
         setSelected(incentive);
@@ -291,7 +326,7 @@ export default function Index({ incentives, filters = {}, totalCount, filteredCo
                         actions={actions}
                         data={currentData}
                         from={startIndex + 1}
-                        onDelete={handleDelete}
+                        onDelete={handleDeleteClick}
                         onView={handleView}
                         onEdit={handleEdit}
                         title="Incentive Lists"
@@ -369,6 +404,18 @@ export default function Index({ incentives, filters = {}, totalCount, filteredCo
                             />
                         </div>
                     )}
+                    <DeleteConfirmationDialog 
+                        isOpen={deleteDialogOpen}
+                        onClose={() => {
+                            setDeleteDialogOpen(false);
+                            setItemToDelete(null);
+                        }}
+                        onConfirm={confirmDelete}
+                        title="Delete Incentive"
+                        itemName={itemToDelete?.incentive_name || 'this incentive'}
+                        isLoading={isDeleting}
+                        confirmText='Delete incentive'
+                    />
                 </CardContent>
             </div>
 
