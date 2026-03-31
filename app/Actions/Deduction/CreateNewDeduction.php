@@ -3,6 +3,7 @@
 namespace App\Actions\Deduction;
 
 use App\Models\Deduction;
+use Illuminate\Support\Facades\DB;
 
 class CreateNewDeduction
 {
@@ -14,16 +15,21 @@ class CreateNewDeduction
         //
     }
 
-    public function create(array $data): Deduction
+    public function create(array $data)
     {
-        return Deduction::create([
-            'position_id' => $data['position_id'],
-            'salary_rate' => $data['salary_rate'],
-            'reg_overtime_rate' => $data['reg_overtime_rate'],
-            'special_overtime_rate' => $data['special_overtime_rate'],
-            'sss_rate' => $data['sss_rate'],
-            'philhealth_rate' => $data['philhealth_rate'],
-            'pagibig_rate' => $data['pagibig_rate'],
-        ]);
+        return DB::transaction(function () use ($data) {
+            // Create the incentive
+            $deduction = Deduction::create([
+                'payroll_period_id' => $data['payroll_period_id'],
+                'deduction_name' => $data['deduction_name'],
+                'deduction_amount' => $data['deduction_amount']
+            ]);
+            
+            if (isset($data['employee_ids']) && !empty($data['employee_ids'])) {
+                $deduction->employees()->sync($data['employee_ids']);
+            }
+            
+            return $deduction;
+        });
     }
 }

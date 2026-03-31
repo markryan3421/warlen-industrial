@@ -13,6 +13,15 @@ import { Pagination } from '@/components/ui/pagination';
 import { BranchesTableConfig } from '@/config/tables/branch-table';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type BranchWithSites } from '@/types';
+<<<<<<< HEAD
+=======
+import { SitesModal } from '@/components/sites-modal';
+import { EmployeeFilterBar } from '@/components/employee/employee-filter-bar';
+import { Button } from '@/components/ui/button';
+import { CustomHeader } from '@/components/custom-header';
+import { CustomPagination } from '@/components/custom-pagination';
+import { DeleteConfirmationDialog } from '@/components/delete-confirmation-modal';
+>>>>>>> 6f6faeaced481fcd69e83019af875de5910c446a
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -62,6 +71,11 @@ export default function Index({ branches, filters, totalCount, filteredCount }: 
     const { delete: destroy } = useForm();
     const [selectedBranch, setSelectedBranch] = useState<BranchWithSites | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    
+    // Delete confirmation dialog state
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [branchToDelete, setBranchToDelete] = useState<Branches | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const { data, setData } = useForm({
         search: filters.search || '',
@@ -106,19 +120,32 @@ export default function Index({ branches, filters, totalCount, filteredCount }: 
         });
     };
 
-    const handleDelete = (slugOrId: string | number) => {
-        if (confirm("Are you sure you want to delete this branch?")) {
-            destroy(BranchController.destroy(String(slugOrId)).url, {
-                onSuccess: (page) => {
-                    const successMessage = (page.props as any).flash?.success || 'Branch deleted successfully.';
-                    toast.success(successMessage);
-                },
-                onError: (errors) => {
-                    const errorMessage = Object.values(errors).flat()[0] || 'Failed to delete branch.';
-                    toast.error(errorMessage);
-                }
-            });
-        }
+    // Updated delete handler to open confirmation dialog
+    const handleDeleteClick = (branch: Branches) => {
+        setBranchToDelete(branch);
+        setDeleteDialogOpen(true);
+    };
+
+    // Actual delete execution
+    const confirmDelete = () => {
+        if (!branchToDelete) return;
+        
+        setIsDeleting(true);
+        destroy(BranchController.destroy(branchToDelete.branch_slug).url, {
+            onSuccess: (page) => {
+                const successMessage = (page.props as any).flash?.success || 'Branch deleted successfully.';
+                toast.success(successMessage);
+                setDeleteDialogOpen(false);
+                setBranchToDelete(null);
+            },
+            onError: (errors) => {
+                const errorMessage = Object.values(errors).flat()[0] || 'Failed to delete branch.';
+                toast.error(errorMessage);
+            },
+            onFinish: () => {
+                setIsDeleting(false);
+            }
+        });
     };
 
     const editBranch = (branch: Branches) => {
@@ -133,12 +160,10 @@ export default function Index({ branches, filters, totalCount, filteredCount }: 
     const hasActiveFilters = !!data.search.trim();
 
     return (
-
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Branches" />
             <CustomToast />
 
-            {/* style animations */}
             <style>{`
                 @keyframes fadeUp {
                     from { opacity: 0; transform: translateY(16px); }
@@ -149,11 +174,11 @@ export default function Index({ branches, filters, totalCount, filteredCount }: 
                     from { opacity: 0; transform: translateY(-10px); }
                     to   { opacity: 1; transform: translateY(0); }
                 }
-                .pp-header { animation: headerReveal 0.35s cubic-bezier(0.22,1,0.36,1) both; }
-            `}</style>
+                .pp-header { animation: headerReveal 0.35s cubic-bezier(0.22,1,0.36,1) both; 
+                `}
+            </style>
 
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4 mx-4">
-                {/* Page Header */}
                 <div className="flex pp-header justify-between">
                     <CustomHeader
                         title='Branch'
@@ -171,13 +196,13 @@ export default function Index({ branches, filters, totalCount, filteredCount }: 
                     </div>
                 </div>
 
-                <div className ="pp-row">
+                <div className="pp-row">
                     <CustomTable
                         columns={BranchesTableConfig.columns}
                         actions={BranchesTableConfig.actions}
                         data={branches.data}
                         from={branches.from}
-                        onDelete={handleDelete}
+                        onDelete={handleDeleteClick} // Changed to handleDeleteClick
                         onView={viewBranchSites}
                         onEdit={editBranch}
                         title="Branches"
@@ -217,8 +242,7 @@ export default function Index({ branches, filters, totalCount, filteredCount }: 
                         }
                     />
 
-                    {/* Pagination */}
-                    <Pagination
+                    <CustomPagination
                         pagination={branches}
                         perPage={data.perPage}
                         onPerPageChange={handlePerPageChange}
@@ -228,11 +252,24 @@ export default function Index({ branches, filters, totalCount, filteredCount }: 
                         resourceName='branches'
                     />
 
-                    {/* Sites Modal */}
                     <SitesModal
                         isOpen={isModalOpen}
                         onClose={() => setIsModalOpen(false)}
                         branch={selectedBranch}
+                    />
+
+                    {/* Delete Confirmation Dialog */}
+                    <DeleteConfirmationDialog
+                        isOpen={deleteDialogOpen}
+                        onClose={() => {
+                            setDeleteDialogOpen(false);
+                            setBranchToDelete(null);
+                        }}
+                        onConfirm={confirmDelete}
+                        title="Delete Branch"
+                        itemName={branchToDelete?.branch_name}
+                        isLoading={isDeleting}
+                        confirmText="Delete Branch"
                     />
                 </div>
             </div>

@@ -59,14 +59,14 @@ export interface ActionConfig {
 // ============================================================================
 // UTILITY FUNCTIONS
 // ============================================================================
-
 export const formatModel = (model?: string | null): string => {
     if (!model) return 'Unknown';
     try {
         if (model.includes('\\')) {
-            return model.split('\\').pop() || model;
+            const shortName = model.split('\\').pop() || model;
+            return formatFormalName(shortName);
         }
-        return model;
+        return formatFormalName(model);
     } catch (error) {
         return 'Unknown';
     }
@@ -81,91 +81,208 @@ export const getInitials = (name?: string): string => {
     }
 };
 
-export const formatDate = (date?: string): string => {
-    if (!date) return 'N/A';
-    try {
-        return new Date(date).toLocaleString();
-    } catch (error) {
-        return 'Invalid date';
-    }
-};
+/**
+ * Format a model name to a formal, readable format
+ * Examples:
+ * - "AttendanceLog" -> "Attendance Log"
+ * - "Employee" -> "Employee"
+ * - "AttendanceExceptionStat" -> "Attendance Exception Statistics"
+ * - "User" -> "User"
+ * - "Role" -> "Role"
+ * - "Permission" -> "Permission"
+ * - "Branch" -> "Branch"
+ * - "Site" -> "Site"
+ * - "Department" -> "Department"
+ * - "Position" -> "Position"
+ * - "Schedule" -> "Schedule"
+ * - "PeriodStat" -> "Period Statistics"
+ */
+export const formatFormalName = (name: string): string => {
+    if (!name) return 'Unknown';
 
-export const getRelativeTime = (date?: string): string => {
-    if (!date) return 'N/A';
-    try {
-        const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
-        if (seconds < 60) return `${seconds}s ago`;
-        if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-        if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
-        return `${Math.floor(seconds / 86400)}d ago`;
-    } catch (error) {
-        return 'N/A';
-    }
-};
-
-const actionCache = new Map<string, ActionInfo>();
-
-export const getAction = (action?: string): ActionInfo => {
-    if (!action) {
-        return { icon: <Info className="h-3 w-3" />, badge: 'bg-gray-100 text-gray-800', text: 'Unknown' };
-    }
-    if (actionCache.has(action)) return actionCache.get(action)!;
-    
-    const details: Record<string, ActionInfo> = {
-        created: { icon: <PlusCircle className="h-3 w-3" />, badge: 'bg-green-100 text-green-800', text: 'Created' },
-        updated: { icon: <Pencil className="h-3 w-3" />, badge: 'bg-blue-100 text-blue-800', text: 'Updated' },
-        deleted: { icon: <Trash2 className="h-3 w-3" />, badge: 'bg-red-100 text-red-800', text: 'Deleted' }
+    // Handle special cases for specific model names
+    const specialCases: Record<string, string> = {
+        'AttendanceLog': 'Attendance Log',
+        'AttendanceLogs': 'Attendance Logs',
+        'AttendanceExceptionStat': 'Attendance Exception Statistics',
+        'AttendanceExceptionStats': 'Attendance Exception Statistics',
+        'AttendancePeriodStat': 'Period Statistics',
+        'AttendancePeriodStats': 'Period Statistics',
+        'AttendanceSchedule': 'Attendance Schedule',
+        'AttendanceSchedules': 'Attendance Schedules',
+        'employee': 'Employee',
+        'Employees': 'Employees',
+        'User': 'User',
+        'Users': 'Users',
+        'Role': 'Role',
+        'Roles': 'Roles',
+        'Permission': 'Permission',
+        'Permissions': 'Permissions',
+        'Branch': 'Branch',
+        'Branches': 'Branches',
+        'Site': 'Site',
+        'Sites': 'Sites',
+        'Department': 'Department',
+        'Departments': 'Departments',
+        'Position': 'Position',
+        'Positions': 'Positions',
+        'Schedule': 'Schedule',
+        'Schedules': 'Schedules',
+        'PeriodStat': 'Period Statistics',
+        'PeriodStats': 'Period Statistics',
+        'ExceptionStat': 'Exception Statistics',
+        'ExceptionStats': 'Exception Statistics',
+        'ActivityLog': 'Activity Log',
+        'ActivityLogs': 'Activity Logs',
     };
-    
-    const result = details[action] || {
-        icon: <Info className="h-3 w-3" />,
-        badge: 'bg-gray-100 text-gray-800',
-        text: action.charAt(0).toUpperCase() + action.slice(1)
+
+    // Check for special case first
+    if (specialCases[name]) {
+        return specialCases[name];
+    }
+
+    // Handle camelCase to words
+    // Example: "AttendanceLog" -> "Attendance Log"
+    const withSpaces = name.replace(/([A-Z])/g, ' $1').trim();
+
+    // Handle multiple uppercase letters in a row
+    // Example: "PDFGenerator" -> "PDF Generator"
+    const finalWithSpaces = withSpaces.replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2');
+
+    // Capitalize first letter of each word
+    const formatted = finalWithSpaces
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
+
+    // Handle special word replacements
+    let result = formatted;
+    const wordReplacements: Record<string, string> = {
+        'Stat': 'Statistics',
+        'Stats': 'Statistics',
+        'Log': 'Log',
+        'Logs': 'Logs',
+        'Info': 'Information',
+        'Mgmt': 'Management',
+        'Admin': 'Administration',
     };
-    actionCache.set(action, result);
+
+    for (const [key, value] of Object.entries(wordReplacements)) {
+        result = result.replace(new RegExp(`\\b${key}\\b`, 'g'), value);
+    }
+
     return result;
 };
 
-export const getFieldIcon = (field: string): React.ReactNode => {
-    const fieldLower = field.toLowerCase();
-    if (fieldLower.includes('name')) return <User className="h-3.5 w-3.5 text-blue-500" />;
-    if (fieldLower.includes('email')) return <Mail className="h-3.5 w-3.5 text-purple-500" />;
-    if (fieldLower.includes('phone')) return <Phone className="h-3.5 w-3.5 text-green-500" />;
-    if (fieldLower.includes('address')) return <MapPin className="h-3.5 w-3.5 text-orange-500" />;
-    if (fieldLower.includes('date') || fieldLower.includes('time')) return <Calendar className="h-3.5 w-3.5 text-indigo-500" />;
-    if (fieldLower.includes('price') || fieldLower.includes('amount') || fieldLower.includes('total')) return <DollarSign className="h-3.5 w-3.5 text-emerald-500" />;
-    if (fieldLower.includes('status')) return <Activity className="h-3.5 w-3.5 text-yellow-500" />;
-    return <Database className="h-3.5 w-3.5 text-gray-400" />;
-};
+/**
+ * Format a field name to a formal, readable format
+ * Examples:
+ * - "created_at" -> "Created Date"
+ * - "employee_name" -> "Employee Name"
+ * - "total_hours" -> "Total Hours"
+ * - "is_overtime" -> "Is Overtime"
+ */
+export const formatFormalFieldName = (field: string): string => {
+    if (!field) return 'Field';
 
-export const formatFieldName = (field: string): string => {
-    const formatted = field.replace(/_/g, ' ');
-    const fieldMappings: Record<string, string> = {
-        'user.name': 'Name',
-        'first_name': 'First Name',
-        'last_name': 'Last Name',
-        'email': 'Email Address',
-        'phone': 'Phone Number',
+    // Handle special cases
+    const specialCases: Record<string, string> = {
+        'id': 'ID',
         'created_at': 'Created Date',
-        'updated_at': 'Updated Date',
+        'updated_at': 'Last Modified Date',
         'deleted_at': 'Deleted Date',
-        'date': 'Date',
-        'time': 'Time',
-        'department': 'Department',
-        'position': 'Position',
-        'role': 'Role',
-        'branch_name': 'Branch Name',
-        'site_name': 'Site Name',
-        'employee.user.name': 'Employee Name',
         'employee_id': 'Employee ID',
+        'employee_name': 'Employee Name',
+        'employee_code': 'Employee Code',
+        'user_id': 'User ID',
+        'user_name': 'User Name',
+        'position_id': 'Position ID',
+        'position_name': 'Position Name',
+        'department_id': 'Department ID',
+        'department_name': 'Department Name',
+        'branch_id': 'Branch ID',
+        'branch_name': 'Branch Name',
+        'site_id': 'Site ID',
+        'site_name': 'Site Name',
+        'time_in': 'Time In',
+        'time_out': 'Time Out',
+        'total_hours': 'Total Hours',
+        'is_overtime': 'Overtime Status',
+        'late_minutes': 'Late Minutes',
+        'absence_minutes': 'Absence Minutes',
+        'total_exception_minutes': 'Total Exception Minutes',
+        'am_time_in': 'Morning Time In',
+        'am_time_out': 'Morning Time Out',
+        'pm_time_in': 'Afternoon Time In',
+        'pm_time_out': 'Afternoon Time Out',
+        'leave_early_minutes': 'Early Leave Minutes',
+        'normal_work_hours': 'Normal Work Hours',
+        'real_work_hours': 'Actual Work Hours',
+        'attended_days': 'Days Attended',
+        'absent_days': 'Days Absent',
+        'real_pay': 'Actual Pay',
+        'period_start': 'Period Start Date',
+        'period_end': 'Period End Date',
+        'shift_code': 'Shift Code',
+        'shift_label': 'Shift Label',
+        'pay_frequency': 'Pay Frequency',
+        'contract_start_date': 'Contract Start Date',
+        'contract_end_date': 'Contract End Date',
+        'employee_status': 'Employment Status',
+        'hire_date': 'Hire Date',
+        'scheduled_days': 'Scheduled Days',
     };
-    if (fieldMappings[field]) return fieldMappings[field];
-    return formatted.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
+
+    // Check for special case
+    if (specialCases[field]) {
+        return specialCases[field];
+    }
+
+    // Convert snake_case to words
+    const withSpaces = field.replace(/_/g, ' ');
+
+    // Capitalize first letter of each word
+    const formatted = withSpaces
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
+
+    // Handle specific word replacements
+    let result = formatted;
+    const wordReplacements: Record<string, string> = {
+        'Id': 'ID',
+        'Ip': 'IP',
+        'Url': 'URL',
+        'Api': 'API',
+        'Ssl': 'SSL',
+        'Html': 'HTML',
+        'Css': 'CSS',
+        'Js': 'JavaScript',
+        'Pdf': 'PDF',
+        'Csv': 'CSV',
+        'Xml': 'XML',
+        'Json': 'JSON',
+        'Am': 'AM',
+        'Pm': 'PM',
+        'Is': 'Is',
+    };
+
+    for (const [key, value] of Object.entries(wordReplacements)) {
+        result = result.replace(new RegExp(`\\b${key}\\b`, 'g'), value);
+    }
+
+    return result;
 };
 
-export const formatValue = (value: any): string => {
-    if (value === null || value === undefined) return '—';
+/**
+ * Format a value to a formal, readable format
+ */
+export const formatFormalValue = (value: any): string => {
+    if (value === null || value === undefined) return 'Not Specified';
     if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+    if (typeof value === 'number') return value.toLocaleString();
+
+    // Handle dates
     if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value)) {
         try {
             const date = new Date(value);
@@ -174,22 +291,25 @@ export const formatValue = (value: any): string => {
                     year: 'numeric',
                     month: 'long',
                     day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: true
                 });
             }
         } catch (e) {
             return value;
         }
     }
+
+    // Handle objects
     if (typeof value === 'object') {
+        if (value.name) return value.name;
+        if (value.label) return value.label;
+        if (value.title) return value.title;
         try {
-            return JSON.stringify(value, null, 2);
+            return JSON.stringify(value);
         } catch (e) {
             return String(value);
         }
     }
+
     return String(value);
 };
 
@@ -390,7 +510,7 @@ export const ActivityLogsTableColumns: TableColumn[] = [
         key: 'subject_type',
         render: (row: ActivityLog) => (
             <div className="flex items-center gap-1">
-                <Database className="h-5 w-5 text-gray-400" />
+                <Database className="h-5 w-5 text-blue-700" />
                 <span>{formatModel(row.subject_type)}</span>
             </div>
         )

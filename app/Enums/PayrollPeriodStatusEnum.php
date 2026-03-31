@@ -13,7 +13,7 @@ enum PayrollPeriodStatusEnum: string
         return match($this) {
             self::OPEN => 'Open',
             self::PROCESSING => 'Processing',
-            self::COMPLETED => 'Completed',
+            self::COMPLETED => 'Calculated',
         };
     }
 

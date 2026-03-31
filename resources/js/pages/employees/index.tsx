@@ -49,6 +49,14 @@ import type { BreadcrumbItem } from '@/types';
 
 import { EmployeeFilterBar } from '@/components/employee/employee-filter-bar';
 import { EmployeesTableConfig } from '@/config/tables/employees-table';
+<<<<<<< HEAD
+=======
+import { CustomPagination } from '@/components/custom-pagination';
+import { toast } from 'sonner';
+import { CustomHeader } from '@/components/custom-header';
+import EmployeeController from '@/actions/App/Http/Controllers/EmployeeController';
+import { DeleteConfirmationDialog } from '@/components/delete-confirmation-modal';
+>>>>>>> 6f6faeaced481fcd69e83019af875de5910c446a
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Employees', href: '/employees' },
@@ -123,7 +131,6 @@ export default function Index({
     filteredCount,
 }: PageProps) {
     const { delete: destroy } = useForm();
-    console.log(EmployeesTableConfig.actions);
 
     // ── Filter state — initialised from URL params so the UI reflects the
     //    current server-side filter on first render / browser back-forward.
@@ -251,6 +258,39 @@ export default function Index({
         router.get('/employees', {}, { preserveState: true, replace: true });
     };
 
+    // Delete confirmation states
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [itemToDelete, setItemToDelete] = useState<any>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const handleDeleteClick = (employee: Employee) => {
+        setItemToDelete(employee);
+        setDeleteDialogOpen(true);
+    };
+
+    const confirmDelete = () => {
+        if(!itemToDelete) return;
+
+
+        setIsDeleting(true);
+        destroy(EmployeeController.destroy(itemToDelete.slug_emp).url, {
+            onSuccess: (page) => {
+                const successMessage = (page.props as any).flash?.success || 'Employee deleted successfully';
+                toast.success(successMessage);
+                setDeleteDialogOpen(false);
+                setItemToDelete(null);
+            },
+            onError: (errors) => {
+                const errorMessage = Object.values(errors).flat()[0] || 'Failed to delete employee';
+                toast.error(errorMessage);
+                setIsDeleting(false);
+            },
+            onFinish: () => {
+                setIsDeleting(false);
+            },
+        });
+    }
+
     // ── Delete ────────────────────────────────────────────────────────────────
     const handleDelete = (id: number) => {
         // Find the employee in the current page data
@@ -286,8 +326,6 @@ export default function Index({
     const handleEdit = (employee: Employee) => {
         router.get(EmmployeeController.edit(employee.slug_emp).url);
     };
-
-    console.log(employees.data);
 
     // ─── Render ───────────────────────────────────────────────────────────────
     return (
@@ -351,7 +389,7 @@ export default function Index({
                             actions={EmployeesTableConfig.actions}
                             data={employees.data}
                             from={employees.from ?? 1}
-                            onDelete={handleDelete}
+                            onDelete={handleDeleteClick}
                             onView={handleView}
                             onEdit={handleEdit}
                             toolbar={
@@ -426,6 +464,19 @@ export default function Index({
                             filteredCount={filteredCount}
                             search={searchTerm}
                             resourceName="employee"
+                        />
+
+                        <DeleteConfirmationDialog 
+                            isOpen={deleteDialogOpen}
+                            onClose={() => {
+                                setDeleteDialogOpen(false);
+                                setItemToDelete(null);
+                            }}
+                            onConfirm={confirmDelete}
+                            title='Delete employee'
+                            itemName={itemToDelete?.name || 'this employee'}
+                            isLoading={isDeleting}
+                            confirmText='Delete employee'
                         />
                     </div>
                 )}

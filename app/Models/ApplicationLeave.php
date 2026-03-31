@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Policies\ApplicationLeavePolicy;
+use App\Concerns\LogsActivityTrait;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Attributes\UsePolicy;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -18,6 +19,8 @@ class ApplicationLeave extends Model
 {
 
     use HasFactory, LogsActivity;
+
+    use LogsActivityTrait;
 
     protected $fillable = [
         'employee_id',
@@ -52,6 +55,21 @@ class ApplicationLeave extends Model
                 'remarks',
             ])
             ->logOnlyDirty();
+    }
+
+    protected function getActivityDisplayNames(): array
+    {
+        return [
+            'employee.user.name' => 'Employee Name',
+            //'slug_app' => 'Application Slug',
+            'leave_start' => 'Leave Start Date',
+            'leave_end' => 'Leave End Date',
+            'reason_to_leave' => 'Reason for Leave',
+            'app_status' => 'Application Status',
+            'approved_by' => 'Approved By',
+            'rejected_by' => 'Rejected By',
+            'remarks' => 'Remarks',
+        ];
     }
 
     public function employee()

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\LogsActivityTrait;
 use App\Models\PayrollItem;
 use App\Policies\PayrollPolicy;
 use Illuminate\Database\Eloquent\Attributes\UsePolicy;
@@ -9,6 +10,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Spatie\Activitylog\Contracts\Activity;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
@@ -16,6 +18,9 @@ use Spatie\Activitylog\Traits\LogsActivity;
 class Payroll extends Model
 {
     use LogsActivity;
+
+    use LogsActivityTrait;
+
     protected $fillable = [
         'payroll_period_id',
         'employee_id',
@@ -36,6 +41,18 @@ class Payroll extends Model
                 'net_pay',
             ])
             ->logOnlyDirty();
+    }
+
+    protected function getActivityDisplayNames(): array
+    {
+        return [
+            'payrollPeriod.start_date' => 'Payroll Start Date',
+            'payrollPeriod.end_date' => 'Payroll End Date',
+            'employee.user.name' => 'Employee Name',
+            'gross_pay' => 'Gross Pay',
+            'total_deduction' => 'Total Deduction',
+            'net_pay' => 'Net Pay',
+        ];
     }
 
     public function payrollPeriod(): BelongsTo
@@ -72,5 +89,5 @@ class Payroll extends Model
         return Attribute::make(
             set: fn($value) => is_numeric($value) ? (float) $value : 0,
         );
-    }   
+    }
 }

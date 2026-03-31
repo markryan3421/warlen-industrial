@@ -143,7 +143,65 @@ export default function Index({
     const [typeFilter, setTypeFilter] = useState<string>("");
     const [hasActiveFilters, setHasActiveFilters] = useState(false);
 
-    console.log('contributionVersions', contributionVersions);
+    // Delete confirmation states
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [itemToDelete, setItemToDelete] = useState<any>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const handleDeleteClick = (contributionVersion: ContributionVersion) => {
+        setItemToDelete(contributionVersion);
+        setDeleteDialogOpen(true);
+    };
+
+    const confirmDelete = () => {
+        if (!itemToDelete) return;
+
+        setIsDeleting(true);
+        destroy(route('contribution-versions.destroy', { contribution_version: itemToDelete.id }), {
+            onSuccess: (page) => {
+                const successMessage = (page.props as any).flash?.success || 'Contribution version deleted successfully.';
+                toast.success(successMessage);
+                setDeleteDialogOpen(false);
+                setItemToDelete(null);
+            },
+            onError: (errors) => {
+                const errorMessage = Object.values(errors).flat()[0] || 'Failed to delete contribution version.';
+                toast.error(errorMessage);
+            },
+            onFinish: () => {
+                setIsDeleting(false);
+            },
+        });
+    };
+
+    // // ── Delete ─────────────────────────────────────────────────────────────
+    // const handleDelete = (version: ContributionVersion | number | string) => {
+    //     // Extract the ID from the version object
+    //     let id: number;
+
+    //     if (typeof version === 'object' && version !== null && 'id' in version) {
+    //         id = version.id;
+    //     } else if (typeof version === 'number') {
+    //         id = version;
+    //     } else if (typeof version === 'string') {
+    //         id = parseInt(version, 10);
+    //     } else {
+    //         return;
+    //     }
+
+    //     if (confirm('Are you sure you want to delete this contribution version?')) {
+    //         router.delete(route('contribution-versions.destroy', { contribution_version: id }), {
+    //             onSuccess: (page) => {
+    //                 const successMessage = (page.props as any).flash?.success || 'Contribution version deleted successfully.';
+    //                 toast.success(successMessage);
+    //             },
+    //             onError: (errors) => {
+    //                 const errorMessage = Object.values(errors).flat()[0] || 'Failed to delete contribution version.';
+    //                 toast.error(errorMessage);
+    //             }
+    //         });
+    //     }
+    // };
 
     // Safely ensure data is an array and remove duplicates based on ID
     const versions = useMemo(() => {
@@ -181,35 +239,6 @@ export default function Index({
     // Clear all filters
     const handleClearAllFilters = () => {
         setTypeFilter("");
-    };
-
-    // ── Delete ─────────────────────────────────────────────────────────────
-    const handleDelete = (version: ContributionVersion | number | string) => {
-        // Extract the ID from the version object
-        let id: number;
-
-        if (typeof version === 'object' && version !== null && 'id' in version) {
-            id = version.id;
-        } else if (typeof version === 'number') {
-            id = version;
-        } else if (typeof version === 'string') {
-            id = parseInt(version, 10);
-        } else {
-            return;
-        }
-
-        if (confirm('Are you sure you want to delete this contribution version?')) {
-            router.delete(route('contribution-versions.destroy', { contribution_version: id }), {
-                onSuccess: (page) => {
-                    const successMessage = page.props.flash?.success || 'Contribution version deleted successfully.';
-                    toast.success(successMessage);
-                },
-                onError: (errors) => {
-                    const errorMessage = Object.values(errors).flat()[0] || 'Failed to delete contribution version.';
-                    toast.error(errorMessage);
-                }
-            });
-        }
     };
     
     // ── View brackets ──────────────────────────────────────────────────────
@@ -330,7 +359,7 @@ export default function Index({
                                     actions={ContributionTableConfig.actions}
                                     data={displayData}
                                     from={contributionVersions.from}
-                                    onDelete={handleDelete}
+                                    onDelete={handleDeleteClick}
                                     onView={viewDetails}
                                     onEdit={handleEdit}
                                     title="Contribution Table"
@@ -367,6 +396,19 @@ export default function Index({
                                 resourceName="contribution version"
                             />
                         )}
+
+                        <DeleteConfirmationDialog 
+                            isOpen={deleteDialogOpen}
+                            onClose={() => {
+                                setDeleteDialogOpen(false);
+                                setItemToDelete(null);
+                            }}
+                            onConfirm={confirmDelete}
+                            title='Delete Contribution Item'
+                            itemName={itemToDelete ? getContributionTypeLabel(itemToDelete.type) : ''}
+                            isLoading={isDeleting}
+                            confirmText='Delete Contribution'
+                        />
                     </>
                 )}
             </div>

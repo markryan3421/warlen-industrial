@@ -25,7 +25,10 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 
+<<<<<<< HEAD
 // Import Echo and Pusher for Reverb
+=======
+>>>>>>> 6f6faeaced481fcd69e83019af875de5910c446a
 import { ApplicationLeavesTableConfig } from '@/config/tables/application-leave';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type BranchWithSites } from '@/types';
@@ -33,15 +36,14 @@ import { type BreadcrumbItem, type BranchWithSites } from '@/types';
 // Declare global window interface for Echo
 declare global {
     interface Window {
-        Pusher: any;
         Echo: any;
     }
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'Application Leaves',
-        href: '/application-leaves',
+        title: 'Application Leave',
+        href: '/application-leave',
     },
 ];
 
@@ -74,8 +76,6 @@ export default function Index({ applicationLeaves }: ApplicationLeaveProps) {
     const [leaves, setLeaves] = useState(applicationLeaves);
     const [notification, setNotification] = useState<{ message: string, timestamp: string } | null>(null);
     const [showNotification, setShowNotification] = useState(false);
-    const [echoInitialized, setEchoInitialized] = useState(false);
-    const [isTableLoading, setIsTableLoading] = useState(true);
 
     // Filter state
     const [statusFilter, setStatusFilter] = useState<string>(() => {
@@ -83,64 +83,16 @@ export default function Index({ applicationLeaves }: ApplicationLeaveProps) {
         return savedFilter || 'all';
     });
 
-    // Search state
+      // Search state
     const [searchTerm, setSearchTerm] = useState<string>("");
 
     // Dialog state for viewing details
     const [selectedLeave, setSelectedLeave] = useState<any>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-    // Set loading to false after data is loaded
+    // Listen to application-leave channel (Echo is already initialized globally)
     useEffect(() => {
-        if (leaves !== undefined) {
-            const timer = setTimeout(() => {
-                setIsTableLoading(false);
-            }, 100);
-            return () => clearTimeout(timer);
-        }
-    }, [leaves]);
-
-    // Initialize Echo with Reverb configuration
-    useEffect(() => {
-        window.Pusher = Pusher;
-        const key = import.meta.env.VITE_REVERB_APP_KEY;
-        const host = import.meta.env.VITE_REVERB_HOST || 'localhost';
-        const port = import.meta.env.VITE_REVERB_PORT || '8080';
-        const scheme = import.meta.env.VITE_REVERB_SCHEME || 'http';
-
-        if (!key) {
-            console.error('VITE_REVERB_APP_KEY is not defined in your .env file');
-            return;
-        }
-
-        window.Echo = new Echo({
-            broadcaster: 'reverb',
-            key: key,
-            wsHost: host,
-            wsPort: port,
-            wssPort: port,
-            forceTLS: scheme === 'https',
-            enabledTransports: ['ws', 'wss'],
-            authEndpoint: '/broadcasting/auth',
-            auth: {
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
-                },
-            },
-        });
-
-        setEchoInitialized(true);
-
-        return () => {
-            if (window.Echo) {
-                window.Echo.leave('application-leave');
-            }
-        };
-    }, []);
-
-    // Listen to application-leave channel
-    useEffect(() => {
-        if (!echoInitialized || !window.Echo) return;
+        if (!window.Echo) return;
 
         const channel = window.Echo.private('application-leave');
 
@@ -151,6 +103,14 @@ export default function Index({ applicationLeaves }: ApplicationLeaveProps) {
             });
             setShowNotification(true);
 
+            // Show notification
+            setNotification({
+                message: `New application leave created`,
+                timestamp: new Date().toLocaleString()
+            });
+            setShowNotification(true);
+
+            // Auto-hide notification after 5 seconds
             setTimeout(() => {
                 setShowNotification(false);
             }, 5000);
@@ -182,7 +142,7 @@ export default function Index({ applicationLeaves }: ApplicationLeaveProps) {
         return () => {
             channel.stopListening('.ApplicationLeaveEvent');
         };
-    }, [echoInitialized]);
+    }, []);
 
     // Save filter to localStorage
     useEffect(() => {

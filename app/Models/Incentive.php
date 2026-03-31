@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use App\Concerns\LogsActivityTrait;
 use App\Policies\IncentivePolicy;
 use Illuminate\Database\Eloquent\Attributes\UsePolicy;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
+use Spatie\Activitylog\Contracts\Activity;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
@@ -13,6 +15,8 @@ use Spatie\Activitylog\Traits\LogsActivity;
 class Incentive extends Model
 {
     use LogsActivity;
+
+    use LogsActivityTrait;
 
     protected $fillable = [
         'payroll_period_id',
@@ -33,6 +37,15 @@ class Incentive extends Model
             ->logOnlyDirty();
     }
 
+    protected function getActivityDisplayNames(): array
+    {
+        return [
+            'payroll_period.start_date' => 'Payroll Start Date',
+            'payroll_period.end_date' => 'Payroll End Date',
+            'incentive_name' => 'Incentive Name',
+            'incentive_amount' => 'Incentive Amount',
+        ];
+    }
     public function payroll_period()
     {
         return $this->belongsTo(PayrollPeriod::class);

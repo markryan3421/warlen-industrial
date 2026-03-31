@@ -1,7 +1,7 @@
 import { Head, Link, useForm, usePage, router } from '@inertiajs/react';
 import {
     CalendarDays, Plus, Clock, CheckCircle2,
-    AlertCircle, Filter, Pencil, Trash2, Eye, Banknote, XCircle,
+    AlertCircle, Filter, Pencil, Trash2, Eye, Banknote, XCircle, Loader2,
 } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 import PayrollPeriodController from '@/actions/App/Http/Controllers/PayrollPeriodController';
@@ -23,7 +23,7 @@ interface PayrollPeriod {
     start_date: string;
     end_date: string;
     pay_date: string;
-    payroll_per_status: 'open' | 'processing' | 'completed';
+    payroll_per_status: string;
     is_paid: boolean;
     created_at?: string;
     updated_at?: string;
@@ -32,22 +32,41 @@ interface PayrollPeriod {
 interface PayrollPeriodProps { payrollPeriods: PayrollPeriod[]; }
 interface PageProps {
     payroll_period_enums: Array<{ value: string; label: string; }>;
+    [key: string]: any;
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Payroll Periods', href: '/payroll-periods' },
 ];
 
-// ── Status config ─────────────────────────────────────────────────────────
-const STATUS_CONFIG = {
-    open: { icon: AlertCircle, badge: 'bg-secondary text-secondary-foreground', dot: 'bg-secondary' },
-    processing: { icon: Clock, badge: 'bg-primary/10 text-primary border border-primary/20', dot: 'bg-primary' },
-    completed: { icon: CheckCircle2, badge: 'bg-accent/10 text-accent border border-accent/20', dot: 'bg-accent' },
-} as const;
+// ── Status config based on enum values ─────────────────────────────────────────
+const getStatusConfig = (status: string) => {
+    const configs: Record<string, { icon: any; badge: string; dot: string; color: 'primary' | 'secondary' | 'accent' | 'muted' }> = {
+        open: { icon: AlertCircle, badge: 'bg-secondary text-secondary-foreground', dot: 'bg-secondary', color: 'secondary' },
+        processing: { icon: Clock, badge: 'bg-primary/10 text-primary border border-primary/20', dot: 'bg-primary', color: 'primary' },
+        calculated: { icon: CheckCircle2, badge: 'bg-accent/10 text-accent border border-accent/20', dot: 'bg-accent', color: 'accent' },
+        completed: { icon: CheckCircle2, badge: 'bg-accent/10 text-accent border border-accent/20', dot: 'bg-accent', color: 'accent' },
+        failed: { icon: AlertCircle, badge: 'bg-red-100 text-red-700 border border-red-200', dot: 'bg-red-500', color: 'muted' },
+    };
+    return configs[status] || configs.open;
+};
 
-function StatusBadge({ status, label }: { status: PayrollPeriod['payroll_per_status']; label: string }) {
-    const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.open;
+function StatusBadge({ status, label, isProcessing, progress }: { status: string; label: string; isProcessing?: boolean; progress?: number }) {
+    // Show loading spinner if this period is currently being processed
+    if (isProcessing) {
+        return (
+            <div className="inline-flex items-center gap-2 rounded-full px-2.5 py-1 bg-primary/10 border border-primary/20">
+                <Loader2 className="h-3 w-3 animate-spin text-primary" />
+                <span className="text-[10px] font-black uppercase tracking-wider text-primary">
+                    {progress !== undefined && progress > 0 ? `${progress}%` : 'Processing'}
+                </span>
+            </div>
+        );
+    }
+    
+    const cfg = getStatusConfig(status);
     const Icon = cfg.icon;
+    
     return (
         <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wider ${cfg.badge}`}>
             <Icon className="h-3 w-3" />
@@ -107,18 +126,141 @@ export default function Index({ payrollPeriods }: PayrollPeriodProps) {
     const [statusFilter, setStatusFilter] = useState<string>(() =>
         localStorage.getItem('payrollPeriods-statusFilter') || 'all'
     );
+    
+    // Simplified processing state
+    const [processingPeriodId, setProcessingPeriodId] = useState<number | null>(null);
+    const [processingProgress, setProcessingProgress] = useState<number>(0);
+    const [processingMessage, setProcessingMessage] = useState<string>('');
 
     useEffect(() => {
         localStorage.setItem('payrollPeriods-statusFilter', statusFilter);
     }, [statusFilter]);
 
-    // Live reload on payroll events
+    // Listen to both payroll and payroll-period channels
     useEffect(() => {
-        if (!window.Echo) return;
-        const channel = window.Echo.private('payroll');
-        channel.listen('.payroll.completed', () => router.reload({ only: ['payrollPeriods'] }));
-        return () => { channel.stopListening('.payroll.completed'); window.Echo.leave('payroll'); };
-    }, []);
+        if (!window.Echo) {
+            console.warn('Echo is not initialized');
+            return;
+        }
+        
+        console.log('Setting up Echo listeners for payroll channels...');
+        
+        // Listen to payroll channel for general updates
+        const payrollChannel = window.Echo.private('payroll');
+        const payrollPeriodChannel = window.Echo.private('payroll-period');
+        
+        // Handle payroll.completed events
+        const handlePayrollEvent = (event: any) => {
+            console.log('================== PAYROLL EVENT RECEIVED ==================');
+            console.log('Full event:', event);
+            console.log('Event properties:', {
+                progress: event.progress,
+                payroll_period_id: event.payroll_period_id,
+                message: event.message,
+                status: event.status,
+                period_name: event.period_name
+            });
+            
+            // Check if this is a progress update
+            if (event.progress !== undefined && event.payroll_period_id) {
+                const isStillProcessing = event.progress < 100;
+                
+                console.log('Updating processing state:', {
+                    periodId: event.payroll_period_id,
+                    progress: event.progress,
+                    isProcessing: isStillProcessing,
+                    message: event.message
+                });
+                
+                setProcessingPeriodId(event.payroll_period_id);
+                setProcessingProgress(event.progress);
+                setProcessingMessage(event.message);
+                
+                // If processing is complete, clear after delay
+                if (!isStillProcessing) {
+                    setTimeout(() => {
+                        console.log('🧹 Clearing processing state after completion');
+                        setProcessingPeriodId(null);
+                        setProcessingProgress(0);
+                        setProcessingMessage('');
+                    }, 3000);
+                }
+            } else {
+                console.warn('⚠️ Event missing progress or payroll_period_id:', {
+                    hasProgress: event.progress !== undefined,
+                    hasPeriodId: event.payroll_period_id !== undefined,
+                    progressValue: event.progress,
+                    periodIdValue: event.payroll_period_id
+                });
+            }
+            
+            console.log('============================================================');
+            
+            // Reload the page to get updated data
+            router.reload({ only: ['payrollPeriods'] });
+        };
+        
+        // Subscribe to events
+        payrollChannel.listen('.payroll.completed', handlePayrollEvent);
+        payrollPeriodChannel.listen('.payroll.completed', handlePayrollEvent);
+        
+        // Connection success handlers
+        payrollChannel.subscribed(() => {
+            console.log('✅ Successfully subscribed to private payroll channel');
+        });
+        
+        payrollPeriodChannel.subscribed(() => {
+            console.log('✅ Successfully subscribed to private payroll-period channel');
+        });
+        
+        // Error handlers
+        payrollChannel.error((error: any) => {
+            console.error('❌ Error on payroll channel:', error);
+        });
+        
+        payrollPeriodChannel.error((error: any) => {
+            console.error('❌ Error on payroll-period channel:', error);
+        });
+        
+        return () => {
+            console.log('🧹 Cleaning up Echo listeners');
+            payrollChannel.stopListening('.payroll.completed');
+            payrollPeriodChannel.stopListening('.payroll.completed');
+        };
+    }, []); // Empty dependency array to run once
+
+    // Delete confirmation states
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [itemToDelete, setItemToDelete] = useState<any>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const handleDeleteClick = (payrollPeriod: PayrollPeriod) => {
+        setItemToDelete(payrollPeriod);
+        setDeleteDialogOpen(true);
+    };
+
+    const confirmDelete = () => {
+        if(!itemToDelete) return;
+
+
+        setIsDeleting(true);
+        destroy(PayrollPeriodController.destroy(itemToDelete.id).url, {
+            onSuccess: (page) => {
+                const successMessage = (page.props as any).flash?.success || 'Payroll Period deleted successfully';
+                toast.success(successMessage);
+                setDeleteDialogOpen(false);
+                setItemToDelete(null);
+            },
+            onError: (errors) => {
+                const errorMessage = Object.values(errors).flat()[0] || 'Failed to delete payroll period';
+                toast.error(errorMessage);
+                setIsDeleting(false);
+            },
+            onFinish: () => {
+                setIsDeleting(false);
+            },
+        });
+    }
 
     const handleDelete = (period: PayrollPeriod) => {
         if (confirm('Are you sure you want to delete this payroll period?')) {
@@ -126,8 +268,7 @@ export default function Index({ payrollPeriods }: PayrollPeriodProps) {
         }
     };
 
-    const formatDate = (d: string) =>
-        new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    const formatDate = (d: string) => new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 
     const formatStatus = (status: string) => {
         const found = payroll_period_enums?.find((e) => e.value.toLowerCase() === status.toLowerCase());
@@ -141,12 +282,21 @@ export default function Index({ payrollPeriods }: PayrollPeriodProps) {
         [payrollPeriods, statusFilter]
     );
 
-    const counts = useMemo(() => ({
-        all: payrollPeriods.length,
-        open: payrollPeriods.filter((p) => p.payroll_per_status === 'open').length,
-        processing: payrollPeriods.filter((p) => p.payroll_per_status === 'processing').length,
-        completed: payrollPeriods.filter((p) => p.payroll_per_status === 'completed').length,
-    }), [payrollPeriods]);
+    // Generate counts based on enum values
+    const counts = useMemo(() => {
+        const countsMap: Record<string, number> = {
+            all: payrollPeriods.length,
+        };
+        
+        // Add counts for each enum value
+        payroll_period_enums?.forEach((enumItem) => {
+            countsMap[enumItem.value] = payrollPeriods.filter(
+                (p) => p.payroll_per_status === enumItem.value
+            ).length;
+        });
+        
+        return countsMap;
+    }, [payrollPeriods, payroll_period_enums]);
 
     // ── Column definitions for CustomTable ─────────────────────────────────
     const columns = [
@@ -175,9 +325,19 @@ export default function Index({ payrollPeriods }: PayrollPeriodProps) {
         {
             label: 'Status',
             key: 'payroll_per_status',
-            render: (row: PayrollPeriod) => (
-                <StatusBadge status={row.payroll_per_status} label={formatStatus(row.payroll_per_status)} />
-            ),
+            render: (row: PayrollPeriod) => {
+                const isProcessing = processingPeriodId === row.id;
+                // Log when rendering each row to see if condition matches
+                console.log(`📊 Rendering row ${row.id}: isProcessing=${isProcessing}, processingPeriodId=${processingPeriodId}, progress=${processingProgress}`);
+                return (
+                    <StatusBadge 
+                        status={row.payroll_per_status} 
+                        label={formatStatus(row.payroll_per_status)}
+                        isProcessing={isProcessing}
+                        progress={processingProgress}
+                    />
+                );
+            },
         },
         {
             label: 'Payment',
@@ -203,6 +363,19 @@ export default function Index({ payrollPeriods }: PayrollPeriodProps) {
     // Toolbar slot for the filter controls
     const toolbar = (
         <div className="flex flex-wrap items-center justify-between gap-3">
+            {processingPeriodId !== null && (
+                <div className="flex items-center gap-2 rounded-lg bg-primary/10 px-3 py-2">
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                    <span className="text-sm font-medium text-primary">
+                        {processingMessage || 'Processing payroll...'}
+                    </span>
+                    {processingProgress > 0 && (
+                        <span className="text-xs font-bold text-primary">
+                            {processingProgress}%
+                        </span>
+                    )}
+                </div>
+            )}
             <p className="text-sm text-muted-foreground">
                 {statusFilter === 'all'
                     ? `Showing all ${filteredPeriods.length} periods`
@@ -249,6 +422,12 @@ export default function Index({ payrollPeriods }: PayrollPeriodProps) {
             </button>
         </div>
     );
+
+    // Get color for stat card based on status
+    const getStatusColor = (status: string): 'primary' | 'secondary' | 'accent' | 'muted' => {
+        const config = getStatusConfig(status);
+        return config.color;
+    };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -302,10 +481,23 @@ export default function Index({ payrollPeriods }: PayrollPeriodProps) {
                     {/* ── Stat filter cards (only show if there are periods) ── */}
                     {payrollPeriods.length > 0 && (
                         <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                            <StatCard label="All" count={counts.all} active={statusFilter === 'all'} onClick={() => setStatusFilter('all')} color="muted" />
-                            <StatCard label="Open" count={counts.open} active={statusFilter === 'open'} onClick={() => setStatusFilter('open')} color="secondary" />
-                            <StatCard label="Processing" count={counts.processing} active={statusFilter === 'processing'} onClick={() => setStatusFilter('processing')} color="primary" />
-                            <StatCard label="Completed" count={counts.completed} active={statusFilter === 'completed'} onClick={() => setStatusFilter('completed')} color="accent" />
+                            <StatCard 
+                                label="All" 
+                                count={counts.all} 
+                                active={statusFilter === 'all'} 
+                                onClick={() => setStatusFilter('all')} 
+                                color="muted" 
+                            />
+                            {payroll_period_enums?.map(({ value, label }) => (
+                                <StatCard 
+                                    key={value}
+                                    label={label} 
+                                    count={counts[value] || 0} 
+                                    active={statusFilter === value} 
+                                    onClick={() => setStatusFilter(value)} 
+                                    color={getStatusColor(value)}
+                                />
+                            ))}
                         </div>
                     )}
 
@@ -328,21 +520,36 @@ export default function Index({ payrollPeriods }: PayrollPeriodProps) {
                             </Link>
                         </div>
                     ) : (
-                        <CustomTable
-                            title="Payroll Period Lists"
-                            columns={columns}
-                            actions={actions}
-                            data={filteredPeriods}
-                            from={1}
-                            onDelete={handleDelete}
-                            onView={(period) => { setSelectedPeriod(period); setIsModalOpen(true); }}
-                            onEdit={(period) => router.visit(PayrollPeriodController.edit(period.id).url)}
-                            toolbar={toolbar}
-                            filterEmptyState={filterEmptyState}
-                        />
+                        <>
+                            <CustomTable
+                                title="Payroll Period Lists"
+                                columns={columns}
+                                actions={actions}
+                                data={filteredPeriods}
+                                from={1}
+                                onDelete={handleDeleteClick}
+                                onView={(period) => { setSelectedPeriod(period); setIsModalOpen(true); }}
+                                onEdit={(period) => router.visit(PayrollPeriodController.edit(period.id).url)}
+                                toolbar={toolbar}
+                                filterEmptyState={filterEmptyState}
+                            />
+
+                            <DeleteConfirmationDialog 
+                                isOpen={deleteDialogOpen}
+                                onClose={() => {
+                                    setDeleteDialogOpen(false);
+                                    setItemToDelete(null);
+                                }}
+                                onConfirm={confirmDelete}
+                                title='Delete employee'
+                                itemName={itemToDelete?.name || 'this employee'}
+                                isLoading={isDeleting}
+                                confirmText='Delete employee'
+                            />
+                        </>
                     )}
 
-                    {/* ── Detail modal ── */}
+                    {/* ── Detail modal view ── */}
                     <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
                         <DialogContent className="sm:max-w-[480px] rounded-2xl">
                             <DialogHeader>
@@ -385,9 +592,11 @@ export default function Index({ payrollPeriods }: PayrollPeriodProps) {
                                     {/* Status */}
                                     <div className="rounded-xl border border-border bg-card p-4">
                                         <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Status</p>
-                                        <StatusBadge
-                                            status={selectedPeriod.payroll_per_status}
+                                        <StatusBadge 
+                                            status={selectedPeriod.payroll_per_status} 
                                             label={formatStatus(selectedPeriod.payroll_per_status)}
+                                            isProcessing={processingPeriodId === selectedPeriod.id}
+                                            progress={processingProgress}
                                         />
                                     </div>
 
@@ -401,13 +610,17 @@ export default function Index({ payrollPeriods }: PayrollPeriodProps) {
                                     <div className="rounded-xl bg-primary/5 p-4">
                                         <p className="mb-1 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Summary</p>
                                         <p className="text-sm text-foreground">
-                                            {selectedPeriod.payroll_per_status === 'completed'
-                                                ? selectedPeriod.is_paid
-                                                    ? 'This payroll period has been completed and the payout has been processed.'
-                                                    : 'This payroll period has been completed but payout has not been confirmed.'
-                                                : selectedPeriod.payroll_per_status === 'processing'
-                                                    ? 'This payroll period is currently being processed.'
-                                                    : 'This payroll period is open and pending processing.'}
+                                            {processingPeriodId === selectedPeriod.id
+                                                ? processingMessage || 'Processing payroll...'
+                                                : selectedPeriod.payroll_per_status === 'completed' || selectedPeriod.payroll_per_status === 'calculated'
+                                                    ? selectedPeriod.is_paid
+                                                        ? 'This payroll period has been completed and the payout has been processed.'
+                                                        : 'This payroll period has been completed but payout has not been confirmed.'
+                                                    : selectedPeriod.payroll_per_status === 'processing'
+                                                        ? 'This payroll period is currently being processed.'
+                                                        : selectedPeriod.payroll_per_status === 'failed'
+                                                            ? 'This payroll period failed to process. Please check logs for details.'
+                                                            : 'This payroll period is open and pending processing.'}
                                         </p>
                                     </div>
 

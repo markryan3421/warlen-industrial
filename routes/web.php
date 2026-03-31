@@ -7,6 +7,7 @@ use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AttendanceImportController;
 use App\Http\Controllers\BranchController;
 use App\Http\Controllers\ContributionVersionController;
+use App\Http\Controllers\DeductionController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\EmployeeRole\ApplicationLeaveController as EmployeeApplicationLeaveController;
 use App\Http\Controllers\HrRole\HRAttendanceController;
@@ -21,6 +22,7 @@ use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\PayrollPeriodController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\PositionController;
+use Illuminate\Container\Attributes\DB;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -87,6 +89,7 @@ Route::middleware(['auth', 'verified', 'roleBase'])->group(function () {
     });
     Route::resource('/activity-logs', ActivityLogController::class)->only(['index']);
     Route::resource('/contributions', ContributionVersionController::class);
+    Route::resource('/deductions', DeductionController::class);
 
 
     //intended for HR
