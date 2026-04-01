@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Spatie\Activitylog\Models\Activity;
 
@@ -10,105 +12,28 @@ class ActivityLogController extends Controller
 {
     public function index(Request $request)
     {
-        // Get all filter parameters
-        $search = $request->input('search', '');
-        $actionFilter = $request->input('action', 'all');
-        $modelFilter = $request->input('model', 'all');
-        $userFilter = $request->input('user', 'all');
-        $perPage = (int) $request->input('perPage', 10);
-        $currentPage = (int) $request->input('page', 1);
+        // Get search and pagination parameters
+        $search = $request->get('search', '');
+        $actionFilter = $request->get('action', 'all');
+        $modelFilter = $request->get('model', 'all');
+        $userFilter = $request->get('user', 'all');
+        $perPage = (int) $request->get('perPage', 10);
+        $currentPage = (int) $request->get('page', 1);
 
-        // ========================================================================
-        // BUILD THE QUERY
-        // ========================================================================
-        
-        $query = Activity::with('causer', 'subject');
+        // Get all activities with relationships - use cursor for large datasets
+        $activities = Activity::with('causer', 'subject')
+            ->latest()
+            ->cursor();
 
-        // Apply search filter
-        if (!empty($search)) {
-            $query->where(function($q) use ($search) {
-                $q->where('description', 'like', "%{$search}%")
-                  ->orWhere('log_name', 'like', "%{$search}%")
-                  ->orWhereHas('causer', function($q2) use ($search) {
-                      $q2->where('name', 'like', "%{$search}%")
-                         ->orWhere('email', 'like', "%{$search}%");
-                  });
-            });
-        }
-
-        // Apply action filter
-        if ($actionFilter !== 'all') {
-            $query->where('description', $actionFilter);
-        }
-
-        // Apply user filter (causer_id)
-        if ($userFilter !== 'all' && is_numeric($userFilter)) {
-            $query->where('causer_id', $userFilter);
-        }
-
-        // ========================================================================
-        // GET FILTER OPTIONS (from full dataset for dropdowns)
-        // ========================================================================
-        
-        // All distinct actions
-        $allActions = Activity::distinct()->pluck('description')->filter()->values()->toArray();
-        
-        // All distinct model names
-        $allActivitiesSample = Activity::with('subject')->limit(1000)->get();
-        $allModels = $allActivitiesSample->map(function($activity) {
-            return $this->getModelName($activity);
-        })->unique()->filter()->values()->toArray();
-        
-        // All distinct users (causers) - using relationship only
-        $allUsers = Activity::whereHas('causer')
-            ->with('causer')
-            ->select('causer_id')
-            ->distinct()
-            ->get()
-            ->map(function($activity) {
-                return [
-                    'id' => (string) $activity->causer_id,
-                    'name' => $activity->causer->name ?? $activity->causer->email ?? 'System'
-                ];
-            })
-            ->filter(function($user) {
-                return $user['id'] !== null && $user['id'] !== '';
-            })
-            ->values()
-            ->toArray();
-
-        // ========================================================================
-        // COUNTS
-        // ========================================================================
-        
-        $allTotal = Activity::count();
-        $filteredCount = $query->count();
-
-        // ========================================================================
-        // PAGINATION
-        // ========================================================================
-        
-        $activities = $query->latest()->paginate($perPage, ['*'], 'page', $currentPage);
-
-        // ========================================================================
-        // TRANSFORM DATA
-        // ========================================================================
-        
-        $transformed = collect();
+        // First, transform ALL data to get available filter options
+        $allTransformed = collect();
         foreach ($activities as $activity) {
-            $modelName = $this->getModelName($activity);
-            
-            // Apply model filter after transformation
-            if ($modelFilter !== 'all' && $modelName !== $modelFilter) {
-                continue;
-            }
-            
-            $transformed->push([
+            $allTransformed->push([
                 'id' => $activity->id,
                 'log_name' => $activity->log_name,
                 'description' => $activity->description,
                 'event' => $activity->event,
-                'subject_type' => $modelName,
+                'subject_type' => $this->getModelName($activity),
                 'subject_id' => $activity->subject_id,
                 'properties' => $activity->properties,
                 'created_at' => $activity->created_at,
@@ -121,32 +46,77 @@ class ActivityLogController extends Controller
             ]);
         }
 
-        // ========================================================================
-        // APPEND FILTERS TO PAGINATION LINKS
-        // ========================================================================
-        
-        $activities->appends([
-            'search' => $search ?: null,
-            'action' => $actionFilter !== 'all' ? $actionFilter : null,
-            'model' => $modelFilter !== 'all' ? $modelFilter : null,
-            'user' => $userFilter !== 'all' ? $userFilter : null,
-            'perPage' => $perPage,
-        ]);
+        // Get ALL unique values for filter dropdowns (from unfiltered data)
+        $allActions = $allTransformed->pluck('description')->unique()->values()->toArray();
+        $allModels = $allTransformed->pluck('subject_type')->unique()->values()->toArray();
+        $allUsers = $allTransformed->filter(function ($item) {
+            return $item['causer'] !== null;
+        })->map(function ($item) {
+            return [
+                'id' => (string) $item['causer']['id'],
+                'name' => $item['causer']['name']
+            ];
+        })->unique('id')->values()->toArray();
 
-        // ========================================================================
-        // RETURN RESPONSE
-        // ========================================================================
+        // Now apply filters to get the filtered data
+        $transformed = $allTransformed;
+
+        // Apply search filter
+        if (!empty($search)) {
+            $transformed = $transformed->filter(function ($item) use ($search) {
+                return stripos($item['description'], $search) !== false ||
+                    stripos($item['log_name'], $search) !== false ||
+                    stripos($item['subject_type'], $search) !== false ||
+                    ($item['causer'] && stripos($item['causer']['name'], $search) !== false);
+            });
+        }
+
+        // Apply action filter
+        if ($actionFilter !== 'all') {
+            $transformed = $transformed->filter(function ($item) use ($actionFilter) {
+                return $item['description'] === $actionFilter;
+            });
+        }
+
+        // Apply model filter
+        if ($modelFilter !== 'all') {
+            $transformed = $transformed->filter(function ($item) use ($modelFilter) {
+                return $item['subject_type'] === $modelFilter;
+            });
+        }
+
+        // Apply user filter
+        if ($userFilter !== 'all') {
+            $transformed = $transformed->filter(function ($item) use ($userFilter) {
+                return $item['causer'] && (string) $item['causer']['id'] === (string) $userFilter;
+            });
+        }
+
+        // Get total counts
+        $totalCount = $transformed->count();
+        $allTotal = Activity::count();
+
+        // Paginate
+        $paginated = $transformed->slice(($currentPage - 1) * $perPage, $perPage)->values();
+
+        $paginator = new LengthAwarePaginator(
+            $paginated,
+            $totalCount,
+            $perPage,
+            $currentPage,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
 
         return Inertia::render('ActivityLogs/index', [
             'activityLogs' => [
-                'data' => $transformed->values(),
-                'links' => $activities->linkCollection()->toArray(),
-                'from' => $activities->firstItem(),
-                'to' => $activities->lastItem(),
+                'data' => $paginated,
+                'links' => $paginator->linkCollection()->toArray(),
+                'from' => $paginator->firstItem(),
+                'to' => $paginator->lastItem(),
                 'total' => $allTotal,
-                'current_page' => $activities->currentPage(),
-                'last_page' => $activities->lastPage(),
-                'per_page' => $activities->perPage(),
+                'current_page' => $paginator->currentPage(),
+                'last_page' => $paginator->lastPage(),
+                'per_page' => $paginator->perPage(),
             ],
             'filters' => [
                 'search' => $search,
@@ -156,7 +126,7 @@ class ActivityLogController extends Controller
                 'perPage' => (string) $perPage,
             ],
             'totalCount' => $allTotal,
-            'filteredCount' => $filteredCount,
+            'filteredCount' => $totalCount,
             'allActions' => $allActions,
             'allModels' => $allModels,
             'allUsers' => $allUsers,
@@ -168,51 +138,49 @@ class ActivityLogController extends Controller
      */
     protected function getModelName($activity): string
     {
+        $modelName = '';
+
         // Try subject_type first
         if ($activity->subject_type) {
-            return class_basename($activity->subject_type);
+            $modelName = class_basename($activity->subject_type);
         }
-
         // Try loaded subject relationship
-        if ($activity->subject) {
-            return class_basename($activity->subject);
+        elseif ($activity->subject) {
+            $modelName = class_basename($activity->subject);
         }
-
         // Try to infer from properties
-        if ($activity->properties) {
+        elseif ($activity->properties) {
             if (isset($activity->properties['subject_type'])) {
-                return class_basename($activity->properties['subject_type']);
+                $modelName = class_basename($activity->properties['subject_type']);
             }
-            
-            if (isset($activity->properties['attributes']['model'])) {
-                return class_basename($activity->properties['attributes']['model']);
+            // For CRUD operations without explicit type
+            elseif (in_array($activity->description, ['created', 'updated', 'deleted'])) {
+                $modelName = 'Record';
             }
         }
+        // Fallback to log name
+        elseif ($activity->log_name) {
+            $name = strtolower($activity->log_name);
+            $models = ['user', 'branch', 'site', 'role', 'permission'];
 
-        // Fallback based on description
-        $description = $activity->description;
-        $logName = strtolower($activity->log_name ?? '');
-        
-        if (in_array($description, ['created', 'updated', 'deleted'])) {
-            $commonModels = ['user', 'branch', 'site', 'role', 'permission', 'employee', 'department', 'position'];
-            foreach ($commonModels as $model) {
-                if (str_contains($logName, $model)) {
-                    return ucfirst($model);
+            foreach ($models as $model) {
+                if (str_contains($name, $model)) {
+                    $modelName = ucfirst($model);
+                    break;
                 }
             }
-            return 'Record';
-        }
 
-        // For login/logout events
-        if ($description === 'login' || $description === 'logout') {
-            return 'Authentication';
+            if (empty($modelName)) {
+                $modelName = ucfirst($activity->log_name);
+            }
         }
 
         // Default fallback
-        if ($logName) {
-            return ucfirst($logName);
+        if (empty($modelName)) {
+            $modelName = 'Activity';
         }
 
-        return 'Activity';
+        // Remove special characters and apply title case
+        return preg_replace('/[^a-zA-Z0-9\s]/', ' ', Str::title($modelName));
     }
 }

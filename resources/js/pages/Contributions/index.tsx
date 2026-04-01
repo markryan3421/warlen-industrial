@@ -290,7 +290,7 @@ export default function Index({
             `}</style>
 
             <CustomToast />
-            <div className="flex h-full flex flex-col gap-4 rounded-xl p-4 mx-4">
+            <div className="flex h-full flex flex-col gap-4 rounded-xl p-4 mx-4 -mt-1">
                 
                 <div className="flex flex-row justify-between gap-4 mt-2 pp-header">
                     {/* Page header */}

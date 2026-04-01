@@ -9,19 +9,11 @@ import { CustomToast, toast } from '@/components/custom-toast';
 import { EmployeeFilterBar } from '@/components/employee/employee-filter-bar';
 import { SitesModal } from '@/components/sites-modal';
 import { Button } from '@/components/ui/button';
-import { Pagination } from '@/components/ui/pagination';
+import { CustomPagination } from '@/components/custom-pagination';
 import { BranchesTableConfig } from '@/config/tables/branch-table';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type BranchWithSites } from '@/types';
-<<<<<<< HEAD
-=======
-import { SitesModal } from '@/components/sites-modal';
-import { EmployeeFilterBar } from '@/components/employee/employee-filter-bar';
-import { Button } from '@/components/ui/button';
-import { CustomHeader } from '@/components/custom-header';
-import { CustomPagination } from '@/components/custom-pagination';
-import { DeleteConfirmationDialog } from '@/components/delete-confirmation-modal';
->>>>>>> 6f6faeaced481fcd69e83019af875de5910c446a
+import { DeleteConfirmationDialog } from "@/components/delete-confirmation-modal";
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -71,7 +63,7 @@ export default function Index({ branches, filters, totalCount, filteredCount }: 
     const { delete: destroy } = useForm();
     const [selectedBranch, setSelectedBranch] = useState<BranchWithSites | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    
+
     // Delete confirmation dialog state
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [branchToDelete, setBranchToDelete] = useState<Branches | null>(null);
@@ -129,7 +121,7 @@ export default function Index({ branches, filters, totalCount, filteredCount }: 
     // Actual delete execution
     const confirmDelete = () => {
         if (!branchToDelete) return;
-        
+
         setIsDeleting(true);
         destroy(BranchController.destroy(branchToDelete.branch_slug).url, {
             onSuccess: (page) => {

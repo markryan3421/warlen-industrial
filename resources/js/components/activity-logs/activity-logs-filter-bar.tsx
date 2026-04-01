@@ -48,10 +48,16 @@ export function ActivityLogsFilterBar({
     searchPlaceholder = "Search logs...",
 }: ActivityLogsFilterBarProps) {
 
-    // Action options with "All Actions" as default
+    // Always include all action types
+    const ALL_ACTIONS = ['created', 'updated', 'deleted'];
+    
+    // Combine available actions with all possible actions, ensuring no duplicates
+    const uniqueActions = [...new Set([...ALL_ACTIONS, ...availableActions])];
+    
+    // Action options with "All Actions" as default - just labels without counts
     const actionOptions = [
         { value: 'all', label: 'All Actions' },
-        ...availableActions.map(action => ({
+        ...uniqueActions.map(action => ({
             value: action,
             label: action.charAt(0).toUpperCase() + action.slice(1)
         }))
@@ -69,25 +75,7 @@ export function ActivityLogsFilterBar({
         ...availableUsers.map(user => ({ value: user.id, label: user.name }))
     ];
 
-    // Get display label for active filter
-    const getActionDisplay = () => {
-        if (actionFilter === 'all') return 'All Actions';
-        const found = availableActions.find(a => a === actionFilter);
-        return found ? found.charAt(0).toUpperCase() + found.slice(1) : actionFilter;
-    };
-
-    const getModelDisplay = () => {
-        if (modelFilter === 'all') return 'All Models';
-        return modelFilter;
-    };
-
-    const getUserDisplay = () => {
-        if (userFilter === 'all') return 'All Users';
-        const found = availableUsers.find(u => u.id === userFilter);
-        return found?.name || userFilter;
-    };
-
-    // Check if any filter is active
+    // Check if any filter is ACTUALLY active (non-default values or search has value)
     const hasActiveFilters = !!(
         (filters.search && searchTerm?.trim()) ||
         (filters.action && actionFilter !== 'all') ||
@@ -95,7 +83,7 @@ export function ActivityLogsFilterBar({
         (filters.user && userFilter !== 'all')
     );
 
-    // Count active filters for display
+    // Count active filters (only count non-default values)
     const activeFilterCount = [
         (filters.search && searchTerm?.trim()) ? 1 : 0,
         (filters.action && actionFilter !== 'all') ? 1 : 0,
@@ -104,6 +92,12 @@ export function ActivityLogsFilterBar({
     ].reduce((a, b) => a + b, 0);
 
     const hasOtherFilters = filters.action || filters.model || filters.user;
+
+    // Get the current display label for the action filter
+    const getActionDisplayLabel = () => {
+        const selected = actionOptions.find(opt => opt.value === actionFilter);
+        return selected?.label || 'All Actions';
+    };
 
     return (
         <div className="flex items-center gap-2 flex-wrap">
@@ -121,9 +115,9 @@ export function ActivityLogsFilterBar({
                 <div className="w-px h-5 bg-slate-200 dark:bg-slate-700 flex-shrink-0 mx-0.5" />
             )}
 
-            {/* Filter Pills */}
+            {/* Filter Dropdowns - Always show as dropdowns, not active pills */}
             <div className="flex items-center gap-1.5 flex-wrap">
-                {/* Action Filter */}
+                {/* Action Filter - Shows "All Actions" without active styling */}
                 {filters.action && onActionChange && (
                     <SingleSelectPopover
                         label="Action"
@@ -131,10 +125,11 @@ export function ActivityLogsFilterBar({
                         value={actionFilter}
                         onChange={onActionChange}
                         placeholder="All Actions"
+                        showActiveState={false}
                     />
                 )}
 
-                {/* Model Filter */}
+                {/* Model Filter - Shows "All Models" without active styling */}
                 {filters.model && onModelChange && (
                     <SingleSelectPopover
                         label="Model"
@@ -142,10 +137,11 @@ export function ActivityLogsFilterBar({
                         value={modelFilter}
                         onChange={onModelChange}
                         placeholder="All Models"
+                        showActiveState={false}
                     />
                 )}
 
-                {/* User Filter */}
+                {/* User Filter - Shows "All Users" without active styling */}
                 {filters.user && onUserChange && (
                     <SingleSelectPopover
                         label="User"
@@ -153,11 +149,12 @@ export function ActivityLogsFilterBar({
                         value={userFilter}
                         onChange={onUserChange}
                         placeholder="All Users"
+                        showActiveState={false}
                     />
                 )}
             </div>
 
-            {/* Clear All Button */}
+            {/* Clear All Button - Only shows when there are ACTIVE filters (non-default) */}
             {hasActiveFilters && onClearAll && (
                 <button
                     onClick={onClearAll}

@@ -59,17 +59,18 @@ export interface ActionConfig {
 // ============================================================================
 // UTILITY FUNCTIONS
 // ============================================================================
+
 export const formatModel = (model?: string | null): string => {
     if (!model) return 'Unknown';
     try {
         if (model.includes('\\')) {
-            const shortName = model.split('\\').pop() || model;
-            return formatFormalName(shortName);
+            return model.split('\\').pop() || model;
         }
-        return formatFormalName(model);
+        return model;
     } catch (error) {
         return 'Unknown';
     }
+
 };
 
 export const getInitials = (name?: string): string => {
@@ -81,208 +82,91 @@ export const getInitials = (name?: string): string => {
     }
 };
 
-/**
- * Format a model name to a formal, readable format
- * Examples:
- * - "AttendanceLog" -> "Attendance Log"
- * - "Employee" -> "Employee"
- * - "AttendanceExceptionStat" -> "Attendance Exception Statistics"
- * - "User" -> "User"
- * - "Role" -> "Role"
- * - "Permission" -> "Permission"
- * - "Branch" -> "Branch"
- * - "Site" -> "Site"
- * - "Department" -> "Department"
- * - "Position" -> "Position"
- * - "Schedule" -> "Schedule"
- * - "PeriodStat" -> "Period Statistics"
- */
-export const formatFormalName = (name: string): string => {
-    if (!name) return 'Unknown';
+export const formatDate = (date?: string): string => {
+    if (!date) return 'N/A';
+    try {
+        return new Date(date).toLocaleString();
+    } catch (error) {
+        return 'Invalid date';
+    }
+};
 
-    // Handle special cases for specific model names
-    const specialCases: Record<string, string> = {
-        'AttendanceLog': 'Attendance Log',
-        'AttendanceLogs': 'Attendance Logs',
-        'AttendanceExceptionStat': 'Attendance Exception Statistics',
-        'AttendanceExceptionStats': 'Attendance Exception Statistics',
-        'AttendancePeriodStat': 'Period Statistics',
-        'AttendancePeriodStats': 'Period Statistics',
-        'AttendanceSchedule': 'Attendance Schedule',
-        'AttendanceSchedules': 'Attendance Schedules',
-        'employee': 'Employee',
-        'Employees': 'Employees',
-        'User': 'User',
-        'Users': 'Users',
-        'Role': 'Role',
-        'Roles': 'Roles',
-        'Permission': 'Permission',
-        'Permissions': 'Permissions',
-        'Branch': 'Branch',
-        'Branches': 'Branches',
-        'Site': 'Site',
-        'Sites': 'Sites',
-        'Department': 'Department',
-        'Departments': 'Departments',
-        'Position': 'Position',
-        'Positions': 'Positions',
-        'Schedule': 'Schedule',
-        'Schedules': 'Schedules',
-        'PeriodStat': 'Period Statistics',
-        'PeriodStats': 'Period Statistics',
-        'ExceptionStat': 'Exception Statistics',
-        'ExceptionStats': 'Exception Statistics',
-        'ActivityLog': 'Activity Log',
-        'ActivityLogs': 'Activity Logs',
+export const getRelativeTime = (date?: string): string => {
+    if (!date) return 'N/A';
+    try {
+        const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
+        if (seconds < 60) return `${seconds}s ago`;
+        if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+        if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+        return `${Math.floor(seconds / 86400)}d ago`;
+    } catch (error) {
+        return 'N/A';
+    }
+};
+
+const actionCache = new Map<string, ActionInfo>();
+
+export const getAction = (action?: string): ActionInfo => {
+    if (!action) {
+        return { icon: <Info className="h-3 w-3" />, badge: '', text: 'Unknown' };
+    }
+    if (actionCache.has(action)) return actionCache.get(action)!;
+
+    const details: Record<string, ActionInfo> = {
+        created: { icon: <PlusCircle className="h-3 w-3" />, badge: '-m-2 -mx-3 bg-green-100 text-green-800', text: 'Created' },
+        updated: { icon: <Pencil className="h-3 w-3" />, badge: '-m-2 -mx-3 bg-blue-100 text-blue-800', text: 'Updated' },
+        deleted: { icon: <Trash2 className="h-3 w-3" />, badge: '-m-2 -mx-3 bg-red-100 text-red-800', text: 'Deleted' }
     };
 
-    // Check for special case first
-    if (specialCases[name]) {
-        return specialCases[name];
-    }
-
-    // Handle camelCase to words
-    // Example: "AttendanceLog" -> "Attendance Log"
-    const withSpaces = name.replace(/([A-Z])/g, ' $1').trim();
-
-    // Handle multiple uppercase letters in a row
-    // Example: "PDFGenerator" -> "PDF Generator"
-    const finalWithSpaces = withSpaces.replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2');
-
-    // Capitalize first letter of each word
-    const formatted = finalWithSpaces
-        .split(' ')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-        .join(' ');
-
-    // Handle special word replacements
-    let result = formatted;
-    const wordReplacements: Record<string, string> = {
-        'Stat': 'Statistics',
-        'Stats': 'Statistics',
-        'Log': 'Log',
-        'Logs': 'Logs',
-        'Info': 'Information',
-        'Mgmt': 'Management',
-        'Admin': 'Administration',
+    const result = details[action] || {
+        icon: <Info className="h-3 w-3" />,
+        badge: '',
+        text: action.charAt(0).toUpperCase() + action.slice(1)
     };
-
-    for (const [key, value] of Object.entries(wordReplacements)) {
-        result = result.replace(new RegExp(`\\b${key}\\b`, 'g'), value);
-    }
-
+    actionCache.set(action, result);
     return result;
 };
 
-/**
- * Format a field name to a formal, readable format
- * Examples:
- * - "created_at" -> "Created Date"
- * - "employee_name" -> "Employee Name"
- * - "total_hours" -> "Total Hours"
- * - "is_overtime" -> "Is Overtime"
- */
-export const formatFormalFieldName = (field: string): string => {
-    if (!field) return 'Field';
+export const getFieldIcon = (field: string): React.ReactNode => {
+    const fieldLower = field.toLowerCase();
+    if (fieldLower.includes('name')) return <User className="h-3.5 w-3.5 text-blue-500" />;
+    if (fieldLower.includes('email')) return <Mail className="h-3.5 w-3.5 text-purple-500" />;
+    if (fieldLower.includes('phone')) return <Phone className="h-3.5 w-3.5 text-green-500" />;
+    if (fieldLower.includes('address')) return <MapPin className="h-3.5 w-3.5 text-orange-500" />;
+    if (fieldLower.includes('date') || fieldLower.includes('time')) return <Calendar className="h-3.5 w-3.5 text-indigo-500" />;
+    if (fieldLower.includes('price') || fieldLower.includes('amount') || fieldLower.includes('total')) return <DollarSign className="h-3.5 w-3.5 text-emerald-500" />;
+    if (fieldLower.includes('status')) return <Activity className="h-3.5 w-3.5 text-yellow-500" />;
+    return <Database className="h-3.5 w-3.5 text-gray-400" />;
+};
 
-    // Handle special cases
-    const specialCases: Record<string, string> = {
-        'id': 'ID',
+export const formatFieldName = (field: string): string => {
+    const formatted = field.replace(/_/g, ' ');
+    const fieldMappings: Record<string, string> = {
+        'user.name': 'Name',
+        'first_name': 'First Name',
+        'last_name': 'Last Name',
+        'email': 'Email Address',
+        'phone': 'Phone Number',
         'created_at': 'Created Date',
-        'updated_at': 'Last Modified Date',
+        'updated_at': 'Updated Date',
         'deleted_at': 'Deleted Date',
-        'employee_id': 'Employee ID',
-        'employee_name': 'Employee Name',
-        'employee_code': 'Employee Code',
-        'user_id': 'User ID',
-        'user_name': 'User Name',
-        'position_id': 'Position ID',
-        'position_name': 'Position Name',
-        'department_id': 'Department ID',
-        'department_name': 'Department Name',
-        'branch_id': 'Branch ID',
+        'date': 'Date',
+        'time': 'Time',
+        'department': 'Department',
+        'position': 'Position',
+        'role': 'Role',
         'branch_name': 'Branch Name',
-        'site_id': 'Site ID',
         'site_name': 'Site Name',
-        'time_in': 'Time In',
-        'time_out': 'Time Out',
-        'total_hours': 'Total Hours',
-        'is_overtime': 'Overtime Status',
-        'late_minutes': 'Late Minutes',
-        'absence_minutes': 'Absence Minutes',
-        'total_exception_minutes': 'Total Exception Minutes',
-        'am_time_in': 'Morning Time In',
-        'am_time_out': 'Morning Time Out',
-        'pm_time_in': 'Afternoon Time In',
-        'pm_time_out': 'Afternoon Time Out',
-        'leave_early_minutes': 'Early Leave Minutes',
-        'normal_work_hours': 'Normal Work Hours',
-        'real_work_hours': 'Actual Work Hours',
-        'attended_days': 'Days Attended',
-        'absent_days': 'Days Absent',
-        'real_pay': 'Actual Pay',
-        'period_start': 'Period Start Date',
-        'period_end': 'Period End Date',
-        'shift_code': 'Shift Code',
-        'shift_label': 'Shift Label',
-        'pay_frequency': 'Pay Frequency',
-        'contract_start_date': 'Contract Start Date',
-        'contract_end_date': 'Contract End Date',
-        'employee_status': 'Employment Status',
-        'hire_date': 'Hire Date',
-        'scheduled_days': 'Scheduled Days',
+        'employee.user.name': 'Employee Name',
+        'employee_id': 'Employee ID',
     };
-
-    // Check for special case
-    if (specialCases[field]) {
-        return specialCases[field];
-    }
-
-    // Convert snake_case to words
-    const withSpaces = field.replace(/_/g, ' ');
-
-    // Capitalize first letter of each word
-    const formatted = withSpaces
-        .split(' ')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-        .join(' ');
-
-    // Handle specific word replacements
-    let result = formatted;
-    const wordReplacements: Record<string, string> = {
-        'Id': 'ID',
-        'Ip': 'IP',
-        'Url': 'URL',
-        'Api': 'API',
-        'Ssl': 'SSL',
-        'Html': 'HTML',
-        'Css': 'CSS',
-        'Js': 'JavaScript',
-        'Pdf': 'PDF',
-        'Csv': 'CSV',
-        'Xml': 'XML',
-        'Json': 'JSON',
-        'Am': 'AM',
-        'Pm': 'PM',
-        'Is': 'Is',
-    };
-
-    for (const [key, value] of Object.entries(wordReplacements)) {
-        result = result.replace(new RegExp(`\\b${key}\\b`, 'g'), value);
-    }
-
-    return result;
+    if (fieldMappings[field]) return fieldMappings[field];
+    return formatted.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
 };
 
-/**
- * Format a value to a formal, readable format
- */
-export const formatFormalValue = (value: any): string => {
-    if (value === null || value === undefined) return 'Not Specified';
+export const formatValue = (value: any): string => {
+    if (value === null || value === undefined) return '—';
     if (typeof value === 'boolean') return value ? 'Yes' : 'No';
-    if (typeof value === 'number') return value.toLocaleString();
-
-    // Handle dates
     if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value)) {
         try {
             const date = new Date(value);
@@ -291,25 +175,22 @@ export const formatFormalValue = (value: any): string => {
                     year: 'numeric',
                     month: 'long',
                     day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true
                 });
             }
         } catch (e) {
             return value;
         }
     }
-
-    // Handle objects
     if (typeof value === 'object') {
-        if (value.name) return value.name;
-        if (value.label) return value.label;
-        if (value.title) return value.title;
         try {
-            return JSON.stringify(value);
+            return JSON.stringify(value, null, 2);
         } catch (e) {
             return String(value);
         }
     }
-
     return String(value);
 };
 
@@ -338,26 +219,30 @@ export const FormatChanges = React.memo(({ log }: FormatChangesProps) => {
         const attributes = properties.attributes;
         const attributeCount = Object.keys(attributes).length;
         return (
-            <div className="space-y-4">
-                <div className="flex items-center gap-2 pb-3 border-b border-green-200">
-                    <div className="p-1.5 bg-green-100 rounded-lg">
-                        <PlusCircle className="h-4 w-4 text-green-600" />
+            <div className="space-y-3 p-3">
+                <div className="flex items-center gap-2 pb-2 border-b border-green-200">
+                    <div className="p-1 bg-green-100 rounded-md">
+                        <PlusCircle className="h-3.5 w-3.5 text-green-600" />
                     </div>
                     <div>
-                        <h3 className="font-semibold text-green-800">New Record Created</h3>
-                        <p className="text-xs text-green-600 mt-0.5">
+                        <h3 className="font-semibold text-green-800 text-sm">New Record Created</h3>
+                        <p className="text-[11px] text-green-600 mt-0.5">
                             {model} · {attributeCount} {attributeCount === 1 ? 'field' : 'fields'} recorded
                         </p>
                     </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[50vh] overflow-y-auto"
+                    style={{
+                        scrollbarWidth: 'none',
+                        msOverflowStyle: 'none',
+                    }}>
                     {Object.keys(attributes).map(field => (
-                        <div key={field} className="bg-gray-50 rounded-lg p-3 border hover:border-green-200 transition-all">
-                            <div className="flex items-center gap-2 mb-2">
+                        <div key={field} className="bg-gray-50 rounded-md p-2 border hover:border-green-200 transition-all">
+                            <div className="flex items-center gap-1.5 mb-1.5">
                                 {getFieldIcon(field)}
-                                <span className="font-medium text-gray-700 text-sm">{formatFieldName(field)}</span>
+                                <span className="font-medium text-gray-700 text-xs">{formatFieldName(field)}</span>
                             </div>
-                            <div className="text-sm text-gray-900 bg-white rounded-md px-3 py-2 border border-gray-100">
+                            <div className="text-xs text-gray-900 bg-white rounded px-2 py-1.5 border border-gray-100">
                                 {formatValue(attributes[field])}
                             </div>
                         </div>
@@ -373,48 +258,52 @@ export const FormatChanges = React.memo(({ log }: FormatChangesProps) => {
             JSON.stringify(properties.attributes?.[field]) !== JSON.stringify(properties.old?.[field])
         );
         if (!changed.length) return (
-            <div className="flex flex-col items-center justify-center py-8 text-gray-500">
-                <Info className="h-8 w-8 mb-2" />
-                <p>No changes detected</p>
+            <div className="flex flex-col items-center justify-center py-6 text-gray-500">
+                <Info className="h-6 w-6 mb-1.5" />
+                <p className="text-xs">No changes detected</p>
             </div>
         );
 
         return (
-            <div className="space-y-4">
-                <div className="flex items-center gap-2 pb-3 border-b border-blue-200">
-                    <div className="p-1.5 bg-blue-100 rounded-lg">
-                        <Pencil className="h-4 w-4 text-blue-600" />
+            <div className="space-y-3 p-3">
+                <div className="flex items-center gap-2 pb-2 border-b border-blue-200">
+                    <div className="p-1 bg-blue-100 rounded-md">
+                        <Pencil className="h-3.5 w-3.5 text-blue-600" />
                     </div>
                     <div>
-                        <h3 className="font-semibold text-blue-800">Record Updated</h3>
-                        <p className="text-xs text-blue-600 mt-0.5">
+                        <h3 className="font-semibold text-blue-800 text-sm">Record Updated</h3>
+                        <p className="text-[11px] text-blue-600 mt-0.5">
                             {model} · {changed.length} {changed.length === 1 ? 'field' : 'fields'} changed
                         </p>
                     </div>
                 </div>
-                <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+                <div className="space-y-2 max-h-[50vh] overflow-y-auto"
+                    style={{
+                        scrollbarWidth: 'none',
+                        msOverflowStyle: 'none',
+                    }}>
                     {changed.map(field => (
-                        <div key={field} className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                            <div className="flex items-center gap-2 mb-3">
+                        <div key={field} className="bg-gray-50 rounded-md p-2 border border-gray-200">
+                            <div className="flex items-center gap-1.5 mb-2">
                                 {getFieldIcon(field)}
-                                <span className="font-semibold text-gray-800 text-sm">{formatFieldName(field)}</span>
+                                <span className="font-semibold text-gray-800 text-xs">{formatFieldName(field)}</span>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                                 <div className="space-y-1">
                                     <div className="flex items-center gap-1">
-                                        <span className="text-xs font-medium text-gray-500">Previous</span>
-                                        <span className="text-[10px] text-red-400">(removed)</span>
+                                        <span className="text-[10px] font-medium text-gray-500">Previous</span>
+                                        <span className="text-[9px] text-red-400">(removed)</span>
                                     </div>
-                                    <div className="text-sm text-red-700 bg-red-50 rounded-md px-3 py-2 border border-red-100">
+                                    <div className="text-xs text-red-700 bg-red-50 rounded px-2 py-1.5 border border-red-100">
                                         {formatValue(properties.old?.[field])}
                                     </div>
                                 </div>
                                 <div className="space-y-1">
                                     <div className="flex items-center gap-1">
-                                        <span className="text-xs font-medium text-gray-500">Current</span>
-                                        <span className="text-[10px] text-green-400">(new)</span>
+                                        <span className="text-[10px] font-medium text-gray-500">Current</span>
+                                        <span className="text-[9px] text-green-400">(new)</span>
                                     </div>
-                                    <div className="text-sm text-green-700 bg-green-50 rounded-md px-3 py-2 border border-green-100">
+                                    <div className="text-xs text-green-700 bg-green-50 rounded px-2 py-1.5 border border-green-100">
                                         {formatValue(properties.attributes?.[field])}
                                     </div>
                                 </div>
@@ -431,26 +320,30 @@ export const FormatChanges = React.memo(({ log }: FormatChangesProps) => {
         const oldData = properties.old;
         const dataCount = Object.keys(oldData).length;
         return (
-            <div className="space-y-4">
-                <div className="flex items-center gap-2 pb-3 border-b border-red-200">
-                    <div className="p-1.5 bg-red-100 rounded-lg">
-                        <Trash2 className="h-4 w-4 text-red-600" />
+            <div className="space-y-3 p-3">
+                <div className="flex items-center gap-2 pb-2 border-b border-red-200">
+                    <div className="p-1 bg-red-100 rounded-md">
+                        <Trash2 className="h-3.5 w-3.5 text-red-600" />
                     </div>
                     <div>
-                        <h3 className="font-semibold text-red-800">Record Deleted</h3>
-                        <p className="text-xs text-red-600 mt-0.5">
+                        <h3 className="font-semibold text-red-800 text-sm">Record Deleted</h3>
+                        <p className="text-[11px] text-red-600 mt-0.5">
                             {model} · {dataCount} {dataCount === 1 ? 'field' : 'fields'} recorded
                         </p>
                     </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[50vh] overflow-y-auto"
+                    style={{
+                        scrollbarWidth: 'none',
+                        msOverflowStyle: 'none',
+                    }}>
                     {Object.keys(oldData).map(field => (
-                        <div key={field} className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                            <div className="flex items-center gap-2 mb-2">
+                        <div key={field} className="bg-gray-50 rounded-md p-2 border border-gray-200">
+                            <div className="flex items-center gap-1.5 mb-1.5">
                                 {getFieldIcon(field)}
-                                <span className="font-medium text-gray-700 text-sm">{formatFieldName(field)}</span>
+                                <span className="font-medium text-gray-700 text-xs">{formatFieldName(field)}</span>
                             </div>
-                            <div className="text-sm text-gray-600 bg-red-50 rounded-md px-3 py-2 border border-red-100">
+                            <div className="text-xs text-gray-600 bg-red-50 rounded px-2 py-1.5 border border-red-100">
                                 {formatValue(oldData[field])}
                             </div>
                         </div>
@@ -461,9 +354,9 @@ export const FormatChanges = React.memo(({ log }: FormatChangesProps) => {
     }
 
     return (
-        <div className="flex flex-col items-center justify-center py-8 text-gray-500">
-            <Info className="h-8 w-8 mb-2" />
-            <p>No details available for this activity</p>
+        <div className="flex flex-col items-center justify-center py-6 text-gray-500">
+            <Info className="h-6 w-6 mb-1.5" />
+            <p className="text-xs">No details available for this activity</p>
         </div>
     );
 });
@@ -496,12 +389,13 @@ export const ActivityLogsTableColumns: TableColumn[] = [
         render: (row: ActivityLog) => {
             const action = getAction(row.description);
             return (
-                <Badge className={action.badge}>
-                    <div className="flex items-center gap-1">
-                        {action.icon}
-                        {action.text}
-                    </div>
-                </Badge>
+                <div className={[
+                    action.badge,
+                    "inline-flex items-center gap-1 px-3 py-1 border-1 rounded-full text-xs font-medium"
+                ].join(' ')}>
+                    {action.icon}
+                    {action.text}
+                </div>
             );
         }
     },

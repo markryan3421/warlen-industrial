@@ -25,10 +25,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 
-<<<<<<< HEAD
 // Import Echo and Pusher for Reverb
-=======
->>>>>>> 6f6faeaced481fcd69e83019af875de5910c446a
 import { ApplicationLeavesTableConfig } from '@/config/tables/application-leave';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type BranchWithSites } from '@/types';
@@ -348,7 +345,7 @@ export default function Index({ applicationLeaves }: ApplicationLeaveProps) {
             `}</style>
 
             {/* Page Header */}
-            <div className="flex justify-between items-center p-4 mx-4 -mb-6 pp-header">
+            <div className="flex justify-between items-center p-4 mx-4 mt-2 -mb-6 pp-header">
                 <CustomHeader
                     title="Application Leaves"
                     description="List of all application leaves"
@@ -377,7 +374,7 @@ export default function Index({ applicationLeaves }: ApplicationLeaveProps) {
                 )}
 
                 {/* Empty state for no leaves at all */}
-                    <div className='mx-4'>
+                    <div className='mx-4 pp-row'>
                         <CustomTable
                             title="Application Leave Lists"
                             columns={columns}

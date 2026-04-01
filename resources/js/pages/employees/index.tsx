@@ -49,14 +49,7 @@ import type { BreadcrumbItem } from '@/types';
 
 import { EmployeeFilterBar } from '@/components/employee/employee-filter-bar';
 import { EmployeesTableConfig } from '@/config/tables/employees-table';
-<<<<<<< HEAD
-=======
-import { CustomPagination } from '@/components/custom-pagination';
-import { toast } from 'sonner';
-import { CustomHeader } from '@/components/custom-header';
-import EmployeeController from '@/actions/App/Http/Controllers/EmployeeController';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-modal';
->>>>>>> 6f6faeaced481fcd69e83019af875de5910c446a
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Employees', href: '/employees' },
@@ -348,14 +341,14 @@ export default function Index({
 
 
             {/* Page header */}
-            <div className="flex justify-between items-center mx-8 mt-4 -mb-2 pp-header">
+            <div className="grid grid-rows-1 justify-center mx-8 md:grid-cols-2 md:mx-8 mt-3 lg:flex lg:justify-between items-center lg:mx-8 lg:mt-4 lg:-mb-2 pp-header">   
                 <CustomHeader
                     icon={<Users />}
                     title="Employees"
                     description="Manage your workforce: add, edit, and organize employee records with ease."
                 />
                 <Link href="/employees/create">
-                    <Button className="hover:cursor-pointer">
+                    <Button className="hover:cursor-pointer flex ml-auto">
                         <UserPlus className="h-5 w-5" />
                         <div className="flex flex-col items-start leading-tight">
                             <span className="text-sm font-medium">Create Employee</span>
