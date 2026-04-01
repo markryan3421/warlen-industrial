@@ -203,7 +203,7 @@ export default function Edit({ payrollPeriod }: EditProps) {
                         </div>
 
                         <Link
-                            href="/payroll-periods"
+                            href="/hr/payroll-periods"
                             className="inline-flex items-center gap-2 rounded-xl border-2 border-primary px-4 py-2 text-sm font-semibold text-primary transition-all duration-200
                                        hover:bg-primary hover:text-primary-foreground active:scale-95
                                        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
