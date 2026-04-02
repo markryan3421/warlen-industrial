@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Spatie\Activitylog\Contracts\Activity;
 use Spatie\Activitylog\LogOptions;
@@ -83,7 +84,7 @@ class Employee extends Model
             ->logOnlyDirty();
     }
 
-   protected function getActivityDisplayNames(): array
+    protected function getActivityDisplayNames(): array
     {
         return [
             'position.pos_name' => 'Position',
@@ -101,6 +102,7 @@ class Employee extends Model
             'employee_status' => 'Employee Status',
         ];
     }
+
     /**
      * Get status badge color for UI
      */

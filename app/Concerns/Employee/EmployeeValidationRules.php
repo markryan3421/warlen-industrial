@@ -39,7 +39,7 @@ trait EmployeeValidationRules
                 'nullable',
                 'string',
                 'min:8',
-                'regex:/^[^\p{Emoji}]*$/u',
+                //'regex:/^[^\p{Emoji}]*$/u',
                 // 'regex:/[A-Z]/',      // At least one uppercase letter
                 // 'regex:/[a-z]/',      // At least one lowercase letter
                 // 'regex:/[0-9]/',      // At least one number
