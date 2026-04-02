@@ -1,3 +1,4 @@
+import { Head, Link } from '@inertiajs/react';
 import { ArrowUpRight, Circle, Minus } from 'lucide-react';
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -8,10 +9,9 @@ import {
 import Footer from '@/components/footer';
 import { SectionCards } from '@/components/section-cards';
 import SystemAlert from '@/components/system-alert';
-import { ChartConfig } from '@/components/ui/chart';
+import type { ChartConfig } from '@/components/ui/chart';
 import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes';
-import { Head, Link } from '@inertiajs/react';
 
 import type { BreadcrumbItem } from '@/types';
 

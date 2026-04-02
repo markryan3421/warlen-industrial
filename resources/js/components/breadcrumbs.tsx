@@ -1,4 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
+import { ChevronRight, Slash } from 'lucide-react'; // Import icons
 import { Fragment } from 'react';
 import {
     Breadcrumb,
@@ -8,9 +9,8 @@ import {
     BreadcrumbPage,
     BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
-import { ChevronRight, Slash } from 'lucide-react'; // Import icons
-import type { BreadcrumbItem as BreadcrumbItemType } from '@/types';
 import { UserInfo } from '@/components/user-info';
+import type { BreadcrumbItem as BreadcrumbItemType } from '@/types';
 
 export function Breadcrumbs({
     breadcrumbs,

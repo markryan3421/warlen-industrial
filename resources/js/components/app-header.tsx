@@ -1,5 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
 import { BookOpen, Folder, LayoutGrid, Menu, Search,Clipboard } from 'lucide-react';
+import ApplicationLeaveController from  '@/actions/App/Http/Controllers/EmployeeRole/ApplicationLeaveController';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -35,7 +36,6 @@ import { dashboard } from '@/routes';
 import type { BreadcrumbItem, NavItem } from '@/types';
 import AppLogo from './app-logo';
 import AppLogoIcon from './app-logo-icon';
-import ApplicationLeaveController from  '@/actions/App/Http/Controllers/EmployeeRole/ApplicationLeaveController';
 
 type Props = {
     breadcrumbs?: BreadcrumbItem[];

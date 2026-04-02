@@ -19,7 +19,7 @@ declare global {
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Payroll',
-        href: '/payroll',
+        href: '/payrolls',
     },
 ];
 
@@ -209,7 +209,7 @@ export default function Index({
 
         console.log('Applying filters:', params);
 
-        router.get('/payroll', params, {
+        router.get('/payrolls', params, {
             preserveState: true,
             preserveScroll: true,
             replace: true,
@@ -365,7 +365,7 @@ export default function Index({
         setSelectedPosition("all");
         setSearchTerm("");
 
-        router.get('/payroll', {}, {
+        router.get('/payrolls', {}, {
             preserveState: true,
             preserveScroll: true,
             replace: true,
@@ -404,7 +404,7 @@ export default function Index({
 
     const handleDeletePayroll = (id: string | number) => {
         if (confirm("Are you sure you want to delete this payroll record?")) {
-            destroy(`/payroll/${id}`, {
+            destroy(`/payrolls/${id}`, {
                 onSuccess: () => {
                     toast.success('Payroll record deleted successfully');
                     applyFilters();

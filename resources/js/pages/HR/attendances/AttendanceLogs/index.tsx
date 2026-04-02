@@ -2,6 +2,7 @@ import { Head, router, useForm } from '@inertiajs/react';
 import { Clock, ScrollText } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
+import AttendanceController from "@/actions/App/Http/Controllers/HrRole/HRAttendanceController";
 import { AttendanceLogTimeline } from '@/components/attendance/attendance-log-view';
 import { CustomPagination } from '@/components/custom-pagination';
 import { CustomTable } from '@/components/custom-table';
@@ -11,11 +12,10 @@ import { Sheet } from '@/components/ui/sheet';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AttendanceLogsTableConfig } from '@/config/tables/attendace-logs';
 import AppLayout from '@/layouts/app-layout';
-import type { BreadcrumbItem } from '@/types';
 import HrLayout from '@/layouts/hr-layout';
+import type { BreadcrumbItem } from '@/types';
 
 //import AttendanceController from '../../../actions/App/Http/Controllers/AttendanceController';
-import AttendanceController from "@/actions/App/Http/Controllers/HrRole/HRAttendanceController";
 
 const breadcrumbs: BreadcrumbItem[] = [
   {

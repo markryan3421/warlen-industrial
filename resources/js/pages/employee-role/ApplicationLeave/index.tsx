@@ -1,11 +1,21 @@
-import AppLayout from '@/layouts/emp-layout';
-import { Button } from "@/components/ui/button";
-import { type BreadcrumbItem, type BranchWithSites } from '@/types';
 import { Head, Link, useForm, router } from '@inertiajs/react';
-import ApplicationLeaveController from '@/actions/App/Http/Controllers/EmployeeRole/ApplicationLeaveController';
-import { useState, useEffect } from 'react';
+import Echo from 'laravel-echo';
 import { CalendarDays, PlusCircle, Bell, X } from 'lucide-react';
 
+// Import Echo and Pusher for Reverb
+import Pusher from 'pusher-js';
+import { useState, useEffect } from 'react';
+import ApplicationLeaveController from '@/actions/App/Http/Controllers/EmployeeRole/ApplicationLeaveController';
+import { Button } from "@/components/ui/button";
+
+
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
 import {
     Table,
     TableBody,
@@ -15,14 +25,8 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog";
+import AppLayout from '@/layouts/emp-layout';
+import { type BreadcrumbItem, type BranchWithSites } from '@/types';
 
 // Declare global window interface for Echo
 declare global {

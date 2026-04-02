@@ -1,4 +1,4 @@
-import { ActionConfig } from "@/components/custom-table";
+import type { ActionConfig } from "@/components/custom-table";
 import { formatDate } from "@/lib/utils"; // import your date formatter
 
 export const ApplicationLeavesTableConfig = {

@@ -33,7 +33,7 @@ export function DeleteConfirmationDialog({
   cancelText = "Cancel",
 }: DeleteConfirmationDialogProps) {
   const displayDescription = itemName 
-    ? `Are you sure you want to delete "${itemName}"? This action cannot be undone.`
+    ? `Are you sure you want to delete ${itemName}? This action cannot be undone.`
     : description;
 
   return (
@@ -55,7 +55,7 @@ export function DeleteConfirmationDialog({
         
         <DialogFooter className="gap-2 sm:gap-0">
           <Button
-          className="me-2"
+          className="me-2 hover:cursor-pointer"
             variant="outline"
             onClick={onClose}
             disabled={isLoading}
@@ -66,7 +66,7 @@ export function DeleteConfirmationDialog({
             variant="destructive"
             onClick={onConfirm}
             disabled={isLoading}
-            className="gap-2"
+            className="gap-2 hover:cursor-pointer"
           >
             {isLoading ? (
               <>

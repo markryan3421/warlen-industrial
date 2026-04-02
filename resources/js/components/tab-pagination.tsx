@@ -1,7 +1,7 @@
 import { router } from '@inertiajs/react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface LinkProps {
     active: boolean;
@@ -101,7 +101,7 @@ export const TabPagination = ({
         const windowSize = 5;
         
         let start = Math.max(1, currentPage - Math.floor(windowSize / 2));
-        let end = Math.min(lastPage, start + windowSize - 1);
+        const end = Math.min(lastPage, start + windowSize - 1);
         
         if (end - start + 1 < windowSize) {
             start = Math.max(1, end - windowSize + 1);

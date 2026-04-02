@@ -1,4 +1,5 @@
 import { Head, router, useForm } from "@inertiajs/react";
+import AttendanceController from "@/actions/App/Http/Controllers/HrRole/HRAttendanceController";
 import { CustomTable } from "@/components/custom-table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,7 +7,6 @@ import { Pagination } from "@/components/ui/pagination";
 import { AttendanceSchedulesTableConfig } from "@/config/tables/attendance-schedules-table";
 import HrLayout from '@/layouts/hr-layout';
 import { type BreadcrumbItem } from '@/types';
-import AttendanceController from "@/actions/App/Http/Controllers/HrRole/HRAttendanceController";
 
 const breadcrumbs: BreadcrumbItem[] = [
     {

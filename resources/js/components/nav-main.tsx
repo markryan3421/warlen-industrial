@@ -7,8 +7,8 @@ import {
     SidebarGroupLabel
 } from '@/components/ui/sidebar';
 import { useCurrentUrl } from '@/hooks/use-current-url';
-import type { NavItem } from '@/types';
 import { cn } from '@/lib/utils';
+import type { NavItem } from '@/types';
 
 export function NavMain({ items = [], label }: { items: NavItem[], label: string }) {
     const { isCurrentUrl } = useCurrentUrl();
@@ -26,7 +26,6 @@ export function NavMain({ items = [], label }: { items: NavItem[], label: string
                                 asChild
                                 isActive={isCurrentUrl(item.href)}
                                 tooltip={{ children: item.title }}
-                                className="group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:!px-0"
                             >
                                 <Link
                                     href={item.href}
@@ -35,9 +34,9 @@ export function NavMain({ items = [], label }: { items: NavItem[], label: string
                                     preserveState={true}
                                 >
                                     {item.icon && (
-                                        <item.icon className="shrink-0 transition-transform duration-200 group-data-[collapsible=icon]:scale-110" />
+                                        <item.icon className="shrink-0 transition-transform duration-200 ease-in-out group-data-[collapsible=icon]:scale-115 group-data-[collapsible=icon]:ml-0 group-data-[collapsible=icon]:transition-transform duration-300 ease-in-out" />
                                     )}
-                                    <span className="transition-all duration-200 ease-in-out group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:overflow-hidden group-data-[collapsible=icon]:opacity-0">
+                                    <span className="transition-opacity duration-200 ease-linear group-data-[collapsible=icon]:opacity-0">
                                         {item.title}
                                     </span>
                                 </Link>

@@ -1,17 +1,19 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
-import AppLayout from '@/layouts/app-layout';
-import type { BreadcrumbItem } from '@/types';
-import { Button } from '@/components/ui/button';
-import { Briefcase, BriefcaseBusiness, Search } from 'lucide-react';
+import { Briefcase, Search , BriefcaseBusiness} from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { TableSearchHeader } from '@/components/table-search-header';
-import { CustomToast, toast } from '@/components/custom-toast';
-import PositionController from '@/actions/App/Http/Controllers/PositionController';
-import { PositionTableConfig } from '@/config/tables/position-table';
-import { CustomTable } from '@/components/custom-table';
-import { DeleteConfirmationDialog } from '@/components/delete-confirmation-modal';
-import { CustomPagination } from '@/components/custom-pagination';
+import { Button } from '@/components/ui/button';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import AppLayout from '@/layouts/app-layout';
+import type { BreadcrumbItem } from '@/types';
+import { CustomToast } from '@/components/custom-toast';
 import { CustomHeader } from '@/components/custom-header';
+import { CustomTable } from '@/components/custom-table';
+import { CustomPagination } from '@/components/custom-pagination';
+import { PositionTableConfig } from '@/config/tables/position-table';
+import PositionController from '@/actions/App/Http/Controllers/PositionController';
+import { toast } from '@/components/custom-toast';
+import { DeleteConfirmationDialog } from '@/components/delete-confirmation-modal';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {

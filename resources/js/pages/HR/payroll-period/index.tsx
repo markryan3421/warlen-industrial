@@ -18,19 +18,18 @@ import { CustomToast, toast } from '@/components/custom-toast';
 import { CustomHeader } from '@/components/custom-header';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-modal';
 
-// ── Types ─────────────────────────────────────────────────────────────────────
-interface PayrollPeriod {
-    id: number;
-    start_date: string;
-    end_date: string;
-    pay_date: string;
-    payroll_per_status: string;
-    is_paid: boolean;
-    created_at?: string;
-    updated_at?: string;
+import {
+    Table,
+    TableBody,
+    TableCaption,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
+interface PayrollPeriodProps { 
+    payrollPeriods: PayrollPeriod[]; 
 }
-
-interface PayrollPeriodProps { payrollPeriods: PayrollPeriod[]; }
 interface PageProps {
     payroll_period_enums: Array<{ value: string; label: string; }>;
     [key: string]: any;

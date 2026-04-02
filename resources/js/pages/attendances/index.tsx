@@ -1,15 +1,16 @@
 import { Head, useForm, router } from '@inertiajs/react';
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Calendar, Sheet, ChartSpline, Clock, ScrollText, Upload, Loader2 } from 'lucide-react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 
 // Components
-import AppLayout from '@/layouts/app-layout';
+import { AttendanceLogTimeline } from '@/components/attendance/attendance-log-view';
+import { ExceptionStatsTimeline } from '@/components/attendance/exception-stats-view';
 import BiometricImport from '@/components/biometric-import';
+import { CustomHeader } from '@/components/custom-header'
 import { CustomTable } from '@/components/custom-table';
 import { TabPagination } from '@/components/tab-pagination';
-import { Input } from '@/components/ui/input';
+import { TableSkeleton } from '@/components/table-skeleton';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     Dialog,
     DialogContent,
@@ -18,19 +19,18 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog";
-import { ExceptionStatsTimeline } from '@/components/attendance/exception-stats-view';
-import { AttendanceLogTimeline } from '@/components/attendance/attendance-log-view';
-import { TableSkeleton } from '@/components/table-skeleton';
-import { CustomHeader } from '@/components/custom-header'
+import { Input } from '@/components/ui/input';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 // Types
+import { AttendanceLogsTableConfig } from '@/config/tables/attendace-logs';
+import { AttendanceExceptionStatsTableConfig } from '@/config/tables/attendance-exception-stats';
+import { AttendancePeriodStatsTableConfig } from '@/config/tables/attendance-period-stats';
+import { AttendanceSchedulesTableConfig } from '@/config/tables/attendance-schedules-table';
+import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 
 // Table Configurations
-import { AttendanceLogsTableConfig } from '@/config/tables/attendace-logs';
-import { AttendanceExceptionStatsTableConfig } from '@/config/tables/attendance-exception-stats';
-import { AttendanceSchedulesTableConfig } from '@/config/tables/attendance-schedules-table';
-import { AttendancePeriodStatsTableConfig } from '@/config/tables/attendance-period-stats';
 
 // ============================================================================
 // BREADCRUMBS CONFIGURATION

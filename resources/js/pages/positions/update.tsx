@@ -1,12 +1,16 @@
 import { Head, Link, useForm } from '@inertiajs/react';
-import { ArrowLeft, Save, X, DollarSign, Briefcase, CheckCircle } from 'lucide-react';
+import InputError from '@/components/input-error';
+import { SectionCards } from '@/components/section-cards';
+import { ChartAreaInteractive } from '@/components/section-chart';
+// import { PlaceholderPattern } from '@/components/ui/placeholder-pattern';
+import { StaticTable } from '@/components/static-table';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch'; // Import Switch component
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import InputError from '@/components/input-error';
-import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
+import { ArrowLeft, Briefcase, CheckCircle, DollarSign, Save, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const breadcrumbs: BreadcrumbItem[] = [
