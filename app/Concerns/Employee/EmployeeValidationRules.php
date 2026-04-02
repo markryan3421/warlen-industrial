@@ -3,6 +3,7 @@
 namespace App\Concerns\Employee;
 
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 
 trait EmployeeValidationRules
 {
@@ -38,7 +39,7 @@ trait EmployeeValidationRules
             'password' => [
                 'nullable',
                 'string',
-                'min:8',
+                Password::default()
                 //'regex:/^[^\p{Emoji}]*$/u',
                 // 'regex:/[A-Z]/',      // At least one uppercase letter
                 // 'regex:/[a-z]/',      // At least one lowercase letter
