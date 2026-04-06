@@ -36,23 +36,14 @@ Route::get('/', function () {
 })->name('home');
 
 
-Route::middleware(['auth', 'verified', 'roleBase'])->group(function () {
+Route::middleware(['auth','admin' ,'auth.session'])->group(function () {
 
     Route::get('payroll', function () {
         return Inertia::render('payroll/index');
     });
-
     //admin dashboard
     Route::get('dashboard', AdminDashboardController::class)->name('dashboard');
-
-    //employee dashboard
-    Route::get('employee/dashboard', [EmployeeDashboardController::class, 'index'])->name('employee.dashboard');
-
-    //hr dashboard
-    Route::get('hr/dashboard', function () {
-        return Inertia::render('HR/dashboard');
-    })->name('hr.dashboard');
-
+    
     Route::resource('branches', BranchController::class)->except(['show']);
     Route::delete('/branches/{branch:branch_slug}', [BranchController::class, 'destroy'])->name('branches.destroy');
     Route::resource('positions', PositionController::class)->except(['show']);
@@ -84,9 +75,11 @@ Route::middleware(['auth', 'verified', 'roleBase'])->group(function () {
 //Intended for employee
 Route::middleware(['auth', 'employee', 'auth.session'])->group(function () {
 
-    Route::get('employee/dashboard', function () {
-        return Inertia::render('employee-role/dashboard');
-    })->name('employee.dashboard');
+    // Route::get('employee/dashboard', function () {
+    //     return Inertia::render('employee-role/dashboard');
+    // })->name('employee.dashboard');
+
+     Route::get('employee/dashboard', [EmployeeDashboardController::class, 'index'])->name('employee.dashboard');
 
     Route::resource('employee/application-leave', EmployeeApplicationLeaveController::class)->only(['create', 'index', 'store', 'update', 'edit'])->names([
         'index' => 'employee.application-leave.index',

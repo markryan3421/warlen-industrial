@@ -12,7 +12,7 @@ import { store } from '@/actions/App/Http/Controllers/EmployeeRole/ApplicationLe
 import { useEffect, useState, useMemo } from 'react';
 import { format, differenceInDays, addDays } from 'date-fns';
 import { type DateRange } from 'react-day-picker';
-
+import AppLayout from '@/layouts/emp-layout';
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Leave Applications', href: '/employee/application-leave' },
     { title: 'Create Leave Application', href: '/employee/application-leave/create' },
