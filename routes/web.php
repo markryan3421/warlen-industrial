@@ -8,6 +8,7 @@ use App\Http\Controllers\AttendanceImportController;
 use App\Http\Controllers\BranchController;
 use App\Http\Controllers\ContributionVersionController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\EmployeeDashboardController;
 use App\Http\Controllers\EmployeeRole\ApplicationLeaveController as EmployeeApplicationLeaveController;
 use App\Http\Controllers\HrRole\HRAttendanceController;
 use App\Http\Controllers\HrRole\HRAttendanceImportController;
@@ -40,12 +41,10 @@ Route::middleware(['auth', 'verified', 'roleBase'])->group(function () {
     });
 
     //admin dashboard
-    Route::get('dashboard',AdminDashboardController::class)->name('dashboard');
+    Route::get('dashboard', AdminDashboardController::class)->name('dashboard');
 
     //employee dashboard
-    Route::get('employee/dashboard', function () {
-        return Inertia::render('employee-role/dashboard');
-    })->name('employee.dashboard');
+    Route::get('employee/dashboard', [EmployeeDashboardController::class, 'index'])->name('employee.dashboard');
 
     //hr dashboard
     Route::get('hr/dashboard', function () {
