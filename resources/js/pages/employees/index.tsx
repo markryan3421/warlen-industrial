@@ -262,21 +262,52 @@ export default function Index({
     };
 
     const confirmDelete = () => {
-        if(!itemToDelete) return;
-
+        if (!itemToDelete) return;
 
         setIsDeleting(true);
-        destroy(EmployeeController.destroy(itemToDelete.slug_emp).url, {
+
+        // Get the destroy URL from the controller
+        const destroyUrl = EmployeeController.destroy(itemToDelete.slug_emp).url;
+
+        destroy(destroyUrl, {
             onSuccess: (page) => {
-                const successMessage = (page.props as any).flash?.success || 'Employee deleted successfully';
-                toast.success(successMessage);
-                setDeleteDialogOpen(false);
-                setItemToDelete(null);
+                // Check for both flash success and error messages
+                const flash = (page.props as any).flash;
+
+                if (flash?.error) {
+                    // If there's an error message from the controller
+                    toast.error(flash.error);
+                    setDeleteDialogOpen(false);
+                    setItemToDelete(null);
+                } else if (flash?.success) {
+                    // Success message
+                    toast.success(flash.success);
+                    setDeleteDialogOpen(false);
+                    setItemToDelete(null);
+                } else {
+                    // Fallback success message
+                    toast.success('Employee deleted successfully');
+                    setDeleteDialogOpen(false);
+                    setItemToDelete(null);
+                }
             },
             onError: (errors) => {
-                const errorMessage = Object.values(errors).flat()[0] || 'Failed to delete employee';
+                // Handle validation/other errors from Laravel
+                let errorMessage = 'Failed to delete employee';
+
+                if (typeof errors === 'object') {
+                    // If errors is an object with field-specific errors
+                    const firstError = Object.values(errors)[0];
+                    if (typeof firstError === 'string') {
+                        errorMessage = firstError;
+                    } else if (Array.isArray(firstError) && firstError.length > 0) {
+                        errorMessage = firstError[0];
+                    }
+                } else if (typeof errors === 'string') {
+                    errorMessage = errors;
+                }
+
                 toast.error(errorMessage);
-                setIsDeleting(false);
             },
             onFinish: () => {
                 setIsDeleting(false);
@@ -341,7 +372,7 @@ export default function Index({
 
 
             {/* Page header */}
-            <div className="grid grid-rows-1 justify-center mx-8 md:grid-cols-2 md:mx-8 mt-3 lg:flex lg:justify-between items-center lg:mx-8 lg:mt-4 lg:-mb-2 pp-header">   
+            <div className="grid grid-rows-1 justify-center mx-8 md:grid-cols-2 md:mx-8 mt-3 lg:flex lg:justify-between items-center lg:mx-8 lg:mt-4 lg:-mb-2 pp-header">
                 <CustomHeader
                     icon={<Users />}
                     title="Employees"
@@ -459,7 +490,7 @@ export default function Index({
                             resourceName="employee"
                         />
 
-                        <DeleteConfirmationDialog 
+                        <DeleteConfirmationDialog
                             isOpen={deleteDialogOpen}
                             onClose={() => {
                                 setDeleteDialogOpen(false);

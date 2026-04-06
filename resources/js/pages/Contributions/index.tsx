@@ -29,6 +29,7 @@ import { ContributionModalConfig } from '@/config/forms/contribution-modal-view'
 import { ContributionTableConfig } from '@/config/tables/contribution-table';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
+import { DeleteConfirmationDialog } from '@/components/delete-confirmation-modal';
 
 // Helper function to generate route URLs
 const route = (name: string, params?: any) => {
