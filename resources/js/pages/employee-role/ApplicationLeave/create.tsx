@@ -1,5 +1,4 @@
 import { Head, useForm } from '@inertiajs/react';
-import { store } from '@/actions/App/Http/Controllers/EmployeeRole/ApplicationLeaveController';
 import InputError from '@/components/input-error';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,7 +12,7 @@ import { store } from '@/actions/App/Http/Controllers/EmployeeRole/ApplicationLe
 import { useEffect, useState, useMemo } from 'react';
 import { format, differenceInDays, addDays } from 'date-fns';
 import { type DateRange } from 'react-day-picker';
-
+import AppLayout from '@/layouts/emp-layout';
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Leave Applications', href: '/employee/application-leave' },
     { title: 'Create Leave Application', href: '/employee/application-leave/create' },
