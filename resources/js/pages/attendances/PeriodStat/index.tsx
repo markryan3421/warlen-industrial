@@ -1,17 +1,17 @@
 import { Head, router, useForm } from "@inertiajs/react";
+import { BarChart, ScrollText, Sheet } from "lucide-react";
+import { useState } from "react";
+import { AttendancePeriodStatView, AttendanceStatsVisualTable } from "@/components/attendance/attendance-period-stat-view";
+import { CustomPagination } from "@/components/custom-pagination";
 import { CustomTable } from "@/components/custom-table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Pagination } from "@/components/ui/pagination";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AttendancePeriodStatsTableConfig } from "@/config/tables/attendance-period-stats";
 import AppLayout from "@/layouts/app-layout";
 import { type BreadcrumbItem } from '@/types';
 import AttendanceController from '../../../actions/App/Http/Controllers/AttendanceController';
-import { CustomPagination } from "@/components/custom-pagination";
-import { AttendancePeriodStatView, AttendanceStatsVisualTable } from "@/components/attendance/attendance-period-stat-view";
-import { useState } from "react";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart, ScrollText, Sheet } from "lucide-react";
 
 const breadcrumbs: BreadcrumbItem[] = [
   {

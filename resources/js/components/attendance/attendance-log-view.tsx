@@ -23,6 +23,7 @@ import { CalendarIcon, ChevronLeft, ChevronRight, Clock, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react';
 
 import { Calendar } from '@/components/ui/calendar';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '@/components/ui/select';
@@ -31,7 +32,6 @@ import { KEYFRAMES } from '@/utils/AttendanceLog/attendance-log.constants';
 import type { AttendanceLog, AttendanceLogTimelineProps } from '@/utils/AttendanceLog/attendance-log.types';
 import { calculateDuration, formatTimeDisplay, getLogStatus, isEarlyOut, isHalfDay, isLate, resolveTime } from '@/utils/AttendanceLog/attendance-log.utils';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 // ─── EmployeeDetailView ───────────────────────────────────────────────────────
 /**

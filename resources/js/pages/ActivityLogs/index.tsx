@@ -1,859 +1,350 @@
-import AppLayout from '@/layouts/app-layout';
-import { Button } from "@/components/ui/button";
-import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
+import { X, Bell, History, Eye, PlusCircle, Pencil, Trash2, Activity, Database, Search } from 'lucide-react';
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import { X, Bell, History, Eye, PlusCircle, Pencil, Trash2, Info, User, Calendar, Database, MapPin, Activity, DollarSign, Mail, Phone } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { CustomPagination } from '@/components/custom-pagination';
 import { CustomHeader } from '@/components/custom-header';
-import { CustomTable } from '@/components/custom-table'; // Import CustomTable
-import Echo from 'laravel-echo';
-import Pusher from 'pusher-js';
+import { CustomTable } from '@/components/custom-table';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import AppLayout from '@/layouts/app-layout';
+import { type BreadcrumbItem } from '@/types';
+import { cn } from '@/lib/utils';
 
-declare global { interface Window { Pusher: any; Echo: any; } }
+import { ActivityLogsFilterBar } from '@/components/activity-logs/activity-logs-filter-bar';
+import { 
+    ActivityLogsTableActions, 
+    ActivityLogsTableColumns,
+    FormatChanges
+} from '@/config/tables/activity-logs';
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Activity Logs', href: '/activity-logs' }];
 
-interface ActivityLog {
-    id: number;
-    log_name: string;
-    description: string;
-    subject_type?: string | null;
-    subject_id?: number;
-    causer_type?: string | null;
-    causer_id?: number;
-    causer?: { id: number; name: string; email: string; } | null;
-    properties?: {
-        attributes?: Record<string, any>;
-        old?: Record<string, any>;
-    } | null;
-    created_at: string;
-    updated_at: string;
-    event?: string | null;
-}
-
-interface PaginationLink {
-    active: boolean;
-    label: string;
-    url: string | null;
-}
-
 interface ActivityLogsProps {
     activityLogs: {
-        data: ActivityLog[];
-        links: PaginationLink[];
+        data: any[];
+        links: any[];
         from: number;
         to: number;
         total: number;
-    } | ActivityLog[];
-    filters?: {
-        search: string;
-        perPage: string;
+        current_page: number;
+        last_page: number;
+        per_page: number;
     };
+    filters?: { search?: string; action?: string; model?: string; user?: string; perPage?: string };
     totalCount?: number;
     filteredCount?: number;
+    allActions?: string[];
+    allModels?: string[];
+    allUsers?: Array<{ id: string; name: string }>;
 }
 
-// Optimized helpers with caching and safe handling
-const formatModel = (m?: string | null) => {
-    if (!m) return 'Unknown';
-    try {
-        if (m.includes('\\')) {
-            return m.split('\\').pop() || m;
-        }
-        return m;
-    } catch (error) {
-        console.error('Error formatting model:', error, m);
-        return 'Unknown';
-    }
-};
-
-const getInitials = (n?: string) => {
-    if (!n) return 'SY';
-    try {
-        return n.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
-    } catch (error) {
-        return 'SY';
-    }
-};
-
-const formatDate = (d?: string) => {
-    if (!d) return 'N/A';
-    try {
-        return new Date(d).toLocaleString();
-    } catch (error) {
-        return 'Invalid date';
-    }
-};
-
-const getTime = (d?: string) => {
-    if (!d) return 'N/A';
-    try {
-        const s = Math.floor((Date.now() - new Date(d).getTime()) / 1000);
-        return s < 60 ? `${s}s` : s < 3600 ? `${Math.floor(s / 60)}m` : s < 86400 ? `${Math.floor(s / 3600)}h` : `${Math.floor(s / 86400)}d`;
-    } catch (error) {
-        return 'N/A';
-    }
-};
-
-const actionCache = new Map();
-const getAction = (a?: string) => {
-    if (!a) {
-        return { icon: <Info className="h-3 w-3" />, badge: 'bg-gray-100 text-gray-800', text: 'Unknown' };
-    }
-    if (actionCache.has(a)) return actionCache.get(a);
-    const details = {
-        created: { icon: <PlusCircle className="h-3 w-3" />, badge: 'bg-green-100 text-green-800', text: 'Created' },
-        updated: { icon: <Pencil className="h-3 w-3" />, badge: 'bg-blue-100 text-blue-800', text: 'Updated' },
-        deleted: { icon: <Trash2 className="h-3 w-3" />, badge: 'bg-red-100 text-red-800', text: 'Deleted' }
-    }[a] || { icon: <Info className="h-3 w-3" />, badge: 'bg-gray-100 text-gray-800', text: a };
-    actionCache.set(a, details);
-    return details;
-};
-
-// FormatChanges component with safe handling
-// FormatChanges component with formal and professional formatting
-const FormatChanges = React.memo(({ log }: { log: ActivityLog }) => {
-    const p = log.properties;
-    if (!p) return <span>No details available</span>;
-
-    const model = formatModel(log.subject_type);
-
-    // Helper function to format field names to formal titles
-    const formatFieldName = (field: string): string => {
-        // Replace underscores with spaces
-        let formatted = field.replace(/_/g, ' ');
-
-        // Common field name mappings for better readability
-        const fieldMappings: Record<string, string> = {
-
-            // Personal information
-            'user.name': 'Name',
-            'first_name': 'First Name',
-            'last_name': 'Last Name',
-            'middle_name': 'Middle Name',
-            'full_name': 'Full Name',
-            'email': 'Email Address',
-            'phone': 'Phone Number',
-
-            // Dates
-            'created_at': 'Created Date',
-            'updated_at': 'Updated Date',
-            'deleted_at': 'Deleted Date',
-            'date': 'Date',
-            'time': 'Time',
-            'datetime': 'Date & Time',
-            'start_date': 'Start Date',
-            'end_date': 'End Date',
-            'due_date': 'Due Date',
-
-            // Business
-            'branch_name': 'Branch Name',
-            'branch_address': 'Branch Address',
-            'branch_code': 'Branch Code',
-            'site_name': 'Site Name',
-            'site_address': 'Site Address',
-            'site_code': 'Site Code',
-            'department': 'Department',
-            'position': 'Position',
-            'role': 'Role',
-            'role_id': 'Role',
-            'permission': 'Permission',
-            'permissions': 'Permissions',
-
-            // User related
-            'user_id': 'User ID',
-            'user_name': 'User Name',
-            'username': 'Username',
-            'password': 'Password',
-            'avatar': 'Avatar',
-            'profile_picture': 'Profile Picture',
-
-            // Default fallback
-            'default': 'Field'
-        };
-
-        // Check if field has a specific mapping
-        if (fieldMappings[field]) {
-            return fieldMappings[field];
-        }
-
-        // If no mapping, capitalize each word
-        return formatted
-            .split(' ')
-            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-            .join(' ');
-    };
-
-    // Helper function to format values
-    const formatValue = (value: any): string => {
-        if (value === null || value === undefined) return '—';
-        if (typeof value === 'boolean') return value ? 'Yes' : 'No';
-
-        // Handle dates
-        if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value)) {
-            try {
-                const date = new Date(value);
-                if (!isNaN(date.getTime())) {
-                    return date.toLocaleString('en-US', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        hour12: true
-                    });
-                }
-            } catch (e) {
-                return value;
-            }
-        }
-
-        // Handle objects and arrays
-        if (typeof value === 'object') {
-            try {
-                return JSON.stringify(value, null, 2);
-            } catch (e) {
-                return String(value);
-            }
-        }
-
-        return String(value);
-    };
-
-    // Helper function to get icon for field type
-    const getFieldIcon = (field: string) => {
-        const fieldLower = field.toLowerCase();
-        if (fieldLower.includes('name')) return <User className="h-3.5 w-3.5 text-blue-500" />;
-        if (fieldLower.includes('email')) return <Mail className="h-3.5 w-3.5 text-purple-500" />;
-        if (fieldLower.includes('phone')) return <Phone className="h-3.5 w-3.5 text-green-500" />;
-        if (fieldLower.includes('address')) return <MapPin className="h-3.5 w-3.5 text-orange-500" />;
-        if (fieldLower.includes('date') || fieldLower.includes('time')) return <Calendar className="h-3.5 w-3.5 text-indigo-500" />;
-        if (fieldLower.includes('price') || fieldLower.includes('amount') || fieldLower.includes('total')) return <DollarSign className="h-3.5 w-3.5 text-emerald-500" />;
-        if (fieldLower.includes('status')) return <Activity className="h-3.5 w-3.5 text-yellow-500" />;
-        return <Database className="h-3.5 w-3.5 text-gray-400" />;
-    };
-
-    // Created section
-    if (log.description === 'created' && p.attributes) {
-        const attributes = p.attributes;
-        const attributeCount = Object.keys(attributes).length;
-
-        return (
-            <div className="space-y-4">
-                <div className="flex items-center gap-2 pb-3 border-b border-green-200">
-                    <div className="p-1.5 bg-green-100 rounded-lg">
-                        <PlusCircle className="h-4 w-4 text-green-600" />
-                    </div>
-                    <div>
-                        <h3 className="font-semibold text-green-800">New Record Created</h3>
-                        <p className="text-xs text-green-600 mt-0.5">
-                            {model} · {attributeCount} {attributeCount === 1 ? 'field' : 'fields'} recorded
-                        </p>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto pr-2">
-                    {Object.keys(attributes).map(f => (
-                        <div key={f} className="bg-gray-50 rounded-lg p-3 border border-gray-200 hover:border-gray-300 transition-all">
-                            <div className="flex items-center gap-2 mb-2">
-                                {getFieldIcon(f)}
-                                <span className="font-medium text-gray-700 text-sm">
-                                    {formatFieldName(f)}
-                                </span>
-                            </div>
-                            <div className="text-sm text-gray-900 bg-white rounded-md px-3 py-2 border border-gray-100 break-words">
-                                {formatValue(attributes[f])}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
-        );
-    }
-
-    // Updated section
-    if (log.description === 'updated' && p.attributes && p.old) {
-        const changed = Object.keys(p.attributes).filter(f =>
-            JSON.stringify(p.attributes?.[f]) !== JSON.stringify(p.old?.[f])
-        );
-        if (!changed.length) return (
-            <div className="flex items-center justify-center py-8 text-gray-500">
-                <Info className="h-8 w-8 mb-2" />
-                <p>No changes detected</p>
-            </div>
-        );
-
-        return (
-            <div className="space-y-4">
-                <div className="flex items-center gap-2 pb-3 border-b border-blue-200">
-                    <div className="p-1.5 bg-blue-100 rounded-lg">
-                        <Pencil className="h-4 w-4 text-blue-600" />
-                    </div>
-                    <div>
-                        <h3 className="font-semibold text-blue-800">Record Updated</h3>
-                        <p className="text-xs text-blue-600 mt-0.5">
-                            {model} · {changed.length} {changed.length === 1 ? 'field' : 'fields'} changed
-                        </p>
-                    </div>
-                </div>
-
-                <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
-                    {changed.map(f => (
-                        <div key={f} className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                            <div className="flex items-center gap-2 mb-3">
-                                {getFieldIcon(f)}
-                                <span className="font-semibold text-gray-800 text-sm">
-                                    {formatFieldName(f)}
-                                </span>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                <div className="space-y-1">
-                                    <div className="flex items-center gap-1">
-                                        <span className="text-xs font-medium text-gray-500">Previous</span>
-                                        <span className="text-[10px] text-red-400">(removed)</span>
-                                    </div>
-                                    <div className="text-sm text-red-700 bg-red-50 rounded-md px-3 py-2 border border-red-100 break-words">
-                                        {formatValue(p.old?.[f])}
-                                    </div>
-                                </div>
-                                <div className="space-y-1">
-                                    <div className="flex items-center gap-1">
-                                        <span className="text-xs font-medium text-gray-500">Current</span>
-                                        <span className="text-[10px] text-green-400">(new)</span>
-                                    </div>
-                                    <div className="text-sm text-green-700 bg-green-50 rounded-md px-3 py-2 border border-green-100 break-words">
-                                        {formatValue(p.attributes?.[f])}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
-        );
-    }
-
-    // Deleted section
-    if (log.description === 'deleted' && p.old) {
-        const oldData = p.old;
-        const dataCount = Object.keys(oldData).length;
-
-        return (
-            <div className="space-y-4">
-                <div className="flex items-center gap-2 pb-3 border-b border-red-200">
-                    <div className="p-1.5 bg-red-100 rounded-lg">
-                        <Trash2 className="h-4 w-4 text-red-600" />
-                    </div>
-                    <div>
-                        <h3 className="font-semibold text-red-800">Record Deleted</h3>
-                        <p className="text-xs text-red-600 mt-0.5">
-                            {model} · {dataCount} {dataCount === 1 ? 'field' : 'fields'} recorded
-                        </p>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto pr-2">
-                    {Object.keys(oldData).map(f => (
-                        <div key={f} className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                            <div className="flex items-center gap-2 mb-2">
-                                {getFieldIcon(f)}
-                                <span className="font-medium text-gray-700 text-sm">
-                                    {formatFieldName(f)}
-                                </span>
-                            </div>
-                            <div className="text-sm text-gray-600 bg-red-50 rounded-md px-3 py-2 border border-red-100 break-words">
-                                {formatValue(oldData[f])}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
-        );
-    }
-
-    return (
-        <div className="flex flex-col items-center justify-center py-8 text-gray-500">
-            <Info className="h-8 w-8 mb-2" />
-            <p>No details available for this activity</p>
-        </div>
-    );
-});
-
-// Stats card
-const StatsCard = React.memo(({ title, value, color = '', icon: Icon, iconColor = '' }: any) => (
-    <Card className="overflow-hidden hover:shadow-md transition-shadow duration-200 border-2 pt-2 px-0">
+const StatsCard = React.memo(({ 
+    title, 
+    value, 
+    color = '', 
+    icon: Icon, 
+    iconColor = '', 
+    isActive = false,
+    onClick 
+}: any) => (
+    <Card 
+        onClick={onClick}
+        className={cn(
+            "overflow-hidden border-stone-300 hover:shadow-md hover:cursor-pointer transition-all duration-200 border-2 py-3",
+            isActive 
+                ? "border-blue-500 bg-blue-50 shadow-md scale-[1.02]" 
+                : "hover:border-blue-600 hover:bg-blue-50 hover:shadow-md/50"
+        )}
+    >
         <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-[17px] font-bold text-black">{title}</CardTitle>
+            <CardTitle className={cn(
+                "text-sm lg:text-[16px] font-sm uppercase",
+                isActive ? "text-blue-700" : "text-stone-700"
+            )}>
+                {title}
+            </CardTitle>
             {Icon && (
-                <div className={`p-2 rounded-lg ${iconColor || color.replace('text-', 'bg-').replace('-600', '-100')}`}>
-                    <Icon className={`h-6 w-6 ${color}`} />
+                <div className={cn(
+                    "p-1 rounded-lg",
+                    isActive ? "bg-blue-100" : iconColor || color.replace('text-', 'bg-').replace('-600', '-100')
+                )}>
+                    <Icon className={cn(
+                        "h-4 h-4 lg:h-6 lg:w-6",
+                        isActive ? "text-blue-600" : color
+                    )} />
                 </div>
             )}
         </CardHeader>
         <CardContent>
-            <div className={`text-2xl font-bold mb-2 -mt-2 ${color}`}>{value}</div>
-            {!Icon && (
-                <div className="h-8" /> // Placeholder for spacing when no icon
-            )}
+            <div className={cn(
+                "text-2xl font-bold mb-2 -mt-2",
+                isActive ? "text-blue-600" : color
+            )}>
+                {value}
+            </div>
         </CardContent>
     </Card>
 ));
 
+// Custom Empty State Component
+const EmptyState = ({ message, description, icon: Icon, hasFilters }: any) => (
+    <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+        <div className={cn(
+            "rounded-full p-4 mb-4",
+            hasFilters ? "bg-blue-50" : "bg-gray-50"
+        )}>
+            {Icon ? (
+                <Icon className={cn(
+                    "h-12 w-12",
+                    hasFilters ? "text-blue-500" : "text-gray-400"
+                )} />
+            ) : (
+                <Database className={cn(
+                    "h-12 w-12",
+                    hasFilters ? "text-blue-500" : "text-gray-400"
+                )} />
+            )}
+        </div>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+            {message}
+        </h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm">
+            {description}
+        </p>
+        {hasFilters && (
+            <Button 
+                variant="outline" 
+                className="mt-4"
+                onClick={() => {
+                    // Clear all filters
+                    const params: Record<string, string> = { page: '1' };
+                    router.get('/activity-logs', params, { 
+                        preserveState: true, 
+                        preserveScroll: true, 
+                        replace: true 
+                    });
+                }}
+            >
+                Clear all filters
+            </Button>
+        )}
+    </div>
+);
 
-export default function Index({ activityLogs, filters = { search: '', perPage: '10' }, totalCount = 0, filteredCount = 0 }: ActivityLogsProps) {
-    // Handle different data structures safely
-    const getDataArray = useCallback((): ActivityLog[] => {
-        if (!activityLogs) return [];
+export default function Index({
+    activityLogs,
+    filters = {},
+    totalCount = 0,
+    filteredCount = 0,
+    allActions = [],
+    allModels = [],
+    allUsers = [],
+}: ActivityLogsProps) {
 
-        if (activityLogs && typeof activityLogs === 'object' && 'data' in activityLogs && Array.isArray(activityLogs.data)) {
-            return activityLogs.data;
-        }
+    const logs = activityLogs.data || [];
+    const pagination = {
+        links: activityLogs.links || [],
+        from: activityLogs.from || 0,
+        to: activityLogs.to || 0,
+        total: activityLogs.total || 0,
+        current_page: activityLogs.current_page || 1,
+        last_page: activityLogs.last_page || 1,
+        per_page: activityLogs.per_page || 10,
+    };
 
-        if (Array.isArray(activityLogs)) {
-            return activityLogs;
-        }
-
-        return [];
-    }, [activityLogs]);
-
-    const getPaginationData = useCallback(() => {
-        if (!activityLogs) {
-            return {
-                links: [],
-                from: 0,
-                to: 0,
-                total: 0,
-            };
-        }
-
-        if (activityLogs && typeof activityLogs === 'object' && 'links' in activityLogs) {
-            return {
-                links: activityLogs.links || [],
-                from: activityLogs.from || 0,
-                to: activityLogs.to || 0,
-                total: activityLogs.total || 0,
-            };
-        }
-
-        if (Array.isArray(activityLogs)) {
-            return {
-                links: [],
-                from: 0,
-                to: activityLogs.length,
-                total: activityLogs.length,
-            };
-        }
-
-        return {
-            links: [],
-            from: 0,
-            to: 0,
-            total: 0,
-        };
-    }, [activityLogs]);
-
-    // State for local filters (UI only)
-    const [actionFilter, setActionFilter] = useState<string>('all');
-    const [modelFilter, setModelFilter] = useState<string>('all');
-    const [userFilter, setUserFilter] = useState<string>('all');
-    const [searchTerm, setSearchTerm] = useState(filters?.search || '');
-    const [perPage, setPerPage] = useState(filters?.perPage || '10');
-
+    // Initialize state from filters prop (URL parameters)
+    const [searchTerm, setSearchTerm] = useState(filters.search ?? '');
+    const [actionFilter, setActionFilter] = useState<string>(filters.action ?? '');
+    const [modelFilter, setModelFilter] = useState<string>(filters.model ?? '');
+    const [userFilter, setUserFilter] = useState<string>(filters.user ?? '');
+    const [perPage, setPerPage] = useState(filters.perPage ?? String(pagination.per_page ?? '10'));
     const [selected, setSelected] = useState<any>(null);
     const [open, setOpen] = useState(false);
     const [notify, setNotify] = useState<{ msg: string; time: string } | null>(null);
-    const echoRef = useRef<any>(null);
-    const batchRef = useRef<any[]>([]);
-    const timerRef = useRef<NodeJS.Timeout>();
-    const searchTimeoutRef = useRef<NodeJS.Timeout>();
+    const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    const logs = getDataArray();
-    const pagination = getPaginationData();
-
-    // Get unique values for filters
-    const uniqueModels = useMemo(() => {
-        const models = logs.map(log => formatModel(log.subject_type));
-        return ['all', ...new Set(models.filter(m => m !== 'Unknown'))];
-    }, [logs]);
-
-    const uniqueActions = useMemo(() => {
-        const actions = logs.map(log => log.description).filter(Boolean);
-        return ['all', ...new Set(actions)];
-    }, [logs]);
-
-    const uniqueUsers = useMemo(() => {
-        const users = logs
-            .filter(log => log.causer && log.causer.id)
-            .map(log => ({
-                id: log.causer?.id,
-                name: log.causer?.name
-            }))
-            .filter((user, index, self) =>
-                index === self.findIndex(u => u.id === user.id)
-            );
-        return [{ id: 'all', name: 'All Users' }, ...users];
-    }, [logs]);
-
-    // Filter logs locally
-    const filteredLogs = useMemo(() => {
-        return logs.filter(log => {
-            const model = formatModel(log.subject_type);
-            const action = log.description;
-            const userName = log.causer?.name || 'System';
-
-            const matchesAction = actionFilter === 'all' || action === actionFilter;
-            const matchesModel = modelFilter === 'all' || model === modelFilter;
-            const matchesUser = userFilter === 'all' || log.causer?.id === Number(userFilter);
-            const matchesSearch = searchTerm === '' ||
-                `${model} ${action} ${userName}`.toLowerCase().includes(searchTerm.toLowerCase());
-
-            if (!matchesAction || !matchesModel || !matchesUser || !matchesSearch) return false;
-
-            if (log.description === 'updated') {
-                const changed = Object.keys(log.properties?.attributes || {}).filter(
-                    f => JSON.stringify(log.properties?.attributes?.[f]) !== JSON.stringify(log.properties?.old?.[f])
-                ).length;
-                if (changed === 0) return false;
-            }
-
-            return true;
-        });
-    }, [logs, actionFilter, modelFilter, userFilter, searchTerm]);
-
-    // Handle page change
-    const handlePageChange = useCallback((url: string | null) => {
-        if (url) {
-            router.get(url, {}, {
-                preserveState: true,
-                preserveScroll: true,
-            });
-        }
-    }, []);
-
-    // Handle per page change
-    const handlePerPageChange = useCallback((value: string) => {
-        setPerPage(value);
-        router.get('/activity-logs', {
-            search: searchTerm,
-            perPage: value,
-            page: 1,
-        }, {
-            preserveState: true,
-            preserveScroll: true,
-        });
-    }, [searchTerm]);
-
-    const ActivityLogHeader = React.memo(() => {
-        return (
-            <CustomHeader
-                icon={<History className="text-white h-6 w-6" />}
-                title="Activity Logs"
-                description="View and manage activity logs"
-            />
-        );
-    });
-
-    // Handle search with debounce
-    const handleSearchChange = useCallback((value: string) => {
-        setSearchTerm(value);
-
-        if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
-
-        searchTimeoutRef.current = setTimeout(() => {
-            router.get('/activity-logs', {
-                search: value,
-                perPage: perPage,
-                page: 1,
-            }, {
-                preserveState: true,
-                preserveScroll: true,
-            });
-        }, 500);
-    }, [perPage]);
-
-    // Clear all filters
-    const handleClearFilters = useCallback(() => {
-        setActionFilter('all');
-        setModelFilter('all');
-        setUserFilter('all');
-        setSearchTerm('');
-        handleSearchChange('');
-    }, [handleSearchChange]);
-
-    // Batch updates for real-time
-    const handleNew = useCallback((e: any) => {
-        batchRef.current.push(e);
-        if (timerRef.current) clearTimeout(timerRef.current);
-        timerRef.current = setTimeout(() => {
-            const currentUrl = new URL(window.location.href);
-            const currentPage = currentUrl.searchParams.get('page') || '1';
-
-            if (currentPage === '1') {
-                setNotify({
-                    msg: `${e.causer?.name || 'Someone'} ${e.description} a ${formatModel(e.subject_type)}`,
-                    time: new Date().toLocaleString()
-                });
-                setTimeout(() => setNotify(null), 3000);
-                router.reload({ preserveScroll: true });
-            } else {
-                setNotify({
-                    msg: `New activity: ${e.causer?.name || 'Someone'} ${e.description} a ${formatModel(e.subject_type)}. Go to first page to see it.`,
-                    time: new Date().toLocaleString()
-                });
-                setTimeout(() => setNotify(null), 5000);
-            }
-            batchRef.current = [];
-        }, 100);
-    }, []);
-
-    // Echo setup
+    // Update local state when filters prop changes (URL navigation)
     useEffect(() => {
-        if (echoRef.current) return;
-        window.Pusher = Pusher;
-        const key = import.meta.env.VITE_REVERB_APP_KEY;
-        if (!key) return;
-        echoRef.current = new Echo({
-            broadcaster: 'reverb',
-            key,
-            wsHost: import.meta.env.VITE_REVERB_HOST || 'localhost',
-            wsPort: import.meta.env.VITE_REVERB_PORT || '8080',
-            forceTLS: import.meta.env.VITE_REVERB_SCHEME === 'https',
-            enabledTransports: ['ws'],
-            authEndpoint: '/broadcasting/auth',
-            auth: { headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') } }
-        });
-        window.Echo = echoRef.current;
-        return () => { if (echoRef.current) echoRef.current.leave('activity-log'); };
-    }, []);
+        setSearchTerm(filters.search ?? '');
+        setActionFilter(filters.action ?? 'all');
+        setModelFilter(filters.model ?? 'all');
+        setUserFilter(filters.user ?? 'all');
+        setPerPage(filters.perPage ?? String(pagination.per_page ?? '10'));
+    }, [filters.search, filters.action, filters.model, filters.user, filters.perPage, pagination.per_page]);
 
-    // Listen to channel
-    useEffect(() => {
-        if (!echoRef.current) return;
-        const channel = echoRef.current.private('activity-log');
-        channel.listen('.ActivityLogged', handleNew);
-        return () => { channel.stopListening('.ActivityLogged'); };
-    }, [handleNew]);
-
-    const viewDetails = useCallback((log: any) => { setSelected(log); setOpen(true); }, []);
-
-    // Calculate stats
     const stats = useMemo(() => ({
-        total: totalCount || pagination.total || logs.length,
+        total: totalCount || pagination.total,
         created: logs.filter(l => l.description === 'created').length,
-        updated: logs.filter(l => l.description === 'updated' &&
-            l.properties?.attributes && l.properties?.old &&
-            Object.keys(l.properties.attributes).some(f =>
-                JSON.stringify(l.properties.attributes?.[f]) !== JSON.stringify(l.properties.old?.[f])
-            )
-        ).length,
+        updated: logs.filter(l => l.description === 'updated').length,
         deleted: logs.filter(l => l.description === 'deleted').length,
     }), [logs, totalCount, pagination.total]);
 
-    // Define columns for CustomTable
-    const columns = [
-        {
-            label: 'ACTOR',
-            key: 'user',
-            render: (row: ActivityLog) => (
-                <div className="flex items-center gap-2">
-                    <Avatar className="h-8 w-8">
-                        <AvatarFallback className="bg-gray-200">
-                            {row.causer ? getInitials(row.causer.name) : 'SY'}
-                        </AvatarFallback>
-                    </Avatar>
-                    <div className="font-medium">{row.causer?.name || 'System'}</div>
-                </div>
-            )
-        },
-        {
-            label: 'ACTION',
-            key: 'action',
-            isBadge: true,
-            render: (row: ActivityLog) => {
-                const action = getAction(row.description);
-                return (
-                    <div className="flex items-center gap-1">
-                        {action.icon}
-                        {action.text}
-                    </div>
-                );
-            }
-        },
-        {
-            label: 'MODEL',
-            key: 'subject_type',
-            render: (row: ActivityLog) => (
-                <div className="flex items-center gap-1">
-                    <Database className="h-5 w-5 text-gray-400" />
-                    <span>{formatModel(row.subject_type)}</span>
-                </div>
-            )
-        },
-        {
-            label: 'CHANGES',
-            key: 'changes',
-            render: (row: ActivityLog) => {
-                const action = getAction(row.description);
-                const changed = (() => {
-                    if (row.description !== 'updated' || !row.properties?.attributes || !row.properties?.old) return 0;
-                    return Object.keys(row.properties.attributes).filter(f =>
-                        JSON.stringify(row.properties.attributes?.[f]) !== JSON.stringify(row.properties.old?.[f])
-                    ).length;
-                })();
+    const applyFilters = useCallback((overrides: Partial<{
+        search: string; action: string; model: string; user: string; perPage: string;
+    }> = {}) => {
+        const s = overrides.search !== undefined ? overrides.search : searchTerm;
+        const action = overrides.action !== undefined ? overrides.action : actionFilter;
+        const model = overrides.model !== undefined ? overrides.model : modelFilter;
+        const user = overrides.user !== undefined ? overrides.user : userFilter;
+        const pp = overrides.perPage !== undefined ? overrides.perPage : perPage;
+        
+        const params: Record<string, string> = {};
+        if (s && s.trim()) params.search = s.trim();
+        if (action && action !== 'all') params.action = action;
+        if (model && model !== 'all') params.model = model;
+        if (user && user !== 'all') params.user = user;
+        if (pp && pp !== '10') params.perPage = pp;
+        
+        // Reset to page 1 when filters change
+        params.page = '1';
+        
+        router.get('/activity-logs', params, { 
+            preserveState: true, 
+            preserveScroll: true, 
+            replace: true 
+        });
+    }, [searchTerm, actionFilter, modelFilter, userFilter, perPage]);
 
-                if (row.description === 'created' || row.description === 'deleted' || (row.description === 'updated' && changed > 0)) {
-                    return (
-                        <TooltipProvider>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <div className="cursor-pointer">
-                                        {row.description === 'created' && <span className="text-green-600 text-sm">Created new record</span>}
-                                        {row.description === 'updated' && <span className="text-blue-600 text-sm">Updated {changed} {changed === 1 ? 'field' : 'fields'}</span>}
-                                        {row.description === 'deleted' && <span className="text-red-600 text-sm">Deleted record</span>}
-                                    </div>
-                                </TooltipTrigger>
-                                <TooltipContent side="bottom" className="max-w-md p-4 bg-white border">
-                                    <FormatChanges log={row} />
-                                </TooltipContent>
-                            </Tooltip>
-                        </TooltipProvider>
-                    );
-                }
-                return null;
-            }
-        },
-        {
-            label: 'TIME',
-            key: 'created_at',
-            isDate: true,
-            render: (row: ActivityLog) => (
-                <div className="flex flex-col">
-                    <span className="text-sm font-medium">{getTime(row.created_at)}</span>
-                    <span className="text-xs text-gray-500">{formatDate(row.created_at)}</span>
-                </div>
-            )
-        },
-        {
-            label: 'ACTIONS',
-            key: 'actions',
-            isAction: true,
+    const handleSearchChange = (value: string) => {
+        setSearchTerm(value);
+        if (searchTimer.current) clearTimeout(searchTimer.current);
+        searchTimer.current = setTimeout(() => applyFilters({ search: value }), 500);
+    };
+
+    const handleActionChange = (value: string) => { 
+        setActionFilter(value); 
+        applyFilters({ action: value }); 
+    };
+    
+    const handleModelChange = (value: string) => { 
+        setModelFilter(value); 
+        applyFilters({ model: value }); 
+    };
+    
+    const handleUserChange = (value: string) => { 
+        setUserFilter(value); 
+        applyFilters({ user: value }); 
+    };
+    
+    const handlePerPageChange = (value: string) => { 
+        setPerPage(value); 
+        applyFilters({ perPage: value }); 
+    };
+    
+    const handlePageChange = (url: string | null) => { 
+        if (url) {
+            router.get(url, {}, { preserveState: true, preserveScroll: true });
         }
-    ];
+    };
+    
+    const clearFilters = () => {
+        setSearchTerm(''); 
+        setActionFilter('all'); 
+        setModelFilter('all'); 
+        setUserFilter('all');
+        if (searchTimer.current) clearTimeout(searchTimer.current);
+        
+        // Only keep perPage parameter
+        const params: Record<string, string> = {};
+        if (perPage && perPage !== '10') params.perPage = perPage;
+        params.page = '1';
+        
+        router.get('/activity-logs', params, { 
+            preserveState: true, 
+            preserveScroll: true, 
+            replace: true 
+        });
+    };
 
-    // Define actions for CustomTable
-    const actions = [
-        {
-            label: 'View',
-            icon: 'Eye',
-            route: '',
-            className: ''
+    // Handle stats card click to filter by that action
+    const handleStatsClick = (actionType: string) => {
+        if (actionType === 'all') {
+            // If clicking Total Activities, clear all action filters
+            if (actionFilter !== 'all') {
+                handleActionChange('all');
+            }
+        } else {
+            if (actionFilter === actionType) {
+                // If already filtering by this action, clear the filter
+                handleActionChange('all');
+            } else {
+                // Otherwise, filter by this action
+                handleActionChange(actionType);
+            }
         }
-    ];
-
-    // Handle view action
-    const handleView = (row: ActivityLog) => {
-        viewDetails(row);
     };
 
-    // Handle edit (not used but required by CustomTable)
-    const handleEdit = (row: ActivityLog) => {
-        // Not implemented for activity logs
+    // Determine if Total Activities should be active (when no action filter is applied)
+    const isTotalActive = actionFilter === 'all';
+
+    const activeFiltersCount = [
+        searchTerm && searchTerm.trim() ? 1 : 0,
+        actionFilter !== 'all' ? 1 : 0,
+        modelFilter !== 'all' ? 1 : 0,
+        userFilter !== 'all' ? 1 : 0
+    ].filter(Boolean).length;
+
+    // Check if there are any active filters
+    const hasActiveFilters = activeFiltersCount > 0;
+
+    useEffect(() => {
+        return () => {
+            if (searchTimer.current) clearTimeout(searchTimer.current);
+        };
+    }, []);
+
+    const viewDetails = (log: any) => { 
+        setSelected(log); 
+        setOpen(true); 
+    };
+    
+    const handleView = (row: any) => viewDetails(row);
+
+    // Determine empty state message based on filters
+    const getEmptyStateMessage = () => {
+        if (hasActiveFilters) {
+            return "No matching activity logs found";
+        }
+        return "No activity logs available";
     };
 
-    // Handle delete (not used but required by CustomTable)
-    const handleDelete = (row: ActivityLog) => {
-        // Not implemented for activity logs
+    const getEmptyStateDescription = () => {
+        if (hasActiveFilters) {
+            return "Try adjusting your filters or search criteria to see more results.";
+        }
+        return "There are no activity logs to display at the moment.";
     };
 
-    // Toolbar component for filters
-    const FilterToolbar = () => (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            <div className="flex flex-col gap-2">
-                <Label htmlFor="search">Search</Label>
-                <Input
-                    id="search"
-                    placeholder="Search logs..."
-                    value={searchTerm}
-                    onChange={(e) => handleSearchChange(e.target.value)}
-                    className="w-full"
-                />
-            </div>
-            <div className="flex flex-col gap-2">
-                <Label htmlFor="action">Action</Label>
-                <Select value={actionFilter} onValueChange={setActionFilter}>
-                    <SelectTrigger id="action">
-                        <SelectValue placeholder="Filter by action" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">All Actions</SelectItem>
-                        {uniqueActions.filter(a => a !== 'all').map((action) => {
-                            const details = getAction(action);
-                            return (
-                                <SelectItem key={action} value={action}>
-                                    <div className="flex items-center gap-2">
-                                        {details.icon}
-                                        {details.text}
-                                    </div>
-                                </SelectItem>
-                            );
-                        })}
-                    </SelectContent>
-                </Select>
-            </div>
-            <div className="flex flex-col gap-2">
-                <Label htmlFor="model">Model</Label>
-                <Select value={modelFilter} onValueChange={setModelFilter}>
-                    <SelectTrigger id="model">
-                        <SelectValue placeholder="Filter by model" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">All Models</SelectItem>
-                        {uniqueModels.filter(m => m !== 'all' && m !== 'Unknown').map((model) => (
-                            <SelectItem key={model} value={model}>
-                                {model}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            </div>
-            <div className="flex flex-col gap-2">
-                <Label htmlFor="user">User</Label>
-                <Select value={userFilter} onValueChange={setUserFilter}>
-                    <SelectTrigger id="user">
-                        <SelectValue placeholder="Filter by user" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {uniqueUsers.map((user) => (
-                            <SelectItem key={user.id} value={String(user.id)}>
-                                {user.name}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            </div>
-
-            {/* Clear Filters Button */}
-            <div className='flex justify-center items-end'>
-                <Button variant="outline" onClick={handleClearFilters} className='flex justify-center items-center'>
-                    Clear All Filters
-                </Button>
-            </div>
-        </div>
-    );
+    const getEmptyStateIcon = () => {
+        if (hasActiveFilters) {
+            return Search;
+        }
+        return Database;
+    };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Activity Logs" />
-            <div className="flex flex-1 flex-col gap-2 p-4">
+
+            <style>{`
+                @keyframes fadeUp {
+                    from { opacity: 0; transform: translateY(16px); }
+                    to   { opacity: 1; transform: translateY(0); }
+                }
+                .pp-row { animation: fadeUp 0.3s cubic-bezier(0.22,1,0.36,1) both; }
+                @keyframes headerReveal {
+                    from { opacity: 0; transform: translateY(-10px); }
+                    to   { opacity: 1; transform: translateY(0); }
+                }
+                .pp-header { animation: headerReveal 0.35s cubic-bezier(0.22,1,0.36,1) both; }
+            `}</style>
+
+            <div className='mx-8 -mb-6 my-4 pp-header'>
+                <CustomHeader icon={<History className="text-white h-6 w-6" />} title="Activity Logs" description="View and manage activity logs" />
+            </div>
+            <div className="flex flex-1 flex-col gap-2 p-4 pp-row">
                 {notify && (
                     <div className="fixed top-4 right-4 z-50 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 max-w-md">
                         <Bell className="h-5 w-5 flex-shrink-0" />
@@ -861,43 +352,108 @@ export default function Index({ activityLogs, filters = { search: '', perPage: '
                             <p className="font-medium text-sm">{notify.msg}</p>
                             <p className="text-xs">{notify.time}</p>
                         </div>
-                        <Button variant="ghost" size="sm" onClick={() => setNotify(null)} className="flex-shrink-0">
+                        <Button variant="ghost" size="sm" onClick={() => setNotify(null)}>
                             <X className="h-4 w-4" />
                         </Button>
                     </div>
                 )}
-
-                {/* Header Section */}
-                <ActivityLogHeader />
-
-                {/* Stats */}
-                <div className="grid grid-cols-4 gap-4 my-5 mx-4">
-                    <StatsCard title="Total Activities" icon = {Activity} iconColor="text-gray-600" value={stats.total} />
-                    <StatsCard title="Created" icon = {PlusCircle} iconColor="text-green-600" value={stats.created} color="text-green-600" />
-                    <StatsCard title="Updated" icon = {Pencil} iconColor="text-blue-600" value={stats.updated} color="text-blue-600" />
-                    <StatsCard title="Deleted" icon = {Trash2} iconColor="text-red-600" value={stats.deleted} color="text-red-600" />
+                
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 my-5 mx-4">
+                    <StatsCard 
+                        title="Total Activities" 
+                        icon={Activity} 
+                        iconColor="text-gray-600" 
+                        value={stats.total}
+                        isActive={isTotalActive}
+                        onClick={() => handleStatsClick('all')}
+                    />
+                    <StatsCard 
+                        title="Created" 
+                        icon={PlusCircle} 
+                        iconColor="text-green-600" 
+                        value={stats.created} 
+                        color="text-green-600"
+                        isActive={actionFilter === 'created'}
+                        onClick={() => handleStatsClick('created')}
+                    />
+                    <StatsCard 
+                        title="Updated" 
+                        icon={Pencil} 
+                        iconColor="text-blue-600" 
+                        value={stats.updated} 
+                        color="text-blue-600"
+                        isActive={actionFilter === 'updated'}
+                        onClick={() => handleStatsClick('updated')}
+                    />
+                    <StatsCard 
+                        title="Deleted" 
+                        icon={Trash2} 
+                        iconColor="text-red-600" 
+                        value={stats.deleted} 
+                        color="text-red-600"
+                        isActive={actionFilter === 'deleted'}
+                        onClick={() => handleStatsClick('deleted')}
+                    />
                 </div>
-
+                
                 <div className='mx-4'>
-                {/* Custom Table with Toolbar */}
-                <CustomTable
-                    columns={columns}
-                    actions={actions}
-                    data={filteredLogs}
-                    from={pagination.from || 0}
-                    title="Activity Logs"
-                    toolbar={<FilterToolbar />}
-                />
+                    {logs.length === 0 ? (
+                        // Show empty state when no data
+                        <div className="border rounded-lg bg-white dark:bg-gray-900">
+                            <div className="p-4 border-b">
+                                <h2 className="text-lg font-semibold">Activity Log Lists</h2>
+                            </div>
+                            <EmptyState 
+                                message={getEmptyStateMessage()}
+                                description={getEmptyStateDescription()}
+                                icon={getEmptyStateIcon()}
+                                hasFilters={hasActiveFilters}
+                            />
+                        </div>
+                    ) : (
+                        // Show table when data exists
+                        <CustomTable
+                            columns={ActivityLogsTableColumns}
+                            actions={ActivityLogsTableActions}
+                            data={logs}
+                            from={pagination.from}
+                            to={pagination.to}
+                            total={pagination.total}
+                            filteredCount={filteredCount}
+                            totalCount={totalCount}
+                            searchTerm={searchTerm}
+                            title="Activity Log Lists"
+                            toolbar={
+                                <ActivityLogsFilterBar
+                                    searchTerm={searchTerm}
+                                    actionFilter={actionFilter}
+                                    modelFilter={modelFilter}
+                                    userFilter={userFilter}
+                                    availableActions={allActions}
+                                    availableModels={allModels}
+                                    availableUsers={allUsers}
+                                    onSearchChange={handleSearchChange}
+                                    onActionChange={handleActionChange}
+                                    onModelChange={handleModelChange}
+                                    onUserChange={handleUserChange}
+                                    onClearAll={clearFilters}
+                                    activeFiltersCount={activeFiltersCount}
+                                />
+                            }
+                            onView={handleView}
+                            onDelete={() => {}}
+                            onEdit={() => {}}
+                        />
+                    )}
                 </div>
-
-                {/* Custom Pagination */}
-                {pagination.total > 0 && (
+                
+                {logs.length > 0 && pagination.total > 0 && (
                     <CustomPagination
-                        pagination={{
-                            links: pagination.links,
-                            from: pagination.from,
-                            to: pagination.to,
-                            total: pagination.total,
+                        pagination={{ 
+                            links: pagination.links, 
+                            from: pagination.from, 
+                            to: pagination.to, 
+                            total: pagination.total 
                         }}
                         perPage={perPage}
                         onPerPageChange={handlePerPageChange}
@@ -909,8 +465,7 @@ export default function Index({ activityLogs, filters = { search: '', perPage: '
                     />
                 )}
             </div>
-
-            {/* Dialog */}
+            
             <Dialog open={open} onOpenChange={setOpen}>
                 <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
                     <DialogHeader>

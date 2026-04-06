@@ -1,31 +1,40 @@
-import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import { format } from 'date-fns';
+import { ArrowLeft, Banknote, CalendarDays, LoaderCircle, RefreshCw, CalendarIcon, CheckCircle2, XCircle, Users, Eye, Search } from 'lucide-react';
+import { useEffect, useState, useMemo } from 'react';
+import { type DateRange } from 'react-day-picker';
+import { update } from '@/actions/App/Http/Controllers/PayrollPeriodController';
 import InputError from '@/components/input-error';
+import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
     Select, SelectContent, SelectItem,
     SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { update } from '@/actions/App/Http/Controllers/PayrollPeriodController';
-import { ArrowLeft, Banknote, CalendarDays, LoaderCircle, RefreshCw, CalendarIcon } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
+import { Switch } from '@/components/ui/switch';
 import {
     Popover,
     PopoverContent,
     PopoverTrigger,
 } from '@/components/ui/popover';
-import { format } from 'date-fns';
-import { type DateRange } from 'react-day-picker';
-import { useEffect, useState } from 'react';
+import AppLayout from '@/layouts/app-layout';
+import { type BreadcrumbItem } from '@/types';
 
 interface FormData {
     start_date: string;
     end_date: string;
     pay_date: string;
     payroll_per_status: string;
+    is_paid: boolean;
 }
 
 interface EditProps {
@@ -35,9 +44,20 @@ interface EditProps {
         end_date: string;
         pay_date: string;
         payroll_per_status: string;
+        is_paid: boolean;
+        payrolls: Array<{
+            id: number;
+            employee: {
+                id: number;
+                user: {
+                    name: string;
+                };
+            };
+            gross_pay: number;
+            net_pay: number;
+        }>;
     };
 }
-
 // Extend Inertia's PageProps to include our enums
 interface PageProps extends InertiaPageProps {
     payroll_period_enums: Array<{ value: string; label: string; }>;
@@ -67,6 +87,8 @@ function FormSection({ icon: Icon, title, children, index = 0 }: {
 
 export default function Edit({ payrollPeriod }: EditProps) {
     const { payroll_period_enums } = usePage<PageProps>().props;
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Payroll Periods', href: '/payroll-periods' },
@@ -79,6 +101,7 @@ export default function Edit({ payrollPeriod }: EditProps) {
         end_date: payrollPeriod.end_date || '',
         pay_date: payrollPeriod.pay_date || '',
         payroll_per_status: payrollPeriod.payroll_per_status || '',
+        is_paid: payrollPeriod.is_paid || false,
     });
 
     // State for date range picker (period)
@@ -123,6 +146,32 @@ export default function Edit({ payrollPeriod }: EditProps) {
 
     const formatDisplayDate = (d: string) =>
         d ? new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—';
+
+    // Check if status is completed to show/hide is_paid requirement
+    const isStatusCompleted = data.payroll_per_status === 'completed';
+    
+    // Get first 5 employees to display
+    const displayedEmployees = payrollPeriod.payrolls?.slice(0, 5) || [];
+    const hasMoreEmployees = payrollPeriod.payrolls?.length > 5;
+
+    // Filter employees based on search term
+    const filteredEmployees = useMemo(() => {
+        if (!searchTerm.trim()) {
+            return payrollPeriod.payrolls || [];
+        }
+        
+        return (payrollPeriod.payrolls || []).filter(payroll => 
+            payroll.employee?.user?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    }, [payrollPeriod.payrolls, searchTerm]);
+
+    // Reset search when modal closes
+    const handleModalOpenChange = (open: boolean) => {
+        setIsModalOpen(open);
+        if (!open) {
+            setSearchTerm('');
+        }
+    };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -293,6 +342,101 @@ export default function Edit({ payrollPeriod }: EditProps) {
                             </div>
                         </FormSection>
 
+                        {/* Payment Status - Only show when status is Completed */}
+                        {isStatusCompleted && (
+                            <FormSection icon={CheckCircle2} title="Payment Status" index={3}>
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between rounded-lg border-2 border-border bg-muted/30 p-4">
+                                        <div className="space-y-0.5">
+                                            <Label className="text-sm font-semibold">
+                                                Payout Completed
+                                            </Label>
+                                            <p className="text-xs text-muted-foreground">
+                                                Mark this period as paid out to employees
+                                            </p>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex items-center gap-2 text-sm">
+                                                {data.is_paid ? (
+                                                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                                                ) : (
+                                                    <XCircle className="h-4 w-4 text-muted-foreground" />
+                                                )}
+                                                <span className={data.is_paid ? "text-green-600 font-medium" : "text-muted-foreground"}>
+                                                    {data.is_paid ? "Paid" : "Not Paid"}
+                                                </span>
+                                            </div>
+                                            <Switch
+                                                checked={data.is_paid}
+                                                onCheckedChange={(checked) => setData('is_paid', checked)}
+                                                disabled={processing}
+                                                className="data-[state=checked]:bg-green-500"
+                                            />
+                                        </div>
+                                    </div>
+                                    <InputError message={errors.is_paid} />
+                                </div>
+                            </FormSection>
+                        )}
+
+                        {/* Employees */}
+                        <FormSection icon={Users} title="Employees in this Period" index={4}>
+                            <div className="space-y-3">
+                                {payrollPeriod.payrolls && payrollPeriod.payrolls.length > 0 ? (
+                                    <>
+                                        <div className="rounded-lg border border-border overflow-hidden">
+                                            <table className="w-full">
+                                                <thead className="bg-muted/50">
+                                                    <tr>
+                                                        <th className="text-left p-3 text-xs font-semibold text-muted-foreground">Employee Name</th>
+                                                        <th className="text-right p-3 text-xs font-semibold text-muted-foreground">Gross Pay</th>
+                                                        <th className="text-right p-3 text-xs font-semibold text-muted-foreground">Net Pay</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {displayedEmployees.map((payroll) => (
+                                                        <tr key={payroll.id} className="border-t border-border">
+                                                            <td className="p-3 text-sm font-medium">
+                                                                {payroll.employee?.user?.name || '—'}
+                                                            </td>
+                                                            <td className="p-3 text-sm text-right">
+                                                                {payroll.gross_pay ? `₱${payroll.gross_pay.toLocaleString()}` : '—'}
+                                                            </td>
+                                                            <td className="p-3 text-sm text-right font-semibold">
+                                                                {payroll.net_pay ? `₱${payroll.net_pay.toLocaleString()}` : '—'}
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        
+                                        {hasMoreEmployees && (
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                onClick={() => setIsModalOpen(true)}
+                                                className="w-full rounded-xl border-2"
+                                            >
+                                                <Eye className="h-4 w-4 mr-2" />
+                                                View All {payrollPeriod.payrolls.length} Employees
+                                            </Button>
+                                        )}
+                                        
+                                        <p className="text-xs text-muted-foreground text-center">
+                                            Showing {displayedEmployees.length} of {payrollPeriod.payrolls.length} employees
+                                        </p>
+                                    </>
+                                ) : (
+                                    <div className="rounded-lg border border-border bg-muted/30 p-6 text-center">
+                                        <Users className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                                        <p className="text-sm text-muted-foreground">No employees found for this period</p>
+                                        <p className="text-xs text-muted-foreground mt-1">Payroll hasn't been calculated yet</p>
+                                    </div>
+                                )}
+                            </div>
+                        </FormSection>
+
                         {/* Submit */}
                         <div className="flex items-center justify-between pt-2">
                             <p className="text-xs text-muted-foreground">
@@ -323,6 +467,84 @@ export default function Edit({ payrollPeriod }: EditProps) {
                     </form>
                 </div>
             </div>
+
+            {/* Modal for all employees */}
+            <Dialog open={isModalOpen} onOpenChange={handleModalOpenChange}>
+                <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
+                    <DialogHeader>
+                        <DialogTitle>All Employees in Period #{payrollPeriod.id}</DialogTitle>
+                        <DialogDescription>
+                            Total of {payrollPeriod.payrolls?.length || 0} employee(s) in this payroll period
+                        </DialogDescription>
+                    </DialogHeader>
+                    
+                    {/* Search Bar */}
+                    <div className="relative mt-2">
+                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                        <Input
+                            type="text"
+                            placeholder="Search by employee name..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="pl-9 rounded-xl border-2"
+                            autoFocus={false}
+                        />
+                    </div>
+                    
+                    <div className="overflow-y-auto flex-1 -mx-6 px-6 mt-4">
+                        <div className="rounded-lg border border-border overflow-hidden">
+                            <table className="w-full">
+                                <thead className="bg-muted/50 sticky top-0">
+                                    <tr>
+                                        <th className="text-left p-3 text-xs font-semibold text-muted-foreground">#</th>
+                                        <th className="text-left p-3 text-xs font-semibold text-muted-foreground">Employee Name</th>
+                                        <th className="text-right p-3 text-xs font-semibold text-muted-foreground">Gross Pay</th>
+                                        <th className="text-right p-3 text-xs font-semibold text-muted-foreground">Net Pay</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filteredEmployees.length > 0 ? (
+                                        filteredEmployees.map((payroll, index) => (
+                                            <tr key={payroll.id} className="border-t border-border">
+                                                <td className="p-3 text-sm text-muted-foreground">{index + 1}</td>
+                                                <td className="p-3 text-sm font-medium">
+                                                    {payroll.employee?.user?.name || '—'}
+                                                </td>
+                                                <td className="p-3 text-sm text-right">
+                                                    {payroll.gross_pay ? `₱${payroll.gross_pay.toLocaleString()}` : '—'}
+                                                </td>
+                                                <td className="p-3 text-sm text-right font-semibold">
+                                                    {payroll.net_pay ? `₱${payroll.net_pay.toLocaleString()}` : '—'}
+                                                </td>
+                                            </tr>
+                                        ))
+                                    ) : (
+                                        <tr className="border-t border-border">
+                                            <td colSpan={4} className="p-8 text-center text-muted-foreground">
+                                                No employees found matching "{searchTerm}"
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div className="flex justify-between items-center mt-4 pt-4 border-t">
+                        <p className="text-xs text-muted-foreground">
+                            Showing {filteredEmployees.length} of {payrollPeriod.payrolls?.length || 0} employees
+                        </p>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => handleModalOpenChange(false)}
+                            className="rounded-xl"
+                        >
+                            Close
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </AppLayout>
     );
 }

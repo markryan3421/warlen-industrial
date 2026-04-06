@@ -3,29 +3,28 @@
 namespace App\Events;
 
 use App\Models\PayrollPeriod;
-use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class PayrollEvent implements ShouldQueue
+class PayrollEvent implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    protected $payrollPeriod;
-    protected $message;
+    public $payrollPeriod;
+    public $message;
+    public $progress;
 
     /**
      * Create a new event instance.
      */
-    public function __construct(PayrollPeriod $payrollPeriod, string $message = null)
+    public function __construct(PayrollPeriod $payrollPeriod, ?string $message = null, ?int $progress = null)
     {
         $this->payrollPeriod = $payrollPeriod;
         $this->message = $message ?? "Payroll period {$payrollPeriod->period_name} has been completed";
+        $this->progress = $progress;
     }
 
     /**
@@ -48,13 +47,18 @@ class PayrollEvent implements ShouldQueue
      */
     public function broadcastWith(): array
     {
-        return [
+        $data = [
             'payroll_period_id' => $this->payrollPeriod->id,
             'period_name' => $this->payrollPeriod->period_name,
             'status' => $this->payrollPeriod->payroll_per_status,
             'message' => $this->message,
             'timestamp' => now()->toIso8601String(),
         ];
+        
+        // Always include progress, even if null
+        $data['progress'] = $this->progress;
+        
+        return $data;
     }
 
     /**

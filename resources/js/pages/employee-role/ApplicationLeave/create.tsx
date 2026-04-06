@@ -1,8 +1,6 @@
-import AppLayout from '@/layouts/emp-layout';
-import { type BreadcrumbItem } from '@/types';
 import { Head, useForm } from '@inertiajs/react';
+import { store } from '@/actions/App/Http/Controllers/EmployeeRole/ApplicationLeaveController';
 import InputError from '@/components/input-error';
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";

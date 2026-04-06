@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Foundation\Application;
@@ -20,6 +21,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
         $middleware->alias([
                 'roleBase' => \App\Http\Middleware\RolaBaseMiddleware::class,
+                'admin' => AdminMiddleware::class,
+                'hr' => \App\Http\Middleware\HrMiddleware::class,
+                'employee' => \App\Http\Middleware\EmployeeMiddleware::class,
         ]);
         $middleware->web(append: [
             HandleAppearance::class,

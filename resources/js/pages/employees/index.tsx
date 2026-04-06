@@ -33,21 +33,23 @@
  */
 
 import { Head, Link, useForm, router } from '@inertiajs/react';
+import { format } from 'date-fns';
+import { Users, Search, UserPlus } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { toast } from 'sonner';
+import EmmployeeController from '@/actions/App/Http/Controllers/EmployeeController';
+import EmployeeController from '@/actions/App/Http/Controllers/EmployeeController';
+import { CustomHeader } from '@/components/custom-header';
+import { CustomPagination } from '@/components/custom-pagination';
+import { CustomTable } from '@/components/custom-table';
+import type { BranchData } from '@/components/employee/employee-filter-bar';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
-import { useState, useRef } from 'react';
 import type { BreadcrumbItem } from '@/types';
-import EmmployeeController from '@/actions/App/Http/Controllers/EmployeeController';
-import { Users, Search, UserPlus } from 'lucide-react';
-import { format } from 'date-fns';
 
-import { CustomTable } from '@/components/custom-table';
-import { EmployeeFilterBar, BranchData } from '@/components/employee/employee-filter-bar';
+import { EmployeeFilterBar } from '@/components/employee/employee-filter-bar';
 import { EmployeesTableConfig } from '@/config/tables/employees-table';
-import { CustomPagination } from '@/components/custom-pagination';
-import { toast } from 'sonner';
-import { CustomHeader } from '@/components/custom-header';
-import EmployeeController from '@/actions/App/Http/Controllers/EmployeeController';
+import { DeleteConfirmationDialog } from '@/components/delete-confirmation-modal';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Employees', href: '/employees' },
@@ -122,7 +124,6 @@ export default function Index({
     filteredCount,
 }: PageProps) {
     const { delete: destroy } = useForm();
-    console.log(EmployeesTableConfig.actions);
 
     // ── Filter state — initialised from URL params so the UI reflects the
     //    current server-side filter on first render / browser back-forward.
@@ -250,6 +251,70 @@ export default function Index({
         router.get('/employees', {}, { preserveState: true, replace: true });
     };
 
+    // Delete confirmation states
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [itemToDelete, setItemToDelete] = useState<any>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const handleDeleteClick = (employee: Employee) => {
+        setItemToDelete(employee);
+        setDeleteDialogOpen(true);
+    };
+
+    const confirmDelete = () => {
+        if (!itemToDelete) return;
+
+        setIsDeleting(true);
+
+        // Get the destroy URL from the controller
+        const destroyUrl = EmployeeController.destroy(itemToDelete.slug_emp).url;
+
+        destroy(destroyUrl, {
+            onSuccess: (page) => {
+                // Check for both flash success and error messages
+                const flash = (page.props as any).flash;
+
+                if (flash?.error) {
+                    // If there's an error message from the controller
+                    toast.error(flash.error);
+                    setDeleteDialogOpen(false);
+                    setItemToDelete(null);
+                } else if (flash?.success) {
+                    // Success message
+                    toast.success(flash.success);
+                    setDeleteDialogOpen(false);
+                    setItemToDelete(null);
+                } else {
+                    // Fallback success message
+                    toast.success('Employee deleted successfully');
+                    setDeleteDialogOpen(false);
+                    setItemToDelete(null);
+                }
+            },
+            onError: (errors) => {
+                // Handle validation/other errors from Laravel
+                let errorMessage = 'Failed to delete employee';
+
+                if (typeof errors === 'object') {
+                    // If errors is an object with field-specific errors
+                    const firstError = Object.values(errors)[0];
+                    if (typeof firstError === 'string') {
+                        errorMessage = firstError;
+                    } else if (Array.isArray(firstError) && firstError.length > 0) {
+                        errorMessage = firstError[0];
+                    }
+                } else if (typeof errors === 'string') {
+                    errorMessage = errors;
+                }
+
+                toast.error(errorMessage);
+            },
+            onFinish: () => {
+                setIsDeleting(false);
+            },
+        });
+    }
+
     // ── Delete ────────────────────────────────────────────────────────────────
     const handleDelete = (id: number) => {
         // Find the employee in the current page data
@@ -286,31 +351,44 @@ export default function Index({
         router.get(EmmployeeController.edit(employee.slug_emp).url);
     };
 
-    console.log(employees.data);
-
     // ─── Render ───────────────────────────────────────────────────────────────
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Employees" />
-            <div className="flex flex-1 flex-col gap-4 p-4">
 
-                {/* Page header */}
-                <div className="flex justify-between items-center">
-                    <CustomHeader
-                        icon={<Users />}
-                        title="Employees"
-                        description="Manage your workforce: add, edit, and organize employee records with ease."
-                    />
-                    <Link href="/employees/create">
-                        <Button className="h-14 mr-4">
-                            <UserPlus className="h-5 w-5" />
-                            <div className="flex flex-col items-start leading-tight">
-                                <span className="text-sm font-medium">Create</span>
-                                <span className="text-xs font-normal">Employee</span>
-                            </div>
-                        </Button>
-                    </Link>
-                </div>
+            {/* style animations */}
+            <style>{`
+                @keyframes fadeUp {
+                    from { opacity: 0; transform: translateY(16px); }
+                    to   { opacity: 1; transform: translateY(0); }
+                }
+                .pp-row { animation: fadeUp 0.3s cubic-bezier(0.22,1,0.36,1) both; }
+                @keyframes headerReveal {
+                    from { opacity: 0; transform: translateY(-10px); }
+                    to   { opacity: 1; transform: translateY(0); }
+                }
+                .pp-header { animation: headerReveal 0.35s cubic-bezier(0.22,1,0.36,1) both; }
+            `}</style>
+
+
+            {/* Page header */}
+            <div className="grid grid-rows-1 justify-center mx-8 md:grid-cols-2 md:mx-8 mt-3 lg:flex lg:justify-between items-center lg:mx-8 lg:mt-4 lg:-mb-2 pp-header">
+                <CustomHeader
+                    icon={<Users />}
+                    title="Employees"
+                    description="Manage your workforce: add, edit, and organize employee records with ease."
+                />
+                <Link href="/employees/create">
+                    <Button className="hover:cursor-pointer flex ml-auto">
+                        <UserPlus className="h-5 w-5" />
+                        <div className="flex flex-col items-start leading-tight">
+                            <span className="text-sm font-medium">Create Employee</span>
+                        </div>
+                    </Button>
+                </Link>
+            </div>
+
+            <div className="flex flex-1 flex-col gap-4 p-4 pp-row">
 
                 {/* Empty dataset (no employees exist at all) */}
                 {employees.total === 0 && activeFiltersCount === 0 ? (
@@ -330,12 +408,12 @@ export default function Index({
                 ) : (
                     <div className='mx-4'>
                         <CustomTable
-                            title="Employees"
+                            title="Employee Lists"
                             columns={EmployeesTableConfig.columns}
                             actions={EmployeesTableConfig.actions}
                             data={employees.data}
                             from={employees.from ?? 1}
-                            onDelete={handleDelete}
+                            onDelete={handleDeleteClick}
                             onView={handleView}
                             onEdit={handleEdit}
                             toolbar={
@@ -410,6 +488,19 @@ export default function Index({
                             filteredCount={filteredCount}
                             search={searchTerm}
                             resourceName="employee"
+                        />
+
+                        <DeleteConfirmationDialog
+                            isOpen={deleteDialogOpen}
+                            onClose={() => {
+                                setDeleteDialogOpen(false);
+                                setItemToDelete(null);
+                            }}
+                            onConfirm={confirmDelete}
+                            title='Delete employee'
+                            itemName={itemToDelete?.name || 'this employee'}
+                            isLoading={isDeleting}
+                            confirmText='Delete employee'
                         />
                     </div>
                 )}

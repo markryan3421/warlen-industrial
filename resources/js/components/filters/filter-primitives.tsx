@@ -21,16 +21,16 @@
  * All components are controlled (value + onChange) — the caller owns state.
  */
 
-import { useState, useMemo } from 'react';
+import { format } from 'date-fns';
 import { Search, X, ChevronDown, Check, Calendar, SlidersHorizontal } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { useState, useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { Input } from '@/components/ui/input';
 // Label and Switch removed — StatusFilter uses popover instead
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 // These match the CustomTable brand system exactly.

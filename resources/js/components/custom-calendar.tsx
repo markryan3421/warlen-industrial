@@ -1,5 +1,4 @@
 // components/schedule/schedule-calendar.tsx
-import { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   ChevronLeft,
   ChevronRight,
@@ -9,6 +8,9 @@ import {
   X,
   Filter,
 } from 'lucide-react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -16,10 +18,8 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Select,
   SelectContent,

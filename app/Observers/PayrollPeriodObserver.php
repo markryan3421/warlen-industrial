@@ -3,17 +3,19 @@
 namespace App\Observers;
 
 use App\Enums\PayrollPeriodStatusEnum;
+use App\Events\PayrollProcessingEvent;
+use App\Listeners\PayrollPeriodListener;
 use App\Models\PayrollPeriod;
 use App\Services\PayrollProcessingService;
 
 class PayrollPeriodObserver
 {
-    protected $payrollService;
+    // protected $payrollService;
 
-    public function __construct(PayrollProcessingService $payrollService)
-    {
-        $this->payrollService = $payrollService;
-    }
+    // public function __construct(PayrollProcessingService $payrollService)
+    // {
+    //     $this->payrollService = $payrollService;
+    // }
 
     /**
      * Handle the PayrollPeriod "updated" event.
@@ -24,7 +26,10 @@ class PayrollPeriodObserver
         if ($payrollPeriod->isDirty('payroll_per_status') && 
             $payrollPeriod->payroll_per_status === PayrollPeriodStatusEnum::PROCESSING->value) {
             
-            $this->payrollService->processPayrollForPeriod($payrollPeriod);
+            // $this->payrollService->processPayrollForPeriod($payrollPeriod);
+          // PayrollProcessingEvent::dispatch($payrollPeriod)->onQueue('default');
+           
+
         }
     }
     

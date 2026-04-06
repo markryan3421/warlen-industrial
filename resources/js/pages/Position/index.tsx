@@ -18,6 +18,12 @@ import {
 } from "@/components/ui/table";
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type Position } from '@/types';
+import { CustomTable } from '@/components/custom-table';
+import { PositionTableConfig } from '@/config/tables/position-table';
+import BranchController from '@/actions/App/Http/Controllers/BranchController';
+import { useState } from 'react';
+import { toast } from '@/components/custom-toast';
+import { DeleteConfirmationDialog } from '@/components/delete-confirmation-modal';
 
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -54,16 +60,7 @@ interface IndexProps {
 }
 
 export default function Index({ positions, filters, totalCount, filteredCount }: IndexProps) {
-    // const route = useRoute();
-
-    console.log(positions);
-
     const { delete: destroy } = useForm();
-    const handleDelete = (id: number) => {
-        if (confirm("Are you sure you want to delete this position?")) {
-            destroy(PositionController.destroy(id).url);
-        }
-    }
 
     // Search form state management using Inertia's useForm hook
     const { data, setData } = useForm({
@@ -116,6 +113,43 @@ export default function Index({ positions, filters, totalCount, filteredCount }:
         });
     }
 
+    const handleEditClick = (position: Position) => {
+        router.get(PositionController.edit(position.id.toString()).url);
+    }
+
+    // Delete confirmation dialog state
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [positionToDelete, setPositionToDelete] = useState<Position | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    // Updated delete handler to open confirmation dialog
+    const handleDeleteClick = (position: Position) => {
+        setPositionToDelete(position);
+        setDeleteDialogOpen(true);
+    };
+
+    // Actual delete execution
+    const confirmDelete = () => {
+        if (!positionToDelete) return;
+        
+        setIsDeleting(true);
+        destroy(PositionController.destroy(positionToDelete.id.toString()).url, {
+            onSuccess: (page) => {
+                const successMessage = (page.props as any).flash?.success || 'Position deleted successfully.';
+                toast.success(successMessage);
+                setDeleteDialogOpen(false);
+                setPositionToDelete(null);
+            },
+            onError: (errors) => {
+                const errorMessage = Object.values(errors).flat()[0] || 'Failed to delete branch.';
+                toast.error(errorMessage);
+            },
+            onFinish: () => {
+                setIsDeleting(false);
+            }
+        });
+    };
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Positions" />
@@ -147,70 +181,16 @@ export default function Index({ positions, filters, totalCount, filteredCount }:
                             </Link>
                         </div>
                     </div>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Position Name</TableHead>
-                                <TableHead>Salary Rate</TableHead>
-                                <TableHead>Regular OT Rate</TableHead>
-                                <TableHead>Special OT Rate</TableHead>
-                                <TableHead>SSS Rate</TableHead>
-                                <TableHead>PhilHealth Rate</TableHead>
-                                <TableHead>Pag-IBIG Rate</TableHead>
-                                <TableHead>Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {positions.data.map((pos) => (
-                                <TableRow key={pos.id}>
-                                    <TableCell>{pos.pos_name}</TableCell>
-                                    <TableCell>₱{pos?.salary_rate || '0.00'}</TableCell>
-                                    <TableCell>{pos?.reg_overtime_rate || '0.00'}%</TableCell>
-                                    <TableCell>{pos?.special_overtime_rate || '0.00'}%</TableCell>
-                                    <TableCell>{pos?.sss_rate || '0.00'}%</TableCell>
-                                    <TableCell>{pos?.philhealth_rate || '0.00'}%</TableCell>
-                                    <TableCell>{pos?.pagibig_rate || '0.00'}%</TableCell>
-                                    <TableCell className='flex justify-center items-center'>
-                                        {/* Filter Dropdown */}
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <MoreHorizontalIcon className="h-4 w-4" />
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent className="min-w-[180px] bg-white rounded-lg shadow-lg border border-gray-200 py-1 me-3">
-                                                {/* <DropdownMenuLabel className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-100">
-                                                    Actions
-                                                </DropdownMenuLabel> */}
-
-                                                {/* <DropdownMenuItem className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 cursor-pointer transition-colors">
-                                                    <Eye strokeWidth={1} className="h-4 w-4" />
-                                                    <span>View</span>
-                                                </DropdownMenuItem> */}
-
-                                                <DropdownMenuItem className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 cursor-pointer transition-colors">
-                                                    <Pencil strokeWidth={1} className="h-4 w-4" />
-                                                    <Link href={PositionController.edit(pos.id)}>
-                                                        Edit
-                                                    </Link>
-                                                </DropdownMenuItem>
-
-                                                <DropdownMenuSeparator className="my-1 border-t border-gray-100" />
-
-                                                <DropdownMenuItem className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 cursor-pointer transition-colors">
-                                                    <Trash strokeWidth={1} className="h-4 w-4" />
-                                                    <button
-                                                        onClick={() => handleDelete(pos.id)}
-                                                        className="flex-1 text-left bg-transparent p-0 border-0"
-                                                    >
-                                                        Delete
-                                                    </button>
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
+                    <CustomTable 
+                        title="Position Lists"
+                        columns={PositionTableConfig.columns}
+                        actions={PositionTableConfig.actions}
+                        data={positions.data}
+                        from={positions.from ?? 1}
+                        onDelete={handleDeleteClick}
+                        onView={() => {}}
+                        onEdit={handleEditClick}
+                    />
                 </div>
                 <Pagination
                     pagination={positions}
@@ -220,6 +200,20 @@ export default function Index({ positions, filters, totalCount, filteredCount }:
                     filteredCount={filteredCount}
                     search={data.search}
                     resourceName='position'
+                />
+
+                {/* Delete Confirmation Dialog */}
+                <DeleteConfirmationDialog
+                    isOpen={deleteDialogOpen}
+                    onClose={() => {
+                        setDeleteDialogOpen(false);
+                        setPositionToDelete(null);
+                    }}
+                    onConfirm={confirmDelete}
+                    title="Delete Position"
+                    itemName={positionToDelete?.id.toString() || ''}
+                    isLoading={isDeleting}
+                    confirmText="Delete Position"
                 />
             </div>
         </AppLayout>

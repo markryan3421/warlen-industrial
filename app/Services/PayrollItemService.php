@@ -26,7 +26,8 @@ class PayrollItemService
         Employee $employee,
         int $lateMinutes = 0,
         array $contributions = [],
-        array $incentives = []
+        array $incentives = [],
+        array $deductions = [] // Add this parameter
     ): void {
         $overtimeDecimal = isset($stats->overtime_work_day) ? (float)$stats->overtime_work_day : 0;
         $attendedDays = isset($stats->attended_days) ? (float)$stats->attended_days : 0;
@@ -70,11 +71,12 @@ class PayrollItemService
             $aflDeduction,
             $cutPayment,
             $lateMinutes,
-            $contributions
+            $contributions,
+            $deductions // Pass deductions here
         );
 
         // Log summary
-        $this->logSummary($employee, $incentives, $contributions);
+        $this->logSummary($employee, $incentives, $deductions, $contributions);
     }
 
     /**
@@ -173,9 +175,10 @@ class PayrollItemService
         float $aflDeduction,
         float $cutPayment,
         int $lateMinutes,
-        array $contributions
+        array $contributions,
+        array $deductions = [] // Add this parameter
     ): void {
-        $deductions = [
+        $deductionItems = [
             [
                 'code' => 'LATE',
                 'type' => 'deduction',
@@ -196,10 +199,22 @@ class PayrollItemService
             ],
         ];
 
+        // Add custom deductions from the Deduction model
+        foreach ($deductions as $deduction) {
+            $deductionItems[] = [
+                'code' => 'DEDUCTION - ' . $deduction['name'],
+                'type' => 'deduction',
+                'amount' => $deduction['amount'],
+                'description' => $deduction['name'] . ' - Deduction'
+            ];
+            
+            Log::info("Adding custom deduction: {$deduction['name']} - ₱{$deduction['amount']}");
+        }
+
         // Add government contributions to deductions if they have values
         if (!empty($contributions)) {
             if ($contributions['sss']['employee'] > 0) {
-                $deductions[] = [
+                $deductionItems[] = [
                     'code' => 'SSS',
                     'type' => 'deduction',
                     'amount' => $contributions['sss']['employee'],
@@ -209,7 +224,7 @@ class PayrollItemService
             }
 
             if ($contributions['pagibig']['employee'] > 0) {
-                $deductions[] = [
+                $deductionItems[] = [
                     'code' => 'PAGIBIG',
                     'type' => 'deduction',
                     'amount' => $contributions['pagibig']['employee'],
@@ -218,7 +233,7 @@ class PayrollItemService
             }
 
             if ($contributions['philhealth']['employee'] > 0) {
-                $deductions[] = [
+                $deductionItems[] = [
                     'code' => 'PHILHEALTH',
                     'type' => 'deduction',
                     'amount' => $contributions['philhealth']['employee'],
@@ -228,14 +243,14 @@ class PayrollItemService
             }
         }
 
-        foreach ($deductions as $deduction) {
-            if ($deduction['amount'] > 0) {
+        foreach ($deductionItems as $deductionItem) {
+            if ($deductionItem['amount'] > 0) {
                 PayrollItem::create([
                     'payroll_id' => $payroll->id,
-                    'code' => $deduction['code'],
-                    'type' => $deduction['type'],
-                    'amount' => $deduction['amount'],
-                    'description' => $deduction['description'] ?? null,
+                    'code' => $deductionItem['code'],
+                    'type' => $deductionItem['type'],
+                    'amount' => $deductionItem['amount'],
+                    'description' => $deductionItem['description'] ?? null,
                 ]);
             }
         }
@@ -244,7 +259,7 @@ class PayrollItemService
     /**
      * Log summary information
      */
-    private function logSummary(Employee $employee, array $incentives, array $contributions): void
+    private function logSummary(Employee $employee, array $incentives, array $deductions, array $contributions): void
     {
         Log::info("Payroll items created for employee {$employee->emp_code} with status {$employee->employee_status}, " .
             "position {$employee->position->pos_name} (Daily Rate: ₱{$employee->position->basic_salary})");
@@ -253,6 +268,15 @@ class PayrollItemService
         if (!empty($incentives)) {
             $totalIncentives = array_sum(array_column($incentives, 'amount'));
             Log::info("Incentives for {$employee->emp_code}: Total ₱{$totalIncentives}");
+        }
+        
+        // Log custom deduction totals
+        if (!empty($deductions)) {
+            $totalDeductions = array_sum(array_column($deductions, 'amount'));
+            Log::info("Custom deductions for {$employee->emp_code}: Total ₱{$totalDeductions}");
+            foreach ($deductions as $deduction) {
+                Log::info("  - {$deduction['name']}: ₱{$deduction['amount']}");
+            }
         }
 
         // Log contribution totals

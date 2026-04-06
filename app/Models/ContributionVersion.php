@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\LogsActivityTrait;
 use App\Models\ContributionBracket;
 use App\Policies\ContributionVersionPolicy;
 use Carbon\Carbon;
@@ -10,6 +11,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Spatie\Activitylog\Contracts\Activity;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
@@ -17,6 +19,8 @@ use Spatie\Activitylog\Traits\LogsActivity;
 class ContributionVersion extends Model
 {
     use HasFactory, LogsActivity;
+
+    use LogsActivityTrait;
 
     protected $fillable = [
         'type',
@@ -38,6 +42,15 @@ class ContributionVersion extends Model
                 // 'effective_to',
             ])
             ->logOnlyDirty();
+    }
+
+    protected function getActivityDisplayNames(): array
+    {
+        return [
+            'type' => 'Contribution Type',
+            // 'effective_from' => 'Effective From',
+            // 'effective_to' => 'Effective To',
+        ];
     }
 
     public function contributionBrackets(): HasMany

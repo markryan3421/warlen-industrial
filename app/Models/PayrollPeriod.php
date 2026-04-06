@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use App\Concerns\LogsActivityTrait;
 use App\Policies\PayrollPeriodPolicy;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Attributes\UsePolicy;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Cache;
+use Spatie\Activitylog\Contracts\Activity;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
@@ -15,18 +18,21 @@ use Spatie\Activitylog\Traits\LogsActivity;
 class PayrollPeriod extends Model
 {
     use LogsActivity;
+
+    use LogsActivityTrait;
+
     protected $fillable = [
         'start_date',
         'end_date',
         'pay_date',
         'payroll_per_status',
+        'is_paid',
     ];
 
-    // protected $casts = [
-    //     'start_date' => 'date',
-    //     'end_date' => 'date',
-    //     'pay_date' => 'date'
-    // ];
+    protected $casts = [
+        'is_paid' => 'boolean',
+    ];
+
 
     public function payrolls(): HasMany
     {
@@ -43,6 +49,16 @@ class PayrollPeriod extends Model
                 'payroll_per_status',
             ])
             ->logOnlyDirty();
+    }
+
+    protected function getActivityDisplayNames(): array
+    {
+        return [
+            'start_date' => 'Start Date',
+            'end_date' => 'End Date',
+            'pay_date' => 'Pay Date',
+            'payroll_per_status' => 'Payroll Period Status',
+        ];
     }
 
 

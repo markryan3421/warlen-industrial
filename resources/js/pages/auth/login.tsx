@@ -1,16 +1,16 @@
 import { Form } from '@inertiajs/react';
+import { Mail, Eye, EyeOff, Lock } from 'lucide-react';
+import { useState } from 'react';
 import InputError from '@/components/input-error';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { useState } from 'react';
 import { store } from '@/routes/login';
 import { request } from '@/routes/password';
-import { Mail, Eye, EyeOff, Lock } from 'lucide-react';
 import '@fontsource/inter/700.css';
 
 type Props = {

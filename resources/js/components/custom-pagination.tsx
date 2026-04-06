@@ -1,6 +1,6 @@
     import { Link } from '@inertiajs/react';
-    import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
     import { ChevronLeft, ChevronRight } from 'lucide-react';
+    import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
     interface LinkProps {
         active: boolean;
@@ -194,7 +194,7 @@
                 {link.label}
             </Link>
         );
-    }
+    } 
 
     /** Rows-per-page select */
     function PerPageSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
@@ -208,7 +208,6 @@
                     <SelectItem value="25">25</SelectItem>
                     <SelectItem value="50">50</SelectItem>
                     <SelectItem value="100">100</SelectItem>
-                    <SelectItem value="-1">All</SelectItem>
                 </SelectContent>
             </Select>
         );

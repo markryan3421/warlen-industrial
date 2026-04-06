@@ -3,9 +3,10 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Spatie\Activitylog\Models\Activity;
-use Illuminate\Pagination\LengthAwarePaginator;
 
 class ActivityLogController extends Controller
 {
@@ -13,6 +14,9 @@ class ActivityLogController extends Controller
     {
         // Get search and pagination parameters
         $search = $request->get('search', '');
+        $actionFilter = $request->get('action', 'all');
+        $modelFilter = $request->get('model', 'all');
+        $userFilter = $request->get('user', 'all');
         $perPage = (int) $request->get('perPage', 10);
         $currentPage = (int) $request->get('page', 1);
 
@@ -21,10 +25,10 @@ class ActivityLogController extends Controller
             ->latest()
             ->cursor();
 
-        // Transform data
-        $transformed = collect();
+        // First, transform ALL data to get available filter options
+        $allTransformed = collect();
         foreach ($activities as $activity) {
-            $transformed->push([
+            $allTransformed->push([
                 'id' => $activity->id,
                 'log_name' => $activity->log_name,
                 'description' => $activity->description,
@@ -42,13 +46,49 @@ class ActivityLogController extends Controller
             ]);
         }
 
-        // Apply search filter if needed
+        // Get ALL unique values for filter dropdowns (from unfiltered data)
+        $allActions = $allTransformed->pluck('description')->unique()->values()->toArray();
+        $allModels = $allTransformed->pluck('subject_type')->unique()->values()->toArray();
+        $allUsers = $allTransformed->filter(function ($item) {
+            return $item['causer'] !== null;
+        })->map(function ($item) {
+            return [
+                'id' => (string) $item['causer']['id'],
+                'name' => $item['causer']['name']
+            ];
+        })->unique('id')->values()->toArray();
+
+        // Now apply filters to get the filtered data
+        $transformed = $allTransformed;
+
+        // Apply search filter
         if (!empty($search)) {
             $transformed = $transformed->filter(function ($item) use ($search) {
                 return stripos($item['description'], $search) !== false ||
                     stripos($item['log_name'], $search) !== false ||
                     stripos($item['subject_type'], $search) !== false ||
-                    stripos($item['causer']['name'] ?? '', $search) !== false;
+                    ($item['causer'] && stripos($item['causer']['name'], $search) !== false);
+            });
+        }
+
+        // Apply action filter
+        if ($actionFilter !== 'all') {
+            $transformed = $transformed->filter(function ($item) use ($actionFilter) {
+                return $item['description'] === $actionFilter;
+            });
+        }
+
+        // Apply model filter
+        if ($modelFilter !== 'all') {
+            $transformed = $transformed->filter(function ($item) use ($modelFilter) {
+                return $item['subject_type'] === $modelFilter;
+            });
+        }
+
+        // Apply user filter
+        if ($userFilter !== 'all') {
+            $transformed = $transformed->filter(function ($item) use ($userFilter) {
+                return $item['causer'] && (string) $item['causer']['id'] === (string) $userFilter;
             });
         }
 
@@ -74,13 +114,22 @@ class ActivityLogController extends Controller
                 'from' => $paginator->firstItem(),
                 'to' => $paginator->lastItem(),
                 'total' => $allTotal,
+                'current_page' => $paginator->currentPage(),
+                'last_page' => $paginator->lastPage(),
+                'per_page' => $paginator->perPage(),
             ],
             'filters' => [
                 'search' => $search,
+                'action' => $actionFilter,
+                'model' => $modelFilter,
+                'user' => $userFilter,
                 'perPage' => (string) $perPage,
             ],
             'totalCount' => $allTotal,
             'filteredCount' => $totalCount,
+            'allActions' => $allActions,
+            'allModels' => $allModels,
+            'allUsers' => $allUsers,
         ]);
     }
 
@@ -89,42 +138,49 @@ class ActivityLogController extends Controller
      */
     protected function getModelName($activity): string
     {
+        $modelName = '';
+
         // Try subject_type first
         if ($activity->subject_type) {
-            return class_basename($activity->subject_type);
+            $modelName = class_basename($activity->subject_type);
         }
-
         // Try loaded subject relationship
-        if ($activity->subject) {
-            return class_basename($activity->subject);
+        elseif ($activity->subject) {
+            $modelName = class_basename($activity->subject);
         }
-
         // Try to infer from properties
-        if ($activity->properties) {
+        elseif ($activity->properties) {
             if (isset($activity->properties['subject_type'])) {
-                return class_basename($activity->properties['subject_type']);
+                $modelName = class_basename($activity->properties['subject_type']);
             }
-
             // For CRUD operations without explicit type
-            if (in_array($activity->description, ['created', 'updated', 'deleted'])) {
-                return 'Record';
+            elseif (in_array($activity->description, ['created', 'updated', 'deleted'])) {
+                $modelName = 'Record';
             }
         }
-
         // Fallback to log name
-        if ($activity->log_name) {
+        elseif ($activity->log_name) {
             $name = strtolower($activity->log_name);
             $models = ['user', 'branch', 'site', 'role', 'permission'];
 
             foreach ($models as $model) {
                 if (str_contains($name, $model)) {
-                    return ucfirst($model);
+                    $modelName = ucfirst($model);
+                    break;
                 }
             }
 
-            return ucfirst($activity->log_name);
+            if (empty($modelName)) {
+                $modelName = ucfirst($activity->log_name);
+            }
         }
 
-        return 'Activity';
+        // Default fallback
+        if (empty($modelName)) {
+            $modelName = 'Activity';
+        }
+
+        // Remove special characters and apply title case
+        return preg_replace('/[^a-zA-Z0-9\s]/', ' ', Str::title($modelName));
     }
 }

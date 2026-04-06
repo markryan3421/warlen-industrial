@@ -17,6 +17,11 @@ import {
     BookUser,
     UserRoundCog,
 } from 'lucide-react';
+import AttendanceController from "@/actions/App/Http/Controllers/HrRole/HRAttendanceController";
+import HREmployeeController from '@/actions/App/Http/Controllers/HrRole/HREmployeeController';
+import IncentiveController from "@/actions/App/Http/Controllers/HrRole/HRIncentiveController";
+import PayrollController from "@/actions/App/Http/Controllers/HrRole/PayrollController";
+import PayrollPeriodController from "@/actions/App/Http/Controllers/HrRole/PayrollPeriodController";
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import {
@@ -29,13 +34,8 @@ import {
     SidebarMenuItem,
     useSidebar
 } from '@/components/ui/sidebar';
-import AppLogo from './app-logo';
 import type { NavItem } from '@/types';
-import PayrollController from "@/actions/App/Http/Controllers/HrRole/PayrollController";
-import PayrollPeriodController from "@/actions/App/Http/Controllers/HrRole/PayrollPeriodController";
-import AttendanceController from "@/actions/App/Http/Controllers/HrRole/HRAttendanceController";
-import IncentiveController from "@/actions/App/Http/Controllers/HrRole/HRIncentiveController";
-import HREmployeeController from '@/actions/App/Http/Controllers/HrRole/HREmployeeController';
+import AppLogo from './app-logo';
 
 // HR-specific menu items
 const hrExpendituresItems: NavItem[] = [

@@ -1,33 +1,35 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
-import { Calculator, Percent, Plus, Trash2, LoaderCircle, Filter } from 'lucide-react';
-import { useState, useMemo, useEffect } from 'react';
 import { format, isToday } from 'date-fns';
+import { Calculator, Percent, Plus, Trash2, LoaderCircle, Filter, Handshake } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
 
-import { CustomTable } from '@/components/custom-table';
-import { Button } from '@/components/ui/button';
-import {
-    Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle
-} from '@/components/ui/dialog';
-import {
-    Table, TableBody, TableCell, TableHead, TableHeader, TableRow
-} from '@/components/ui/table';
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ContributionTableConfig } from '@/config/tables/contribution-table';
-import AppLayout from '@/layouts/app-layout';
-import type { BreadcrumbItem } from '@/types';
+import { CustomHeader } from '@/components/custom-header';
 import { CustomModalView } from '@/components/custom-modal-view';
-import { ContributionModalConfig } from '@/config/forms/contribution-modal-view';
+import { CustomPagination } from '@/components/custom-pagination';
+import { CustomTable } from '@/components/custom-table';
 import { CustomToast, toast } from '@/components/custom-toast';
+import InputError from '@/components/input-error';
+import { Badge } from "@/components/ui/badge";
+import { Button } from '@/components/ui/button';
 import {
     Card,
     CardContent,
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import InputError from '@/components/input-error';
-import { CustomPagination } from '@/components/custom-pagination';
+import {
+    Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle
+} from '@/components/ui/dialog';
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+    Table, TableBody, TableCell, TableHead, TableHeader, TableRow
+} from '@/components/ui/table';
+import { ContributionModalConfig } from '@/config/forms/contribution-modal-view';
+import { ContributionTableConfig } from '@/config/tables/contribution-table';
+import AppLayout from '@/layouts/app-layout';
+import type { BreadcrumbItem } from '@/types';
+import { DeleteConfirmationDialog } from '@/components/delete-confirmation-modal';
 
 // Helper function to generate route URLs
 const route = (name: string, params?: any) => {
@@ -142,7 +144,65 @@ export default function Index({
     const [typeFilter, setTypeFilter] = useState<string>("");
     const [hasActiveFilters, setHasActiveFilters] = useState(false);
 
-    console.log('contributionVersions', contributionVersions);
+    // Delete confirmation states
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [itemToDelete, setItemToDelete] = useState<any>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const handleDeleteClick = (contributionVersion: ContributionVersion) => {
+        setItemToDelete(contributionVersion);
+        setDeleteDialogOpen(true);
+    };
+
+    const confirmDelete = () => {
+        if (!itemToDelete) return;
+
+        setIsDeleting(true);
+        destroy(route('contribution-versions.destroy', { contribution_version: itemToDelete.id }), {
+            onSuccess: (page) => {
+                const successMessage = (page.props as any).flash?.success || 'Contribution version deleted successfully.';
+                toast.success(successMessage);
+                setDeleteDialogOpen(false);
+                setItemToDelete(null);
+            },
+            onError: (errors) => {
+                const errorMessage = Object.values(errors).flat()[0] || 'Failed to delete contribution version.';
+                toast.error(errorMessage);
+            },
+            onFinish: () => {
+                setIsDeleting(false);
+            },
+        });
+    };
+
+    // // ── Delete ─────────────────────────────────────────────────────────────
+    // const handleDelete = (version: ContributionVersion | number | string) => {
+    //     // Extract the ID from the version object
+    //     let id: number;
+
+    //     if (typeof version === 'object' && version !== null && 'id' in version) {
+    //         id = version.id;
+    //     } else if (typeof version === 'number') {
+    //         id = version;
+    //     } else if (typeof version === 'string') {
+    //         id = parseInt(version, 10);
+    //     } else {
+    //         return;
+    //     }
+
+    //     if (confirm('Are you sure you want to delete this contribution version?')) {
+    //         router.delete(route('contribution-versions.destroy', { contribution_version: id }), {
+    //             onSuccess: (page) => {
+    //                 const successMessage = (page.props as any).flash?.success || 'Contribution version deleted successfully.';
+    //                 toast.success(successMessage);
+    //             },
+    //             onError: (errors) => {
+    //                 const errorMessage = Object.values(errors).flat()[0] || 'Failed to delete contribution version.';
+    //                 toast.error(errorMessage);
+    //             }
+    //         });
+    //     }
+    // };
 
     // Safely ensure data is an array and remove duplicates based on ID
     const versions = useMemo(() => {
@@ -181,35 +241,6 @@ export default function Index({
     const handleClearAllFilters = () => {
         setTypeFilter("");
     };
-
-    // ── Delete ─────────────────────────────────────────────────────────────
-    const handleDelete = (version: ContributionVersion | number | string) => {
-        // Extract the ID from the version object
-        let id: number;
-
-        if (typeof version === 'object' && version !== null && 'id' in version) {
-            id = version.id;
-        } else if (typeof version === 'number') {
-            id = version;
-        } else if (typeof version === 'string') {
-            id = parseInt(version, 10);
-        } else {
-            return;
-        }
-
-        if (confirm('Are you sure you want to delete this contribution version?')) {
-            router.delete(route('contribution-versions.destroy', { contribution_version: id }), {
-                onSuccess: (page) => {
-                    const successMessage = page.props.flash?.success || 'Contribution version deleted successfully.';
-                    toast.success(successMessage);
-                },
-                onError: (errors) => {
-                    const errorMessage = Object.values(errors).flat()[0] || 'Failed to delete contribution version.';
-                    toast.error(errorMessage);
-                }
-            });
-        }
-    };
     
     // ── View brackets ──────────────────────────────────────────────────────
    const viewBrackets = (version: ContributionVersion) => {
@@ -244,33 +275,45 @@ export default function Index({
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Contributions" />
-            <CustomToast />
-            <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
-                {/* Page header */}
-                <div className="flex items-center gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-                        <Calculator className="h-6 w-6 text-primary" />
-                    </div>
-                    <div>
-                        <h1 className="text-2xl font-bold tracking-tight">Contribution Versions</h1>
-                        <p className="text-sm text-muted-foreground mt-1">
-                            Manage SSS, PhilHealth, and Pag-IBIG contribution tables
-                        </p>
-                    </div>
-                </div>
 
-                {/* Filters and Create button */}
-                {hasRecords && (
-                    <div className="flex justify-between items-center gap-4">
-                        <Button
-                            onClick={() => setIsCreateModalOpen(true)}
-                            className="inline-flex items-center justify-center gap-2"
-                        >
-                            <Plus className="h-4 w-4" />
-                            Create Contribution Version
-                        </Button>
-                    </div>
-                )}
+            {/* style animations */}
+            <style>{`
+                @keyframes fadeUp {
+                    from { opacity: 0; transform: translateY(16px); }
+                    to   { opacity: 1; transform: translateY(0); }
+                }
+                .pp-row { animation: fadeUp 0.3s cubic-bezier(0.22,1,0.36,1) both; }
+                @keyframes headerReveal {
+                    from { opacity: 0; transform: translateY(-10px); }
+                    to   { opacity: 1; transform: translateY(0); }
+                }
+                .pp-header { animation: headerReveal 0.35s cubic-bezier(0.22,1,0.36,1) both; }
+            `}</style>
+
+            <CustomToast />
+            <div className="flex h-full flex flex-col gap-4 rounded-xl p-4 mx-4 -mt-1">
+                
+                <div className="flex flex-row justify-between gap-4 mt-2 pp-header">
+                    {/* Page header */}
+                    <CustomHeader
+                        icon={<Handshake className="h-6 w-6" />}
+                        title="Contributions"
+                        description="Manage contribution versions for SSS, PhilHealth, and Pag-IBIG, including their salary brackets and contribution percentages."
+                    />
+
+                    {/* Filters and Create button */}
+                    {hasRecords && (
+                        <div className="flex justify-end items-center gap-4">
+                            <Button
+                                onClick={() => setIsCreateModalOpen(true)}
+                                className="inline-flex items-center justify-center gap-2"
+                            >
+                                <Plus className="h-4 w-4" />
+                                Create Contribution Version
+                            </Button>
+                        </div>
+                    )}
+                </div>
 
                 {/* Empty state */}
                 {!hasRecords ? (
@@ -310,24 +353,25 @@ export default function Index({
                                 </CardContent>
                             </Card>
                         ) : (
-                                <CardContent className="p-0">
-                                    <CustomTable
-                                        columns={ContributionTableConfig.columns}
-                                        actions={ContributionTableConfig.actions}
-                                        data={displayData}
-                                        from={contributionVersions.from}
-                                        onDelete={handleDelete}
-                                        onView={viewDetails}
-                                        onEdit={handleEdit}
-                                        title="Contribution Table"
-                                    />
-                                </CardContent>
-                       
+
+                            <CardContent className="p-0 pp-row">
+                                <CustomTable
+                                    columns={ContributionTableConfig.columns}
+                                    actions={ContributionTableConfig.actions}
+                                    data={displayData}
+                                    from={contributionVersions.from}
+                                    onDelete={handleDeleteClick}
+                                    onView={viewDetails}
+                                    onEdit={handleEdit}
+                                    title="Contribution Table"
+                                />
+                            </CardContent>
+
                         )}
 
                         {/* Pagination */}
                         {displayData.length > 0 && contributionVersions && (
-                            <CustomPagination
+                            <CustomPagination className = "pp-row"
                                 pagination={{
                                     data: displayData,
                                     from: contributionVersions.from,
@@ -353,6 +397,19 @@ export default function Index({
                                 resourceName="contribution version"
                             />
                         )}
+
+                        <DeleteConfirmationDialog 
+                            isOpen={deleteDialogOpen}
+                            onClose={() => {
+                                setDeleteDialogOpen(false);
+                                setItemToDelete(null);
+                            }}
+                            onConfirm={confirmDelete}
+                            title='Delete Contribution Item'
+                            itemName={itemToDelete ? getContributionTypeLabel(itemToDelete.type) : ''}
+                            isLoading={isDeleting}
+                            confirmText='Delete Contribution'
+                        />
                     </>
                 )}
             </div>

@@ -23,7 +23,7 @@ export const CustomHeader = ({
   return (
     <div className={`flex items-center gap-4 mb-4 ${className}`}>
       <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary shadow-lg">
-        <div className="h-6 w-6 text-primary-foreground">
+        <div className="px-3 lg:px-0 lg:h-6 lg:w-6 text-primary-foreground">
           {icon}
         </div>
       </div>
@@ -33,7 +33,7 @@ export const CustomHeader = ({
             {badgeText}
           </p>
         )}
-        <h1 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
+        <h1 className="text-[20px] -mb-2 md:text-2xl lg:text-2xl font-extrabold tracking-tight text-foreground">
           {title}
           {showUnderline && underlineText && (
             <span className="relative inline-block text-primary">

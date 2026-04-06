@@ -1,14 +1,14 @@
 // resources/js/pages/employees/show.tsx
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import { ArrowLeft, Edit, Trash2, Mail, Phone, Calendar, MapPin, Building2, Briefcase, CreditCard, Clock, User } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import EmployeeController from '@/actions/App/Http/Controllers/EmployeeController';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
-import EmployeeController from '@/actions/App/Http/Controllers/EmployeeController';
-import { useState, useEffect } from 'react';
 
 interface Employee {
     id: number;
