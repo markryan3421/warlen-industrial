@@ -35,9 +35,8 @@ Route::get('/', function () {
 })->name('home');
 
 //Intended for admin
-Route::middleware(['auth', 'admin'])->group(function () {
+Route::middleware(['auth', 'admin', 'auth.session'])->group(function () {
     Route::get('/dashboard', AdminDashboardController::class)->name('dashboard');
-
 
     Route::resource('branches', BranchController::class)->except(['show']);
     Route::delete('/branches/{branch:branch_slug}', [BranchController::class, 'destroy'])->name('branches.destroy');
@@ -68,7 +67,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
 });
 
 //Intended for employee
-Route::middleware(['auth', 'employee'])->group(function () {
+Route::middleware(['auth', 'employee', 'auth.session'])->group(function () {
 
     Route::get('employee/dashboard', function () {
         return Inertia::render('employee-role/dashboard');
@@ -85,7 +84,7 @@ Route::middleware(['auth', 'employee'])->group(function () {
 });
 
 //intended for HR
-Route::middleware(['auth', 'hr'])->group(function () {
+Route::middleware(['auth', 'hr', 'auth.session'])->group(function () {
 
     Route::get('hr/dashboard', function () {
         return Inertia::render('HR/dashboard');
