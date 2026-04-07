@@ -55,7 +55,7 @@ class EmployeeDashboardController extends Controller
         $lifetime = [
             'total_pay' => $enrichedStats->sum('net_pay'),
             'total_late_minutes' => $enrichedStats->sum('late_minutes'),
-            'total_work_hours' => $enrichedStats->sum('real_work_hours'),
+            'total_work_hours' => $enrichedStats->sum('normal_work_hours'),
             'total_overtime_hours' => $enrichedStats->sum(function ($stat) {
                 return $stat->overtime_workday + $stat->overtime_holiday + $stat->overtime_label;
             }),

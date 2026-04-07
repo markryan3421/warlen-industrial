@@ -13,6 +13,9 @@ import { useEffect, useState, useMemo } from 'react';
 import { format, differenceInDays, addDays } from 'date-fns';
 import { type DateRange } from 'react-day-picker';
 import AppLayout from '@/layouts/emp-layout';
+import { toast } from 'sonner';
+import { BreadcrumbItem } from '@/types';
+
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Leave Applications', href: '/employee/application-leave' },
     { title: 'Create Leave Application', href: '/employee/application-leave/create' },
@@ -87,7 +90,28 @@ export default function Create() {
 
     function submitApplication(e: React.FormEvent) {
         e.preventDefault();
-        post(store().url);
+        post(store().url, {
+            onSuccess: (page) => {
+                const successMessage = (page.props as any).flash?.success || 'Branch created successfully.'
+                toast.success(successMessage, {
+                    style: {
+                        backgroundColor: 'white',
+                        color: '#00ca00',
+                        border: '1px solid #d5d8d5'
+                    }
+                });
+            },
+            onError: (errors) => {
+                const errorMessage = Object.values(errors).flat()[0] || 'Failed to create branch.';
+                toast.error(errorMessage, {
+                    style: {
+                        backgroundColor: 'white',
+                        color: '#ff0000',
+                        border: '1px solid #d5d8d5'
+                    }
+                });
+            }
+        });
     }
 
     return (
