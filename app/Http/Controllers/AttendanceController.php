@@ -18,189 +18,148 @@ class AttendanceController extends Controller
     /**
      * Display attendance schedules with calendar view
      */
-    public function attendanceSchedules(Request $request)
-    {
-        $schedules = PaginatedTableService::make(
-            model: AttendanceSchedule::class,
-            request: $request,
-            columns: [
-                'employee_id',
-                'employee_name',
-                'department',
-                'date',
-                'shift_code',
-                'shift_label',
-            ],
-            searchColumns: ['employee_name', 'department', 'shift_label'],
-        );
+    // public function attendanceSchedules(Request $request)
+    // {
+    //     $schedules = PaginatedTableService::make(
+    //         model: AttendanceSchedule::class,
+    //         request: $request,
+    //         columns: [
+    //             'employee_id',
+    //             'employee_name',
+    //             'department',
+    //             'date',
+    //             'shift_code',
+    //             'shift_label',
+    //         ],
+    //         searchColumns: ['employee_name', 'department', 'shift_label'],
+    //     );
 
-        $calendarData = AttendanceSchedule::query()
-            ->select([
-                'employee_id',
-                'employee_name',
-                'department',
-                'date',
-                'shift_code',
-                'shift_label',
-            ])
-            ->orderBy('date')
-            ->get();
+    //     $calendarData = AttendanceSchedule::query()
+    //         ->getAttendanceShed()
+    //         ->orderBy('date')
+    //         ->get();
 
-        return Inertia::render('attendances/ScheduleInfo/index', [
-            'schedules'         => $schedules,
-            'calendarData'      => $calendarData,
-            'filters'           => $request->only(['search', 'perPage']),
-            'totalCount'        => $schedules['totalCount'],
-            'filteredCount'     => $schedules['filteredCount'],
-        ]);
-    }
+    //     return Inertia::render('attendances/ScheduleInfo/index', [
+    //         'schedules'         => $schedules,
+    //         'calendarData'      => $calendarData,
+    //         'filters'           => $request->only(['search', 'perPage']),
+    //         'totalCount'        => $schedules['totalCount'],
+    //         'filteredCount'     => $schedules['filteredCount'],
+    //     ]);
+    // }
 
-    /**
-     * Display attendance period statistics with visual data
-     */
-    public function attendancePeriodStats(Request $request)
-    {
-        $stats = PaginatedTableService::make(
-            model: AttendancePeriodStat::class,
-            request: $request,
-            columns: [
-                'employee_id',
-                'employee_name',
-                'department',
-                'period_start',
-                'period_end',
-                'normal_work_hours',
-                'real_work_hours',
-                'late_times',
-                'late_minutes',
-                'attended_days',
-                'absent_days',
-                'real_pay',
-            ],
-            searchColumns: ['employee_name', 'department'],
-        );
+    // /**
+    //  * Display attendance period statistics with visual data
+    //  */
+    // public function attendancePeriodStats(Request $request)
+    // {
+    //     $stats = PaginatedTableService::make(
+    //         model: AttendancePeriodStat::class,
+    //         request: $request,
+    //         columns: [
+    //             'employee_id',
+    //             'employee_name',
+    //             'department',
+    //             'period_start',
+    //             'period_end',
+    //             'normal_work_hours',
+    //             'real_work_hours',
+    //             'late_times',
+    //             'late_minutes',
+    //             'attended_days',
+    //             'absent_days',
+    //             'real_pay',
+    //         ],
+    //         searchColumns: ['employee_name', 'department'],
+    //     );
 
-        $visualData = AttendancePeriodStat::query()
-            ->select([
-                'employee_id',
-                'employee_name',
-                'department',
-                'period_start',
-                'period_end',
-                'normal_work_hours',
-                'real_work_hours',
-                'late_times',
-                'late_minutes',
-                'attended_days',
-                'absent_days',
-                'real_pay',
-                'scheduled_days',
-            ])
-            ->orderBy('period_start')
-            ->get();
+    //     $visualData = AttendancePeriodStat::query()
+    //         ->getAttendancePeriodStat()
+    //         ->orderBy('period_start')
+    //         ->get();
 
-        return Inertia::render('attendances/PeriodStat/index', [
-            'stats'         => $stats,
-            'visualData'    => $visualData,
-            'filters'       => $request->only(['search', 'perPage']),
-            'totalCount'    => $stats['totalCount'],
-            'filteredCount' => $stats['filteredCount'],
-        ]);
-    }
+    //     return Inertia::render('attendances/PeriodStat/index', [
+    //         'stats'         => $stats,
+    //         'visualData'    => $visualData,
+    //         'filters'       => $request->only(['search', 'perPage']),
+    //         'totalCount'    => $stats['totalCount'],
+    //         'filteredCount' => $stats['filteredCount'],
+    //     ]);
+    // }
 
-    /**
-     * Display attendance logs with timeline view
-     */
-    public function attendanceLogs(Request $request)
-    {
-        $logs = PaginatedTableService::make(
-            model: AttendanceLog::class,
-            request: $request,
-            columns: [
-                'employee_id',
-                'employee_name',
-                'department',
-                'date',
-                'time_in',
-                'time_out',
-                'total_hours',
-                'is_overtime',
-            ],
-            searchColumns: ['employee_name', 'department'],
-        );
+    // /**
+    //  * Display attendance logs with timeline view
+    //  */
+    // public function attendanceLogs(Request $request)
+    // {
+    //     $logs = PaginatedTableService::make(
+    //         model: AttendanceLog::class,
+    //         request: $request,
+    //         columns: [
+    //             'employee_id',
+    //             'employee_name',
+    //             'department',
+    //             'date',
+    //             'time_in',
+    //             'time_out',
+    //             'total_hours',
+    //             'is_overtime',
+    //         ],
+    //         searchColumns: ['employee_name', 'department'],
+    //     );
 
-        $timelineData = AttendanceLog::query()
-            ->select([
-                'employee_id',
-                'employee_name',
-                'department',
-                'date',
-                'time_in',
-                'time_out',
-                'total_hours',
-                'is_overtime',
-            ])
-            ->orderBy('date')
-            ->get();
+    //     $timelineData = AttendanceLog::query()
+    //         ->getAttendanceLog()
+    //         ->orderBy('date')
+    //         ->get();
 
-        return Inertia::render('attendances/AttendanceLogs/index', [
-            'logs'          => $logs,
-            'timelineData'  => $timelineData,
-            'filters'       => $request->only(['search', 'perPage']),
-            'totalCount'    => $logs['totalCount'],
-            'filteredCount' => $logs['filteredCount'],
-        ]);
-    }
+    //     return Inertia::render('attendances/AttendanceLogs/index', [
+    //         'logs'          => $logs,
+    //         //'timelineData'  => $timelineData,
+    //         'filters'       => $request->only(['search', 'perPage']),
+    //         'totalCount'    => $logs['totalCount'],
+    //         'filteredCount' => $logs['filteredCount'],
+    //     ]);
+    // }
 
-    /**
-     * Display attendance exception statistics with calendar view
-     */
-    public function attendanceExceptionStats(Request $request)
-    {
-        $stats = PaginatedTableService::make(
-            model: AttendanceExceptionStat::class,
-            request: $request,
-            columns: [
-                'employee_id',
-                'employee_name',
-                'department',
-                'date',
-                'am_time_in',
-                'am_time_out',
-                'pm_time_in',
-                'pm_time_out',
-                'late_minutes',
-                'leave_early_minutes',
-                'absence_minutes',
-                'total_exception_minutes',
-            ],
-            searchColumns: ['employee_name', 'department'],
-        );
+    // /**
+    //  * Display attendance exception statistics with calendar view
+    //  */
+    // public function attendanceExceptionStats(Request $request)
+    // {
+    //     $stats = PaginatedTableService::make(
+    //         model: AttendanceExceptionStat::class,
+    //         request: $request,
+    //         columns: [
+    //             'employee_id',
+    //             'employee_name',
+    //             'department',
+    //             'date',
+    //             'am_time_in',
+    //             'am_time_out',
+    //             'pm_time_in',
+    //             'pm_time_out',
+    //             'late_minutes',
+    //             'leave_early_minutes',
+    //             'absence_minutes',
+    //             'total_exception_minutes',
+    //         ],
+    //         searchColumns: ['employee_name', 'department'],
+    //     );
 
-        $calendarData = AttendanceExceptionStat::query()
-            ->select([
-                'employee_id',
-                'employee_name',
-                'department',
-                'date',
-                'am_time_in',
-                'am_time_out',
-                'pm_time_in',
-                'pm_time_out',
-                'absence_minutes',
-                'total_exception_minutes',
-            ])
-            ->orderBy('date')
-            ->get();
+    //     $calendarData = AttendanceExceptionStat::query()
+    //         ->getAttendanceExceptionStat()
+    //         ->orderBy('date')
+    //         ->get();
 
-        return Inertia::render('attendances/ExceptionStats/index', [
-            'stats'         => $stats,
-            'calendarData'  => $calendarData,
-            'filters'       => $request->only(['search', 'perPage']),
-            'totalCount'    => $stats['totalCount'],
-            'filteredCount' => $stats['filteredCount'],
-        ]);
-    }
+    //     return Inertia::render('attendances/ExceptionStats/index', [
+    //         'stats'         => $stats,
+    //         'calendarData'  => $calendarData,
+    //         'filters'       => $request->only(['search', 'perPage']),
+    //         'totalCount'    => $stats['totalCount'],
+    //         'filteredCount' => $stats['filteredCount'],
+    //     ]);
+    // }
 
     /**
      * Combined attendance management dashboard
@@ -478,7 +437,7 @@ class AttendanceController extends Controller
             'currentTab' => $tab,
 
             // Logs data
-            'logs' => $logs,
+           'logs' => $logs,
             'timelineData' => $timelineData,
 
             // Exception stats data

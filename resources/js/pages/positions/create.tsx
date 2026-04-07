@@ -13,6 +13,7 @@ import { ArrowLeft, PlusCircle, Briefcase, CheckCircle, DollarSign, Save, X } fr
 import { motion, AnimatePresence } from 'framer-motion';
 import type { BreadcrumbItem } from '@/types';
 
+
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Positions',
