@@ -1,35 +1,34 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
+import { format, isToday } from 'date-fns';
 import { Calculator, Percent, Plus, Trash2, LoaderCircle, Filter, Handshake } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
-import { format, isToday } from 'date-fns';
 
-import { CustomTable } from '@/components/custom-table';
-import { Button } from '@/components/ui/button';
-import {
-    Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle
-} from '@/components/ui/dialog';
-import {
-    Table, TableBody, TableCell, TableHead, TableHeader, TableRow
-} from '@/components/ui/table';
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ContributionTableConfig } from '@/config/tables/contribution-table';
-import AppLayout from '@/layouts/app-layout';
-import type { BreadcrumbItem } from '@/types';
+import { CustomHeader } from '@/components/custom-header';
 import { CustomModalView } from '@/components/custom-modal-view';
-import { ContributionModalConfig } from '@/config/forms/contribution-modal-view';
+import { CustomPagination } from '@/components/custom-pagination';
+import { CustomTable } from '@/components/custom-table';
 import { CustomToast, toast } from '@/components/custom-toast';
+import InputError from '@/components/input-error';
+import { Badge } from "@/components/ui/badge";
+import { Button } from '@/components/ui/button';
 import {
     Card,
     CardContent,
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import InputError from '@/components/input-error';
-import { CustomPagination } from '@/components/custom-pagination';
-import { CustomHeader } from '@/components/custom-header';
-import ContributionVersionController from '@/actions/App/Http/Controllers/ContributionVersionController';
+import {
+    Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle
+} from '@/components/ui/dialog';
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+    Table, TableBody, TableCell, TableHead, TableHeader, TableRow
+} from '@/components/ui/table';
+import { ContributionModalConfig } from '@/config/forms/contribution-modal-view';
+import { ContributionTableConfig } from '@/config/tables/contribution-table';
+import AppLayout from '@/layouts/app-layout';
+import type { BreadcrumbItem } from '@/types';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-modal';
 
 // Helper function to generate route URLs
@@ -292,14 +291,14 @@ export default function Index({
             `}</style>
 
             <CustomToast />
-            <div className="flex h-full flex flex-col gap-4 rounded-xl p-4 mx-4">
+            <div className="flex h-full flex flex-col gap-4 rounded-xl p-4 mx-4 -mt-1">
                 
                 <div className="flex flex-row justify-between gap-4 mt-2 pp-header">
                     {/* Page header */}
                     <CustomHeader
                         icon={<Handshake className="h-6 w-6" />}
                         title="Contributions"
-                        description="Manage your workforce: add, edit, and organize employee records with ease."
+                        description="Manage contribution versions for SSS, PhilHealth, and Pag-IBIG, including their salary brackets and contribution percentages."
                     />
 
                     {/* Filters and Create button */}

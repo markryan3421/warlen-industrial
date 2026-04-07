@@ -1,7 +1,7 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
-import { Briefcase, HandCoins, Search } from 'lucide-react';
+import { Briefcase, HandCoins, Plus, Search } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
@@ -173,25 +173,39 @@ export default function Index({ deductions }: Props) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Deductions" />
-            <div className="flex flex-1 flex-col gap-4 p-4">
 
-                {/* Header */}
-                <div className="flex justify-between items-center">
-                    <div>
-                       <CustomHeader
-                            title='Deductions'
-                            icon={<HandCoins className="h-6 w-6" />}
-                            description='Manage and track employee deductions'
-                        />
-                    </div>
-                    <Link href="/deductions/create">
-                        <Button className="bg-[#1d4791] hover:bg-[#1d4791]/90">
-                            <Briefcase className="h-4 w-4 mr-2" />
-                            Add Deduction
-                        </Button>
-                    </Link>
+            <style>{`
+                @keyframes fadeUp {
+                    from { opacity: 0; transform: translateY(16px); }
+                    to   { opacity: 1; transform: translateY(0); }
+                }
+                .pp-row { animation: fadeUp 0.3s cubic-bezier(0.22,1,0.36,1) both; }
+                @keyframes headerReveal {
+                    from { opacity: 0; transform: translateY(-10px); }
+                    to   { opacity: 1; transform: translateY(0); }
+                }
+                .pp-header { animation: headerReveal 0.35s cubic-bezier(0.22,1,0.36,1) both; }
+            `}</style>
+
+
+            {/* Header */}
+            <div className="grid grid-rows-1 justify-center mx-8 md:grid-cols-2 md:mx-8 mt-3 lg:flex lg:justify-between items-center lg:mx-8 lg:mt-4 lg:-mb-2 pp-header">
+                <div>
+                    <CustomHeader
+                        title='Deductions'
+                        icon={<HandCoins className="h-6 w-6" />}
+                        description='Manage and track employee deductions'
+                    />
                 </div>
+                <Link href="/deductions/create" className='ml-auto'>
+                    <Button className="bg-[#1d4791] hover:bg-[#1d4791]/90 ">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Deduction
+                    </Button>
+                </Link>
+            </div>
 
+            <div className="flex flex-1 flex-col gap-4 p-4 pp-row mx-4">
                 {/* Table */}
                 <CustomTable
                     columns={columns}
@@ -220,10 +234,10 @@ export default function Index({ deductions }: Props) {
                             selectedBranch={undefined}
                             selectedSite={undefined}
                             status=""
-                            onPositionsChange={() => {}}
-                            onBranchChange={() => {}}
-                            onSiteChange={() => {}}
-                            onStatusChange={() => {}}
+                            onPositionsChange={() => { }}
+                            onBranchChange={() => { }}
+                            onSiteChange={() => { }}
+                            onStatusChange={() => { }}
                         />
                     }
                 />
@@ -242,7 +256,7 @@ export default function Index({ deductions }: Props) {
                     </div>
                 )}
 
-                <DeleteConfirmationDialog 
+                <DeleteConfirmationDialog
                     isOpen={deleteDialogOpen}
                     onClose={() => {
                         setDeleteDialogOpen(false);

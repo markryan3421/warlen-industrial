@@ -1,12 +1,13 @@
-import AppLayout from '@/layouts/app-layout';
-import { Button } from "@/components/ui/button";
-import { type BreadcrumbItem, type BranchWithSites } from '@/types';
 import { Head, Link, useForm, usePage, router } from '@inertiajs/react';
-import ApplicationLeaveController from "@/actions/App/Http/Controllers/ApplicationLeaveController";
-import { useState, useMemo, useEffect } from 'react';
+import Echo from 'laravel-echo';
 import { CalendarDays, PlusCircle, Clipboard, X, Bell, Eye, Pencil, Trash2 } from 'lucide-react';
+import Pusher from 'pusher-js';
+import { useState, useMemo, useEffect } from 'react';
+import ApplicationLeaveController from "@/actions/App/Http/Controllers/ApplicationLeaveController";
 import { CustomHeader } from '@/components/custom-header';
 import { CustomPagination } from '@/components/custom-pagination';
+import { CustomTable } from '@/components/custom-table';
+import { Button } from "@/components/ui/button";
 import {
     Dialog,
     DialogContent,
@@ -14,6 +15,8 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
     Select,
     SelectContent,
@@ -21,11 +24,11 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 
+// Import Echo and Pusher for Reverb
 import { ApplicationLeavesTableConfig } from '@/config/tables/application-leave';
-import { CustomTable } from '@/components/custom-table';
+import AppLayout from '@/layouts/app-layout';
+import { type BreadcrumbItem, type BranchWithSites } from '@/types';
 
 // Declare global window interface for Echo
 declare global {
@@ -143,7 +146,6 @@ export default function Index({ applicationLeaves }: ApplicationLeaveProps) {
         localStorage.setItem('applicationLeaves-statusFilter', statusFilter);
     }, [statusFilter]);
 
-
     // Handle delete
     const handleDelete = (slug_app: string) => {
         if (confirm("Are you sure you want to delete this application leave?")) {
@@ -164,20 +166,6 @@ export default function Index({ applicationLeaves }: ApplicationLeaveProps) {
     };
 
     // Filter and search leaves
-
-    // const handleDelete = (slug_app: string) => {
-    //     if (confirm("Are you sure you want to delete this application leave?")) {
-    //         destroy(ApplicationLeaveController.destroy(slug_app).url, {
-    //             onSuccess: () => {
-    //                 // After successful deletion, update local state immediately
-    //                 setLeaves(prevLeaves =>
-    //                     prevLeaves.filter(leave => leave.slug_app !== slug_app)
-    //                 );
-    //             }
-    //         });
-    //     }
-    // }
-
     const filteredLeaves = useMemo(() => {
         let result = leaves;
 
@@ -357,7 +345,7 @@ export default function Index({ applicationLeaves }: ApplicationLeaveProps) {
             `}</style>
 
             {/* Page Header */}
-            <div className="flex justify-between items-center p-4 mx-4 -mb-6 pp-header">
+            <div className="flex justify-between items-center p-4 mx-4 mt-2 -mb-6 pp-header">
                 <CustomHeader
                     title="Application Leaves"
                     description="List of all application leaves"
@@ -386,7 +374,7 @@ export default function Index({ applicationLeaves }: ApplicationLeaveProps) {
                 )}
 
                 {/* Empty state for no leaves at all */}
-                    <div className='mx-4'>
+                    <div className='mx-4 pp-row'>
                         <CustomTable
                             title="Application Leave Lists"
                             columns={columns}

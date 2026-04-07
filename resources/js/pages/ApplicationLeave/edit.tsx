@@ -1,13 +1,4 @@
-import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
-import InputError from '@/components/input-error';
-import { Label } from '@/components/ui/label';
-import {
-    Select, SelectContent, SelectItem,
-    SelectTrigger, SelectValue,
-} from '@/components/ui/select';
-import { update } from '@/actions/App/Http/Controllers/ApplicationLeaveController';
 import {
     ArrowLeft, ClipboardList, User, CalendarDays,
     MessageSquare, ShieldCheck, LoaderCircle, Hash, Mail,
@@ -15,6 +6,15 @@ import {
     XCircle,
     Clock,
 } from 'lucide-react';
+import { update } from '@/actions/App/Http/Controllers/ApplicationLeaveController';
+import InputError from '@/components/input-error';
+import { Label } from '@/components/ui/label';
+import {
+    Select, SelectContent, SelectItem,
+    SelectTrigger, SelectValue,
+} from '@/components/ui/select';
+import AppLayout from '@/layouts/app-layout';
+import { type BreadcrumbItem } from '@/types';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface Employee {

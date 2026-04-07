@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\LogsActivityTrait;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -10,12 +11,15 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
+use Spatie\Activitylog\Contracts\Activity;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
 class Site extends Model
 {
     use HasFactory, LogsActivity;
+
+    use LogsActivityTrait;
 
     protected $table = 'sites';
 
@@ -32,9 +36,16 @@ class Site extends Model
                 'branch.branch_name',
                 'site_name',
             ])
-            ->logOnlyDirty(); 
+            ->logOnlyDirty();
     }
 
+    protected function getActivityDisplayNames(): array
+    {
+        return [
+            'branch.branch_name' => 'Branch Name',
+            'site_name' => 'Site Name',
+        ];
+    }
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class, 'branch_id');

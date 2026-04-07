@@ -1,8 +1,8 @@
 // components/sites-modal.tsx
+import { MapPin } from 'lucide-react';
+import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Button } from "@/components/ui/button";
-import { MapPin } from 'lucide-react';
 import { type BranchWithSites } from '@/types';
 
 interface SitesModalProps {

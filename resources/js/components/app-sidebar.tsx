@@ -1,6 +1,13 @@
 import { Link } from '@inertiajs/react';
 import { LayoutDashboard, History, CircleUser, Building2, Handshake, Coins  , UserCog, Clipboard, Banknote, LayoutDashboardIcon, HandCoins } from 'lucide-react';
+import { FileBadge, Calendar, UserRoundCog, Contact, BookUser } from 'lucide-react';
+import { Users } from 'lucide-react';
+import LogsController from "@/actions/App/Http/Controllers/ActivityLogController";
+import ApplicationLeaveController from '@/actions/App/Http/Controllers/ApplicationLeaveController';
 import BranchController from '@/actions/App/Http/Controllers/BranchController';
+import ContributionVersionController from '@/actions/App/Http/Controllers/ContributionVersionController';
+import PayrollController from "@/actions/App/Http/Controllers/PayrollController";
+import PayrollPeriodController from '@/actions/App/Http/Controllers/PayrollPeriodController';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -16,17 +23,10 @@ import {
     SidebarMenuItem,
     useSidebar
 } from '@/components/ui/sidebar';
+import { useCurrentUrl } from '@/hooks/use-current-url'; // Add this import
 import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
 import AppLogo from './app-logo';
-import PayrollPeriodController from '@/actions/App/Http/Controllers/PayrollPeriodController';
-import { FileBadge, Calendar, UserRoundCog, Contact, BookUser } from 'lucide-react';
-import { Users } from 'lucide-react';
-import ApplicationLeaveController from '@/actions/App/Http/Controllers/ApplicationLeaveController';
-import ContributionVersionController from '@/actions/App/Http/Controllers/ContributionVersionController';
-import { useCurrentUrl } from '@/hooks/use-current-url'; // Add this import
-import PayrollController from "@/actions/App/Http/Controllers/PayrollController";
-import LogsController from "@/actions/App/Http/Controllers/ActivityLogController";
 
 const ExpendituresItems: NavItem[] = [
     {
@@ -127,14 +127,14 @@ export function AppSidebar() {
 
     return (
         <Sidebar collapsible="icon" className="border-r-1 bg-white border-gray-400">
-            <SidebarHeader className="px-0 sm:ml-0 md:px-5 lg:px-2 lg:ml-3">
+            <SidebarHeader className="px-0 sm:ml-0 md:px-5 lg:px-2 lg:ml-2">
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton
                             className="py-10"
                             asChild
                         >
-                            <Link href={dashboard()} prefetch className="h-8 w-8 hover:bg-white">
+                            <Link href={dashboard()} prefetch className="h-8 w-8 hover:bg-transparent">
                                 <AppLogo />
                             </Link>
                         </SidebarMenuButton>
@@ -143,7 +143,7 @@ export function AppSidebar() {
             </SidebarHeader>
 
             <SidebarContent className={`
-                ${isExpanded ? 'px-5 transition-all duration-200 ease-in-out' : 'px-3 transition-all duration-100 ease-in-out'}`}
+                ${isExpanded ? 'px-5 transition-all duration-200 ease-in-out' : 'px-2 transition-all duration-200 ease-in-out'}`}
             >
                 <NavMain items={ExpendituresItems} label="Expenditures" />
                 <NavMain items={AccessControlItems} label="Access Control" />

@@ -69,7 +69,7 @@ class ApplicationLeaveController extends Controller
 
             return redirect()->route('employee.application-leave.index')->with('success', 'Leave application submitted successfully.');
         } catch (\Exception $e) {
-            dd($e);
+           // dd($e);
             DB::rollBack();
             return back()->with('error', 'An error occurred while submitting the leave application. Please try again.');
         }

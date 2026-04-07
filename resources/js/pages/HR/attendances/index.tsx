@@ -1,15 +1,14 @@
 import { Head, useForm, router } from '@inertiajs/react';
-import { useState, useEffect, useMemo } from 'react';
 import { Calendar, Sheet, ChartSpline, Clock, ScrollText, Upload } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
 
 // Components
-import HrLayout from '@/layouts/hr-layout';
+import { AttendanceLogTimeline } from '@/components/attendance/attendance-log-view';
+import { ExceptionStatsTimeline } from '@/components/attendance/exception-stats-view';
 import BiometricImport from '@/components/biometric-import';
-import { CustomTable } from '@/components/custom-table';
 import { CustomPagination } from '@/components/custom-pagination';
-import { Input } from '@/components/ui/input';
+import { CustomTable } from '@/components/custom-table';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     Dialog,
     DialogContent,
@@ -18,17 +17,18 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog";
-import { ExceptionStatsTimeline } from '@/components/attendance/exception-stats-view';
-import { AttendanceLogTimeline } from '@/components/attendance/attendance-log-view';
+import { Input } from '@/components/ui/input';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 // Types
-import type { BreadcrumbItem } from '@/types';
-
-// Table Configurations
 import { AttendanceLogsTableConfig } from '@/config/tables/attendace-logs';
 import { AttendanceExceptionStatsTableConfig } from '@/config/tables/attendance-exception-stats';
-import { AttendanceSchedulesTableConfig } from '@/config/tables/attendance-schedules-table';
+
+// Table Configurations
 import { AttendancePeriodStatsTableConfig } from '@/config/tables/attendance-period-stats';
+import { AttendanceSchedulesTableConfig } from '@/config/tables/attendance-schedules-table';
+import HrLayout from '@/layouts/hr-layout';
+import type { BreadcrumbItem } from '@/types';
 
 // ============================================================================
 // BREADCRUMBS CONFIGURATION

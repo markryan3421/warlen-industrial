@@ -33,20 +33,21 @@
  */
 
 import { Head, Link, useForm, router } from '@inertiajs/react';
+import { format } from 'date-fns';
+import { Users, Search, UserPlus } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { toast } from 'sonner';
+import HREmployeeController from '@/actions/App/Http/Controllers/HrRole/HREmployeeController';
+import { CustomHeader } from '@/components/custom-header';
+import { CustomPagination } from '@/components/custom-pagination';
+import { CustomTable } from '@/components/custom-table';
+import type { BranchData} from '@/components/employee/employee-filter-bar';
+import { EmployeeFilterBar } from '@/components/employee/employee-filter-bar';
 import { Button } from '@/components/ui/button';
 import HrLayout from '@/layouts/hr-layout';
-import { useState, useRef } from 'react';
 import type { BreadcrumbItem } from '@/types';
-import { Users, Search, UserPlus } from 'lucide-react';
-import { format } from 'date-fns';
 
-import { CustomTable } from '@/components/custom-table';
-import { BranchData, EmployeeFilterBar } from '@/components/employee/employee-filter-bar';
 import { EmployeesTableConfig } from '@/config/tables/employees-table';
-import { CustomPagination } from '@/components/custom-pagination';
-import HREmployeeController from '@/actions/App/Http/Controllers/HrRole/HREmployeeController';
-import { toast } from 'sonner';
-import { CustomHeader } from '@/components/custom-header';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Employees', href: '/employees' },

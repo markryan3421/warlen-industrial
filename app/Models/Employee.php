@@ -3,6 +3,7 @@
 namespace App\Models;
 
 
+use App\Concerns\LogsActivityTrait;
 use App\Models\Branch;
 use App\Models\Position;
 use App\Models\User;
@@ -18,7 +19,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Spatie\Activitylog\Contracts\Activity;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Permission\Traits\HasRoles;
@@ -27,6 +30,8 @@ use Spatie\Permission\Traits\HasRoles;
 class Employee extends Model
 {
     use HasRoles, HasFactory, SoftDeletes,  LogsActivity, Notifiable;
+
+    use LogsActivityTrait;
 
     protected $table = 'employees';
 
@@ -77,6 +82,25 @@ class Employee extends Model
                 'employee_status',
             ])
             ->logOnlyDirty();
+    }
+
+    protected function getActivityDisplayNames(): array
+    {
+        return [
+            'position.pos_name' => 'Position',
+            'branch.branch_name' => 'Branch',
+            'site.site_name' => 'Site',
+            'user.name' => 'Employee Name',
+            'user.email' => 'Email',
+            //'slug_emp' => 'Employee Slug',
+            'emp_code' => 'Employee Code',
+            'employee_number' => 'Employee Number',
+            'contract_start_date' => 'Contract Start Date',
+            'contract_end_date' => 'Contract End Date',
+            'emergency_contact_number' => 'Emergency Contact Number',
+            'pay_frequency' => 'Pay Frequency',
+            'employee_status' => 'Employee Status',
+        ];
     }
 
     /**

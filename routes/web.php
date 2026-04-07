@@ -9,6 +9,7 @@ use App\Http\Controllers\BranchController;
 use App\Http\Controllers\ContributionVersionController;
 use App\Http\Controllers\DeductionController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\EmployeeDashboardController;
 use App\Http\Controllers\EmployeeRole\ApplicationLeaveController as EmployeeApplicationLeaveController;
 use App\Http\Controllers\HrRole\HRAttendanceController;
 use App\Http\Controllers\HrRole\HRAttendanceImportController;
@@ -22,7 +23,6 @@ use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\PayrollPeriodController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\PositionController;
-use Illuminate\Container\Attributes\DB;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -36,25 +36,14 @@ Route::get('/', function () {
 })->name('home');
 
 
-Route::middleware(['auth', 'verified', 'roleBase'])->group(function () {
+Route::middleware(['auth','admin' ,'auth.session'])->group(function () {
 
-    Route::get('payrolls', function () {
-        return Inertia::render('payrolls/index');
+    Route::get('payroll', function () {
+        return Inertia::render('payroll/index');
     });
-
     //admin dashboard
-    Route::get('dashboard',AdminDashboardController::class)->name('dashboard');
-
-    //employee dashboard
-    Route::get('employee/dashboard', function () {
-        return Inertia::render('employee-role/dashboard');
-    })->name('employee.dashboard');
-
-    //hr dashboard
-    Route::get('hr/dashboard', function () {
-        return Inertia::render('HR/dashboard');
-    })->name('hr.dashboard');
-
+    Route::get('dashboard', AdminDashboardController::class)->name('dashboard');
+    
     Route::resource('branches', BranchController::class)->except(['show']);
     Route::delete('/branches/{branch:branch_slug}', [BranchController::class, 'destroy'])->name('branches.destroy');
     Route::resource('positions', PositionController::class)->except(['show']);
@@ -66,14 +55,6 @@ Route::middleware(['auth', 'verified', 'roleBase'])->group(function () {
     Route::resource('application-leave', ApplicationLeaveController::class);
     Route::resource('attendances', AttendanceImportController::class);
 
-    Route::resource('employee/application-leave', EmployeeApplicationLeaveController::class)->only(['create', 'index', 'store', 'update', 'edit'])->names([
-        'index' => 'employee.application-leave.index',
-        'create' => 'employee.application-leave.create',
-        'store' => 'employee.application-leave.store',
-        'edit' => 'employee.application-leave.edit',
-        'update' => 'employee.application-leave.update',
-    ]); //employee only
-
     Route::resource('payroll-periods', PayrollPeriodController::class)->except(['show']);
 
     Route::resource('payrolls', PayrollController::class)->except(['show']);
@@ -84,15 +65,39 @@ Route::middleware(['auth', 'verified', 'roleBase'])->group(function () {
     Route::get('/attendance-logs', [AttendanceController::class, 'attendanceLogs']);
     Route::get('/attendance-exception-stats', [AttendanceController::class, 'attendanceExceptionStats']);
 
-    Route::get('/coming-soon', function () {
-        return Inertia::render('coming-soon');
-    });
     Route::resource('/activity-logs', ActivityLogController::class)->only(['index']);
     Route::resource('/contributions', ContributionVersionController::class);
     Route::resource('/deductions', DeductionController::class);
 
+    Route::resource('notifications', NotificationController::class)->only(['index', 'store', 'destroy']);
+});
 
-    //intended for HR
+//Intended for employee
+Route::middleware(['auth', 'employee', 'auth.session'])->group(function () {
+
+    // Route::get('employee/dashboard', function () {
+    //     return Inertia::render('employee-role/dashboard');
+    // })->name('employee.dashboard');
+
+     Route::get('employee/dashboard', [EmployeeDashboardController::class, 'index'])->name('employee.dashboard');
+
+    Route::resource('employee/application-leave', EmployeeApplicationLeaveController::class)->only(['create', 'index', 'store', 'update', 'edit'])->names([
+        'index' => 'employee.application-leave.index',
+        'create' => 'employee.application-leave.create',
+        'store' => 'employee.application-leave.store',
+        'edit' => 'employee.application-leave.edit',
+        'update' => 'employee.application-leave.update',
+    ]); //employee only
+
+});
+
+//intended for HR
+Route::middleware(['auth', 'hr', 'auth.session'])->group(function () {
+
+    Route::get('hr/dashboard', function () {
+        return Inertia::render('HR/dashboard');
+    })->name('hr.dashboard');
+
     Route::get('/hr/attendance-logs', [HRAttendanceController::class, 'attendanceLogs'])->name('hr.attendance-logs');
     Route::get('/hr/attendance-exception-stats', [HRAttendanceController::class, 'attendanceExceptionStats'])->name('hr.attendance-exception-stats');
     Route::get('/hr/attendance-period-stats', [HRAttendanceController::class, 'attendancePeriodStats'])->name('hr.attendance-period-stats');
@@ -100,9 +105,9 @@ Route::middleware(['auth', 'verified', 'roleBase'])->group(function () {
 
     Route::get('hr/attendances', [HRAttendanceController::class, 'attendanceManagement'])->name('hr.attendances.index');
 
-    // Route::resource('/hr/attendances', HRAttendanceImportController::class, [
-    //     'as' => 'hr'
-    // ]);
+    Route::resource('/hr/attendances', HRAttendanceImportController::class, [
+        'as' => 'hr'
+    ]);
 
     Route::resource('hr/incentives', HRIncentiveController::class)->except(['show'])->names([
         'index' => 'hr.incentives.index',
@@ -137,11 +142,7 @@ Route::middleware(['auth', 'verified', 'roleBase'])->group(function () {
         'update' => 'hr.employees.update',
         'destroy' => 'hr.employees.destroy',
     ]);
-
-    Route::resource('notifications', NotificationController::class)->only(['index', 'store', 'destroy']);
 });
-
-
 
 
 require __DIR__ . '/settings.php';

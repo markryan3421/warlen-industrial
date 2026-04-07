@@ -1,6 +1,7 @@
 import { Head, router, useForm } from '@inertiajs/react';
 import { Calendar, Sheet, ChartSpline } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import AttendanceController from "@/actions/App/Http/Controllers/HrRole/HRAttendanceController";
 import { ExceptionStatsTimeline } from '@/components/attendance/exception-stats-view';
 import { CustomPagination } from '@/components/custom-pagination';
 import { CustomTable } from '@/components/custom-table';
@@ -11,7 +12,6 @@ import { AttendanceExceptionStatsTableConfig } from '@/config/tables/attendance-
 import HrLayout from '@/layouts/hr-layout';
 import type { BreadcrumbItem } from '@/types';
 
-import AttendanceController from "@/actions/App/Http/Controllers/HrRole/HRAttendanceController";
 
 const breadcrumbs: BreadcrumbItem[] = [
   {

@@ -10,7 +10,7 @@ export type UseAppearanceReturn = {
 };
 
 const listeners = new Set<() => void>();
-let currentAppearance: Appearance = 'system';
+let currentAppearance: Appearance = 'light'; // CHANGED: from 'system' to 'light'
 
 const prefersDark = (): boolean => {
     if (typeof window === 'undefined') return false;
@@ -25,9 +25,8 @@ const setCookie = (name: string, value: string, days = 365): void => {
 };
 
 const getStoredAppearance = (): Appearance => {
-    if (typeof window === 'undefined') return 'system';
-
-    return (localStorage.getItem('appearance') as Appearance) || 'system';
+    if (typeof window === 'undefined') return 'light'; // CHANGED: from 'system' to 'light'
+    return (localStorage.getItem('appearance') as Appearance) || 'light'; // CHANGED: from 'system' to 'light'
 };
 
 const isDarkMode = (appearance: Appearance): boolean => {
@@ -66,8 +65,8 @@ export function initializeTheme(): void {
     if (typeof window === 'undefined') return;
 
     if (!localStorage.getItem('appearance')) {
-        localStorage.setItem('appearance', 'system');
-        setCookie('appearance', 'system');
+        localStorage.setItem('appearance', 'light'); // CHANGED: from 'system' to 'light'
+        setCookie('appearance', 'light'); // CHANGED: from 'system' to 'light'
     }
 
     currentAppearance = getStoredAppearance();
@@ -81,7 +80,7 @@ export function useAppearance(): UseAppearanceReturn {
     const appearance: Appearance = useSyncExternalStore(
         subscribe,
         () => currentAppearance,
-        () => 'system',
+        () => 'light', // CHANGED: from 'system' to 'light' (this is the SSR default)
     );
 
     const resolvedAppearance: ResolvedAppearance = useMemo(

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import { format, subDays, startOfDay, endOfDay, addDays } from 'date-fns';
 import {
   Calendar,
   Clock,
@@ -10,10 +10,15 @@ import {
   ChevronRight,
   Search,
 } from 'lucide-react';
-import { format, subDays, startOfDay, endOfDay, addDays } from 'date-fns';
+import React, { useState, useMemo, useEffect } from 'react';
+import { DateRange } from 'react-day-picker';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Select,
   SelectContent,
@@ -21,14 +26,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
-import { DateRange } from 'react-day-picker';
-import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Field, FieldLabel } from '../ui/field';
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 
 interface ExceptionRecord {
   id: number;

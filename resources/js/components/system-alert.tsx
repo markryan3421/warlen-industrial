@@ -1,3 +1,7 @@
+import { Button } from "@headlessui/react";
+import { Link } from "@inertiajs/react";
+import { ScrollText, CalendarDays, UserRoundPlus, CalendarClock, ArrowRight, Info } from 'lucide-react'
+import { memo } from "react";
 import {
     Card,
     CardAction,
@@ -7,10 +11,6 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card"
-import { ScrollText, CalendarDays, UserRoundPlus, CalendarClock, ArrowRight, Info } from 'lucide-react'
-import { Button } from "@headlessui/react";
-import { Link } from "@inertiajs/react";
-import { memo } from "react";
 
 const cardArrayItems = [
     {

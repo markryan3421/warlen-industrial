@@ -1,6 +1,9 @@
-// payroll-processing-cards.tsx
 "use client"
+import { format } from "date-fns"
+import { RefreshCcw, Banknote, TrendingUp, TrendingDown, Wallet, SquareUserRound, PhilippinePeso, Newspaper, Calendar as CalendarIcon, X } from "lucide-react"
 import * as React from "react"
+import { useEffect, useState, useRef } from "react"
+import { CustomHeader } from '@/components/custom-header'
 import { Button } from "@/components/ui/button"
 import {
     Card,
@@ -9,9 +12,6 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card"
-import { Banknote, TrendingUp, TrendingDown, Wallet, SquareUserRound, PhilippinePeso, Newspaper } from "lucide-react"
-import { useEffect, useState, useRef } from "react"
-import { CustomHeader } from '@/components/custom-header'
 
 // Define the Payroll interface to match the one from the index page
 interface PayrollItem {
@@ -80,7 +80,6 @@ function useCountAnimation(end: number | string, duration: number = 1000, startO
     const countRef = useRef<number>(0)
     const animationRef = useRef<number>()
 
-    // Parse the end value (handles strings with commas)
     const parseNumericValue = (val: number | string): number => {
         if (typeof val === 'number') return val
         return parseFloat(val.replace(/,/g, '')) || 0
@@ -98,8 +97,6 @@ function useCountAnimation(end: number | string, duration: number = 1000, startO
         const animate = (currentTime: number) => {
             const elapsedTime = currentTime - startTime
             const progress = Math.min(elapsedTime / duration, 1)
-
-            // Easing function for smooth animation
             const easeOutQuart = 1 - Math.pow(1 - progress, 4)
             const currentCount = startValue + (numericEnd - startValue) * easeOutQuart
 
@@ -119,7 +116,6 @@ function useCountAnimation(end: number | string, duration: number = 1000, startO
 
     useEffect(() => {
         if (startOnMount) {
-            // Small delay to ensure component is mounted
             const timer = setTimeout(startAnimation, 100)
             return () => clearTimeout(timer)
         }
@@ -152,7 +148,6 @@ function AnimatedValue({
 }) {
     const { count, startAnimation } = useCountAnimation(value, duration, startOnMount)
 
-    // Format the number with commas
     const formatNumber = (num: number): string => {
         if (Number.isInteger(num)) {
             return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
@@ -186,7 +181,7 @@ export default function PayrollProcessingCards({
 }: PayrollProcessingCardsProps) {
     return (
         <>
-        <style>{`
+            <style>{`
                 @keyframes fadeUp {
                     from { opacity: 0; transform: translateY(16px); }
                     to   { opacity: 1; transform: translateY(0); }
@@ -198,13 +193,13 @@ export default function PayrollProcessingCards({
                 }
                 .pp-header { animation: headerReveal 0.35s cubic-bezier(0.22,1,0.36,1) both; }
             `}</style>
-        <div className = "pp-header" >
-            <CustomHeader
-                className = "mx-4"
-                icon={<Banknote className="h-6 w-6" />}
-                title="Run Payroll"
-                description="Manage and organize payroll periods with ease. Create, edit, and close payroll cycles."
-            />
+            <div className="pp-header">
+                <CustomHeader
+                    className="mx-4"
+                    icon={<Banknote className="h-6 w-6" />}
+                    title="Run Payroll"
+                    description="Manage and organize payroll periods with ease. Create, edit, and close payroll cycles."
+                />
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-3 lg:mx-2 lg:mt-5">
                 <Card className="
@@ -334,7 +329,7 @@ export default function PayrollProcessingCards({
                     </CardFooter>
                 </Card>
             </div>
-        </div>
+            </div>
         </>
     )
 }

@@ -1,17 +1,16 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
-import AppLayout from '@/layouts/app-layout';
-import { Button } from '@/components/ui/button';
 import { Briefcase, Eye, Plus, Coins, Search } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
-import { format, isWithinInterval, parseISO } from 'date-fns';
+import { CustomHeader } from '@/components/custom-header';
+import { CustomPagination } from '@/components/custom-pagination';
 import { CustomTable } from '@/components/custom-table';
 import { EmployeeFilterBar } from '@/components/employee/employee-filter-bar';
-import { CustomPagination } from '@/components/custom-pagination';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import AppLayout from '@/layouts/app-layout';
+import { Card, CardContent } from '@/components/ui/card';
 import type { BreadcrumbItem } from '@/types';
-import { CustomHeader } from '@/components/custom-header';
 import IncentiveController from '@/actions/App/Http/Controllers/IncentiveController';
 import { toast } from '@/components/custom-toast';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-modal';
@@ -303,15 +302,15 @@ export default function Index({ incentives, filters = {}, totalCount, filteredCo
                 .pp-header { animation: headerReveal 0.35s cubic-bezier(0.22,1,0.36,1) both; }
             `}</style>
 
-            <div className="flex flex-1 flex-col gap-4 p-4 mx-4">
+            <div className="flex flex-1 flex-col gap-4 p-4 mx-4 -mt-3">
                 {/* Header */}
-                <div className="flex justify-between items-center pp-header">
+                <div className="grid grid-rows-1 justify-center mx-0 md:grid-cols-2 md:mx-0 mt-3 lg:flex lg:justify-between items-center lg:mx-0 lg:mt-5 lg:-mb-2 pp-header">
                     <CustomHeader
                         title="Incentives"
                         icon={<Coins className="h-6 w-6" />}
                         description='Manage employee incentives across payroll periods'
                     />
-                    <Link href="/incentives/create">
+                    <Link href="/incentives/create" className='ml-auto'>
                         <Button className="bg-[#1d4791] hover:bg-[#1d4791]/90">
                             <Plus className="h-4 w-4 mr-2" />
                             Add Incentive

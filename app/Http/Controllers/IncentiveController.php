@@ -72,7 +72,7 @@ class IncentiveController extends Controller
     {
         Gate::authorize('create', Incentive::class);
         $incentive->create($request->validated());
-        DB::commit();
+       // DB::commit();
         return redirect()->route('incentives.index');
     }
 
@@ -110,7 +110,7 @@ class IncentiveController extends Controller
     {
         Gate::authorize('update', $incentive);
         $updateincentive->update($request->validated(), $incentive);
-        DB::commit();
+        //DB::commit();
         return redirect()->route('incentives.index');
     }
 
@@ -122,7 +122,7 @@ class IncentiveController extends Controller
         Gate::authorize('delete', $incentive);
 
         $incentive->delete();
-        DB::commit();
+       //7 9 DB::commit();
         return redirect()->route('incentives.index');
     }
 }

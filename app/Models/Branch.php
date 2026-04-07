@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\LogsActivityTrait;
 use App\Models\Employee;
 use App\Policies\BranchPolicy;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -12,6 +13,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
+use Spatie\Activitylog\Contracts\Activity;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
@@ -19,6 +21,8 @@ use Spatie\Activitylog\Traits\LogsActivity;
 class Branch extends Model
 {
     use HasFactory, LogsActivity;
+
+    use LogsActivityTrait;
 
     protected $fillable = [
         'branch_name',
@@ -32,9 +36,18 @@ class Branch extends Model
             ->logOnly([
                 'branch_name',
                 'branch_address',
-               // 'branch_slug'
+                // 'branch_slug'
             ])
             ->logOnlyDirty();
+    }
+
+    protected function getActivityDisplayNames(): array
+    {
+        return [
+            'branch_name' => 'Branch Name',
+            'branch_address' => 'Branch Address',
+            // 'branch_slug' => 'Branch Slug',
+        ];
     }
 
     public function employees(): HasMany
@@ -53,7 +66,7 @@ class Branch extends Model
     }
 
     #[Scope]
-    protected function getBranch(Builder $query):void
+    protected function getBranch(Builder $query): void
     {
         $query->select(
             'id',
