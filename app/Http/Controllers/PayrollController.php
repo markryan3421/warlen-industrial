@@ -21,32 +21,102 @@ class PayrollController extends Controller
     {
         Gate::authorize('viewAny', Payroll::class);
 
-        $payrolls = $this->payrollService->getPayroll();
+        // Build query with relationships
+        $query = Payroll::query()
+            ->with(['payrollPeriod', 'employee.user', 'employee.position', 'payrollItems'])
+            ->latest();
 
-        $result = $this->paginateCollection(
-            items: collect($payrolls), // wrap in Collection if not already
-            request: $request,
-            searchColumns: [
-                'employee.user.name',
-                'employee.emp_code',
-                'employee.position.pos_name',
-                'payroll_period.period_name',
-                'employee.pay_frequency'
-            ],
-        );
+        // Apply search filter
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->whereHas('employee.user', function($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%");
+                })->orWhereHas('employee', function($q) use ($search) {
+                    $q->where('emp_code', 'like', "%{$search}%");
+                });
+            });
+        }
 
+        // Apply position filter
+        if ($request->filled('positions')) {
+            $positions = explode(',', $request->positions);
+            $query->whereHas('employee.position', function($q) use ($positions) {
+                $q->whereIn('pos_name', $positions);
+            });
+        }
+
+if ($request->filled('date_from') || $request->filled('date_to')) {
+    $query->whereHas('payrollPeriod', function($q) use ($request) {
+        if ($request->filled('date_from') && $request->filled('date_to')) {
+            // Full range: period must overlap the selected range
+            $q->whereDate('start_date', '<=', $request->date_to)
+              ->whereDate('end_date', '>=', $request->date_from);
+        } elseif ($request->filled('date_from')) {
+            // Only from date: period must contain this exact date
+            // (started on or before it AND ends on or after it)
+            $q->whereDate('start_date', '<=', $request->date_from)
+              ->whereDate('end_date', '>=', $request->date_from);
+        } elseif ($request->filled('date_to')) {
+            // Only to date: period must contain this exact date
+            $q->whereDate('start_date', '<=', $request->date_to)
+              ->whereDate('end_date', '>=', $request->date_to);
+        }
+    });
+}
+
+        // Get total count before pagination
+        $totalCount = $query->count();
+
+        // Apply pagination
+        $perPage = $request->input('perPage', 10);
+        $payrolls = $query->paginate($perPage);
+        
+        // Get filtered count
+        $filteredCount = $payrolls->total();
+
+        // Get all unique positions for filter dropdown
+        $allPositions = Payroll::query()
+            ->with('employee.position')
+            ->get()
+            ->pluck('employee.position.pos_name')
+            ->filter()
+            ->unique()
+            ->sort()
+            ->values()
+            ->toArray();
+
+        // Calculate totals for the filtered payrolls
+        $payrollsCollection = $payrolls->getCollection();
+        
         return Inertia::render('payrolls/index', [
-            'payrolls' => $result['data'], // Only paginated data
-            'pagination' => $result['pagination'], // Pagination metadata
-            'filters' => $result['filters'],
-            'totalCount' => $result['totalCount'],
-            'filteredCount' => $result['filteredCount'],
-            'totalOvertimePay' => $this->payrollService->calculateTotalOvertimePay($payrolls),
-            'totalOvertimeHours' => $this->payrollService->calculateTotalOvertimeHours($payrolls),
-            'totalDeductions' => $this->payrollService->calculateTotalDeductions($payrolls),
-            'totalNetPay' => $this->payrollService->calculateTotalNetPay($payrolls),
-            'totalGrossPay' => $this->payrollService->calculateTotalGrossPay($payrolls),
-            'activeEmployee' => $this->payrollService->getActiveEmployeesInPayroll($payrolls),
+            'payrolls' => $payrolls->items(),
+            'pagination' => [
+                'current_page' => $payrolls->currentPage(),
+                'last_page' => $payrolls->lastPage(),
+                'per_page' => $payrolls->perPage(),
+                'total' => $payrolls->total(),
+                'from' => $payrolls->firstItem(),
+                'to' => $payrolls->lastItem(),
+                'links' => $payrolls->linkCollection()->toArray(),
+            ],
+            'filters' => [
+                'search' => $request->search,
+                'positions' => $request->positions,
+                'date_from' => $request->date_from,
+                'date_to' => $request->date_to,
+                'perPage' => $request->perPage,
+            ],
+            'totalCount' => $totalCount,
+            'filteredCount' => $filteredCount,
+            'totalOvertimePay' => $this->payrollService->calculateTotalOvertimePay($payrollsCollection),
+            'totalOvertimeHours' => $this->payrollService->calculateTotalOvertimeHours($payrollsCollection),
+            'totalDeductions' => $this->payrollService->calculateTotalDeductions($payrollsCollection),
+            'totalNetPay' => $this->payrollService->calculateTotalNetPay($payrollsCollection),
+            'totalGrossPay' => $this->payrollService->calculateTotalGrossPay($payrollsCollection),
+            'activeEmployee' => $this->payrollService->getActiveEmployeesInPayroll($payrollsCollection),
+            'allPositions' => $allPositions,
+            'branchesData' => [],
         ]);
     }
 

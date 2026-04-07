@@ -2,36 +2,52 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class AttendancePeriodStat extends Model
 {
     protected $fillable = [
-        'employee_id', 'employee_name', 'department',
-        'period_start', 'period_end',
-
+        'employee_id',
+        'employee_name',
+        'department',
+        'period_start',
+        'period_end',
         // Work hours
-        'normal_work_hours', 'real_work_hours',
+        'normal_work_hours',
+        'real_work_hours',
 
         // Late stats
-        'late_times', 'late_minutes',
+        'late_times',
+        'late_minutes',
 
         // Leave early stats
-        'leave_early_times', 'leave_early_minutes',
+        'leave_early_times',
+        'leave_early_minutes',
 
         // Overtime breakdown
-        'overtime_workday', 'overtime_holiday', 'overtime_label',
+        'overtime_workday',
+        'overtime_holiday',
+        'overtime_label',
 
         // Attendance day counts
-        'scheduled_days', 'attended_days',
+        'scheduled_days',
+        'attended_days',
 
         // Absence/leave day counts
-        'out_days', 'absent_days', 'afl_days',
+        'out_days',
+        'absent_days',
+        'afl_days',
 
         // Payment figures
-        'overtime_pay', 'subsidy_pay',
-        
-        'late_leave_deduction', 'afl_deduction', 'cut_payment', 'real_pay',
+        'overtime_pay',
+        'subsidy_pay',
+
+        'late_leave_deduction',
+        'afl_deduction',
+        'cut_payment',
+        'real_pay',
         'note',
     ];
 
@@ -54,7 +70,7 @@ class AttendancePeriodStat extends Model
         'afl_days'            => 'float',
         'overtime_pay'        => 'float',
         'subsidy_pay'         => 'float',
-        'late_leave_deduction'=> 'float',
+        'late_leave_deduction' => 'float',
         'afl_deduction'       => 'float',
         'cut_payment'         => 'float',
         'real_pay'            => 'float',
@@ -73,8 +89,32 @@ class AttendancePeriodStat extends Model
         return round(($this->attended_days / $this->scheduled_days) * 100, 1);
     }
 
-    public function scopeForEmployee($q, string $id) { return $q->where('employee_id', $id); }
-    public function scopeForPeriod($q, string $start, string $end) {
+    public function scopeForEmployee($q, string $id)
+    {
+        return $q->where('employee_id', $id);
+    }
+    public function scopeForPeriod($q, string $start, string $end)
+    {
         return $q->where('period_start', $start)->where('period_end', $end);
+    }
+
+    #[Scope]
+    protected function getAttendancePeriodStat(Builder $query): void
+    {
+        $query->select([
+            'employee_id',
+            'employee_name',
+            'department',
+            'period_start',
+            'period_end',
+            'normal_work_hours',
+            'real_work_hours',
+            'late_times',
+            'late_minutes',
+            'attended_days',
+            'absent_days',
+            'real_pay',
+            'scheduled_days',
+        ]);
     }
 }
