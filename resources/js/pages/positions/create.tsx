@@ -9,8 +9,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch'; // Import Switch component if available
 import AppLayout from '@/layouts/app-layout';
+import { ArrowLeft, PlusCircle, Briefcase, CheckCircle, DollarSign, Save, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import type { BreadcrumbItem } from '@/types';
-import { ArrowLeft, PlusCircle, Briefcase } from 'lucide-react';
+
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
