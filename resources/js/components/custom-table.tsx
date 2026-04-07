@@ -252,7 +252,6 @@ function ActionDropdown({
 }
 
 // ─── Main component ────────────────────────────────────────────────────────────
-// ─── Main component ────────────────────────────────────────────────────────────
 export const CustomTable = ({
     columns,
     actions,
@@ -291,7 +290,7 @@ export const CustomTable = ({
                 </>
             );
         }
-        
+
         if (total !== undefined && total > 0) {
             return (
                 <>
@@ -300,7 +299,7 @@ export const CustomTable = ({
                 </>
             );
         }
-        
+
         return (
             <>
                 Showing <span className="font-black text-white">{data.length}</span> records
@@ -321,7 +320,7 @@ export const CustomTable = ({
                 </>
             );
         }
-        
+
         if (total !== undefined && total > 0) {
             return (
                 <>
@@ -330,7 +329,7 @@ export const CustomTable = ({
                 </>
             );
         }
-        
+
         return (
             <>
                 Showing <span className="font-black text-gray-600 dark:text-gray-300">{data.length}</span> records
@@ -357,14 +356,14 @@ export const CustomTable = ({
                             </p>
                         </div>
                     </div>
-                    
+
                     {/* Toolbar if provided */}
                     {toolbar && (
                         <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40">
                             {toolbar}
                         </div>
                     )}
-                    
+
                     {/* Empty state */}
                     {filterEmptyState ?? <EmptyState />}
                 </div>
