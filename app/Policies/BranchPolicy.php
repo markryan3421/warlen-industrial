@@ -13,7 +13,7 @@ class BranchPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->hasRole('admin');
+         return $user->hasAnyRole(['admin', 'hr_head']);
     }
 
     /**
@@ -21,7 +21,7 @@ class BranchPolicy
      */
     public function view(User $user, Branch $branch): bool
     {
-        return $user->hasRole('admin');
+         return $user->hasAnyRole(['admin', 'hr_head']);
     }
 
     /**
@@ -29,7 +29,7 @@ class BranchPolicy
      */
     public function create(User $user): bool
     {
-        return $user->hasRole('admin');
+         return $user->hasAnyRole(['admin', 'hr_head']);
     }
 
     /**
@@ -37,7 +37,7 @@ class BranchPolicy
      */
     public function update(User $user, Branch $branch): bool
     {
-        return $user->hasRole('admin');
+         return $user->hasAnyRole(['admin', 'hr_head']);
     }
 
     /**
@@ -45,7 +45,7 @@ class BranchPolicy
      */
     public function delete(User $user, Branch $branch): bool
     {
-        return $user->hasRole('admin');
+         return $user->hasAnyRole(['admin', 'hr_head']);
     }
 
     /**
@@ -53,7 +53,7 @@ class BranchPolicy
      */
     public function restore(User $user, Branch $branch): bool
     {
-        return $user->hasRole('admin');
+         return $user->hasAnyRole(['admin', 'hr_head']);
     }
 
     /**
@@ -61,6 +61,6 @@ class BranchPolicy
      */
     public function forceDelete(User $user, Branch $branch): bool
     {
-        return $user->hasRole('admin');
+         return $user->hasAnyRole(['admin', 'hr_head']);
     }
 }
