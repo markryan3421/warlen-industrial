@@ -1,13 +1,13 @@
 import { Head, useForm } from '@inertiajs/react';
 import InputError from '@/components/input-error';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon, FileTextIcon, Loader2, CheckCircle2, Sun, AlertCircle } from 'lucide-react';
+import {
+    CalendarIcon, FileTextIcon, Loader2, CheckCircle2,
+    AlertCircle, SendHorizonal,
+} from 'lucide-react';
 import { store } from '@/actions/App/Http/Controllers/EmployeeRole/ApplicationLeaveController';
 import { useEffect, useState, useMemo } from 'react';
 import { format, differenceInDays, addDays } from 'date-fns';
@@ -27,12 +27,7 @@ interface FormData {
     reason_to_leave: string;
 }
 
-// Fixed leave balance: 5 days per year
-const LEAVE_BALANCE = {
-    total: 5,
-    used: 0,   // This would come from backend; for demo, assume 0 used
-    remaining: 5,
-};
+const LEAVE_BALANCE = { total: 5, used: 0, remaining: 5 };
 
 export default function Create() {
     const { data, setData, errors, processing, post } = useForm<FormData>({
@@ -48,7 +43,6 @@ export default function Create() {
 
     const [isFormValid, setIsFormValid] = useState(false);
 
-    // Step progress (1: dates, 2: reason, 3: ready)
     const currentStep = useMemo(() => {
         if (!data.leave_start || !data.leave_end) return 1;
         if (!data.reason_to_leave.trim()) return 2;
@@ -60,24 +54,20 @@ export default function Create() {
         setData(prev => ({
             ...prev,
             leave_start: range?.from ? format(range.from, 'yyyy-MM-dd') : '',
-            leave_end: range?.to ? format(range.to, 'yyyy-MM-dd') : ''
+            leave_end: range?.to ? format(range.to, 'yyyy-MM-dd') : '',
         }));
     };
 
-    // Quick date shortcuts: 1,2,3,4 days, and 1 week
     const setQuickRange = (days: number) => {
         const from = new Date();
-        const to = addDays(from, days - 1);
-        handleRangeChange({ from, to });
+        handleRangeChange({ from, to: addDays(from, days - 1) });
     };
 
-    // Calculate number of days
     const daysCount = useMemo(() => {
         if (!data.leave_start || !data.leave_end) return 0;
         return differenceInDays(new Date(data.leave_end), new Date(data.leave_start)) + 1;
     }, [data.leave_start, data.leave_end]);
 
-    // Check if requested days exceed balance
     const exceedsBalance = daysCount > LEAVE_BALANCE.remaining;
 
     useEffect(() => {
@@ -92,257 +82,265 @@ export default function Create() {
         e.preventDefault();
         post(store().url, {
             onSuccess: (page) => {
-                const successMessage = (page.props as any).flash?.success || 'Branch created successfully.'
-                toast.success(successMessage, {
-                    style: {
-                        backgroundColor: 'white',
-                        color: '#00ca00',
-                        border: '1px solid #d5d8d5'
-                    }
+                const msg = (page.props as any).flash?.success || 'Leave application submitted.';
+                toast.success(msg, {
+                    style: { backgroundColor: 'white', color: '#16a34a', border: '1px solid #d5d8d5' }
                 });
             },
-            onError: (errors) => {
-                const errorMessage = Object.values(errors).flat()[0] || 'Failed to create branch.';
-                toast.error(errorMessage, {
-                    style: {
-                        backgroundColor: 'white',
-                        color: '#ff0000',
-                        border: '1px solid #d5d8d5'
-                    }
+            onError: (errs) => {
+                const msg = Object.values(errs).flat()[0] || 'Failed to submit application.';
+                toast.error(msg as string, {
+                    style: { backgroundColor: 'white', color: '#d85e39', border: '1px solid #d5d8d5' }
                 });
-            }
+            },
         });
     }
+
+    const stepLabels = ['Select Dates', 'Provide Reason', 'Submit'];
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Create Leave Application" />
-            <div className="flex flex-1 flex-col items-center justify-center gap-6 p-4 pb-12 md:p-6 md:pb-16">
-                {/* Main Form Card */}
-                <Card className="w-full max-w-2xl animate-in fade-in slide-in-from-bottom-6 duration-500 border-t-4 shadow-lg mb-8" style={{ borderTopColor: '#1d4791' }}>
-                    <CardHeader className="space-y-2 pb-4">
-                        <div className="flex items-center justify-between">
-                            <CardTitle className="text-2xl font-bold tracking-tight">Leave Application</CardTitle>
-                            <Badge variant="outline" className="gap-1 bg-primary/5 text-primary">
-                                <Sun className="h-3 w-3" /> Request
-                            </Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground">Fill in the details below to submit your leave request.</p>
 
-                        {/* Step Progress Indicator */}
-                        <div className="mt-4 flex items-center gap-2">
-                            {[1, 2, 3].map((step) => (
-                                <div key={step} className="flex flex-1 items-center gap-2">
-                                    <div className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-all ${currentStep >= step
-                                        ? 'bg-primary text-primary-foreground shadow-md'
-                                        : 'bg-muted text-muted-foreground'
-                                        }`}>
-                                        {currentStep > step ? <CheckCircle2 className="h-4 w-4" /> : step}
-                                    </div>
-                                    {step < 3 && <div className={`h-0.5 flex-1 rounded-full transition-all ${currentStep > step ? 'bg-primary' : 'bg-muted'
-                                        }`} />}
+            <style>{`
+                @keyframes formFadeUp {
+                    from { opacity: 0; transform: translateY(12px); }
+                    to   { opacity: 1; transform: translateY(0); }
+                }
+                .form-fade-up { animation: formFadeUp 0.4s cubic-bezier(0.2, 0.9, 0.4, 1.05) both; }
+            `}</style>
+
+            <div className="flex flex-1 flex-col items-center gap-6 p-4 pb-12 md:p-6 md:pb-16">
+                <div className="w-full max-w-2xl form-fade-up">
+
+                    {/* Card — navy header matches CustomTable */}
+                    <div className="rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+
+                        {/* Navy header */}
+                        <div className="bg-[#1d4791] px-5 py-4">
+                            <div className="flex items-center justify-between mb-4">
+                                <div>
+                                    <h1 className="text-base font-semibold text-white tracking-tight">Leave Application</h1>
+                                    <p className="text-xs text-white/60 mt-0.5">Fill in the details below to submit your request.</p>
                                 </div>
-                            ))}
-                        </div>
-                        <div className="flex justify-between text-xs text-muted-foreground px-1">
-                            <span>Select Dates</span>
-                            <span>Provide Reason</span>
-                            <span>Submit</span>
-                        </div>
-                    </CardHeader>
-
-                    <CardContent>
-                        <form onSubmit={submitApplication} className="space-y-8">
-                            {/* Leave Balance Card - Redesigned for 5 days per year */}
-                            <div className="rounded-lg border border-primary/20 bg-gradient-to-br from-primary/5 to-secondary/5 p-4 shadow-sm animate-in fade-in duration-300">
-                                <div className="flex items-start justify-between">
-                                    <div>
-                                        <p className="text-sm font-medium text-muted-foreground">Annual Leave Balance</p>
-                                        <p className="text-3xl font-bold tracking-tight" style={{ color: '#1d4791' }}>
-                                            {LEAVE_BALANCE.remaining}
-                                            <span className="text-base font-normal text-muted-foreground"> / {LEAVE_BALANCE.total} days</span>
-                                        </p>
-                                        <p className="text-xs text-muted-foreground mt-1">Resets every year on Jan 1</p>
-                                    </div>
-                                    <div className="rounded-full bg-secondary/10 p-2">
-                                        <AlertCircle className="h-5 w-5 text-secondary" style={{ color: '#d85e39' }} />
-                                    </div>
-                                </div>
-                                <div className="mt-3 h-2 w-full rounded-full bg-muted overflow-hidden">
-                                    <div
-                                        className="h-full rounded-full transition-all duration-500"
-                                        style={{
-                                            width: `${(LEAVE_BALANCE.used / LEAVE_BALANCE.total) * 100}%`,
-                                            backgroundColor: '#d85e39'
-                                        }}
-                                    />
-                                </div>
-                                {exceedsBalance && (
-                                    <div className="mt-3 rounded-md bg-destructive/10 p-2 text-xs text-destructive flex items-center gap-2">
-                                        <AlertCircle className="h-3.5 w-3.5" />
-                                        <span>Requested {daysCount} days exceeds your available balance ({LEAVE_BALANCE.remaining} days). Please reduce the duration.</span>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Date Range Field */}
-                            <div className="space-y-3">
-                                <Label className="text-sm font-semibold flex items-center gap-1">
-                                    <CalendarIcon className="h-4 w-4 text-primary" />
-                                    <span>Period Range</span>
-                                    <span className="text-destructive">*</span>
-                                </Label>
-
-                                {/* Quick shortcuts - 1,2,3,4 days & 1 week */}
-                                <div className="flex flex-wrap gap-2">
-                                    {[1, 2, 3, 4].map((days) => (
-                                        <Button
-                                            key={`${days}day`}
-                                            type="button"
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => setQuickRange(days)}
-                                            disabled={processing}
-                                            className="h-8 px-3 text-xs transition-all hover:border-secondary hover:bg-secondary/10"
-                                        >
-                                            {days} day{days !== 1 ? 's' : ''}
-                                        </Button>
-                                    ))}
-                                    {/* <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => setQuickRange(7)}
-                                        disabled={processing}
-                                        className="h-8 px-3 text-xs transition-all hover:border-secondary hover:bg-secondary/10"
-                                    >
-                                        1 week
-                                    </Button> */}
-                                </div>
-
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <Button
-                                            variant="outline"
-                                            className="h-11 w-full justify-start rounded-xl border-2 px-3 font-normal transition-all focus:border-primary focus:ring-1 focus:ring-primary"
-                                            disabled={processing}
-                                        >
-                                            <CalendarIcon className="mr-2 h-4 w-4" />
-                                            {dateRange?.from ? (
-                                                dateRange.to ? (
-                                                    <>
-                                                        {format(dateRange.from, "LLL dd, y")} –{" "}
-                                                        {format(dateRange.to, "LLL dd, y")}
-                                                    </>
-                                                ) : (
-                                                    format(dateRange.from, "LLL dd, y")
-                                                )
-                                            ) : (
-                                                <span>Pick a date range</span>
-                                            )}
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0" align="start">
-                                        <Calendar
-                                            mode="range"
-                                            selected={dateRange}
-                                            onSelect={handleRangeChange}
-                                            numberOfMonths={window.innerWidth < 640 ? 1 : 2}
-                                            disabled={(date) => processing}
-                                            className="rounded-md [&_.rdp-day_selected]:bg-primary [&_.rdp-day_selected]:text-primary-foreground [&_.rdp-day_range_middle]:bg-primary/20"
-                                        />
-                                    </PopoverContent>
-                                </Popover>
-
-                                <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-                                    <div className="flex gap-3 text-muted-foreground">
-                                        <span>Start: {data.leave_start ? format(new Date(data.leave_start), "LLL dd, y") : '—'}</span>
-                                        <span>End: {data.leave_end ? format(new Date(data.leave_end), "LLL dd, y") : '—'}</span>
-                                    </div>
-                                    {daysCount > 0 && (
-                                        <Badge variant="secondary" className="gap-1" style={{ backgroundColor: '#d85e39', color: 'white' }}>
-                                            {daysCount} day{daysCount !== 1 ? 's' : ''}
-                                        </Badge>
-                                    )}
-                                </div>
-                                <div className="space-y-1">
-                                    {errors.leave_start && <InputError message={errors.leave_start} />}
-                                    {errors.leave_end && <InputError message={errors.leave_end} />}
+                                <div className="rounded-lg bg-white/10 p-2">
+                                    <SendHorizonal className="h-4 w-4 text-white" />
                                 </div>
                             </div>
 
-                            {/* Reason Field */}
-                            <div className="space-y-3">
-                                <Label className="text-sm font-semibold flex items-center gap-1">
-                                    <FileTextIcon className="h-4 w-4 text-primary" />
-                                    <span>Reason for Leave</span>
-                                    <span className="text-destructive">*</span>
-                                </Label>
-                                <Textarea
-                                    value={data.reason_to_leave}
-                                    onChange={e => setData('reason_to_leave', e.target.value)}
-                                    placeholder="Please provide a detailed reason for your leave request..."
-                                    className="min-h-[120px] resize-y transition-all focus:border-primary focus:ring-1 focus:ring-primary"
-                                    maxLength={1000}
-                                    aria-invalid={!!errors.reason_to_leave}
-                                    disabled={processing}
-                                />
-                                <div className="flex flex-col gap-1">
-                                    <div className="flex justify-between text-xs text-muted-foreground">
-                                        <span>{data.reason_to_leave.length}/1000 characters</span>
-                                        <span>{Math.round((data.reason_to_leave.length / 1000) * 100)}%</span>
+                            {/* Step progress */}
+                            <div className="flex items-center gap-2">
+                                {[1, 2, 3].map((step) => (
+                                    <div key={step} className="flex flex-1 items-center gap-2">
+                                        <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold transition-all shrink-0
+                                            ${currentStep > step
+                                                ? 'bg-white text-[#1d4791]'
+                                                : currentStep === step
+                                                    ? 'bg-white text-[#1d4791] ring-2 ring-white/40'
+                                                    : 'bg-white/20 text-white/60'
+                                            }`}>
+                                            {currentStep > step ? <CheckCircle2 className="h-3.5 w-3.5" /> : step}
+                                        </div>
+                                        {step < 3 && (
+                                            <div className={`h-px flex-1 rounded-full transition-all ${currentStep > step ? 'bg-white/80' : 'bg-white/20'}`} />
+                                        )}
                                     </div>
-                                    <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                                ))}
+                            </div>
+                            <div className="flex justify-between mt-1.5 px-0.5">
+                                {stepLabels.map((label) => (
+                                    <span key={label} className="text-[10px] text-white/50">{label}</span>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Form body */}
+                        <div className="bg-white px-5 py-5">
+                            <form onSubmit={submitApplication} className="space-y-6">
+
+                                {/* Leave Balance */}
+                                <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                                    <div className="flex items-start justify-between">
+                                        <div>
+                                            <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Annual Leave Balance</p>
+                                            <p className="mt-1 text-2xl font-semibold text-slate-900">
+                                                {LEAVE_BALANCE.remaining}
+                                                <span className="text-sm font-normal text-slate-400"> / {LEAVE_BALANCE.total} days</span>
+                                            </p>
+                                            <p className="text-xs text-slate-400 mt-0.5">Resets every year on Jan 1</p>
+                                        </div>
+                                        <div className="rounded-lg bg-[#d85e39]/10 p-2 shrink-0">
+                                            <AlertCircle className="h-4 w-4 text-[#d85e39]" />
+                                        </div>
+                                    </div>
+                                    <div className="mt-3 h-1.5 w-full rounded-full bg-slate-200 overflow-hidden">
                                         <div
-                                            className="h-full rounded-full transition-all duration-300"
+                                            className="h-full rounded-full transition-all duration-500"
                                             style={{
-                                                width: `${(data.reason_to_leave.length / 1000) * 100}%`,
-                                                backgroundColor: '#1d4791'
+                                                width: `${(LEAVE_BALANCE.used / LEAVE_BALANCE.total) * 100}%`,
+                                                backgroundColor: '#d85e39',
                                             }}
                                         />
                                     </div>
-                                </div>
-                                <InputError message={errors.reason_to_leave} />
-                            </div>
-
-                            {/* Form Actions */}
-                            <div className="flex flex-col-reverse gap-3 pt-4 sm:flex-row sm:justify-end mb-6">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => window.history.back()}
-                                    className="w-full sm:w-auto transition-all hover:scale-105 hover:shadow-md"
-                                    disabled={processing}
-                                >
-                                    Cancel
-                                </Button>
-                                <Button
-                                    type="submit"
-                                    disabled={processing || !isFormValid}
-                                    className="w-full sm:w-auto transition-all hover:scale-105 hover:shadow-md disabled:hover:scale-100"
-                                    style={{ backgroundColor: '#1d4791' }}
-                                >
-                                    {processing ? (
-                                        <>
-                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                            Submitting...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <CheckCircle2 className="mr-2 h-4 w-4" />
-                                            Submit Leave Application
-                                        </>
+                                    {exceedsBalance && (
+                                        <div className="mt-3 rounded-md border border-[#d85e39]/20 bg-[#d85e39]/5 p-2.5 text-xs text-[#d85e39] flex items-center gap-2">
+                                            <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                                            <span>
+                                                Requested {daysCount} days exceeds your available balance ({LEAVE_BALANCE.remaining} days). Please reduce the duration.
+                                            </span>
+                                        </div>
                                     )}
-                                </Button>
-                            </div>
-                        </form>
-                    </CardContent>
-                </Card>
+                                </div>
 
-                {/* Helpful footer */}
-                <p className="text-center text-xs text-muted-foreground animate-in fade-in slide-in-from-bottom-4 duration-700">
-                    Your leave request will be reviewed by your manager. You will receive an email notification.
-                </p>
+                                {/* Date Range Field */}
+                                <div className="space-y-3">
+                                    <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
+                                        <CalendarIcon className="h-3.5 w-3.5 text-[#1d4791]" />
+                                        Period Range <span className="text-[#d85e39]">*</span>
+                                    </p>
+
+                                    {/* Quick shortcuts */}
+                                    <div className="flex flex-wrap gap-2">
+                                        {[1, 2, 3, 4].map((days) => (
+                                            <button
+                                                key={`${days}day`}
+                                                type="button"
+                                                onClick={() => setQuickRange(days)}
+                                                disabled={processing}
+                                                className="h-8 rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 transition-all
+                                                    hover:border-[#1d4791]/30 hover:bg-[#1d4791]/5 hover:text-[#1d4791]
+                                                    disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                {days} day{days !== 1 ? 's' : ''}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <button
+                                                type="button"
+                                                disabled={processing}
+                                                className="flex h-10 w-full items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-600 transition-all
+                                                    hover:border-[#1d4791]/40 focus:outline-none focus:ring-1 focus:ring-[#1d4791] focus:border-[#1d4791]
+                                                    disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                <CalendarIcon className="h-4 w-4 text-slate-400 shrink-0" />
+                                                {dateRange?.from ? (
+                                                    dateRange.to ? (
+                                                        <span>{format(dateRange.from, "LLL dd, y")} – {format(dateRange.to, "LLL dd, y")}</span>
+                                                    ) : (
+                                                        <span>{format(dateRange.from, "LLL dd, y")}</span>
+                                                    )
+                                                ) : (
+                                                    <span className="text-slate-400">Pick a date range</span>
+                                                )}
+                                            </button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-auto p-0 rounded-xl shadow-xl" align="start">
+                                            <Calendar
+                                                mode="range"
+                                                selected={dateRange}
+                                                onSelect={handleRangeChange}
+                                                numberOfMonths={window.innerWidth < 640 ? 1 : 2}
+                                                disabled={() => processing}
+                                                className="rounded-xl [&_.rdp-day_selected]:bg-[#1d4791] [&_.rdp-day_selected]:text-white [&_.rdp-day_range_middle]:bg-[#1d4791]/10"
+                                            />
+                                        </PopoverContent>
+                                    </Popover>
+
+                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                        <div className="flex gap-3 text-xs text-slate-400">
+                                            <span>Start: {data.leave_start ? format(new Date(data.leave_start), "LLL dd, y") : '—'}</span>
+                                            <span>End: {data.leave_end ? format(new Date(data.leave_end), "LLL dd, y") : '—'}</span>
+                                        </div>
+                                        {daysCount > 0 && (
+                                            <span className="rounded-md bg-[#d85e39]/10 px-2 py-0.5 text-xs font-semibold text-[#d85e39]">
+                                                {daysCount} day{daysCount !== 1 ? 's' : ''}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="space-y-1">
+                                        {errors.leave_start && <InputError message={errors.leave_start} />}
+                                        {errors.leave_end && <InputError message={errors.leave_end} />}
+                                    </div>
+                                </div>
+
+                                {/* Reason Field */}
+                                <div className="space-y-3">
+                                    <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
+                                        <FileTextIcon className="h-3.5 w-3.5 text-[#1d4791]" />
+                                        Reason for Leave <span className="text-[#d85e39]">*</span>
+                                    </p>
+                                    <Textarea
+                                        value={data.reason_to_leave}
+                                        onChange={e => setData('reason_to_leave', e.target.value)}
+                                        placeholder="Please provide a detailed reason for your leave request..."
+                                        className="min-h-[120px] resize-y rounded-lg border-slate-200 text-sm transition-all focus:border-[#1d4791] focus:ring-1 focus:ring-[#1d4791]"
+                                        maxLength={1000}
+                                        aria-invalid={!!errors.reason_to_leave}
+                                        disabled={processing}
+                                    />
+                                    <div className="space-y-1.5">
+                                        <div className="flex justify-between text-xs text-slate-400">
+                                            <span>{data.reason_to_leave.length}/1000 characters</span>
+                                            <span>{Math.round((data.reason_to_leave.length / 1000) * 100)}%</span>
+                                        </div>
+                                        <div className="h-1 w-full rounded-full bg-slate-100 overflow-hidden">
+                                            <div
+                                                className="h-full rounded-full transition-all duration-300"
+                                                style={{
+                                                    width: `${(data.reason_to_leave.length / 1000) * 100}%`,
+                                                    backgroundColor: '#1d4791',
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+                                    <InputError message={errors.reason_to_leave} />
+                                </div>
+
+                                {/* Hairline divider + Actions */}
+                                <div className="pt-2 border-t border-slate-100">
+                                    <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                                        <button
+                                            type="button"
+                                            onClick={() => window.history.back()}
+                                            disabled={processing}
+                                            className="h-9 rounded-lg border border-slate-200 bg-white px-4 text-sm font-medium text-slate-600 transition-all
+                                                hover:border-slate-300 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            disabled={processing || !isFormValid}
+                                            className="h-9 rounded-lg px-5 text-sm font-medium text-white shadow-sm shadow-[#1d4791]/20 transition-all
+                                                bg-[#1d4791] hover:bg-[#1d4791]/90
+                                                disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+                                        >
+                                            {processing ? (
+                                                <span className="flex items-center gap-2">
+                                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                                    Submitting…
+                                                </span>
+                                            ) : (
+                                                <span className="flex items-center gap-2">
+                                                    <CheckCircle2 className="h-3.5 w-3.5" />
+                                                    Submit Leave Application
+                                                </span>
+                                            )}
+                                        </button>
+                                    </div>
+                                </div>
+
+                            </form>
+                        </div>
+                    </div>
+
+                    <p className="mt-4 text-center text-xs text-slate-400">
+                        Your leave request will be reviewed by your manager. You will receive an email notification.
+                    </p>
+                </div>
             </div>
         </AppLayout>
     );
