@@ -56,7 +56,68 @@ interface ApplicationLeaveProps {
 
 export default function Index({ applicationLeaves, approvedCount = 0 }: ApplicationLeaveProps) {
     const hasReachedLimit = approvedCount >= 5;
+    const [recentlyUpdatedId, setRecentlyUpdatedId] = useState<number | null>(null);
+    // Listen to ApplicationLeaveEvent via Echo
+    useEffect(() => {
+        if (!window.Echo) {
+            console.warn('Echo is not initialized');
+            return;
+        }
 
+        console.log('Setting up Echo listener for application-leave channel...');
+
+        // Subscribe to private application-leave channel
+        const applicationLeaveChannel = window.Echo.private('application-leave');
+
+        // Handle ApplicationLeaveEvent
+        applicationLeaveChannel.listen('.ApplicationLeaveEvent', (event: any) => {
+            console.log('================== APPLICATION LEAVE EVENT RECEIVED ==================');
+            console.log('Full event:', event);
+            console.log('Leave application details:', {
+                id: event.id,
+                employee_id: event.employee_id,
+                app_status: event.app_status,
+                leave_start: event.leave_start,
+                leave_end: event.leave_end,
+                employee_name: event.employee?.user?.name
+            });
+
+            // Highlight the updated row
+            setRecentlyUpdatedId(event.id);
+            setTimeout(() => {
+                setRecentlyUpdatedId(null);
+            }, 3000);
+
+            // Reload the page to get updated data
+            router.reload({ only: ['applicationLeaves', 'approvedCount'] });
+        });
+
+        // Connection success handler
+        applicationLeaveChannel.subscribed(() => {
+            console.log('✅ Successfully subscribed to private application-leave channel');
+        });
+
+        // Error handler
+        applicationLeaveChannel.error((error: any) => {
+            console.error('❌ Error on application-leave channel:', error);
+        });
+
+        return () => {
+            console.log('🧹 Cleaning up Echo listener');
+            applicationLeaveChannel.stopListening('.ApplicationLeaveEvent');
+        };
+    }, []); // Empty dependency array to run once
+
+    // Transform data to include row highlighting
+    const transformedData = useMemo(() => {
+        return {
+            ...applicationLeaves,
+            data: applicationLeaves.data.map(leave => ({
+                ...leave,
+                _highlight: recentlyUpdatedId === leave.id
+            }))
+        };
+    }, [applicationLeaves, recentlyUpdatedId]);
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Application Leaves" />
