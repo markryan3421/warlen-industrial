@@ -22,7 +22,9 @@ trait DeductionValidationRules
             'deduction_amount' => [
                 'required',
                 'numeric',
-                'min:100'
+                'min:100',
+                'max:9999999.99',
+
             ],
             'employee_ids' => [
                 'required',
