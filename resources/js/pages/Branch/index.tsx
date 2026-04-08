@@ -14,6 +14,8 @@ import { BranchesTableConfig } from '@/config/tables/branch-table';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type BranchWithSites } from '@/types';
 import { DeleteConfirmationDialog } from "@/components/delete-confirmation-modal";
+import ModernFooter from '@/components/custom-footer';
+import Footer from '@/components/custom-footer';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
