@@ -17,10 +17,10 @@ return new class extends Migration
     {
         Schema::create('employees', function (Blueprint $table) {
             $table->id();
-            $table->foreignIdFor(Position::class,'position_id')->nullable()->constrained('positions')->cascadeOnUpdate();
-            $table->foreignIdFor(Branch::class,'branch_id')->nullable()->constrained('branches')->cascadeOnUpdate();
+            $table->foreignIdFor(Position::class,'position_id')->nullable()->constrained('positions')->cascadeOnUpdate()->nullOnDelete();
+            $table->foreignIdFor(Branch::class,'branch_id')->nullable()->constrained('branches')->cascadeOnUpdate()->nullOnDelete();
             $table->foreignIdFor(User::class,'user_id')->constrained('users')->cascadeOnDelete()->cascadeOnUpdate();
-            $table->foreignIdFor(Site::class,'site_id')->nullable()->constrained('sites')->cascadeOnUpdate();
+            $table->foreignIdFor(Site::class,'site_id')->nullable()->constrained('sites')->cascadeOnUpdate()->nullOnDelete();
             $table->string('slug_emp')->unique();
             $table->string('employee_number')->unique();
             $table->integer('emp_code')->unique()->index();
