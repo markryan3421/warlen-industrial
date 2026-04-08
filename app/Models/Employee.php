@@ -203,7 +203,7 @@ class Employee extends Model
     protected function employeeStatus(): Attribute
     {
         return Attribute::make(
-            get: fn($value) => Str::title($value),
+            //get: fn($value) => Str::title($value),
             set: fn($value) => strtolower(trim(strip_tags($value))),
         );
     }

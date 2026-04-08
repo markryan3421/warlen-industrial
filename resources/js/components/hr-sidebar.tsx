@@ -1,10 +1,7 @@
 // components/hr-sidebar.tsx
 import { Link } from '@inertiajs/react';
 import {
-    Airplay,
-    Landmark,
-    CircleMinus,
-    FileBadge,
+    HandCoins,
     Banknote,
     CircleUser,
     Clipboard,
@@ -63,6 +60,11 @@ const hrExpendituresItems: NavItem[] = [
         title: 'Incentives',
         href: IncentiveController.index(),
         icon: Coins,
+    },
+     {
+        title: 'Deduction',
+        href: '/hr/deductions',
+        icon: HandCoins,
     },
     {
         title: 'Employees',

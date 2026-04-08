@@ -14,6 +14,7 @@ use App\Http\Controllers\EmployeeRole\ApplicationLeaveController as EmployeeAppl
 use App\Http\Controllers\HrRole\HRAttendanceController;
 use App\Http\Controllers\HrRole\HRAttendanceImportController;
 use App\Http\Controllers\HrRole\HRBranchController;
+use App\Http\Controllers\HrRole\HRDeductionController;
 use App\Http\Controllers\HrRole\HREmployeeController;
 use App\Http\Controllers\HrRole\HRIncentiveController;
 use App\Http\Controllers\HrRole\HRPositionController;
@@ -160,6 +161,15 @@ Route::middleware(['auth', 'hr', 'auth.session'])->group(function () {
         'edit' => 'hr.positions.edit',
         'update' => 'hr.positions.update',
         'destroy' => 'hr.positions.destroy',
+    ]);
+
+    Route::resource('hr/deductions', HRDeductionController::class)->except(['show'])->names([
+        'index' => 'hr.deductions.index',
+        'create' => 'hr.deductions.create',
+        'store' => 'hr.deductions.store',
+        'edit' => 'hr.deductions.edit',
+        'update' => 'hr.deductions.update',
+        'destroy' => 'hr.deductions.destroy',
     ]);
 });
 
