@@ -115,10 +115,10 @@ class HRAttendanceController extends Controller
         $commonParams = $request->only(['page', 'perPage', 'search']);
 
         // Create separate requests WITHOUT the tab parameter
-        $logsRequest = Request::create('//attendances', 'GET', $commonParams);
-        $exceptionRequest = Request::create('/attendances', 'GET', $commonParams);
-        $periodRequest = Request::create('/attendances', 'GET', $commonParams);
-        $schedulesRequest = Request::create('/attendances', 'GET', $commonParams);
+        $logsRequest = Request::create('/hr/attendances', 'GET', $commonParams);
+        $exceptionRequest = Request::create('/hr/attendances', 'GET', $commonParams);
+        $periodRequest = Request::create('/hr/attendances', 'GET', $commonParams);
+        $schedulesRequest = Request::create('/hr/attendances', 'GET', $commonParams);
 
         // Fetch logs data - ONLY paginate if it's the active tab
         $logs = AttendanceTabPaginatedService::makeForActiveTab(
@@ -395,4 +395,6 @@ class HRAttendanceController extends Controller
             ],
         ]);
     }
+
+    
 }

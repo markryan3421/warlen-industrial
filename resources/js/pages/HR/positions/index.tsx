@@ -4,21 +4,21 @@ import { useState, useMemo } from 'react';
 import { TableSearchHeader } from '@/components/table-search-header';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import AppLayout from '@/layouts/app-layout';
+import AppLayout from '@/layouts/hr-layout';
 import type { BreadcrumbItem } from '@/types';
 import { CustomToast } from '@/components/custom-toast';
 import { CustomHeader } from '@/components/custom-header';
 import { CustomTable } from '@/components/custom-table';
 import { CustomPagination } from '@/components/custom-pagination';
 import { PositionTableConfig } from '@/config/tables/position-table';
-import PositionController from '@/actions/App/Http/Controllers/PositionController';
+import PositionController from '@/actions/App/Http/Controllers/HrRole/HRPositionController';
 import { toast } from '@/components/custom-toast';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-modal';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Positions',
-        href: '/positions',
+        href: '/hr/positions',
     },
 ];
 
@@ -82,7 +82,7 @@ export default function Index({ positions, filters = { search: '', perPage: '10'
             ...(data.perPage && { perPage: data.perPage }),
         };
 
-        router.get('/positions', queryString, {
+        router.get('/hr/positions', queryString, {
             preserveState: true,
             preserveScroll: true,
         });
@@ -92,7 +92,7 @@ export default function Index({ positions, filters = { search: '', perPage: '10'
         setData('search', '');
         setData('perPage', '10');
 
-        router.get('/positions', {}, {
+        router.get('/hr/positions', {}, {
             preserveState: true,
             preserveScroll: true,
         });
@@ -165,7 +165,7 @@ export default function Index({ positions, filters = { search: '', perPage: '10'
                         description="Manage job positions and their corresponding basic salaries."
                         icon={<BriefcaseBusiness />}
                     />
-                    <Link href="/positions/create">
+                    <Link href="/hr/positions/create">
                         <Button size="sm">+ Add Position</Button>
                     </Link>
                 </div>
@@ -182,7 +182,7 @@ export default function Index({ positions, filters = { search: '', perPage: '10'
                             <p className="text-gray-500 mb-6 max-w-sm">
                                 Get started by creating your first position. Define job titles and their corresponding basic salaries.
                             </p>
-                            <Link href="/positions/create">
+                            <Link href="/hr/positions/create">
                                 <Button className="gap-2">
                                     Create Your First Position
                                 </Button>
@@ -252,11 +252,11 @@ export default function Index({ positions, filters = { search: '', perPage: '10'
                                 confirmText="Delete Position"
                             />
                             
-                            {/* {!hasNoFilterResults && (
+                            {!hasNoFilterResults && (
                                 <div className="text-sm text-gray-500">
                                     Showing {filteredPositions.length} of {positions.total} {filteredPositions.length === 1 ? 'entry' : 'entries'}
                                 </div>
-                            )} */}
+                            )}
                         </>
                     )}
                 </div>

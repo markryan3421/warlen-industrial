@@ -13,7 +13,7 @@ class PositionPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->hasRole('admin');
+        return $user->hasAnyRole(['admin','hr_head']);
     }
 
     /**
@@ -21,7 +21,7 @@ class PositionPolicy
      */
     public function view(User $user, Position $position): bool
     {
-        return $user->hasRole('admin');
+        return $user->hasAnyRole(['admin','hr_head']);
     }
 
     /**
@@ -29,7 +29,7 @@ class PositionPolicy
      */
     public function create(User $user): bool
     {
-        return $user->hasRole('admin');
+        return $user->hasAnyRole(['admin','hr_head']);
     }
 
     /**
@@ -37,7 +37,7 @@ class PositionPolicy
      */
     public function update(User $user, Position $position): bool
     {
-        return $user->hasRole('admin');
+        return $user->hasAnyRole(['admin','hr_head']);
     }
 
     /**
@@ -45,7 +45,7 @@ class PositionPolicy
      */
     public function delete(User $user, Position $position): bool
     {
-        return $user->hasRole('admin');
+        return $user->hasAnyRole(['admin','hr_head']);
     }
 
     /**
@@ -53,7 +53,7 @@ class PositionPolicy
      */
     public function restore(User $user, Position $position): bool
     {
-        return $user->hasRole('admin');
+        return $user->hasAnyRole(['admin','hr_head']);
     }
 
     /**
@@ -61,6 +61,6 @@ class PositionPolicy
      */
     public function forceDelete(User $user, Position $position): bool
     {
-        return $user->hasRole('admin');
+        return $user->hasAnyRole(['admin','hr_head']);
     }
 }

@@ -23,8 +23,22 @@ class HRIncentiveController extends Controller
     public function index()
     {
         Gate::authorize('viewAny', Incentive::class);
-        $payroll_periods = PayrollPeriod::get();
-        $incentives = Incentive::with(['payroll_period', 'employees', 'employees.user', 'employees.position', 'employees.branch'])->get();
+
+        $payroll_periods = $this->cacheRemember('payroll_periods', 60, function () {
+            return PayrollPeriod::query()
+                ->get([
+                    'id',
+                    'start_date',
+                    'end_date',
+                    'pay_date',
+                    'payroll_per_status',
+                ]);
+        });
+
+        $incentives = $this->cacheRemember('incentives', 60, function () {
+            return Incentive::with(['payroll_period', 'employees', 'employees.user', 'employees.position', 'employees.branch'])->get();
+        });
+
 
         return Inertia::render('HR/incentives/index', compact('incentives', 'payroll_periods'));
     }
@@ -35,8 +49,15 @@ class HRIncentiveController extends Controller
     public function create()
     {
         Gate::authorize('create', Incentive::class);
-        $payroll_periods = PayrollPeriod::query()->where('payroll_per_status', PayrollPeriodStatusEnum::OPEN->value)->get();
-        $employees = Employee::with('user')->where('employee_status', 'active')->get();
+        $payroll_periods = $this->cacheRemember('payroll_periods', 60, function () {
+            PayrollPeriod::query()
+                ->where('payroll_per_status', PayrollPeriodStatusEnum::OPEN->value)
+                ->get(['id', 'start_date', 'end_date', 'pay_date', 'payroll_per_status']);
+        });
+
+        $employees = $this->cacheRemember('employees', 60, function () {
+            return Employee::with('user')->where('employee_status', 'active')->get();
+        });
 
         return Inertia::render('HR/incentives/create', compact('payroll_periods', 'employees'));
     }
@@ -53,6 +74,9 @@ class HRIncentiveController extends Controller
         try {
             $incentive->create($request->validated());
             DB::commit();
+            $this->cacheForget('incentives');
+            $this->cacheForget('payroll_periods');
+            $this->cacheForget('employees');
             return redirect()->route('hr.incentives.index')->with('success', 'Incentive created successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
@@ -75,9 +99,16 @@ class HRIncentiveController extends Controller
     {
         Gate::authorize('update', $incentive);
         $incentive->load('payroll_period', 'employees');
-        $employees = Employee::with('user')->where('employee_status', 'active')->get();
 
-        $payroll_periods = PayrollPeriod::query()->where('payroll_per_status', PayrollPeriodStatusEnum::OPEN->value)->get();
+        $payroll_periods = $this->cacheRemember('payroll_periods', 60, function () {
+            return PayrollPeriod::query()
+                ->where('payroll_per_status', PayrollPeriodStatusEnum::OPEN->value)
+                ->get(['id', 'start_date', 'end_date', 'pay_date', 'payroll_per_status']);
+        });
+
+        $employees = $this->cacheRemember('employees', 60, function () {
+            return Employee::with('user')->where('employee_status', 'active')->get();
+        });
 
         return Inertia::render('HR/incentives/update', [
             'incentive' => $incentive,
@@ -98,6 +129,9 @@ class HRIncentiveController extends Controller
         try {
             $updateincentive->update($request->validated(), $incentive);
             DB::commit();
+            $this->cacheForget('incentives');
+            $this->cacheForget('payroll_periods');
+            $this->cacheForget('employees');
             return redirect()->route('hr.incentives.index')->with('success', 'Incentive updated successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
@@ -112,6 +146,9 @@ class HRIncentiveController extends Controller
     {
         Gate::authorize('delete', $incentive);
         $incentive->delete();
+        $this->cacheForget('incentives');
+        $this->cacheForget('payroll_periods');
+        $this->cacheForget('employees');
         return redirect()->route('hr.incentives.index')->with('success', 'Incentive deleted successfully.');
     }
 }

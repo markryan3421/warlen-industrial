@@ -16,6 +16,9 @@ import {
     Contact,
     BookUser,
     UserRoundCog,
+    Coins,
+    LayoutDashboard,
+    Building2
 } from 'lucide-react';
 import AttendanceController from "@/actions/App/Http/Controllers/HrRole/HRAttendanceController";
 import HREmployeeController from '@/actions/App/Http/Controllers/HrRole/HREmployeeController';
@@ -42,13 +45,24 @@ const hrExpendituresItems: NavItem[] = [
     {
         title: 'Dashboard',
         href: '/hr/dashboard',
-        icon: Airplay,
+        icon: LayoutDashboard,
+    },
+
+    {
+        title: 'Branches',
+        href: '/hr/branches',
+        icon: Building2,
+    },
+    {
+        title: 'Positions',
+        href: '/hr/positions',
+        icon: UserCog,
     },
 
     {
         title: 'Incentives',
         href: IncentiveController.index(),
-        icon: FileBadge,
+        icon: Coins,
     },
     {
         title: 'Employees',

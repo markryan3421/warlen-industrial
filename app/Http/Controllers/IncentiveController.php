@@ -23,29 +23,34 @@ class IncentiveController extends Controller
     {
         Gate::authorize('viewAny', Incentive::class);
 
-        $payroll_periods = PayrollPeriod::query()
-            ->get([
-                'id',
-                'start_date',
-                'end_date',
-                'pay_date',
-                'payroll_per_status',
-            ]);
+        $payroll_periods = $this->cacheRemember('payroll_periods', 60, function () {
+            return PayrollPeriod::query()
+                ->get([
+                    'id',
+                    'start_date',
+                    'end_date',
+                    'pay_date',
+                    'payroll_per_status',
+                ]);
+        });
 
-        $incentives = Incentive::query()
-            ->with([
-                'payroll_period',
-                'employees',
-                'employees.user',
-                'employees.position',
-                'employees.branch'
-            ])
-            ->get([
-                'id',
-                'payroll_period_id',
-                'incentive_name',
-                'incentive_amount'
-            ]);
+        $incentives = $this->cacheRemember('incentives', 60, function () {
+            return Incentive::query()
+                ->with([
+                    'payroll_period',
+                    'employees',
+                    'employees.user',
+                    'employees.position',
+                    'employees.branch'
+                ])
+                ->get([
+                    'id',
+                    'payroll_period_id',
+                    'incentive_name',
+                    'incentive_amount'
+                ]);
+        });
+
         return Inertia::render('incentives/index', compact('incentives', 'payroll_periods'));
     }
 
@@ -56,11 +61,17 @@ class IncentiveController extends Controller
     {
         Gate::authorize('create', Incentive::class);
 
-        $payroll_periods = PayrollPeriod::query()
-            ->where('payroll_per_status', PayrollPeriodStatusEnum::OPEN->value)
-            ->get(['id', 'start_date', 'end_date', 'pay_date', 'payroll_per_status']);
+        $payroll_periods = $this->cacheRemember('payroll_periods', 60, function () {
+            return PayrollPeriod::query()
+                ->where('payroll_per_status', PayrollPeriodStatusEnum::OPEN->value)
+                ->get(['id', 'start_date', 'end_date', 'pay_date', 'payroll_per_status']);
+        });
 
-        $employees = Employee::with('user')->where('employee_status', 'active')->get();
+        $employees = $this->cacheRemember('employees', 60, function () {
+            return Employee::with('user')
+                ->where('employee_status', 'active')
+                ->get(['id', 'user_id', 'employee_status']);
+        });
 
         return Inertia::render('incentives/create', compact('payroll_periods', 'employees'));
     }
@@ -72,7 +83,11 @@ class IncentiveController extends Controller
     {
         Gate::authorize('create', Incentive::class);
         $incentive->create($request->validated());
-       // DB::commit();
+
+        $this->cacheForget('incentives');
+        $this->cacheForget('payroll_periods');
+        $this->cacheForget('employees');
+        // DB::commit();
         return redirect()->route('incentives.index');
     }
 
@@ -91,10 +106,18 @@ class IncentiveController extends Controller
     {
         Gate::authorize('update', $incentive);
         $incentive->load('payroll_period', 'employees');
-        $employees = Employee::with('user')->where('employee_status', 'active')->get();
 
+        $payroll_periods = $this->cacheRemember('payroll_periods', 60, function () {
+            return PayrollPeriod::query()
+                ->where('payroll_per_status', PayrollPeriodStatusEnum::OPEN->value)
+                ->get(['id', 'start_date', 'end_date', 'pay_date', 'payroll_per_status']);
+        });
 
-        $payroll_periods = PayrollPeriod::query()->where('payroll_per_status', PayrollPeriodStatusEnum::OPEN->value)->get();
+        $employees = $this->cacheRemember('employees', 60, function () {
+            return Employee::with('user')
+                ->where('employee_status', 'active')
+                ->get(['id', 'user_id', 'employee_status']);
+        });
 
         return Inertia::render('incentives/update', [
             'incentive' => $incentive,
@@ -110,6 +133,9 @@ class IncentiveController extends Controller
     {
         Gate::authorize('update', $incentive);
         $updateincentive->update($request->validated(), $incentive);
+        $this->cacheForget('incentives');
+        $this->cacheForget('payroll_periods');
+        $this->cacheForget('employees');
         //DB::commit();
         return redirect()->route('incentives.index');
     }
@@ -122,7 +148,10 @@ class IncentiveController extends Controller
         Gate::authorize('delete', $incentive);
 
         $incentive->delete();
-       //7 9 DB::commit();
+        $this->cacheForget('incentives');
+        $this->cacheForget('payroll_periods');
+        $this->cacheForget('employees');
+        //7 9 DB::commit();
         return redirect()->route('incentives.index');
     }
 }

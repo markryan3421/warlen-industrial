@@ -441,7 +441,7 @@ export default function AttendanceManagement({
         setData('perPage', '10');
         setIsTableLoading(true);
 
-        router.get('/attendances', {
+        router.get('/hr/attendances', {
             tab: activeMainTab,
             perPage: '10',
         }, {
@@ -988,6 +988,7 @@ export default function AttendanceManagement({
                                                     activeMainTab === 'schedules' ? 'schedule' : 'period stat'
                                         }
                                         className="mt-4"
+                                        baseUrl="/hr/attendances"
                                     />
                                 </div>
                             )}

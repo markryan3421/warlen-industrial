@@ -5,6 +5,7 @@ namespace App\Observers;
 use App\Events\PayrollEvent;
 use App\Models\AttendancePeriodStat;
 use App\Models\PayrollPeriod;
+use Symfony\Component\HttpKernel\Attribute\Cache;
 
 class AttendancePeriodStatObserver
 {
