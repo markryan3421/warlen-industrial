@@ -23,7 +23,7 @@ import {
     SidebarMenuItem,
     useSidebar
 } from '@/components/ui/sidebar';
-import { useCurrentUrl } from '@/hooks/use-current-url'; // Add this import
+import { useCurrentUrl } from '@/hooks/use-current-url';
 import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
 import AppLogo from './app-logo';
@@ -82,7 +82,6 @@ const AccessControlItems: NavItem[] = [
         href: '/positions',
         icon: UserCog,
     },
-
     {
         title: 'Activity Logs',
         href: LogsController.index(),
@@ -92,42 +91,22 @@ const AccessControlItems: NavItem[] = [
 
 const AttendanceItems: NavItem[] = [
     {
-        title: 'Attendance',
+        title: 'Attendances',
         href: '/attendances',
         icon: Users,
     },
-    // {
-    //     title: 'Attendance Exception Stats',
-    //     href: '/attendance-exception-stats',
-    //     icon: CircleUser,
-    // },
-    // {
-    //     title: 'Attendance Logs',
-    //     href: '/attendance-logs',
-    //     icon: Contact,
-    // },
-    // {
-    //     title: 'Attendance Period Stats',
-    //     href: '/attendance-period-stats',
-    //     icon: BookUser,
-    // },
-    // {
-    //     title: 'Attendance Schedules',
-    //     href: '/attendance-schedules',
-    //     icon: UserRoundCog,
-    // },
 ];
 
 const footerNavItems: NavItem[] = [];
 
 export function AppSidebar() {
     const { state } = useSidebar();
-    const { isCurrentUrl } = useCurrentUrl(); // Add this hook
+    const { isCurrentUrl } = useCurrentUrl();
     const isExpanded = state === 'expanded';
 
     return (
         <Sidebar collapsible="icon" className="border-r-1 bg-white border-gray-400">
-            <SidebarHeader className="px-0 sm:ml-0 md:px-5 lg:px-2 lg:ml-2">
+            <SidebarHeader className="px-0 sm:-ml-1 md:px-5 lg:px-2 lg:ml-2">
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton
@@ -145,9 +124,9 @@ export function AppSidebar() {
             <SidebarContent className={`
                 ${isExpanded ? 'px-5 transition-all duration-200 ease-in-out' : 'px-2 transition-all duration-200 ease-in-out'}`}
             >
-                <NavMain items={ExpendituresItems} label="Expenditures" />
-                <NavMain items={AccessControlItems} label="Access Control" />
-                <NavMain items={AttendanceItems} label="Attendance" />
+                <NavMain items={ExpendituresItems} label="Expenditures" isCollapsed={!isExpanded} />
+                <NavMain items={AccessControlItems} label="Access Control" isCollapsed={!isExpanded} />
+                <NavMain items={AttendanceItems} label="Attendance" isCollapsed={!isExpanded} />
             </SidebarContent>
 
             <SidebarFooter>

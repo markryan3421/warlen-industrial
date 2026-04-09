@@ -1,6 +1,6 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
-import { Briefcase, Eye, Plus, Coins, Search } from 'lucide-react';
-import { useState, useEffect, useMemo } from 'react';
+import { Briefcase, Pencil, Plus, Coins, Search, ChevronDown, X, Users, UserCheck, AlertTriangle } from 'lucide-react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { CustomHeader } from '@/components/custom-header';
 import { CustomPagination } from '@/components/custom-pagination';
 import { CustomTable } from '@/components/custom-table';
@@ -8,24 +8,38 @@ import { EmployeeFilterBar } from '@/components/employee/employee-filter-bar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import InputError from '@/components/input-error';
 import AppLayout from '@/layouts/app-layout';
-import { Card, CardContent } from '@/components/ui/card';
+import { CardContent } from '@/components/ui/card';
 import type { BreadcrumbItem } from '@/types';
-import IncentiveController from '@/actions/App/Http/Controllers/IncentiveController';
 import { toast } from '@/components/custom-toast';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-modal';
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Incentives', href: '/incentives' }];
 
+interface Employee {
+    id: number;
+    emp_code: string | number | null;
+    user?: { name: string } | null;
+    name?: string;
+}
+
+interface PayrollPeriod {
+    id: number;
+    start_date: string;
+    end_date: string;
+    pay_date: string;
+    payroll_per_status: string;
+}
+
 interface Incentive {
     id: number;
     incentive_name: string;
     incentive_amount: string | number;
-    payroll_period?: {
-        start_date: string;
-        end_date: string;
-        pay_date: string;
-    };
+    payroll_period_id?: number;
+    payroll_period?: PayrollPeriod;
     employees?: Array<{
         id: number;
         user?: { name: string };
@@ -35,21 +49,14 @@ interface Incentive {
 }
 
 interface Props {
-    incentives: {
-        data: Incentive[];
-        perPage: number;
-        total: number;
-        from: number;
-        current_page: number;
-        last_page: number;
-        links: any[];
-    } | Incentive[];
-    filters?: { date_from?: string; date_to?: string; search?: string };
-    totalCount: number;
-    filteredCount: number;
+    incentives: Incentive[];
+    payroll_periods: PayrollPeriod[];
+    employees: Employee[];
+    editingIncentive?: Incentive;
+    isEditing?: boolean;
 }
 
-export default function Index({ incentives, filters = {}, totalCount, filteredCount }: Props) {
+export default function Index({ incentives, payroll_periods, employees, editingIncentive, isEditing = false }: Props) {
     const { delete: destroy } = useForm();
     const [selected, setSelected] = useState<Incentive | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
@@ -57,62 +64,77 @@ export default function Index({ incentives, filters = {}, totalCount, filteredCo
     const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [selectedIncentive, setSelectedIncentive] = useState<Incentive | null>(null);
+    const [showEmployeeModal, setShowEmployeeModal] = useState(false);
+    const [showAllEmployeesModal, setShowAllEmployeesModal] = useState(false);
+    const [showRemoveAllConfirmation, setShowRemoveAllConfirmation] = useState(false);
 
-    // Process all data from props
-    let allData: Incentive[] = [];
-    let originalPaginationData: any = {
-        data: [],
-        perPage: 10,
-        total: 0,
-        from: 1,
-        current_page: 1,
-        last_page: 1,
-        links: []
+    // Form handling for create/edit
+    const { data, setData, post, put, processing, errors, reset } = useForm({
+        incentive_name: '',
+        incentive_amount: '',
+        payroll_period_id: '',
+        employee_ids: [] as number[],
+    });
+
+    // Populate form when editing
+    useEffect(() => {
+        if (editingIncentive && isEditing) {
+            setSelectedIncentive(editingIncentive);
+            setIsEditModalOpen(true);
+            setData({
+                incentive_name: editingIncentive.incentive_name,
+                incentive_amount: String(editingIncentive.incentive_amount),
+                payroll_period_id: String(editingIncentive.payroll_period_id || ''),
+                employee_ids: editingIncentive.employees?.map(emp => emp.id) || [],
+            });
+        }
+    }, [editingIncentive, isEditing]);
+
+    // Debug logging
+    useEffect(() => {
+        console.log('Employees data:', employees);
+        console.log('Employees count:', employees?.length);
+        if (employees && employees.length > 0) {
+            console.log('Sample employee:', employees[0]);
+        }
+    }, [employees]);
+
+    const formatDate = (dateString: string) => {
+        if (!dateString) return '';
+        return new Date(dateString).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
     };
 
-    if (Array.isArray(incentives)) {
-        allData = incentives;
-        originalPaginationData = {
-            data: incentives,
-            perPage: 10,
-            total: incentives.length,
-            from: 1,
-            current_page: 1,
-            last_page: 1,
-            links: []
-        };
-    } else if (incentives && incentives.data && Array.isArray(incentives.data)) {
-        allData = incentives.data;
-        originalPaginationData = incentives;
-    }
+    // Process all data from props
+    let allData: Incentive[] = Array.isArray(incentives) ? incentives : [];
 
     // Frontend filtering logic
     const filteredData = useMemo(() => {
         let filtered = [...allData];
 
-        // Filter by search term (incentive name)
         if (searchTerm.trim()) {
             filtered = filtered.filter(incentive =>
                 incentive.incentive_name.toLowerCase().includes(searchTerm.toLowerCase())
             );
         }
 
-        // Filter by date range
         if (dateFrom || dateTo) {
             filtered = filtered.filter(incentive => {
                 if (!incentive.payroll_period) return false;
-
-                const startDate = parseISO(incentive.payroll_period.start_date);
-                const endDate = parseISO(incentive.payroll_period.end_date);
+                const startDate = new Date(incentive.payroll_period.start_date);
+                const endDate = new Date(incentive.payroll_period.end_date);
 
                 if (dateFrom && dateTo) {
-                    // Both dates selected - check if period overlaps with range
                     return startDate >= dateFrom && endDate <= dateTo;
                 } else if (dateFrom) {
-                    // Only from date - check if period starts after or on from date
                     return startDate >= dateFrom;
                 } else if (dateTo) {
-                    // Only to date - check if period ends before or on to date
                     return endDate <= dateTo;
                 }
                 return true;
@@ -126,8 +148,7 @@ export default function Index({ incentives, filters = {}, totalCount, filteredCo
     const totalFilteredCount = filteredData.length;
     const totalPages = Math.ceil(totalFilteredCount / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    const currentData = filteredData.slice(startIndex, endIndex);
+    const currentData = filteredData.slice(startIndex, startIndex + itemsPerPage);
 
     // Delete confirmation states
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -141,9 +162,9 @@ export default function Index({ incentives, filters = {}, totalCount, filteredCo
 
     const confirmDelete = () => {
         if (!itemToDelete) return;
-        
+
         setIsDeleting(true);
-        destroy(IncentiveController.destroy(itemToDelete.id).url, {
+        router.delete(`/incentives/${itemToDelete.id}`, {
             onSuccess: (page) => {
                 const successMessage = (page.props as any).flash?.success || 'Incentive deleted successfully.';
                 toast.success(successMessage);
@@ -160,18 +181,6 @@ export default function Index({ incentives, filters = {}, totalCount, filteredCo
         });
     };
 
-    // Update pagination data for CustomPagination component
-    const paginationData = {
-        ...originalPaginationData,
-        data: currentData,
-        total: totalFilteredCount,
-        from: startIndex + 1,
-        current_page: currentPage,
-        last_page: totalPages,
-        perPage: itemsPerPage
-    };
-
-    // Reset to first page when filters change
     useEffect(() => {
         setCurrentPage(1);
     }, [searchTerm, dateFrom, dateTo]);
@@ -198,33 +207,106 @@ export default function Index({ incentives, filters = {}, totalCount, filteredCo
     const handlePerPageChange = (value: string | number) => {
         const newPerPage = Number(value);
         setItemsPerPage(newPerPage);
-        setCurrentPage(1); // Reset to first page when changing items per page
+        setCurrentPage(1);
     };
-
-    // const handleDelete = (id: string | number) => {
-    //     if (confirm('Are you sure you want to delete this incentive?')) {
-    //         router.delete(`/incentives/${id}`);
-    //     }
-    // };
 
     const handleView = (incentive: Incentive) => {
         setSelected(incentive);
     };
 
     const handleEdit = (incentive: Incentive) => {
-        router.get(`/incentives/${incentive.id}/edit`);
+        setSelectedIncentive(incentive);
+        setData({
+            incentive_name: incentive.incentive_name,
+            incentive_amount: String(incentive.incentive_amount),
+            payroll_period_id: String(incentive.payroll_period_id || ''),
+            employee_ids: incentive.employees?.map(emp => emp.id) || [],
+        });
+        setIsEditModalOpen(true);
+    };
+
+    const handleCreate = () => {
+        reset();
+        setIsCreateModalOpen(true);
+    };
+
+    const handleCloseModal = () => {
+        setIsCreateModalOpen(false);
+        setIsEditModalOpen(false);
+        setSelectedIncentive(null);
+        setShowEmployeeModal(false);
+        reset();
+    };
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (isEditModalOpen && selectedIncentive) {
+            put(`/incentives/${selectedIncentive.id}`, {
+                onSuccess: () => {
+                    toast.success('Incentive updated successfully');
+                    handleCloseModal();
+                },
+                onError: (errors) => {
+                    toast.error('Failed to update incentive');
+                }
+            });
+        } else {
+            post('/incentives', {
+                onSuccess: () => {
+                    toast.success('Incentive created successfully');
+                    handleCloseModal();
+                },
+                onError: (errors) => {
+                    toast.error('Failed to create incentive');
+                }
+            });
+        }
     };
 
     const formatCurrency = (amount: string | number) => {
         return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'PHP' }).format(Number(amount));
     };
 
-    const formatDate = (date: string) => new Date(date).toLocaleDateString('en-US', {
-        year: 'numeric', month: 'long', day: 'numeric'
-    });
+    const formatDateSimple = (date: string) => {
+        if (!date) return '';
+        return new Date(date).toLocaleDateString('en-US', {
+            year: 'numeric', month: 'long', day: 'numeric'
+        });
+    };
 
     const hasFilters = !!(searchTerm || dateFrom || dateTo);
     const hasNoDataAtAll = allData.length === 0;
+
+    // Helper function to get employee name
+    const getEmployeeName = useCallback((emp: Employee) => {
+        return emp.user?.name || emp.name || 'Unnamed Employee';
+    }, []);
+
+    // Toggle employee function
+    const toggleEmployee = useCallback((id: number) => {
+        setData('employee_ids',
+            data.employee_ids.includes(id)
+                ? data.employee_ids.filter(eId => eId !== id)
+                : [...data.employee_ids, id]
+        );
+    }, [data.employee_ids]);
+
+    const removeEmployee = useCallback((id: number) => {
+        setData('employee_ids', data.employee_ids.filter(eId => eId !== id));
+    }, [data.employee_ids]);
+
+    const addAllEmployees = useCallback((ids: number[]) => {
+        setData('employee_ids', [...data.employee_ids, ...ids]);
+    }, [data.employee_ids]);
+    
+    const removeAll = () => {
+        setData('employee_ids', []);
+        setShowRemoveAllConfirmation(false);
+        setShowAllEmployeesModal(false);
+    };
+
+    const selectedEmployeesList = employees.filter(emp => data.employee_ids.includes(emp.id));
 
     const columns = [
         {
@@ -242,8 +324,8 @@ export default function Index({ incentives, filters = {}, totalCount, filteredCo
             label: 'Payroll Period',
             render: (row: Incentive) => row.payroll_period ? (
                 <div>
-                    <div>{formatDate(row.payroll_period.start_date)} - {formatDate(row.payroll_period.end_date)}</div>
-                    <div className="text-xs text-muted-foreground">Pay: {formatDate(row.payroll_period.pay_date)}</div>
+                    <div>{formatDateSimple(row.payroll_period.start_date)} - {formatDateSimple(row.payroll_period.end_date)}</div>
+                    <div className="text-xs text-muted-foreground">Pay: {formatDateSimple(row.payroll_period.pay_date)}</div>
                 </div>
             ) : <span className="text-muted-foreground">N/A</span>
         },
@@ -288,38 +370,21 @@ export default function Index({ incentives, filters = {}, totalCount, filteredCo
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Incentives" />
 
-            {/* style animations */}
-            <style>{`
-                @keyframes fadeUp {
-                    from { opacity: 0; transform: translateY(16px); }
-                    to   { opacity: 1; transform: translateY(0); }
-                }
-                .pp-row { animation: fadeUp 0.3s cubic-bezier(0.22,1,0.36,1) both; }
-                @keyframes headerReveal {
-                    from { opacity: 0; transform: translateY(-10px); }
-                    to   { opacity: 1; transform: translateY(0); }
-                }
-                .pp-header { animation: headerReveal 0.35s cubic-bezier(0.22,1,0.36,1) both; }
-            `}</style>
-
             <div className="flex flex-1 flex-col gap-4 p-4 mx-4 -mt-3">
                 {/* Header */}
-                <div className="grid grid-rows-1 justify-center mx-0 md:grid-cols-2 md:mx-0 mt-3 lg:flex lg:justify-between items-center lg:mx-0 lg:mt-5 lg:-mb-2 pp-header">
+                <div className="flex justify-between items-center">
                     <CustomHeader
                         title="Incentives"
                         icon={<Coins className="h-6 w-6" />}
                         description='Manage employee incentives across payroll periods'
                     />
-                    <Link href="/incentives/create" className='ml-auto'>
-                        <Button className="bg-[#1d4791] hover:bg-[#1d4791]/90">
-                            <Plus className="h-4 w-4 mr-2" />
-                            Add Incentive
-                        </Button>
-                    </Link>
+                    <Button onClick={handleCreate} className="bg-[#1d4791] hover:bg-[#1d4791]/90">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Incentive
+                    </Button>
                 </div>
 
-
-                <CardContent className="p-0 pp-row">
+                <CardContent className="p-0">
                     <CustomTable
                         columns={columns}
                         actions={actions}
@@ -362,19 +427,15 @@ export default function Index({ incentives, filters = {}, totalCount, filteredCo
                         }
                         emptyState={
                             hasNoDataAtAll && !hasFilters ? (
-                                // Empty state when no data exists at all
                                 <div className="flex flex-col items-center justify-center py-16">
                                     <div className="rounded-full bg-primary/10 p-6 mb-4">
                                         <Briefcase className="h-12 w-12 text-primary" />
                                     </div>
                                     <h3 className="text-xl font-semibold mb-2">No incentives yet</h3>
                                     <p className="text-muted-foreground mb-4">Create your first incentive to get started</p>
-                                    <Link href="/incentives/create">
-                                        <Button className="bg-[#1d4791] hover:bg-[#1d4791]/90">Create First Incentive</Button>
-                                    </Link>
+                                    <Button onClick={handleCreate} className="bg-[#1d4791] hover:bg-[#1d4791]/90">Create First Incentive</Button>
                                 </div>
                             ) : filteredData.length === 0 && hasFilters ? (
-                                // No results state when filters are applied but no matches
                                 <div className="flex flex-col items-center justify-center py-16">
                                     <div className="rounded-full bg-muted p-6 mb-4">
                                         <Search className="h-12 w-12 text-muted-foreground" />
@@ -383,17 +444,22 @@ export default function Index({ incentives, filters = {}, totalCount, filteredCo
                                     <p className="text-muted-foreground mb-4">
                                         No incentives match "{searchTerm}" {dateFrom || dateTo ? 'in the selected date range' : ''}
                                     </p>
-                                    <Button variant="outline" onClick={clearFilters}>
-                                        Clear all filters
-                                    </Button>
+                                    <Button variant="outline" onClick={clearFilters}>Clear all filters</Button>
                                 </div>
                             ) : null
                         }
                     />
                     {allData.length > 0 && (
-                        <div className="px-6 pb-4 pp-row">
+                        <div className="px-6 pb-4">
                             <CustomPagination
-                                pagination={paginationData}
+                                pagination={{
+                                    data: currentData,
+                                    total: totalFilteredCount,
+                                    from: startIndex + 1,
+                                    current_page: currentPage,
+                                    last_page: totalPages,
+                                    perPage: itemsPerPage
+                                }}
                                 perPage={String(itemsPerPage)}
                                 onPerPageChange={handlePerPageChange}
                                 totalCount={allData.length}
@@ -403,7 +469,7 @@ export default function Index({ incentives, filters = {}, totalCount, filteredCo
                             />
                         </div>
                     )}
-                    <DeleteConfirmationDialog 
+                    <DeleteConfirmationDialog
                         isOpen={deleteDialogOpen}
                         onClose={() => {
                             setDeleteDialogOpen(false);
@@ -418,26 +484,248 @@ export default function Index({ incentives, filters = {}, totalCount, filteredCo
                 </CardContent>
             </div>
 
+            {/* Create/Edit Modal */}
+            <Dialog open={isCreateModalOpen || isEditModalOpen} onOpenChange={(open) => !open && handleCloseModal()}>
+                <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle className="text-2xl flex items-center gap-2">
+                            {isEditModalOpen ? (
+                                <div className="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-xl">
+                                    <Pencil className="h-5 w-5 text-blue-600" />
+                                </div>
+                            ) : (
+                                <div className="flex items-center justify-center w-10 h-10 bg-blue-900 rounded-xl">
+                                    <Plus className="h-5 w-5 text-white" />
+                                </div>
+                            )}
+                            <span>{isEditModalOpen ? 'Edit Incentive' : 'Create Incentive'}</span>
+                        </DialogTitle>
+                    </DialogHeader>
+
+                    <form onSubmit={handleSubmit} className="mt-4">
+                        <div className="grid grid-cols-2 gap-6">
+                            {/* Left Column - Incentive Details */}
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="incentive_name">Incentive Name <span className="text-red-500">*</span></Label>
+                                    <Input
+                                        id="incentive_name"
+                                        value={data.incentive_name}
+                                        onChange={e => setData('incentive_name', e.target.value)}
+                                        placeholder="Enter incentive name"
+                                        className="h-10"
+                                        autoFocus
+                                    />
+                                    <InputError message={errors.incentive_name} />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="incentive_amount">Incentive Amount <span className="text-red-500">*</span></Label>
+                                    <Input
+                                        type='number'
+                                        id="incentive_amount"
+                                        value={data.incentive_amount}
+                                        onChange={e => setData('incentive_amount', e.target.value)}
+                                        placeholder="Enter incentive amount"
+                                        className="h-10"
+                                    />
+                                    <InputError message={errors.incentive_amount} />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="payroll_period_id">Payroll Period <span className="text-red-500">*</span></Label>
+                                    <select
+                                        id="payroll_period_id"
+                                        value={data.payroll_period_id}
+                                        onChange={e => setData('payroll_period_id', e.target.value)}
+                                        className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 h-10"
+                                    >
+                                        <option value="">Select Payroll Period</option>
+                                        {payroll_periods && payroll_periods.length > 0 ? (
+                                            payroll_periods.map(period => (
+                                                <option key={period.id} value={period.id}>
+                                                    {formatDate(period.start_date)} - {formatDate(period.end_date)}
+                                                </option>
+                                            ))
+                                        ) : (
+                                            <option disabled>No payroll periods available</option>
+                                        )}
+                                    </select>
+                                    <InputError message={errors.payroll_period_id} />
+                                </div>
+                            </div>
+
+                            {/* Right Column - Employee Selection Button */}
+                            <div className="space-y-4">
+                                <Label className="text-base font-semibold">Employee Selection</Label>
+
+                                <div
+                                    className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-colors"
+                                    onClick={() => setShowEmployeeModal(true)}
+                                >
+                                    {selectedEmployeesList.length > 0 ? (
+                                        <div>
+                                            <div className="text-sm text-gray-600 mb-2">
+                                                {selectedEmployeesList.length} employee{selectedEmployeesList.length !== 1 ? 's' : ''} selected
+                                            </div>
+                                            <div className="flex flex-wrap gap-1.5 justify-center">
+                                                {selectedEmployeesList.slice(0, 3).map(emp => (
+                                                    <span key={emp.id} className="inline-flex items-center gap-1 bg-blue-100 px-2 py-1 rounded-md text-xs">
+                                                        {getEmployeeName(emp)}
+                                                    </span>
+                                                ))}
+                                                {selectedEmployeesList.length > 3 && (
+                                                    <span className="text-xs text-gray-500">+{selectedEmployeesList.length - 3} more</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div>
+                                            <Users className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                                            <p className="text-sm text-gray-500">Click to select employees</p>
+                                            <p className="text-xs text-gray-400 mt-1">Choose who will receive this incentive</p>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <InputError message={errors.employee_ids} />
+                            </div>
+                        </div>
+
+                        {/* Modal Footer */}
+                        <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+                            <Button variant='outline' type="button" onClick={handleCloseModal}>
+                                Cancel
+                            </Button>
+                            <Button type="submit" disabled={processing}>
+                                {processing ? (isEditModalOpen ? 'Updating...' : 'Creating...') : (isEditModalOpen ? 'Update' : 'Create')}
+                            </Button>
+                        </div>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
+            {/* Employee Selection Modal - Separate component to prevent re-renders */}
+            <Dialog open={showEmployeeModal} onOpenChange={setShowEmployeeModal}>
+                <DialogContent className="max-w-4xl h-[420px] overflow-hidden">
+                    <DialogHeader>
+                        <DialogTitle className="text-2xl">Select Employees</DialogTitle>
+                    </DialogHeader>
+
+                    <EmployeeSelector
+                        employees={employees}
+                        selectedIds={data.employee_ids}
+                        onToggle={toggleEmployee}
+                        onRemove={removeEmployee}
+                        onAddAll={addAllEmployees}
+                    />
+
+                    <div className="flex justify-end gap-3 pt-4 border-t mt-4">
+                        <Button variant="outline" onClick={() => setShowEmployeeModal(false)}>Close</Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* All Selected Employees Modal */}
+            <Dialog open={showAllEmployeesModal} onOpenChange={setShowAllEmployeesModal}>
+                <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden">
+                    <DialogHeader>
+                        <DialogTitle>Selected Employees ({selectedEmployeesList.length})</DialogTitle>
+                    </DialogHeader>
+
+                    <div className="overflow-y-auto max-h-[calc(85vh-180px)] py-4">
+                        <div className="space-y-2">
+                            {selectedEmployeesList.map((emp, index) => (
+                                <div key={emp.id} className="flex items-center justify-between p-3 bg-white border rounded-lg hover:shadow-md">
+                                    <div className="flex items-center gap-4">
+                                        <div className="flex items-center justify-center w-7 h-7 bg-blue-100 rounded-full text-sm font-medium">
+                                            {index + 1}
+                                        </div>
+                                        <div>
+                                            <div className="font-medium text-gray-900">{getEmployeeName(emp)}</div>
+                                            <div className="text-sm text-gray-500">Employee Code: {emp.emp_code || 'N/A'}</div>
+                                        </div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            removeEmployee(emp.id);
+                                            if (selectedEmployeesList.length === 1) setShowAllEmployeesModal(false);
+                                        }}
+                                        className="p-1.5 hover:bg-red-50 rounded-lg"
+                                    >
+                                        <X className="h-4 w-4 text-red-500" />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="flex justify-between items-center pt-4 border-t">
+                        <div className="flex items-center gap-2">
+                            <UserCheck className="h-4 w-4 text-blue-600" />
+                            <span className="text-sm text-gray-600">
+                                <span className="font-semibold">{selectedEmployeesList.length}</span> employees selected
+                            </span>
+                        </div>
+                        <div className="flex gap-2">
+                            <Button variant="destructive" size="sm" onClick={() => setShowRemoveAllConfirmation(true)} disabled={selectedEmployeesList.length === 0}>
+                                Remove All
+                            </Button>
+                            <Button size="sm" onClick={() => setShowAllEmployeesModal(false)}>Done</Button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Remove All Confirmation Modal */}
+            <Dialog open={showRemoveAllConfirmation} onOpenChange={setShowRemoveAllConfirmation}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl">Remove All Employees</DialogTitle>
+                    </DialogHeader>
+                    <div className="py-6">
+                        <div className="flex items-start gap-4 mb-4">
+                            <div className="p-3 bg-red-100 rounded-full flex-shrink-0">
+                                <AlertTriangle className="h-6 w-6 text-red-600" />
+                            </div>
+                            <div className="flex-1">
+                                <p className="text-base text-gray-700 mb-2">
+                                    Are you sure you want to remove all employees?
+                                </p>
+                                <p className="text-sm text-gray-500">
+                                    This action cannot be undone. You will need to select employees again.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="flex justify-end gap-3">
+                        <Button variant="outline" onClick={() => setShowRemoveAllConfirmation(false)}>Cancel</Button>
+                        <Button onClick={removeAll} className="bg-red-600 hover:bg-red-700">Yes, Remove All</Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
             {/* View Dialog */}
             <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
-                <DialogContent className="max-w-2xl">
+                <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle className="text-2xl">{selected?.incentive_name}</DialogTitle>
                         <div className="mt-2">
-                            <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-lg px-4 py-1">
+                            <Badge variant="secondary" className="bg-green-100 text-green-800 text-lg px-4 py-1">
                                 {formatCurrency(selected?.incentive_amount ?? 0)}
                             </Badge>
                         </div>
                     </DialogHeader>
                     <div className="mt-4">
                         {selected?.payroll_period && (
-                            <div className="mb-4 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                            <div className="mb-4 p-3 bg-slate-50 rounded-lg">
                                 <h4 className="font-semibold mb-2">Payroll Period</h4>
                                 <p className="text-sm">
-                                    {formatDate(selected.payroll_period.start_date)} - {formatDate(selected.payroll_period.end_date)}
+                                    {formatDateSimple(selected.payroll_period.start_date)} - {formatDateSimple(selected.payroll_period.end_date)}
                                 </p>
                                 <p className="text-sm text-muted-foreground mt-1">
-                                    Payment Date: {formatDate(selected.payroll_period.pay_date)}
+                                    Payment Date: {formatDateSimple(selected.payroll_period.pay_date)}
                                 </p>
                             </div>
                         )}
@@ -446,7 +734,7 @@ export default function Index({ incentives, filters = {}, totalCount, filteredCo
                         {selected?.employees && selected.employees.length > 0 ? (
                             <div className="border rounded-md divide-y max-h-96 overflow-y-auto">
                                 {selected.employees.map(emp => (
-                                    <div key={emp.id} className="p-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                                    <div key={emp.id} className="p-3 hover:bg-slate-50">
                                         <div className="font-medium">{emp.user?.name || `Employee #${emp.id}`}</div>
                                         <div className="text-sm text-muted-foreground mt-1">
                                             {emp.position?.pos_name && <span>{emp.position.pos_name}</span>}
@@ -467,3 +755,180 @@ export default function Index({ incentives, filters = {}, totalCount, filteredCo
         </AppLayout>
     );
 }
+
+// Separate component for employee selector to prevent re-renders
+const EmployeeSelector = ({
+    employees,
+    selectedIds,
+    onToggle,
+    onRemove,
+    onAddAll
+}: {
+    employees: Employee[];
+    selectedIds: number[];
+    onToggle: (id: number) => void;
+    onRemove: (id: number) => void;
+    onAddAll?: (ids: number[]) => void;
+}) => {
+    const [employeeSearchTerm, setEmployeeSearchTerm] = useState('');
+    const [isEmployeeDropdownOpen, setIsEmployeeDropdownOpen] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsEmployeeDropdownOpen(false);
+                setEmployeeSearchTerm('');
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const getEmployeeName = (emp: Employee) => {
+        return emp.user?.name || emp.name || 'Unnamed Employee';
+    };
+
+    const filteredEmployees = employees.filter(emp => {
+        if (!employeeSearchTerm) return true;
+        const term = employeeSearchTerm.toLowerCase();
+        const code = emp.emp_code ? String(emp.emp_code).toLowerCase() : '';
+        const name = getEmployeeName(emp).toLowerCase();
+        return code.includes(term) || name.includes(term);
+    });
+
+    const displayedEmployees = employeeSearchTerm ? filteredEmployees : filteredEmployees.slice(0, 5);
+    const selectedEmployees = employees.filter(emp => selectedIds.includes(emp.id));
+    const allFilteredSelected = filteredEmployees.length > 0 && filteredEmployees.every(emp => selectedIds.includes(emp.id));
+
+    // Fixed selectAll function - adds all filtered employees at once
+    const selectAll = () => {
+        const allEmployeeIds = filteredEmployees.map(emp => emp.id);
+        const idsToAdd = allEmployeeIds.filter(id => !selectedIds.includes(id));
+
+        // Add all unselected employees at once
+        if (idsToAdd.length > 0 && onAddAll) {
+            onAddAll(idsToAdd);
+        } else {
+            // Fallback: toggle each unselected employee
+            idsToAdd.forEach(id => onToggle(id));
+        }
+    };
+
+    // Deselect all filtered employees
+    const deselectAll = () => {
+        const idsToRemove = filteredEmployees.filter(emp => selectedIds.includes(emp.id)).map(emp => emp.id);
+        idsToRemove.forEach(id => onRemove(id));
+    };
+
+    return (
+        <div className="space-y-4">
+            {/* Selected Tags */}
+            {selectedEmployees.length > 0 && (
+                <div className="border rounded-lg p-3 bg-gray-50">
+                    <div className="text-xs text-gray-500 mb-2">
+                        {selectedEmployees.length} employee{selectedEmployees.length !== 1 ? 's' : ''} selected
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 max-h-[120px] overflow-y-auto">
+                        {selectedEmployees.map(emp => (
+                            <div key={emp.id} className="inline-flex items-center gap-1 bg-blue-100 px-2 py-1 rounded-md text-sm">
+                                <span className="max-w-[200px] truncate">{getEmployeeName(emp)}</span>
+                                <button type="button" onClick={() => onRemove(emp.id)} className="text-blue-600 hover:text-blue-800">
+                                    <X className="h-3 w-3" />
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Employee Dropdown */}
+            <div className="relative" ref={dropdownRef}>
+                <div
+                    className="flex items-center justify-between border rounded-lg cursor-pointer p-3 hover:bg-gray-50"
+                    onClick={() => setIsEmployeeDropdownOpen(!isEmployeeDropdownOpen)}
+                >
+                    <span className="text-base text-gray-600">
+                        {selectedIds.length === 0 ? 'Select employees...' : `${selectedIds.length} selected`}
+                    </span>
+                    <ChevronDown className={`h-5 w-5 transition-transform ${isEmployeeDropdownOpen ? 'rotate-180' : ''}`} />
+                </div>
+
+                {isEmployeeDropdownOpen && (
+                    <div className="absolute z-20 w-full mt-2 border rounded-lg bg-white shadow-xl max-h-96 overflow-y-auto">
+                        <div className="sticky top-0 bg-white border-b p-3">
+                            <div className="flex items-center border rounded-lg px-3 py-2">
+                                <Search className="h-5 w-5 text-gray-400" />
+                                <input
+                                    type="text"
+                                    placeholder="Search employees..."
+                                    value={employeeSearchTerm}
+                                    onChange={e => setEmployeeSearchTerm(e.target.value)}
+                                    className="w-full ml-2 outline-none text-base"
+                                    autoFocus
+                                />
+                            </div>
+
+                            {employees.length > 0 && (
+                                <div className="flex justify-between items-center mt-3 px-1">
+                                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={allFilteredSelected}
+                                            onChange={(e) => {
+                                                if (e.target.checked) {
+                                                    selectAll();
+                                                } else {
+                                                    deselectAll();
+                                                }
+                                            }}
+                                            className="rounded"
+                                        />
+                                        <span className="font-medium">
+                                            {allFilteredSelected ? 'Deselect all' : `Select all (${filteredEmployees.length})`}
+                                        </span>
+                                    </label>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="divide-y max-h-64 overflow-y-auto">
+                            {employees.length === 0 ? (
+                                <div className="p-8 text-center text-gray-500">No employees found in the system</div>
+                            ) : filteredEmployees.length === 0 && employeeSearchTerm ? (
+                                <div className="p-8 text-center text-gray-500">No employees matching "{employeeSearchTerm}"</div>
+                            ) : filteredEmployees.length === 0 ? (
+                                <div className="p-8 text-center text-gray-500">Type to search for employees</div>
+                            ) : (
+                                displayedEmployees.map(emp => (
+                                    <div
+                                        key={emp.id}
+                                        className="flex items-center p-3 hover:bg-gray-50 cursor-pointer gap-3 transition-colors"
+                                        onClick={() => onToggle(emp.id)}
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedIds.includes(emp.id)}
+                                            onChange={() => { }}
+                                            className="rounded pointer-events-none h-4 w-4"
+                                        />
+                                        <div className="flex-1">
+                                            <div className="font-medium text-gray-900">{getEmployeeName(emp)}</div>
+                                            <div className="text-sm text-gray-500">Employee Code: {emp.emp_code || 'N/A'}</div>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+
+                        {!employeeSearchTerm && employees.length > 5 && filteredEmployees.length > 0 && (
+                            <div className="p-3 text-center text-sm text-gray-500 border-t bg-gray-50">
+                                Showing {Math.min(5, filteredEmployees.length)} of {employees.length} employees. Type to search more.
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};

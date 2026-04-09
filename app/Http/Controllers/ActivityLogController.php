@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Spatie\Activitylog\Models\Activity;
@@ -14,21 +15,86 @@ class ActivityLogController extends Controller
     {
         // Get search and pagination parameters
         $search = $request->get('search', '');
-        $actionFilter = $request->get('action', 'all');
-        $modelFilter = $request->get('model', 'all');
-        $userFilter = $request->get('user', 'all');
+        $actionFilter = $request->get('action', '');
+        $modelFilter = $request->get('model', '');
+        $userFilter = $request->get('user', '');
         $perPage = (int) $request->get('perPage', 10);
         $currentPage = (int) $request->get('page', 1);
 
-        // Get all activities with relationships - use cursor for large datasets
-        $activities = Activity::with('causer', 'subject')
-            ->latest()
-            ->cursor();
-
-        // First, transform ALL data to get available filter options
-        $allTransformed = collect();
-        foreach ($activities as $activity) {
-            $allTransformed->push([
+        // Build the base query for filtering (used for both stats and pagination)
+        $baseQuery = Activity::with('causer', 'subject')->latest();
+        
+        // Apply search filter
+        if (!empty($search)) {
+            $baseQuery->where(function($q) use ($search) {
+                $q->where('description', 'like', "%{$search}%")
+                  ->orWhere('log_name', 'like', "%{$search}%")
+                  ->orWhere('subject_type', 'like', "%{$search}%")
+                  ->orWhereHas('causer', function($causerQuery) use ($search) {
+                      $causerQuery->where('name', 'like', "%{$search}%")
+                                  ->orWhere('email', 'like', "%{$search}%");
+                  });
+            });
+        }
+        
+        // Apply action filter
+        if (!empty($actionFilter) && $actionFilter !== 'all') {
+            $baseQuery->where('description', $actionFilter);
+        }
+        
+        // Apply model filter
+        if (!empty($modelFilter) && $modelFilter !== 'all') {
+            $baseQuery->where('subject_type', 'like', "%{$modelFilter}%");
+        }
+        
+        // Apply user filter
+        if (!empty($userFilter) && $userFilter !== 'all') {
+            $baseQuery->whereHas('causer', function($query) use ($userFilter) {
+                $query->where('id', $userFilter);
+            });
+        }
+        
+        // ========== CALCULATE STATS (GLOBAL, NOT PAGINATED) ==========
+        // Clone the query for stats to avoid modifying the original
+        $statsQuery = clone $baseQuery;
+        
+        // Get total count for stats (ALL filtered records)
+        $totalStatsCount = $statsQuery->count();
+        
+        // Get created count
+        $createdStatsQuery = clone $baseQuery;
+        $createdCount = $createdStatsQuery->where('description', 'created')->count();
+        
+        // Get updated count
+        $updatedStatsQuery = clone $baseQuery;
+        $updatedCount = $updatedStatsQuery->where('description', 'updated')->count();
+        
+        // Get deleted count
+        $deletedStatsQuery = clone $baseQuery;
+        $deletedCount = $deletedStatsQuery->where('description', 'deleted')->count();
+        
+        // Build stats array
+        $stats = [
+            'total' => $totalStatsCount,
+            'created' => $createdCount,
+            'updated' => $updatedCount,
+            'deleted' => $deletedCount,
+        ];
+        
+        // ========== GET PAGINATED RESULTS FOR DISPLAY ==========
+        // Get total filtered count for pagination
+        $filteredCount = $baseQuery->count();
+        
+        // Get total count of ALL records in database (without any filters)
+        $allTotal = Activity::count();
+        
+        // Get paginated results
+        $paginatedActivities = $baseQuery->forPage($currentPage, $perPage)->get();
+        
+        // Transform paginated data for display
+        $paginatedTransformed = collect();
+        foreach ($paginatedActivities as $activity) {
+            $paginatedTransformed->push([
                 'id' => $activity->id,
                 'log_name' => $activity->log_name,
                 'description' => $activity->description,
@@ -45,71 +111,52 @@ class ActivityLogController extends Controller
                 ] : null,
             ]);
         }
-
-        // Get ALL unique values for filter dropdowns (from unfiltered data)
-        $allActions = $allTransformed->pluck('description')->unique()->values()->toArray();
-        $allModels = $allTransformed->pluck('subject_type')->unique()->values()->toArray();
-        $allUsers = $allTransformed->filter(function ($item) {
-            return $item['causer'] !== null;
-        })->map(function ($item) {
-            return [
-                'id' => (string) $item['causer']['id'],
-                'name' => $item['causer']['name']
-            ];
-        })->unique('id')->values()->toArray();
-
-        // Now apply filters to get the filtered data
-        $transformed = $allTransformed;
-
-        // Apply search filter
-        if (!empty($search)) {
-            $transformed = $transformed->filter(function ($item) use ($search) {
-                return stripos($item['description'], $search) !== false ||
-                    stripos($item['log_name'], $search) !== false ||
-                    stripos($item['subject_type'], $search) !== false ||
-                    ($item['causer'] && stripos($item['causer']['name'], $search) !== false);
-            });
-        }
-
-        // Apply action filter
-        if ($actionFilter !== 'all') {
-            $transformed = $transformed->filter(function ($item) use ($actionFilter) {
-                return $item['description'] === $actionFilter;
-            });
-        }
-
-        // Apply model filter
-        if ($modelFilter !== 'all') {
-            $transformed = $transformed->filter(function ($item) use ($modelFilter) {
-                return $item['subject_type'] === $modelFilter;
-            });
-        }
-
-        // Apply user filter
-        if ($userFilter !== 'all') {
-            $transformed = $transformed->filter(function ($item) use ($userFilter) {
-                return $item['causer'] && (string) $item['causer']['id'] === (string) $userFilter;
-            });
-        }
-
-        // Get total counts
-        $totalCount = $transformed->count();
-        $allTotal = Activity::count();
-
-        // Paginate
-        $paginated = $transformed->slice(($currentPage - 1) * $perPage, $perPage)->values();
-
+        
+        // ========== GET FILTER OPTIONS (FROM ALL DATA) ==========
+        // Get all unique actions
+        $allActions = Activity::distinct()->pluck('description')->filter()->values()->toArray();
+        
+        // Get all unique models (from subject_type)
+        $allModels = Activity::distinct()
+            ->whereNotNull('subject_type')
+            ->pluck('subject_type')
+            ->map(function($type) {
+                return class_basename($type);
+            })
+            ->unique()
+            ->values()
+            ->toArray();
+        
+        // Get all unique users who have performed actions
+        $allUsers = Activity::whereHas('causer')
+            ->with('causer')
+            ->get()
+            ->map(function($activity) {
+                return $activity->causer;
+            })
+            ->filter()
+            ->unique('id')
+            ->map(function($user) {
+                return [
+                    'id' => (string) $user->id,
+                    'name' => $user->name ?? $user->email ?? 'System',
+                ];
+            })
+            ->values()
+            ->toArray();
+        
+        // Create paginator
         $paginator = new LengthAwarePaginator(
-            $paginated,
-            $totalCount,
+            $paginatedTransformed,
+            $filteredCount,
             $perPage,
             $currentPage,
             ['path' => $request->url(), 'query' => $request->query()]
         );
-
+        
         return Inertia::render('ActivityLogs/index', [
             'activityLogs' => [
-                'data' => $paginated,
+                'data' => $paginatedTransformed,
                 'links' => $paginator->linkCollection()->toArray(),
                 'from' => $paginator->firstItem(),
                 'to' => $paginator->lastItem(),
@@ -125,21 +172,22 @@ class ActivityLogController extends Controller
                 'user' => $userFilter,
                 'perPage' => (string) $perPage,
             ],
+            'stats' => $stats,
             'totalCount' => $allTotal,
-            'filteredCount' => $totalCount,
+            'filteredCount' => $filteredCount,
             'allActions' => $allActions,
             'allModels' => $allModels,
             'allUsers' => $allUsers,
         ]);
     }
-
+    
     /**
      * Get readable model name from activity
      */
     protected function getModelName($activity): string
     {
         $modelName = '';
-
+        
         // Try subject_type first
         if ($activity->subject_type) {
             $modelName = class_basename($activity->subject_type);
@@ -162,24 +210,24 @@ class ActivityLogController extends Controller
         elseif ($activity->log_name) {
             $name = strtolower($activity->log_name);
             $models = ['user', 'branch', 'site', 'role', 'permission'];
-
+            
             foreach ($models as $model) {
                 if (str_contains($name, $model)) {
                     $modelName = ucfirst($model);
                     break;
                 }
             }
-
+            
             if (empty($modelName)) {
                 $modelName = ucfirst($activity->log_name);
             }
         }
-
+        
         // Default fallback
         if (empty($modelName)) {
             $modelName = 'Activity';
         }
-
+        
         // Remove special characters and apply title case
         return preg_replace('/[^a-zA-Z0-9\s]/', ' ', Str::title($modelName));
     }
