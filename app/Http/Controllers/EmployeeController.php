@@ -35,6 +35,8 @@ class EmployeeController extends Controller
             return $this->employeeRepository->getEmployees();
         });
 
+        $archivedEmployees = $this->employeeRepository->getDeletedEmployees();
+
         // ── Derive allPositions from the FULL collection (before filtering) ──────
         // This gives the Position popover the complete list of options regardless
         // of what filters are currently active or what page the user is on.
@@ -65,6 +67,7 @@ class EmployeeController extends Controller
         });
 
         return Inertia::render('employees/index', [
+            'archivedEmployees' => $archivedEmployees,
             'employees' => [
                 'data'    => $result['data'],
                 'links'   => $result['pagination']['links'] ?? [],
@@ -222,8 +225,9 @@ class EmployeeController extends Controller
             return back()->with('error', 'Too many attempts. Please try again later.');
         }
 
-        $this->invalidateUserSessions($employee->user_id);
-        $employee->user()->delete();
+        // $this->invalidateUserSessions($employee->user_id);
+       // $employee->update(['employee_status' => 'inactive']);
+        $employee->delete();
 
         $this->cacheForget('employees');
 

@@ -51,7 +51,7 @@ Route::middleware(['auth', 'admin', 'auth.session'])->group(function () {
     Route::resource('branches', BranchController::class)->except(['show']);
     Route::delete('/branches/{branch:branch_slug}', [BranchController::class, 'destroy'])->name('branches.destroy');
     Route::resource('positions', PositionController::class)->except(['show']);
-    Route::resource('employees', EmployeeController::class);
+    Route::resource('employees', EmployeeController::class)->withTrashed();
     Route::resource('permissions', PermissionController::class);
     Route::resource('incentives', IncentiveController::class)->except(['show']);
 
