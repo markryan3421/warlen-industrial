@@ -1,9 +1,10 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\HrRole;
 
 use App\Actions\Deduction\CreateNewDeduction;
 use App\Actions\Deduction\UpdateDeduction;
+use App\Http\Controllers\Controller;
 use App\Http\Requests\Deduction\StoreDeductionRequest;
 use App\Models\Deduction;
 use App\Repository\IncentiveRepository;
@@ -11,18 +12,24 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 
-class DeductionController extends Controller
+class HRDeductionController extends Controller
 {
     public function __construct(protected IncentiveRepository $deductionRepository) {}
+    /**
+     * Display a listing of the resource.
+     */
     public function index()
     {
         Gate::authorize('viewAny', Deduction::class);
 
         $deductions = $this->deductionRepository->getDeductions();
 
-        return Inertia::render('deductions/index', compact('deductions'));
+        return Inertia::render('HR/deductions/index', compact('deductions'));
     }
 
+    /**
+     * Show the form for creating a new resource.
+     */
     public function create()
     {
         Gate::authorize('create', Deduction::class);
@@ -31,9 +38,12 @@ class DeductionController extends Controller
 
         $employees = $this->deductionRepository->getActiveEmployeesForIncentive();
 
-        return Inertia::render('deductions/create', compact('payroll_periods', 'employees'));
+        return Inertia::render('HR/deductions/create', compact('payroll_periods', 'employees'));
     }
 
+    /**
+     * Store a newly created resource in storage.
+     */
     public function store(CreateNewDeduction $action, StoreDeductionRequest $request)
     {
         Gate::authorize('create', Deduction::class);
@@ -41,6 +51,7 @@ class DeductionController extends Controller
         if ($this->limit('create-deduction:' . auth()->id(), 60, 15)) {
             return back()->with('error', 'Too many attempts. Please try again later.');
         }
+
         try {
             DB::beginTransaction();
 
@@ -48,7 +59,7 @@ class DeductionController extends Controller
 
             DB::commit();
 
-            return to_route('deductions.index')->with('success', 'Branch and site created successfully.');
+            return to_route('hr.deductions.index')->with('success', 'Branch and site created successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -57,6 +68,14 @@ class DeductionController extends Controller
         }
     }
 
+    /**
+     * Display the specified resource.
+     */
+    public function show(string $id) {}
+
+    /**
+     * Show the form for editing the specified resource.
+     */
     public function edit(Deduction $deduction)
     {
         Gate::authorize('update', $deduction);
@@ -67,18 +86,16 @@ class DeductionController extends Controller
 
         $payroll_periods = $this->deductionRepository->getOpenPayrollPeriods();
 
-        return Inertia::render('deductions/update', [
+        return Inertia::render('HR/deductions/edit', [
             'deduction' => $deduction,
             'employees' => $employees,
             'payroll_periods' => $payroll_periods
         ]);
     }
 
-    public function show()
-    {
-        return Inertia::render('deductions/show');
-    }
-
+    /**
+     * Update the specified resource in storage.
+     */
     public function update(UpdateDeduction $action, StoreDeductionRequest $request, Deduction $deduction)
     {
         Gate::authorize('update', $deduction);
@@ -93,7 +110,7 @@ class DeductionController extends Controller
 
             DB::commit();
 
-            return to_route('deductions.index')->with('success', ' Deduction updated successfully.');
+            return to_route('hr.deductions.index')->with('success', ' Deduction updated successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -102,6 +119,9 @@ class DeductionController extends Controller
         }
     }
 
+    /**
+     * Remove the specified resource from storage.
+     */
     public function destroy(Deduction $deduction)
     {
         Gate::authorize('delete', $deduction);
@@ -115,7 +135,7 @@ class DeductionController extends Controller
 
             DB::commit();
 
-            return to_route('deductions.index')->with('success', ' Deduction deleted successfully.');
+            return to_route('hr.deductions.index')->with('success', ' Deduction deleted successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
 

@@ -6,23 +6,24 @@ use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
+use Laravel\Fortify\Contracts\LoginResponse;
 use Laravel\Fortify\Features;
 use Laravel\Fortify\Fortify;
-use Laravel\Fortify\Contracts\LoginResponse;
 
 class FortifyServiceProvider extends ServiceProvider
 {
     /**
      * Register any application services.
      */
-    public function register(): void {
+    public function register(): void
+    {
 
         $this->intendedRoutes();
-
     }
 
     /**
@@ -88,16 +89,83 @@ class FortifyServiceProvider extends ServiceProvider
                     }
 
                     if ($user->hasRole('employee')) {
-                        return redirect()->route('employee.dashboard');
+                        if ($user->employee && $user->employee->employee_status === 'active' && !$user->employee->deleted_at) {
+                            return redirect()->route('employee.dashboard');
+                        }
+                        Auth::logout();
+                        $request->session()->invalidate();
+                        $request->session()->regenerateToken();
+                        return redirect()->route('login')->withErrors([
+                            'email' => 'Your account is inactive or has been moved to archived. Please contact administrator.',
+                        ]);
                     }
 
+                    // Check if HR head exists and is active
                     if ($user->hasRole('hr_head')) {
-                        return redirect()->route('hr.dashboard');
+                        if ($user->employee && $user->employee->employee_status === 'active' && !$user->employee->deleted_at) {
+                            return redirect()->route('hr.dashboard');
+                        }
+
+                        Auth::logout();
+                        $request->session()->invalidate();
+                        $request->session()->regenerateToken();
+                        return redirect()->route('login')->withErrors([
+                            'email' => 'Your account is inactive or has been moved to archived. Please contact administrator.',
+                        ]);
                     }
+
+                    abort(403, 'Unauthorized access.');
                 }
             };
         });
     }
+
+    // private function intendedRoutes(): void
+    // {
+    //     $this->app->singleton(LoginResponse::class, function () {
+    //         return new class implements LoginResponse {
+    //             public function toResponse($request)
+    //             {
+    //                 $user = $request->user();
+
+    //                 $role = match (true) {
+    //                     $user->hasRole('admin') => 'admin',
+    //                     $user->hasRole('employee') => 'employee',
+    //                     $user->hasRole('hr_head') => 'hr_head',
+    //                     default => null,
+    //                 };
+
+    //                 if (!$role) {
+    //                     abort(403, 'Unauthorized access.');
+    //                 }
+
+    //                 // Check employee status for non-admin roles
+    //                 if ($role !== 'admin') {
+    //                     $isValid = $user->employee
+    //                         && $user->employee->employee_status === 'active'
+    //                         && !$user->employee->deleted_at;
+
+    //                     if (!$isValid) {
+    //                         Auth::logout();
+    //                         $request->session()->invalidate();
+    //                         $request->session()->regenerateToken();
+    //                         return redirect()->route('login')->withErrors([
+    //                             'email' => 'Your account is inactive or has been moved to archived. Please contact administrator.',
+    //                         ]);
+    //                     }
+    //                 }
+
+    //                 $routeMap = [
+    //                     'admin' => 'dashboard',
+    //                     'employee' => 'employee.dashboard',
+    //                     'hr_head' => 'hr.dashboard',
+    //                 ];
+
+    //                 return redirect()->intended(route($routeMap[$role]));
+    //             }
+    //         };
+    //     });
+    // }
 
     /**
      * Configure rate limiting.

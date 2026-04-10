@@ -12,7 +12,7 @@
  * How it works now:
  *   Every filter change calls applyFilters(), which builds a single query-string
  *   object containing ALL active params (search, positions, branch, site, status,
- *   date_from, date_to, perPage) and fires ONE router.get(). The controller
+ *   date_from, date_to, perPage, show_archived) and fires ONE router.get(). The controller
  *   receives these params, filters + paginates the full dataset, and returns
  *   the correct page. Inertia re-renders with the fresh data.
  *
@@ -34,7 +34,7 @@
 
 import { Head, Link, useForm, router } from '@inertiajs/react';
 import { format } from 'date-fns';
-import { Users, Search, UserPlus } from 'lucide-react';
+import { Users, Search, UserPlus, Archive, UsersRound } from 'lucide-react';
 import { useState, useRef } from 'react';
 import { toast } from 'sonner';
 import EmmployeeController from '@/actions/App/Http/Controllers/EmployeeController';
@@ -50,6 +50,8 @@ import type { BreadcrumbItem } from '@/types';
 import { EmployeeFilterBar } from '@/components/employee/employee-filter-bar';
 import { EmployeesTableConfig } from '@/config/tables/employees-table';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-modal';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Employees', href: '/employees' },
@@ -70,6 +72,7 @@ interface Employee {
     employee_status: string;
     hire_date?: string;
     created_at?: string;
+    deleted_at?: string | null; // Added for archived employees
 }
 
 interface LinkProps {
@@ -92,6 +95,7 @@ interface FilterProps {
     date_from?: string;
     date_to?: string;
     perPage?: string;
+    show_archived?: string; // 'true' | 'false'
 }
 
 interface PageProps {
@@ -105,6 +109,7 @@ interface PageProps {
         to: number;
         links: LinkProps[];
     };
+    archivedEmployees: Employee[]; // Added archived employees
     branchesData: BranchData[];
     /** All distinct position names from the full (unfiltered) employee list.
      *  Sent by the controller so the Position popover works across all pages. */
@@ -117,6 +122,7 @@ interface PageProps {
 // ─── Page component ───────────────────────────────────────────────────────────
 export default function Index({
     employees,
+    archivedEmployees = [],
     branchesData = [],
     allPositions = [],
     filters = {},
@@ -124,6 +130,11 @@ export default function Index({
     filteredCount,
 }: PageProps) {
     const { delete: destroy } = useForm();
+    
+    // Tab state - 'active' for current employees, 'archived' for deleted employees
+    const [activeTab, setActiveTab] = useState<'active' | 'archived'>(
+        filters.show_archived === 'true' ? 'archived' : 'active'
+    );
 
     // ── Filter state — initialised from URL params so the UI reflects the
     //    current server-side filter on first render / browser back-forward.
@@ -163,6 +174,7 @@ export default function Index({
         from: Date | undefined;
         to: Date | undefined;
         perPage: string;
+        showArchived: boolean;
     }> = {}) {
         const s = overrides.search ?? searchTerm;
         const pos = overrides.positions ?? selectedPositions;
@@ -172,6 +184,7 @@ export default function Index({
         const from = overrides.from !== undefined ? overrides.from : dateFrom;
         const to = overrides.to !== undefined ? overrides.to : dateTo;
         const pp = overrides.perPage ?? String(employees.perPage ?? 10);
+        const showArchived = overrides.showArchived !== undefined ? overrides.showArchived : (activeTab === 'archived');
 
         const params: Record<string, string> = {};
         if (s.trim()) params.search = s.trim();
@@ -182,6 +195,7 @@ export default function Index({
         if (from) params.date_from = format(from, 'yyyy-MM-dd');
         if (to) params.date_to = format(to, 'yyyy-MM-dd');
         if (pp && pp !== '10') params.perPage = pp;     // omit when default
+        if (showArchived) params.show_archived = 'true';
 
         router.get('/employees', params, {
             preserveState: true,
@@ -190,14 +204,38 @@ export default function Index({
         });
     }
 
-    // ── Search debounce — 100 ms so we don't hit the server on every keystroke
+    // ── Tab change handler ────────────────────────────────────────────────────
+    const handleTabChange = (value: string) => {
+        const newTab = value as 'active' | 'archived';
+        setActiveTab(newTab);
+        // Clear filters when switching tabs to avoid confusion
+        setSearchTerm('');
+        setSelectedPositions([]);
+        setSelectedBranch('');
+        setSelectedSite('');
+        setStatus('');
+        setDateFrom(undefined);
+        setDateTo(undefined);
+        applyFilters({ 
+            showArchived: newTab === 'archived',
+            search: '',
+            positions: [],
+            branch: '',
+            site: '',
+            status: '',
+            from: undefined,
+            to: undefined,
+        });
+    };
+
+    // ── Search debounce — 300 ms so we don't hit the server on every keystroke
     const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const handleSearchChange = (value: string) => {
         setSearchTerm(value);
         if (searchTimer.current) clearTimeout(searchTimer.current);
         searchTimer.current = setTimeout(() => {
             applyFilters({ search: value });
-        }, 100);
+        }, 300);
     };
 
     // ── Branch change resets site ────────────────────────────────────────────
@@ -247,8 +285,11 @@ export default function Index({
         setStatus('');
         setDateFrom(undefined);
         setDateTo(undefined);
-        // Navigate to a clean URL — no filter params at all
-        router.get('/employees', {}, { preserveState: true, replace: true });
+        // Navigate to a clean URL — no filter params at all, preserve current tab
+        router.get('/employees', { show_archived: activeTab === 'archived' ? 'true' : undefined }, { 
+            preserveState: true, 
+            replace: true 
+        });
     };
 
     // Delete confirmation states
@@ -315,22 +356,6 @@ export default function Index({
         });
     }
 
-    // ── Delete ────────────────────────────────────────────────────────────────
-    const handleDelete = (id: number) => {
-        // Find the employee in the current page data
-        const employee = employees.data.find(emp => emp.id === id);
-        if (!employee?.slug_emp) {
-            console.error('Employee not found or missing slug', id);
-            toast.error('Cannot delete employee: missing identifier');
-            return;
-        }
-        if (confirm("Are you sure you want to delete this employee?")) {
-            destroy(EmployeeController.destroy(employee.slug_emp).url, {
-                // onSuccess and onError callbacks (optional)
-            });
-        }
-    };
-
     // ── Active filter count (for the Clear button badge) ─────────────────────
     const activeFiltersCount = [
         searchTerm.trim(),
@@ -343,13 +368,19 @@ export default function Index({
     ].filter(Boolean).length;
 
     const handleView = (employee: Employee) => {
-        // Use your existing helper or router
+        // Use your existing helper or router - allow viewing archived employees
         router.get(EmmployeeController.show(employee.slug_emp).url);
     };
 
     const handleEdit = (employee: Employee) => {
+        // Allow editing archived employees
         router.get(EmmployeeController.edit(employee.slug_emp).url);
     };
+
+    // Determine which data to display based on active tab
+    const currentData = activeTab === 'active' ? employees : { ...employees, data: archivedEmployees, total: archivedEmployees.length };
+    const currentTotalCount = activeTab === 'active' ? totalCount : archivedEmployees.length;
+    const currentFilteredCount = activeTab === 'active' ? filteredCount : archivedEmployees.length;
 
     // ─── Render ───────────────────────────────────────────────────────────────
     return (
@@ -389,121 +420,222 @@ export default function Index({
             </div>
 
             <div className="flex flex-1 flex-col gap-4 p-4 pp-row">
-
-                {/* Empty dataset (no employees exist at all) */}
-                {employees.total === 0 && activeFiltersCount === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-16 text-center">
-                        <div className="rounded-full bg-gray-100 p-6 mb-4">
-                            <Users className="h-12 w-12 text-gray-400" />
-                        </div>
-                        <h3 className="text-lg font-semibold mb-2">No employees yet</h3>
-                        <p className="text-gray-500 mb-6 max-w-sm">
-                            Get started by creating your first employee.
-                        </p>
-                        <Link href="/employees/create">
-                            <Button>Create Your First Employee</Button>
-                        </Link>
-                    </div>
-
-                ) : (
-                    <div className='mx-4'>
-                        <CustomTable
-                            title="Employee Lists"
-                            columns={EmployeesTableConfig.columns}
-                            actions={EmployeesTableConfig.actions}
-                            data={employees.data}
-                            from={employees.from ?? 1}
-                            onDelete={handleDeleteClick}
-                            onView={handleView}
-                            onEdit={handleEdit}
-                            toolbar={
-                                <EmployeeFilterBar
-                                    // Configuration - show all filters for employees
-                                    filters={{
-                                        search: true,
-                                        position: true,
-                                        branch: true,
-                                        site: true,
-                                        date: true,
-                                        status: true,
-                                    }}
-                                    // Data
-                                    allPositions={allPositions}
-                                    branchesData={branchesData}
-                                    // Filter values
-                                    searchTerm={searchTerm}
-                                    selectedPositions={selectedPositions}
-                                    selectedBranch={selectedBranch}
-                                    selectedSite={selectedSite}
-                                    status={status}
-                                    dateFrom={dateFrom}
-                                    dateTo={dateTo}
-                                    // Handlers
-                                    onSearchChange={handleSearchChange}
-                                    onPositionsChange={handlePositionsChange}
-                                    onBranchChange={handleBranchChange}
-                                    onSiteChange={handleSiteChange}
-                                    onStatusChange={handleStatusChange}
-                                    onDateFromChange={handleDateFromChange}
-                                    onDateToChange={handleDateToChange}
-                                    onClearAll={clearFilters}
-                                    // Customizations
-                                    searchPlaceholder="Search by ID or name..."
-                                    dateLabel="Hire Date"
-                                />
-                            }
-                            filterEmptyState={
-                                <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
-                                    <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center mb-3">
-                                        <Search className="h-5 w-5 text-slate-400 dark:text-slate-500" />
+                {/* Tabs for Active/Archived employees */}
+                <div className="mx-4">
+                    <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+                        <TabsList className="grid w-full max-w-md grid-cols-2">
+                            <TabsTrigger value="active" className="flex items-center gap-2">
+                                <UsersRound className="h-4 w-4" />
+                                Active Employees
+                                <Badge variant="secondary" className="ml-2">
+                                    {totalCount}
+                                </Badge>
+                            </TabsTrigger>
+                            <TabsTrigger value="archived" className="flex items-center gap-2">
+                                <Archive className="h-4 w-4" />
+                                Archived Employees
+                                <Badge variant="secondary" className="ml-2">
+                                    {archivedEmployees.length}
+                                </Badge>
+                            </TabsTrigger>
+                        </TabsList>
+                        
+                        <TabsContent value="active" className="mt-6">
+                            {/* Empty dataset (no employees exist at all) */}
+                            {employees.total === 0 && activeFiltersCount === 0 ? (
+                                <div className="flex flex-col items-center justify-center py-16 text-center">
+                                    <div className="rounded-full bg-gray-100 p-6 mb-4">
+                                        <Users className="h-12 w-12 text-gray-400" />
                                     </div>
-                                    <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1">
-                                        No results found
-                                    </h3>
-                                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 max-w-xs">
-                                        {searchTerm && selectedPositions.length > 0
-                                            ? `No employees matching "${searchTerm}" in selected positions.`
-                                            : searchTerm
-                                                ? `No employees matching "${searchTerm}".`
-                                                : selectedBranch && selectedSite
-                                                    ? `No employees in ${selectedBranch} / ${selectedSite}.`
-                                                    : selectedBranch
-                                                        ? `No employees in ${selectedBranch}.`
-                                                        : dateFrom || dateTo
-                                                            ? 'No employees in the selected date range.'
-                                                            : 'No employees match your current filters.'}
+                                    <h3 className="text-lg font-semibold mb-2">No employees yet</h3>
+                                    <p className="text-gray-500 mb-6 max-w-sm">
+                                        Get started by creating your first employee.
                                     </p>
-                                    <Button variant="outline" size="sm" onClick={clearFilters}>
-                                        Clear filters
-                                    </Button>
+                                    <Link href="/employees/create">
+                                        <Button>Create Your First Employee</Button>
+                                    </Link>
                                 </div>
-                            }
-                        />
+                            ) : (
+                                <>
+                                    <CustomTable
+                                        title="Active Employee Lists"
+                                        columns={EmployeesTableConfig.columns}
+                                        actions={EmployeesTableConfig.actions}
+                                        data={employees.data}
+                                        from={employees.from ?? 1}
+                                        onDelete={handleDeleteClick}
+                                        onView={handleView}
+                                        onEdit={handleEdit}
+                                        toolbar={
+                                            <EmployeeFilterBar
+                                                // Configuration - show all filters for employees
+                                                filters={{
+                                                    search: true,
+                                                    position: true,
+                                                    branch: true,
+                                                    site: true,
+                                                    date: true,
+                                                    status: true,
+                                                }}
+                                                // Data
+                                                allPositions={allPositions}
+                                                branchesData={branchesData}
+                                                // Filter values
+                                                searchTerm={searchTerm}
+                                                selectedPositions={selectedPositions}
+                                                selectedBranch={selectedBranch}
+                                                selectedSite={selectedSite}
+                                                status={status}
+                                                dateFrom={dateFrom}
+                                                dateTo={dateTo}
+                                                // Handlers
+                                                onSearchChange={handleSearchChange}
+                                                onPositionsChange={handlePositionsChange}
+                                                onBranchChange={handleBranchChange}
+                                                onSiteChange={handleSiteChange}
+                                                onStatusChange={handleStatusChange}
+                                                onDateFromChange={handleDateFromChange}
+                                                onDateToChange={handleDateToChange}
+                                                onClearAll={clearFilters}
+                                                // Customizations
+                                                searchPlaceholder="Search by ID or name..."
+                                                dateLabel="Hire Date"
+                                            />
+                                        }
+                                        filterEmptyState={
+                                            <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
+                                                <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center mb-3">
+                                                    <Search className="h-5 w-5 text-slate-400 dark:text-slate-500" />
+                                                </div>
+                                                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1">
+                                                    No results found
+                                                </h3>
+                                                <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 max-w-xs">
+                                                    {searchTerm && selectedPositions.length > 0
+                                                        ? `No employees matching "${searchTerm}" in selected positions.`
+                                                        : searchTerm
+                                                            ? `No employees matching "${searchTerm}".`
+                                                            : selectedBranch && selectedSite
+                                                                ? `No employees in ${selectedBranch} / ${selectedSite}.`
+                                                                : selectedBranch
+                                                                    ? `No employees in ${selectedBranch}.`
+                                                                    : dateFrom || dateTo
+                                                                        ? 'No employees in the selected date range.'
+                                                                        : 'No employees match your current filters.'}
+                                                </p>
+                                                <Button variant="outline" size="sm" onClick={clearFilters}>
+                                                    Clear filters
+                                                </Button>
+                                            </div>
+                                        }
+                                    />
 
-                        <CustomPagination
-                            pagination={employees}
-                            perPage={String(employees.perPage ?? 10)}
-                            onPerPageChange={handlePerPageChange}
-                            totalCount={totalCount}
-                            filteredCount={filteredCount}
-                            search={searchTerm}
-                            resourceName="employee"
-                        />
+                                    <CustomPagination
+                                        pagination={employees}
+                                        perPage={String(employees.perPage ?? 10)}
+                                        onPerPageChange={handlePerPageChange}
+                                        totalCount={currentTotalCount}
+                                        filteredCount={currentFilteredCount}
+                                        search={searchTerm}
+                                        resourceName="employee"
+                                    />
+                                </>
+                            )}
+                        </TabsContent>
+                        
+                        <TabsContent value="archived" className="mt-6">
+                            {archivedEmployees.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center py-16 text-center">
+                                    <div className="rounded-full bg-gray-100 p-6 mb-4">
+                                        <Archive className="h-12 w-12 text-gray-400" />
+                                    </div>
+                                    <h3 className="text-lg font-semibold mb-2">No archived employees</h3>
+                                    <p className="text-gray-500 mb-2 max-w-sm">
+                                        Archived employees will appear here when you delete them.
+                                    </p>
+                                </div>
+                            ) : (
+                                <>
+                                    <CustomTable
+                                        title="Archived Employee Lists"
+                                        columns={EmployeesTableConfig.columns}
+                                        actions={EmployeesTableConfig.actions}
+                                        data={archivedEmployees}
+                                        from={1}
+                                        onDelete={handleDeleteClick}
+                                        onView={handleView}
+                                        onEdit={handleEdit}
+                                        toolbar={
+                                            <EmployeeFilterBar
+                                                // Configuration - show limited filters for archived employees
+                                                filters={{
+                                                    search: true,
+                                                    position: true,
+                                                    branch: true,
+                                                    site: true,
+                                                    status: false, // Status doesn't matter for archived
+                                                    date: false,    // Date filter removed for archived
+                                                }}
+                                                // Data
+                                                allPositions={allPositions}
+                                                branchesData={branchesData}
+                                                // Filter values
+                                                searchTerm={searchTerm}
+                                                selectedPositions={selectedPositions}
+                                                selectedBranch={selectedBranch}
+                                                selectedSite={selectedSite}
+                                                status={status}
+                                                dateFrom={dateFrom}
+                                                dateTo={dateTo}
+                                                // Handlers
+                                                onSearchChange={handleSearchChange}
+                                                onPositionsChange={handlePositionsChange}
+                                                onBranchChange={handleBranchChange}
+                                                onSiteChange={handleSiteChange}
+                                                onStatusChange={handleStatusChange}
+                                                onDateFromChange={handleDateFromChange}
+                                                onDateToChange={handleDateToChange}
+                                                onClearAll={clearFilters}
+                                                // Customizations
+                                                searchPlaceholder="Search archived employees..."
+                                                dateLabel="Deletion Date" // This won't show since date is false
+                                            />
+                                        }
+                                        filterEmptyState={
+                                            <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
+                                                <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center mb-3">
+                                                    <Search className="h-5 w-5 text-slate-400 dark:text-slate-500" />
+                                                </div>
+                                                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1">
+                                                    No archived employees found
+                                                </h3>
+                                                <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 max-w-xs">
+                                                    No archived employees match your current filters.
+                                                </p>
+                                                <Button variant="outline" size="sm" onClick={clearFilters}>
+                                                    Clear filters
+                                                </Button>
+                                            </div>
+                                        }
+                                    />
+                                </>
+                            )}
+                        </TabsContent>
+                    </Tabs>
+                </div>
 
-                        <DeleteConfirmationDialog
-                            isOpen={deleteDialogOpen}
-                            onClose={() => {
-                                setDeleteDialogOpen(false);
-                                setItemToDelete(null);
-                            }}
-                            onConfirm={confirmDelete}
-                            title='Delete employee'
-                            itemName={itemToDelete?.name || 'this employee'}
-                            isLoading={isDeleting}
-                            confirmText='Delete employee'
-                        />
-                    </div>
-                )}
+                <DeleteConfirmationDialog
+                    isOpen={deleteDialogOpen}
+                    onClose={() => {
+                        setDeleteDialogOpen(false);
+                        setItemToDelete(null);
+                    }}
+                    onConfirm={confirmDelete}
+                    title='Delete employee'
+                    itemName={itemToDelete?.user?.name || itemToDelete?.emp_code || 'this employee'}
+                    isLoading={isDeleting}
+                    confirmText='Delete employee'
+                />
             </div>
         </AppLayout>
     );

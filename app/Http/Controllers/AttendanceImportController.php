@@ -71,7 +71,10 @@ class AttendanceImportController extends Controller
 
             $result = $this->runImport($spreadsheet, $sheet);
 
-            $this->cacheForget('payroll_periods');
+            $this->cacheForget([
+                'payroll_periods',
+                'employees_incentive',
+            ]);
 
             return response()->json([
                 'message'  => 'Import completed.',

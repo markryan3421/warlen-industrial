@@ -122,13 +122,15 @@ class AppServiceProvider extends ServiceProvider
         // PayrollPeriod::observe(PayrollPeriodObserver::class);
 
         ApplicationLeave::observe(ApplicationLeaveObserver::class);
-        Employee::observe(new \App\Observers\EmployeeObserver());
+        //Employee::observe(new \App\Observers\EmployeeObserver());
     }
 
     private function configureRateLimiting(): void
     {
         RateLimiter::for('limit-actions', function (Request $request) {
-            return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
+            return $request->user()
+                ? Limit::perMinute(15)->by($request->user()->id)
+                : Limit::perMinute(5)->by($request->ip());
         });
     }
 }
