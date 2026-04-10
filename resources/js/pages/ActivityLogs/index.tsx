@@ -7,7 +7,6 @@ import { CustomTable } from '@/components/custom-table';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { cn } from '@/lib/utils';
@@ -38,6 +37,12 @@ interface ActivityLogsProps {
     allActions?: string[];
     allModels?: string[];
     allUsers?: Array<{ id: string; name: string }>;
+    stats?: {
+        total: number;
+        created: number;
+        updated: number;
+        deleted: number;
+    };
 }
 
 const StatsCard = React.memo(({ 
@@ -60,7 +65,7 @@ const StatsCard = React.memo(({
     >
         <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
             <CardTitle className={cn(
-                "text-sm lg:text-[16px] font-sm uppercase",
+                "text-sm lg:text-[15px] font-sm uppercase",
                 isActive ? "text-blue-700" : "text-stone-700"
             )}>
                 {title}
@@ -88,7 +93,6 @@ const StatsCard = React.memo(({
     </Card>
 ));
 
-// Custom Empty State Component
 const EmptyState = ({ message, description, icon: Icon, hasFilters }: any) => (
     <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
         <div className={cn(
@@ -118,7 +122,6 @@ const EmptyState = ({ message, description, icon: Icon, hasFilters }: any) => (
                 variant="outline" 
                 className="mt-4"
                 onClick={() => {
-                    // Clear all filters
                     const params: Record<string, string> = { page: '1' };
                     router.get('/activity-logs', params, { 
                         preserveState: true, 
@@ -141,6 +144,7 @@ export default function Index({
     allActions = [],
     allModels = [],
     allUsers = [],
+    stats: initialStats = { total: 0, created: 0, updated: 0, deleted: 0 },
 }: ActivityLogsProps) {
 
     const logs = activityLogs.data || [];
@@ -154,7 +158,6 @@ export default function Index({
         per_page: activityLogs.per_page || 10,
     };
 
-    // Initialize state from filters prop (URL parameters)
     const [searchTerm, setSearchTerm] = useState(filters.search ?? '');
     const [actionFilter, setActionFilter] = useState<string>(filters.action ?? '');
     const [modelFilter, setModelFilter] = useState<string>(filters.model ?? '');
@@ -168,18 +171,11 @@ export default function Index({
     // Update local state when filters prop changes (URL navigation)
     useEffect(() => {
         setSearchTerm(filters.search ?? '');
-        setActionFilter(filters.action ?? 'all');
-        setModelFilter(filters.model ?? 'all');
-        setUserFilter(filters.user ?? 'all');
+        setActionFilter(filters.action ?? '');
+        setModelFilter(filters.model ?? '');
+        setUserFilter(filters.user ?? '');
         setPerPage(filters.perPage ?? String(pagination.per_page ?? '10'));
     }, [filters.search, filters.action, filters.model, filters.user, filters.perPage, pagination.per_page]);
-
-    const stats = useMemo(() => ({
-        total: totalCount || pagination.total,
-        created: logs.filter(l => l.description === 'created').length,
-        updated: logs.filter(l => l.description === 'updated').length,
-        deleted: logs.filter(l => l.description === 'deleted').length,
-    }), [logs, totalCount, pagination.total]);
 
     const applyFilters = useCallback((overrides: Partial<{
         search: string; action: string; model: string; user: string; perPage: string;
@@ -192,12 +188,11 @@ export default function Index({
         
         const params: Record<string, string> = {};
         if (s && s.trim()) params.search = s.trim();
-        if (action && action !== 'all') params.action = action;
-        if (model && model !== 'all') params.model = model;
-        if (user && user !== 'all') params.user = user;
+        if (action && action !== '') params.action = action;
+        if (model && model !== '') params.model = model;
+        if (user && user !== '') params.user = user;
         if (pp && pp !== '10') params.perPage = pp;
         
-        // Reset to page 1 when filters change
         params.page = '1';
         
         router.get('/activity-logs', params, { 
@@ -241,12 +236,11 @@ export default function Index({
     
     const clearFilters = () => {
         setSearchTerm(''); 
-        setActionFilter('all'); 
-        setModelFilter('all'); 
-        setUserFilter('all');
+        setActionFilter(''); 
+        setModelFilter(''); 
+        setUserFilter('');
         if (searchTimer.current) clearTimeout(searchTimer.current);
         
-        // Only keep perPage parameter
         const params: Record<string, string> = {};
         if (perPage && perPage !== '10') params.perPage = perPage;
         params.page = '1';
@@ -258,35 +252,29 @@ export default function Index({
         });
     };
 
-    // Handle stats card click to filter by that action
     const handleStatsClick = (actionType: string) => {
         if (actionType === 'all') {
-            // If clicking Total Activities, clear all action filters
-            if (actionFilter !== 'all') {
-                handleActionChange('all');
+            if (actionFilter !== '') {
+                handleActionChange('');
             }
         } else {
             if (actionFilter === actionType) {
-                // If already filtering by this action, clear the filter
-                handleActionChange('all');
+                handleActionChange('');
             } else {
-                // Otherwise, filter by this action
                 handleActionChange(actionType);
             }
         }
     };
 
-    // Determine if Total Activities should be active (when no action filter is applied)
-    const isTotalActive = actionFilter === 'all';
+    const isTotalActive = actionFilter === '';
 
     const activeFiltersCount = [
         searchTerm && searchTerm.trim() ? 1 : 0,
-        actionFilter !== 'all' ? 1 : 0,
-        modelFilter !== 'all' ? 1 : 0,
-        userFilter !== 'all' ? 1 : 0
+        actionFilter ? 1 : 0,
+        modelFilter ? 1 : 0,
+        userFilter ? 1 : 0
     ].filter(Boolean).length;
 
-    // Check if there are any active filters
     const hasActiveFilters = activeFiltersCount > 0;
 
     useEffect(() => {
@@ -302,7 +290,6 @@ export default function Index({
     
     const handleView = (row: any) => viewDetails(row);
 
-    // Determine empty state message based on filters
     const getEmptyStateMessage = () => {
         if (hasActiveFilters) {
             return "No matching activity logs found";
@@ -323,6 +310,14 @@ export default function Index({
         }
         return Database;
     };
+
+    // Debug logging to verify stats
+    useEffect(() => {
+        console.log('Initial Stats from server:', initialStats);
+        console.log('Current action filter:', actionFilter);
+        console.log('Filtered count:', filteredCount);
+        console.log('Total count:', totalCount);
+    }, [initialStats, actionFilter, filteredCount, totalCount]);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -363,7 +358,7 @@ export default function Index({
                         title="Total Activities" 
                         icon={Activity} 
                         iconColor="text-gray-600" 
-                        value={stats.total}
+                        value={initialStats.total}
                         isActive={isTotalActive}
                         onClick={() => handleStatsClick('all')}
                     />
@@ -371,7 +366,7 @@ export default function Index({
                         title="Created" 
                         icon={PlusCircle} 
                         iconColor="text-green-600" 
-                        value={stats.created} 
+                        value={initialStats.created} 
                         color="text-green-600"
                         isActive={actionFilter === 'created'}
                         onClick={() => handleStatsClick('created')}
@@ -380,7 +375,7 @@ export default function Index({
                         title="Updated" 
                         icon={Pencil} 
                         iconColor="text-blue-600" 
-                        value={stats.updated} 
+                        value={initialStats.updated} 
                         color="text-blue-600"
                         isActive={actionFilter === 'updated'}
                         onClick={() => handleStatsClick('updated')}
@@ -389,7 +384,7 @@ export default function Index({
                         title="Deleted" 
                         icon={Trash2} 
                         iconColor="text-red-600" 
-                        value={stats.deleted} 
+                        value={initialStats.deleted} 
                         color="text-red-600"
                         isActive={actionFilter === 'deleted'}
                         onClick={() => handleStatsClick('deleted')}
@@ -398,7 +393,6 @@ export default function Index({
                 
                 <div className='mx-4'>
                     {logs.length === 0 ? (
-                        // Show empty state when no data
                         <div className="border rounded-lg bg-white dark:bg-gray-900">
                             <div className="p-4 border-b">
                                 <h2 className="text-lg font-semibold">Activity Log Lists</h2>
@@ -411,7 +405,6 @@ export default function Index({
                             />
                         </div>
                     ) : (
-                        // Show table when data exists
                         <CustomTable
                             columns={ActivityLogsTableColumns}
                             actions={ActivityLogsTableActions}

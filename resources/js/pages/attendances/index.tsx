@@ -720,27 +720,25 @@ export default function AttendanceManagement({
 
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4 overflow-hidden mx-4">
                 {/* Header Section */}
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        {/* Header Section with animation */}
-                        <div className={animateHeader ? 'header-animate' : 'opacity-0'}>
-                            <CustomHeader
-                                icon={
-                                    activeMainTab === 'logs' ? <ScrollText className="h-6 w-6 text-white" /> :
-                                        activeMainTab === 'exceptions' ? <ChartSpline className="h-6 w-6 text-white" /> :
-                                            activeMainTab === 'schedules' ? <Clock className="h-6 w-6 text-white" /> :
-                                                <Calendar className="h-6 w-6 text-white" />
-                                }
-                                title={currentMainTab.label}
-                                description={currentMainTab.description}
-                            />
-                        </div>
+                <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 rounded-xl">
+                    {/* Header Section with animation - always first */}
+                    <div className={`${animateHeader ? 'header-animate' : 'opacity-0'} w-full lg:w-auto`}>
+                        <CustomHeader
+                            icon={
+                                activeMainTab === 'logs' ? <ScrollText className="h-6 w-6 text-white" /> :
+                                    activeMainTab === 'exceptions' ? <ChartSpline className="h-6 w-6 text-white" /> :
+                                        activeMainTab === 'schedules' ? <Clock className="h-6 w-6 text-white" /> :
+                                            <Calendar className="h-6 w-6 text-white" />
+                            }
+                            title={currentMainTab.label}
+                            description={currentMainTab.description}
+                        />
                     </div>
 
                     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                         <DialogTrigger asChild>
-                            <Button className="flex items-center lg:gap-2 pp-header">
-                                <Upload className="h-4 w-4" />
+                            <Button className="flex items-center ml-auto -mt-3 lg:w-auto justify-center lg:ml-auto pp-header">
+                                <Upload className="h-4 w-4 mr-2" />
                                 Import Attendance
                             </Button>
                         </DialogTrigger>
@@ -768,18 +766,19 @@ export default function AttendanceManagement({
                                     <TabsTrigger
                                         key={tab.id}
                                         value={tab.id}
-                                        className="px-5 py-3 data-[state=active]:border-b-4 data-[state=active]:rounded-t-lg data-[state=active]:border-primary rounded-none bg-transparent data-[state=active]:shadow-none data-[state=active]:text-primary data-[state=inactive]:text-gray-500"
+                                        className="px-3 md:px-5 py-3 mr-0.5 border-b-2 data-[state=active]:border-b-4 data-[state=active]:rounded-t-xl data-[state=active]:border-primary data-[state=inactive]:border-gray-300 data-[state=inactive]:border-b-2 rounded-t-xl rounded-b-none bg-transparent data-[state=active]:shadow-none data-[state=active]:text-primary data-[state=inactive]:text-gray-600 hover:data-[state=inactive]:border-gray-500 transition-all duration-200"
                                     >
-                                        <Icon className="h-4 w-4 mr-2" />
-                                        {tab.label}
+                                        <Icon className="h-4 w-4 lg:mr-2" />
+                                        {/* Hide label on mobile and tablet, show on desktop/laptop */}
+                                        <span className="hidden lg:inline">{tab.label}</span>
                                         {tab.count > 0 && (
                                             <span className={`
-                                                ml-2 px-2 py-0.5 rounded-full text-xs
-                                                ${activeMainTab === tab.id
+                                ml-1 lg:ml-2 px-1.5 lg:px-2 py-0.5 rounded-full text-xs
+                                ${activeMainTab === tab.id
                                                     ? 'bg-primary/10 text-primary'
                                                     : 'bg-gray-100 text-gray-600'
                                                 }
-                                            `}>
+                            `}>
                                                 {tab.count.toLocaleString()}
                                             </span>
                                         )}
@@ -789,16 +788,15 @@ export default function AttendanceManagement({
                         </TabsList>
                     </Tabs>
                 </div>
-
                 {/* Sub Tabs for Logs and Exceptions */}
                 {(activeMainTab === 'logs' || activeMainTab === 'exceptions') && (
-                    <div className="flex items-center justify-between gap-4 w-full pp-row">
+                    <div className="flex flex-col justify-center lg:flex-row items-center lg:justify-between xl:justify-between gap-4 w-full pp-row">
                         <Tabs
                             value={activeSubTab}
                             onValueChange={handleSubTabChange}
-                            className="w-full sm:w-auto"
+                            className="w-full sm:w-full"
                         >
-                            <TabsList className="bg-muted/50 p-1 rounded-full shadow-sm">
+                            <TabsList className="bg-muted/50 p-1 rounded-full shadow-sm flex mr-auto">
                                 <TabsTrigger value="table" className="rounded-full px-6">
                                     <Sheet className="h-4 w-4 mr-2" />
                                     Table
@@ -839,14 +837,14 @@ export default function AttendanceManagement({
 
                         {/* Search - only show in table view */}
                         {activeSubTab === 'table' && (
-                            <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-4 mr-auto lg:ml-0">
                                 <div className="relative">
                                     <Input
                                         type="text"
                                         value={localSearch}
                                         onChange={handleSearchChange}
                                         placeholder={`Search in ${currentMainTab.label}...`}
-                                        className="h-10 w-64 pr-8"
+                                        className="h-9 w-60 placeholder:text-[14px] lg:placeholder:text-[15px] lg:h-10 lg:w-64 pr-8"
                                         autoComplete="off"
                                     />
                                     {isTableLoading && localSearch && (
@@ -878,14 +876,14 @@ export default function AttendanceManagement({
 
                 {/* Search for tabs without sub-tabs */}
                 {!['logs', 'exceptions'].includes(activeMainTab) && (
-                    <div className="flex sm:flex-col lg:flex-row justify-end items-center gap-4">
+                    <div className="flex flex-row mr-auto lg:mr-0 lg:ml-auto lg:flex-row xl:flex-row items-center gap-4">
                         <div className="lg:relative">
                             <Input
                                 type="text"
                                 value={localSearch}
                                 onChange={handleSearchChange}
                                 placeholder={`Search in ${currentMainTab.label}...`}
-                                className="h-10 w-64 pr-8"
+                                className="placeholder:text-[14px] lg:placeholder:text-[15px] lg:h-10 lg:w-64 lg:pr-8"
                                 autoComplete="off"
                             />
                             {isTableLoading && localSearch && (
