@@ -10,6 +10,7 @@ use App\Http\Requests\Incentive\UpdateIncentiveRequest;
 use App\Models\Employee;
 use App\Models\Incentive;
 use App\Models\PayrollPeriod;
+use App\Repository\IncentiveRepository;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -19,6 +20,7 @@ class IncentiveController extends Controller
     /**
      * Display a listing of the resource.
      */
+    public function __construct(private IncentiveRepository $incentiveRepository) {}
     public function index()
     {
         Gate::authorize('viewAny', Incentive::class);
@@ -56,11 +58,19 @@ class IncentiveController extends Controller
     {
         Gate::authorize('create', Incentive::class);
 
-        $payroll_periods = PayrollPeriod::query()
-            ->where('payroll_per_status', PayrollPeriodStatusEnum::OPEN->value)
-            ->get(['id', 'start_date', 'end_date', 'pay_date', 'payroll_per_status']);
+          $payroll_periods = $this->cacheRemember('payroll_periods', 60, function () {
+            return PayrollPeriod::query()
+                ->where('payroll_per_status', PayrollPeriodStatusEnum::OPEN->value)
+                ->get(['id', 'start_date', 'end_date', 'pay_date', 'payroll_per_status']);
+        });
 
-        $employees = Employee::with('user')->where('employee_status', 'active')->get();
+        // $employees = $this->cacheRemember('employees', 60, function () {
+        //     return Employee::with('user')
+        //         ->where('employee_status', 'active')
+        //         ->get(['id', 'user_id', 'employee_status']);
+        // });
+    $employees = $this->incentiveRepository->getEmployees();
+
 
         return Inertia::render('incentives/create', compact('payroll_periods', 'employees'));
     }
