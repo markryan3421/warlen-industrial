@@ -76,46 +76,6 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::confirmPasswordView(fn() => Inertia::render('auth/confirm-password'));
     }
 
-    // private function intendedRoutes(): void
-    // {
-    //     $this->app->singleton(LoginResponse::class, function () {
-    //         return new class implements LoginResponse {
-    //             public function toResponse($request)
-    //             {
-    //                 $user = $request->user();
-
-    //                 if ($user->hasRole('admin')) {
-    //                     return redirect()->intended(route('dashboard'));
-    //                 }
-
-    //                 if ($user->hasRole('employee')) {
-    //                     if ($user->employee && $user->employee->employee_status === 'active' && !$user->employee->deleted_at) {
-    //                         return redirect()->intended(route('employee.dashboard'));
-    //                     }
-    //                     Auth::logout();
-    //                     return redirect()->route('login')->withErrors([
-    //                         'email' => 'Your account is inactive or has been moved to archived. Please contact administrator.',
-    //                     ]);
-    //                 }
-
-    //                 // Check if HR head exists and is active
-    //                 if ($user->hasRole('hr_head')) {
-    //                     if ($user->employee && $user->employee->employee_status === 'active' && !$user->employee->deleted_at) {
-    //                         return redirect()->intended(route('hr.dashboard'));
-    //                     }
-
-    //                     Auth::logout();
-    //                     return redirect()->route('login')->withErrors([
-    //                         'email' => 'Your account is inactive or has been moved to archived. Please contact administrator.',
-    //                     ]);
-    //                 }
-
-    //                 abort(403, 'Unauthorized access.');
-    //             }
-    //         };
-    //     });
-    // }
-
     private function intendedRoutes(): void
     {
         $this->app->singleton(LoginResponse::class, function () {
@@ -124,42 +84,88 @@ class FortifyServiceProvider extends ServiceProvider
                 {
                     $user = $request->user();
 
-                    $role = match (true) {
-                        $user->hasRole('admin') => 'admin',
-                        $user->hasRole('employee') => 'employee',
-                        $user->hasRole('hr_head') => 'hr_head',
-                        default => null,
-                    };
-
-                    if (!$role) {
-                        abort(403, 'Unauthorized access.');
+                    if ($user->hasRole('admin')) {
+                        return redirect()->intended(route('dashboard'));
                     }
 
-                    // Check employee status for non-admin roles
-                    if ($role !== 'admin') {
-                        $isValid = $user->employee
-                            && $user->employee->employee_status === 'active'
-                            && !$user->employee->deleted_at;
-
-                        if (!$isValid) {
-                            Auth::logout();
-                            return redirect()->route('login')->withErrors([
-                                'email' => 'Your account is inactive or has been moved to archived. Please contact administrator.',
-                            ]);
+                    if ($user->hasRole('employee')) {
+                        if ($user->employee && $user->employee->employee_status === 'active' && !$user->employee->deleted_at) {
+                            return redirect()->intended(route('employee.dashboard'));
                         }
+                        Auth::logout();
+                         $request->session()->invalidate();
+                         $request->session()->regenerateToken();
+                        return redirect()->route('login')->withErrors([
+                            'email' => 'Your account is inactive or has been moved to archived. Please contact administrator.',
+                        ]);
                     }
 
-                    $routeMap = [
-                        'admin' => 'dashboard',
-                        'employee' => 'employee.dashboard',
-                        'hr_head' => 'hr.dashboard',
-                    ];
+                    // Check if HR head exists and is active
+                    if ($user->hasRole('hr_head')) {
+                        if ($user->employee && $user->employee->employee_status === 'active' && !$user->employee->deleted_at) {
+                            return redirect()->intended(route('hr.dashboard'));
+                        }
 
-                    return redirect()->intended(route($routeMap[$role]));
+                        Auth::logout();
+                         $request->session()->invalidate();
+                         $request->session()->regenerateToken();
+                        return redirect()->route('login')->withErrors([
+                            'email' => 'Your account is inactive or has been moved to archived. Please contact administrator.',
+                        ]);
+                    }
+
+                    abort(403, 'Unauthorized access.');
                 }
             };
         });
     }
+
+    // private function intendedRoutes(): void
+    // {
+    //     $this->app->singleton(LoginResponse::class, function () {
+    //         return new class implements LoginResponse {
+    //             public function toResponse($request)
+    //             {
+    //                 $user = $request->user();
+
+    //                 $role = match (true) {
+    //                     $user->hasRole('admin') => 'admin',
+    //                     $user->hasRole('employee') => 'employee',
+    //                     $user->hasRole('hr_head') => 'hr_head',
+    //                     default => null,
+    //                 };
+
+    //                 if (!$role) {
+    //                     abort(403, 'Unauthorized access.');
+    //                 }
+
+    //                 // Check employee status for non-admin roles
+    //                 if ($role !== 'admin') {
+    //                     $isValid = $user->employee
+    //                         && $user->employee->employee_status === 'active'
+    //                         && !$user->employee->deleted_at;
+
+    //                     if (!$isValid) {
+    //                         Auth::logout();
+    //                         $request->session()->invalidate();
+    //                         $request->session()->regenerateToken();
+    //                         return redirect()->route('login')->withErrors([
+    //                             'email' => 'Your account is inactive or has been moved to archived. Please contact administrator.',
+    //                         ]);
+    //                     }
+    //                 }
+
+    //                 $routeMap = [
+    //                     'admin' => 'dashboard',
+    //                     'employee' => 'employee.dashboard',
+    //                     'hr_head' => 'hr.dashboard',
+    //                 ];
+
+    //                 return redirect()->intended(route($routeMap[$role]));
+    //             }
+    //         };
+    //     });
+    // }
 
     /**
      * Configure rate limiting.

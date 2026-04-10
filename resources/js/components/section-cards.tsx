@@ -165,10 +165,12 @@ const StatCard = memo(({
     footer,
     valuePrefix,
     customClasses,
-    iconSize = "w-5 h-5 md:w-6 md:h-6"
+    iconSize = "w-5 h-5 md:w-6 md:h-6",
+    href,
+    onClick
 }: {
     title: string
-    value: string
+    value: string | number
     icon: any
     trend?: string
     footer: string
@@ -182,8 +184,10 @@ const StatCard = memo(({
         content?: string
     }
     iconSize?: string
+    href?: string
+    onClick?: () => void
 }) => {
-    return (
+    const cardContent = (
         <Card className="
             @container/card border-2 border-gray-300
             animate-in fade-in slide-in-from-bottom-4 duration-400
@@ -191,6 +195,7 @@ const StatCard = memo(({
             transition-all ease-out
             flex flex-col h-full
             py-3
+            cursor-pointer
         ">
             <CardHeader className={cn("pb-2", customClasses?.header)}>
                 <div className="flex justify-between items-start">
@@ -218,9 +223,9 @@ const StatCard = memo(({
                     "text-xl font-semibold tabular-nums @[250px]/card:text-xl flex items-center -mb-2",
                     customClasses?.valueWrapper
                 )}>
-                    <span className = "-mb-5 mt-2">{valuePrefix}</span>
+                    <span className="-mb-5 mt-2">{valuePrefix}</span>
                     <AnimatedValue
-                        value={value}
+                        value={String(value)}
                         duration={1500}
                         className={cn("-mb-9 monetary-value text-[18px] md:text-[20px] lg:text-lg", customClasses?.value)}
                     />
@@ -232,72 +237,150 @@ const StatCard = memo(({
             </CardFooter>
         </Card>
     )
+
+    // If href is provided, wrap with Link component
+    if (href) {
+        return <Link href={href}>{cardContent}</Link>
+    }
+
+    // If onClick is provided, wrap with div that has onClick handler
+    if (onClick) {
+        return <div onClick={onClick}>{cardContent}</div>
+    }
+
+    // Otherwise return card without wrapper
+    return cardContent
 })
 
 StatCard.displayName = 'StatCard'
+
+// Define the structure for each card configuration
+export interface CardConfig {
+    id: string
+    title: string
+    value: number | string
+    icon: any
+    footer: string
+    href?: string
+    onClick?: () => void
+    trend?: string
+    valuePrefix?: React.ReactNode
+    iconSize?: string
+    customClasses?: {
+        header?: string
+        title?: string
+        value?: string
+        valueWrapper?: string
+        footer?: string
+        content?: string
+    }
+}
+
 interface SectionCardsProps {
     totalNetPay?: number;
     totalActiveEmployee?: number;
     openPayrollPeriod?: number;
     pendingApplicationLeave?: number;
+    // Custom card configurations - if provided, these will override defaults
+    customCards?: CardConfig[]
+    // Individual card overrides
+    totalNetPayLink?: string
+    pendingLeaveLink?: string
+    payrollActivityLink?: string
+    activeEmployeesLink?: string
+    // Custom click handlers
+    onTotalNetPayClick?: () => void
+    onPendingLeaveClick?: () => void
+    onPayrollActivityClick?: () => void
+    onActiveEmployeesClick?: () => void
 }
 
 export const SectionCards = memo(function SectionCards({
     totalNetPay = 0, 
-    totalActiveEmployee = 0 ,
+    totalActiveEmployee = 0,
     openPayrollPeriod = 0,
-    pendingApplicationLeave = 0
+    pendingApplicationLeave = 0,
+    customCards,
+    totalNetPayLink = '/payrolls',
+    pendingLeaveLink,
+    payrollActivityLink,
+    activeEmployeesLink = EmployeeController.index(),
+    onTotalNetPayClick,
+    onPendingLeaveClick,
+    onPayrollActivityClick,
+    onActiveEmployeesClick,
 }: SectionCardsProps) {
+    
+    // Default card configurations
+    const defaultCards: CardConfig[] = useMemo(() => [
+        {
+            id: 'total-net-pay',
+            title: "Total Net Pay",
+            value: totalNetPay,
+            icon: PhilippinePeso,
+            footer: "Tap to view breakdown",
+            href: totalNetPayLink,
+            onClick: onTotalNetPayClick,
+            iconSize: "w-5 h-5 text-blue-800",
+            valuePrefix: <PhilippinePeso className="h-7 w-4 md:-ml-1 md:w-5 lg:-ml-0" />,
+        },
+        {
+            id: 'pending-leave',
+            title: "Pending Leave Requests",
+            value: pendingApplicationLeave,
+            icon: Inbox,
+            footer: "Need Approvals",
+            href: pendingLeaveLink || ApplicationLeaveController.index(),
+            onClick: onPendingLeaveClick,
+            iconSize: "w-6 h-6 text-blue-800",
+        },
+        {
+            id: 'payroll-activity',
+            title: "Payroll Activity",
+            value: openPayrollPeriod,
+            icon: CalendarClock,
+            footer: "You haven't run this month's payroll.",
+            href: payrollActivityLink,
+            onClick: onPayrollActivityClick,
+            iconSize: "w-6 h-6 text-blue-800",
+        },
+        {
+            id: 'active-employees',
+            title: "Active Employees",
+            value: totalActiveEmployee,
+            icon: UsersRound,
+            footer: "New hires",
+            href: activeEmployeesLink,
+            onClick: onActiveEmployeesClick,
+            iconSize: "w-6 h-6 text-blue-800",
+        },
+    ], [totalNetPay, totalActiveEmployee, openPayrollPeriod, pendingApplicationLeave, 
+        totalNetPayLink, pendingLeaveLink, payrollActivityLink, activeEmployeesLink,
+        onTotalNetPayClick, onPendingLeaveClick, onPayrollActivityClick, onActiveEmployeesClick])
+
+    // Use custom cards if provided, otherwise use defaults
+    const cardsToRender = customCards || defaultCards
+
     // Memoize grid classes to prevent recalculation    
     const gridClasses = "grid grid-cols-2 md:grid-cols-2 lg:grid-cols-1 gap-4 px-4 mt-4 lg:px-10 lg:py-5 @xl/main:grid-cols-4 @5xl/main:grid-cols-4"
 
     return (
         <div className={gridClasses}>
-            {/* Total Revenue Card */}
-            <Link href='/payrolls'>
-            <StatCard
-                title="Total Net Pay"
-                value={totalNetPay}
-                icon={PhilippinePeso}
-                // trend="+12.5%"
-                footer="Tap to view breakdown"
-                iconSize="w-5 h-5 text-blue-800"
-                valuePrefix={<PhilippinePeso className="h-7 w-4 md:-ml-1 md:w-5 lg:-ml-0" />}
-            />
-            </Link>
-
-            {/* Anomalies Card */}
-            <Link href={ApplicationLeaveController.index()}>
-            <StatCard
-                title="Pending Leave Requests"
-                value={pendingApplicationLeave}
-                icon={Inbox}
-                // trend="+12.5%"
-                footer="Need Approvals"
-                iconSize="w-6 h-6 text-blue-800"
-            />
-            </Link>
-
-            {/* Pending Actions Card */}
-            <StatCard
-                title="Payroll Activity"
-                value={openPayrollPeriod}
-                icon={CalendarClock}
-                footer="You haven't run this month's payroll."
-                iconSize="w-6 h-6 text-blue-800"
-            />
-
-            {/* Total Employees Card */}
-            <Link href={EmployeeController.index()}>
-            <StatCard
-                title="Active Employees"
-                value={totalActiveEmployee}
-                icon={UsersRound}
-                // trend="+12.5%"
-                footer="New hires"
-                iconSize="w-6 h-6 text-blue-800"
-            />
-            </Link>
+            {cardsToRender.map((card) => (
+                <StatCard
+                    key={card.id}
+                    title={card.title}
+                    value={card.value}
+                    icon={card.icon}
+                    trend={card.trend}
+                    footer={card.footer}
+                    valuePrefix={card.valuePrefix}
+                    customClasses={card.customClasses}
+                    iconSize={card.iconSize}
+                    href={card.href}
+                    onClick={card.onClick}
+                />
+            ))}
         </div>
     )
 })

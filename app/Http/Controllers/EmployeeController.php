@@ -225,7 +225,7 @@ class EmployeeController extends Controller
             return back()->with('error', 'Too many attempts. Please try again later.');
         }
 
-        // $this->invalidateUserSessions($employee->user_id);
+        $this->invalidateUserSessions($employee->user_id);
        // $employee->update(['employee_status' => 'inactive']);
         $employee->delete();
 
