@@ -189,6 +189,7 @@ Route::middleware(['auth', 'hr', 'auth.session'])->group(function () {
         'edit' => 'hr.application-leave.edit',
         'update' => 'hr.application-leave.update',
         'destroy' => 'hr.application-leave.destroy',
+        'show' => 'hr.application-leave.show',
     ]);
 });
 
