@@ -252,11 +252,11 @@ export default function Index({ positions, filters = { search: '', perPage: '10'
                                 confirmText="Delete Position"
                             />
                             
-                            {!hasNoFilterResults && (
+                            {/* {!hasNoFilterResults && (
                                 <div className="text-sm text-gray-500">
                                     Showing {filteredPositions.length} of {positions.total} {filteredPositions.length === 1 ? 'entry' : 'entries'}
                                 </div>
-                            )}
+                            )} */}
                         </>
                     )}
                 </div>

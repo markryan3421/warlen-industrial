@@ -7,8 +7,10 @@ use App\Models\AttendanceExceptionStat;
 use App\Models\AttendanceLog;
 use App\Models\AttendancePeriodStat;
 use App\Models\AttendanceSchedule;
+use App\Services\AttendanceTabPaginatedService;
 use App\Services\PaginatedTableService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 class HRAttendanceController extends Controller
@@ -96,42 +98,7 @@ class HRAttendanceController extends Controller
         ]);
     }
 
-    public function attendanceExceptionStats(Request $request)
-    {
-        // Paginated data — for the table view
-        $stats = PaginatedTableService::make(
-            model:         AttendanceExceptionStat::class,
-            request:       $request,
-            columns:       [
-                'employee_id', 'employee_name', 'department', 'date',
-                'am_time_in', 'am_time_out', 'pm_time_in', 'pm_time_out',
-                'late_minutes', 'leave_early_minutes', 'absence_minutes',
-                'total_exception_minutes',
-            ],
-            searchColumns: ['employee_name', 'department'],
-        );
-
-
-        // Only fetch the columns the calendar actually needs
-        $calendarData = AttendanceExceptionStat::query()
-            ->select([
-                'employee_id', 'employee_name', 'department', 'date',
-                'am_time_in', 'am_time_out', 'pm_time_in', 'pm_time_out',
-                'absence_minutes', 'total_exception_minutes',
-            ])
-            ->orderBy('date')
-            ->get();
-
-        return Inertia::render('HR/attendances/ExceptionStats/index', [
-            'exceptionStats'         => $stats,
-            'calendarData'  => $calendarData, 
-            'filters'       => $request->only(['search', 'perPage']),
-            'totalCount'    => $stats['totalCount'],
-            'filteredCount' => $stats['filteredCount'],
-        ]);
-    }
-
-       public function attendanceManagement(Request $request)
+    public function attendanceManagement(Request $request)
     {
         $tab = $request->get('tab', 'logs');
 
@@ -148,10 +115,10 @@ class HRAttendanceController extends Controller
         $commonParams = $request->only(['page', 'perPage', 'search']);
 
         // Create separate requests WITHOUT the tab parameter
-        $logsRequest = Request::create('/attendances', 'GET', $commonParams);
-        $exceptionRequest = Request::create('/attendances', 'GET', $commonParams);
-        $periodRequest = Request::create('/attendances', 'GET', $commonParams);
-        $schedulesRequest = Request::create('/attendances', 'GET', $commonParams);
+        $logsRequest = Request::create('/hr/attendances', 'GET', $commonParams);
+        $exceptionRequest = Request::create('/hr/attendances', 'GET', $commonParams);
+        $periodRequest = Request::create('/hr/attendances', 'GET', $commonParams);
+        $schedulesRequest = Request::create('/hr/attendances', 'GET', $commonParams);
 
         // Fetch logs data - ONLY paginate if it's the active tab
         $logs = AttendanceTabPaginatedService::makeForActiveTab(
@@ -390,12 +357,12 @@ class HRAttendanceController extends Controller
             'scheduleCalendarData_count' => $scheduleCalendarData instanceof \Illuminate\Support\Collection ? $scheduleCalendarData->count() : count($scheduleCalendarData),
         ]);
 
-        return Inertia::render('attendances/index', [
+        return Inertia::render('HR/attendances/index', [
             // Current active tab
             'currentTab' => $tab,
 
             // Logs data
-            'logs' => $logs,
+           'logs' => $logs,
             'timelineData' => $timelineData,
 
             // Exception stats data
@@ -428,4 +395,6 @@ class HRAttendanceController extends Controller
             ],
         ]);
     }
+
+    
 }

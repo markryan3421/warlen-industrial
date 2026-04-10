@@ -11,14 +11,22 @@ trait CacheTrait
         return Cache::remember($key, $ttl, $callback);
     }
 
-    protected function cacheRememberForever(string $key, callable $callback){
+    protected function cacheRememberForever(string $key, callable $callback)
+    {
 
         return Cache::rememberForever($key, $callback);
-        
     }
 
-    protected function cacheForget(string $key)
+    protected function cacheForget($keys)
     {
-       return Cache::forget($key);
+        if (is_array($keys)) {
+            $results = [];
+            foreach ($keys as $key) {
+                $results[$key] = Cache::forget($key);
+            }
+            return $results;
+        }
+
+        return Cache::forget($keys);
     }
 }

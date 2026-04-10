@@ -1,10 +1,7 @@
 // components/hr-sidebar.tsx
 import { Link } from '@inertiajs/react';
 import {
-    Airplay,
-    Landmark,
-    CircleMinus,
-    FileBadge,
+    HandCoins,
     Banknote,
     CircleUser,
     Clipboard,
@@ -16,6 +13,10 @@ import {
     Contact,
     BookUser,
     UserRoundCog,
+    Coins,
+    LayoutDashboard,
+    Building2,
+    Handshake
 } from 'lucide-react';
 import AttendanceController from "@/actions/App/Http/Controllers/HrRole/HRAttendanceController";
 import HREmployeeController from '@/actions/App/Http/Controllers/HrRole/HREmployeeController';
@@ -42,13 +43,34 @@ const hrExpendituresItems: NavItem[] = [
     {
         title: 'Dashboard',
         href: '/hr/dashboard',
-        icon: Airplay,
+        icon: LayoutDashboard,
+    },
+
+    {
+        title: 'Branches',
+        href: '/hr/branches',
+        icon: Building2,
+    },
+    {
+        title: 'Positions',
+        href: '/hr/positions',
+        icon: UserCog,
     },
 
     {
         title: 'Incentives',
         href: IncentiveController.index(),
-        icon: FileBadge,
+        icon: Coins,
+    },
+    {
+        title: 'Deduction',
+        href: '/hr/deductions',
+        icon: HandCoins,
+    },
+    {
+        title: 'Contributions',
+        href: '/hr/contribution-versions',
+        icon: Handshake,
     },
     {
         title: 'Employees',

@@ -29,6 +29,7 @@ interface TabPaginationProps {
     filteredCount: number;
     resourceName?: string;
     className?: string;
+    baseUrl?: string;
 }
 
 export const TabPagination = ({
@@ -41,47 +42,49 @@ export const TabPagination = ({
     filteredCount,
     resourceName = 'items',
     className = '',
+    baseUrl = '/attendances', 
 }: TabPaginationProps) => {
-    
+
     // Use the current_page directly from server
     const currentPage = pagination.current_page || 1;
     const lastPage = pagination.last_page || 1;
-    
+
     // Helper function to build URL with preserved parameters
     const buildUrl = (page: number | null, newPerPage?: string) => {
         const params = new URLSearchParams();
-        
+
         // Always preserve the active tab
         params.append('tab', activeTab);
-        
+
         // Set per page (use new value if provided, otherwise current)
         params.append('perPage', newPerPage || perPage);
-        
+
         // Set page
         if (page && page > 0) {
             params.append('page', page.toString());
         }
-        
+
         // Preserve search term if exists
         if (searchTerm && searchTerm.trim()) {
             params.append('search', searchTerm.trim());
         }
-        
-        return `/attendances?${params.toString()}`;
+
+        return `${baseUrl}?${params.toString()}`;
     };
-    
+
+
     // Handle page navigation
     const navigateToPage = (page: number) => {
         if (page < 1 || page > lastPage) return;
         if (page === currentPage) return;
-        
+
         const url = buildUrl(page);
         router.get(url, {}, {
             preserveState: true,
             preserveScroll: true,
         });
     };
-    
+
     // Handle per page change
     const handlePerPageChange = (value: string) => {
         // Reset to page 1 when changing items per page
@@ -90,7 +93,7 @@ export const TabPagination = ({
             preserveState: true,
             preserveScroll: true,
         });
-        
+
         if (onPerPageChange) {
             onPerPageChange(value);
         }
@@ -104,22 +107,22 @@ export const TabPagination = ({
         
         let start = Math.max(1, currentPage - Math.floor(windowSize / 2));
         const end = Math.min(lastPage, start + windowSize - 1);
-        
+
         if (end - start + 1 < windowSize) {
             start = Math.max(1, end - windowSize + 1);
         }
-        
+
         const pages = [];
         for (let i = start; i <= end; i++) {
             pages.push(i);
         }
         return pages;
     };
-    
+
     const visiblePages = getVisiblePages();
     const showFirstEllipsis = visiblePages[0] > 1;
     const showLastEllipsis = visiblePages[visiblePages.length - 1] < lastPage;
-    
+
     // Info text
     const infoText = searchTerm ? (
         <p className="text-xs text-stone-500 dark:text-stone-400">
@@ -144,15 +147,15 @@ export const TabPagination = ({
             {' '}{resourceName}{pagination.total !== 1 ? 's' : ''}
         </p>
     );
-    
+
     // Don't show pagination if only one page or no data
     if (lastPage <= 1 && pagination.total <= parseInt(perPage)) {
         return (
             <div className={`px-4 py-3 mx-5 ${className}`}>
                 <div className="flex flex-col items-center gap-3">
                     {infoText}
-                    <PerPageSelect 
-                        value={perPage} 
+                    <PerPageSelect
+                        value={perPage}
                         onChange={handlePerPageChange}
                         activeTab={activeTab}
                         searchTerm={searchTerm}
@@ -161,68 +164,68 @@ export const TabPagination = ({
             </div>
         );
     }
-    
+
     return (
         <div className={`px-4 py-3 mx-5 font-sans ${className}`}>
             {/* Unified Layout - Stacked for all devices */}
             <div className="flex flex-col items-center gap-3">
                 {/* Page Navigation */}
                 <div className="flex items-center gap-1">
-                    <FirstButton 
-                        onClick={() => navigateToPage(1)} 
+                    <FirstButton
+                        onClick={() => navigateToPage(1)}
                         disabled={currentPage === 1}
                     />
-                    <PrevButton 
-                        onClick={() => navigateToPage(currentPage - 1)} 
+                    <PrevButton
+                        onClick={() => navigateToPage(currentPage - 1)}
                         disabled={currentPage === 1}
                     />
-                    
+
                     {showFirstEllipsis && (
                         <>
-                            <PageButton 
-                                page={1} 
+                            <PageButton
+                                page={1}
                                 currentPage={currentPage}
                                 onClick={() => navigateToPage(1)}
                             />
                             <Ellipsis />
                         </>
                     )}
-                    
+
                     {visiblePages.map(page => (
-                        <PageButton 
+                        <PageButton
                             key={page}
-                            page={page} 
+                            page={page}
                             currentPage={currentPage}
                             onClick={() => navigateToPage(page)}
                         />
                     ))}
-                    
+
                     {showLastEllipsis && (
                         <>
                             <Ellipsis />
-                            <PageButton 
-                                page={lastPage} 
+                            <PageButton
+                                page={lastPage}
                                 currentPage={currentPage}
                                 onClick={() => navigateToPage(lastPage)}
                             />
                         </>
                     )}
-                    
-                    <NextButton 
-                        onClick={() => navigateToPage(currentPage + 1)} 
+
+                    <NextButton
+                        onClick={() => navigateToPage(currentPage + 1)}
                         disabled={currentPage === lastPage}
                     />
-                    <LastButton 
-                        onClick={() => navigateToPage(lastPage)} 
+                    <LastButton
+                        onClick={() => navigateToPage(lastPage)}
                         disabled={currentPage === lastPage}
                     />
                 </div>
-                
+
                 {/* Info and Per Page */}
                 <div className="flex flex-row items-center justify-between w-full gap-3">
                     {infoText}
-                    <PerPageSelect 
-                        value={perPage} 
+                    <PerPageSelect
+                        value={perPage}
                         onChange={handlePerPageChange}
                         activeTab={activeTab}
                         searchTerm={searchTerm}
@@ -247,11 +250,10 @@ const FirstButton = ({ onClick, disabled }: ButtonProps) => (
     <button
         onClick={onClick}
         disabled={disabled}
-        className={`inline-flex items-center justify-center w-8 h-8 rounded-lg border transition-colors ${
-            disabled 
+        className={`inline-flex items-center justify-center w-8 h-8 rounded-lg border transition-colors ${disabled
                 ? 'border-stone-200 dark:border-stone-700 text-stone-300 dark:text-stone-600 cursor-not-allowed'
                 : 'border-stone-200 dark:border-stone-700 text-stone-500 dark:text-stone-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:border-blue-300 dark:hover:border-blue-700 hover:text-blue-600 dark:hover:text-blue-400'
-        }`}
+            }`}
     >
         <ChevronsLeft size={14} />
     </button>
@@ -261,11 +263,10 @@ const PrevButton = ({ onClick, disabled }: ButtonProps) => (
     <button
         onClick={onClick}
         disabled={disabled}
-        className={`inline-flex items-center justify-center w-8 h-8 rounded-lg border transition-colors ${
-            disabled 
+        className={`inline-flex items-center justify-center w-8 h-8 rounded-lg border transition-colors ${disabled
                 ? 'border-stone-200 dark:border-stone-700 text-stone-300 dark:text-stone-600 cursor-not-allowed'
                 : 'border-stone-200 dark:border-stone-700 text-stone-500 dark:text-stone-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:border-blue-300 dark:hover:border-blue-700 hover:text-blue-600 dark:hover:text-blue-400'
-        }`}
+            }`}
     >
         <ChevronLeft size={14} />
     </button>
@@ -275,11 +276,10 @@ const NextButton = ({ onClick, disabled }: ButtonProps) => (
     <button
         onClick={onClick}
         disabled={disabled}
-        className={`inline-flex items-center justify-center w-8 h-8 rounded-lg border transition-colors ${
-            disabled 
+        className={`inline-flex items-center justify-center w-8 h-8 rounded-lg border transition-colors ${disabled
                 ? 'border-stone-200 dark:border-stone-700 text-stone-300 dark:text-stone-600 cursor-not-allowed'
                 : 'border-stone-200 dark:border-stone-700 text-stone-500 dark:text-stone-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:border-blue-300 dark:hover:border-blue-700 hover:text-blue-600 dark:hover:text-blue-400'
-        }`}
+            }`}
     >
         <ChevronRight size={14} />
     </button>
@@ -289,11 +289,10 @@ const LastButton = ({ onClick, disabled }: ButtonProps) => (
     <button
         onClick={onClick}
         disabled={disabled}
-        className={`inline-flex items-center justify-center w-8 h-8 rounded-lg border transition-colors ${
-            disabled 
+        className={`inline-flex items-center justify-center w-8 h-8 rounded-lg border transition-colors ${disabled
                 ? 'border-stone-200 dark:border-stone-700 text-stone-300 dark:text-stone-600 cursor-not-allowed'
                 : 'border-stone-200 dark:border-stone-700 text-stone-500 dark:text-stone-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:border-blue-300 dark:hover:border-blue-700 hover:text-blue-600 dark:hover:text-blue-400'
-        }`}
+            }`}
     >
         <ChevronsRight size={14} />
     </button>
@@ -307,9 +306,9 @@ interface PageButtonProps {
 
 const PageButton = ({ page, currentPage, onClick }: PageButtonProps) => {
     const isActive = page === currentPage;
-    
+
     const baseClass = "inline-flex items-center justify-center w-8 h-8 rounded-lg border text-[12px] font-medium transition-colors";
-    
+
     if (isActive) {
         return (
             <span className={`${baseClass} bg-blue-600 dark:bg-blue-500 border-blue-600 dark:border-blue-500 text-white cursor-default`}>
@@ -317,7 +316,7 @@ const PageButton = ({ page, currentPage, onClick }: PageButtonProps) => {
             </span>
         );
     }
-    
+
     return (
         <button
             onClick={onClick}

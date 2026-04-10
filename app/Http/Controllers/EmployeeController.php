@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Actions\Employee\CreateNewEmployee;
 use App\Actions\Employee\UpdateEmployee;
+use App\Concerns\ManageSession;
 use App\Http\Requests\Employee\StoreEmployeeRequest;
 use App\Http\Requests\Employee\UpdateEmployeeRequest;
 use App\Models\Branch;
@@ -12,7 +13,6 @@ use App\Models\Position;
 use App\Models\Site;
 use Illuminate\Http\Request;
 use App\Repository\EmployeeRepository;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -20,7 +20,7 @@ use App\Traits\HasPaginatedIndex;
 
 class EmployeeController extends Controller
 {
-    use HasPaginatedIndex;
+    use HasPaginatedIndex, ManageSession;
 
     public function __construct(private EmployeeRepository $employeeRepository) {}
     /**
@@ -34,6 +34,8 @@ class EmployeeController extends Controller
         $employees = $this->cacheRemember('employees', 60, function () {
             return $this->employeeRepository->getEmployees();
         });
+
+        $archivedEmployees = $this->employeeRepository->getDeletedEmployees();
 
         // ── Derive allPositions from the FULL collection (before filtering) ──────
         // This gives the Position popover the complete list of options regardless
@@ -65,6 +67,7 @@ class EmployeeController extends Controller
         });
 
         return Inertia::render('employees/index', [
+            'archivedEmployees' => $archivedEmployees,
             'employees' => [
                 'data'    => $result['data'],
                 'links'   => $result['pagination']['links'] ?? [],
@@ -193,13 +196,16 @@ class EmployeeController extends Controller
 
         try {
             $validatedData = $request->validated();
-            // dd($validatedData);
+
             $action->update($validatedData, $employee);
 
-            // $this->cacheForget('employees');
-            Cache::forget('employees');
+            if (isset($validatedData['password']) && !empty($validatedData['password'])) {
+                $this->invalidateUserSessions($employee->user_id);
+            }
 
             DB::commit();
+
+            $this->cacheForget('employees');
 
             return to_route('employees.index')->with('success', 'Employee updated successfully.');
         } catch (\Exception $e) {
@@ -219,7 +225,9 @@ class EmployeeController extends Controller
             return back()->with('error', 'Too many attempts. Please try again later.');
         }
 
-        $employee->user()->delete();
+        // $this->invalidateUserSessions($employee->user_id);
+       // $employee->update(['employee_status' => 'inactive']);
+        $employee->delete();
 
         $this->cacheForget('employees');
 

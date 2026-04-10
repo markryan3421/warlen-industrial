@@ -9,11 +9,16 @@ use App\Http\Controllers\BranchController;
 use App\Http\Controllers\ContributionVersionController;
 use App\Http\Controllers\DeductionController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\EmployeeDashboardController;
 use App\Http\Controllers\EmployeeRole\ApplicationLeaveController as EmployeeApplicationLeaveController;
 use App\Http\Controllers\HrRole\HRAttendanceController;
 use App\Http\Controllers\HrRole\HRAttendanceImportController;
+use App\Http\Controllers\HrRole\HRBranchController;
+use App\Http\Controllers\HrRole\HRContributionVersionController;
+use App\Http\Controllers\HrRole\HRDeductionController;
 use App\Http\Controllers\HrRole\HREmployeeController;
 use App\Http\Controllers\HrRole\HRIncentiveController;
+use App\Http\Controllers\HrRole\HRPositionController;
 use App\Http\Controllers\HrRole\PayrollController as HrPayrollController;
 use App\Http\Controllers\HrRole\PayrollPeriodController as HrPayrollPeriodController;
 use App\Http\Controllers\IncentiveController;
@@ -34,15 +39,19 @@ Route::get('/', function () {
     return Inertia::render('auth/login');
 })->name('home');
 
-//Intended for admin
-Route::middleware(['auth', 'admin'])->group(function () {
-    Route::get('/dashboard', AdminDashboardController::class)->name('dashboard');
 
+Route::middleware(['auth', 'admin', 'auth.session'])->group(function () {
+
+    Route::get('payroll', function () {
+        return Inertia::render('payroll/index');
+    });
+    //admin dashboard
+    Route::get('dashboard', AdminDashboardController::class)->name('dashboard');
 
     Route::resource('branches', BranchController::class)->except(['show']);
     Route::delete('/branches/{branch:branch_slug}', [BranchController::class, 'destroy'])->name('branches.destroy');
     Route::resource('positions', PositionController::class)->except(['show']);
-    Route::resource('employees', EmployeeController::class);
+    Route::resource('employees', EmployeeController::class)->withTrashed();
     Route::resource('permissions', PermissionController::class);
     Route::resource('incentives', IncentiveController::class)->except(['show']);
 
@@ -68,11 +77,13 @@ Route::middleware(['auth', 'admin'])->group(function () {
 });
 
 //Intended for employee
-Route::middleware(['auth', 'employee'])->group(function () {
+Route::middleware(['auth', 'employee', 'auth.session'])->group(function () {
 
-    Route::get('employee/dashboard', function () {
-        return Inertia::render('employee-role/dashboard');
-    })->name('employee.dashboard');
+    // Route::get('employee/dashboard', function () {
+    //     return Inertia::render('employee-role/dashboard');
+    // })->name('employee.dashboard');
+
+    Route::get('employee/dashboard', [EmployeeDashboardController::class, 'index'])->name('employee.dashboard');
 
     Route::resource('employee/application-leave', EmployeeApplicationLeaveController::class)->only(['create', 'index', 'store', 'update', 'edit'])->names([
         'index' => 'employee.application-leave.index',
@@ -85,7 +96,7 @@ Route::middleware(['auth', 'employee'])->group(function () {
 });
 
 //intended for HR
-Route::middleware(['auth', 'hr'])->group(function () {
+Route::middleware(['auth', 'hr', 'auth.session'])->group(function () {
 
     Route::get('hr/dashboard', function () {
         return Inertia::render('HR/dashboard');
@@ -97,10 +108,9 @@ Route::middleware(['auth', 'hr'])->group(function () {
     Route::get('/hr/attendance-schedules', [HRAttendanceController::class, 'attendanceSchedules'])->name('hr.attendance-schedules');
 
     Route::get('hr/attendances', [HRAttendanceController::class, 'attendanceManagement'])->name('hr.attendances.index');
-
-    Route::resource('/hr/attendances', HRAttendanceImportController::class, [
-        'as' => 'hr'
-    ]);
+    // Route::resource('/hr/attendances', HRAttendanceImportController::class, [
+    //     'as' => 'hr'
+    // ]);
 
     Route::resource('hr/incentives', HRIncentiveController::class)->except(['show'])->names([
         'index' => 'hr.incentives.index',
@@ -134,6 +144,42 @@ Route::middleware(['auth', 'hr'])->group(function () {
         'edit' => 'hr.employees.edit',
         'update' => 'hr.employees.update',
         'destroy' => 'hr.employees.destroy',
+    ]);
+
+    Route::resource('hr/branches', HRBranchController::class)->except(['show'])->names([
+        'index' => 'hr.branches.index',
+        'create' => 'hr.branches.create',
+        'store' => 'hr.branches.store',
+        'edit' => 'hr.branches.edit',
+        'update' => 'hr.branches.update',
+        'destroy' => 'hr.branches.destroy',
+    ]);
+
+    Route::resource('hr/positions', HRPositionController::class)->except(['show'])->names([
+        'index' => 'hr.positions.index',
+        'create' => 'hr.positions.create',
+        'store' => 'hr.positions.store',
+        'edit' => 'hr.positions.edit',
+        'update' => 'hr.positions.update',
+        'destroy' => 'hr.positions.destroy',
+    ]);
+
+    Route::resource('hr/deductions', HRDeductionController::class)->except(['show'])->names([
+        'index' => 'hr.deductions.index',
+        'create' => 'hr.deductions.create',
+        'store' => 'hr.deductions.store',
+        'edit' => 'hr.deductions.edit',
+        'update' => 'hr.deductions.update',
+        'destroy' => 'hr.deductions.destroy',
+    ]);
+
+    Route::resource('hr/contribution-versions', HRContributionVersionController::class)->except(['show'])->names([
+        'index' => 'hr.contribution-versions.index',
+        'create' => 'hr.contribution-versions.create',
+        'store' => 'hr.contribution-versions.store',
+        'edit' => 'hr.contribution-versions.edit',
+        'update' => 'hr.contribution-versions.update',
+        'destroy' => 'hr.contribution-versions.destroy',
     ]);
 });
 

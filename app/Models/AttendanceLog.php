@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Scope;
 
 class AttendanceLog extends Model
 {
@@ -40,5 +42,20 @@ class AttendanceLog extends Model
     public function scopeOvertime($query)
     {
         return $query->where('is_overtime', true);
+    }
+
+    #[Scope]
+    protected function getAttendanceLog(Builder $query): void
+    {
+        $query->select([
+            'employee_id',
+            'employee_name',
+            'department',
+            'date',
+            'time_in',
+            'time_out',
+            'total_hours',
+            'is_overtime',
+        ]);
     }
 }

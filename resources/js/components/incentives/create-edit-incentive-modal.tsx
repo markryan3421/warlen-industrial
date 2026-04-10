@@ -30,7 +30,7 @@ interface CreateIncentiveModalProps {
     onSuccess?: () => void;
 }
 
-export function CreateIncentiveModal({ 
+export function CreateEditIncentiveModal({ 
     isOpen, 
     onClose, 
     payroll_periods = [], 

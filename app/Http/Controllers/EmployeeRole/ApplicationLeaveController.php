@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\ApplicationLeave\StoreApplicationLeaveRequest;
 use App\Models\ApplicationLeave;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rules\In;
@@ -20,10 +21,10 @@ class ApplicationLeaveController extends Controller
      */
     public function index(CreateNewApplication $action)
     {
-       Gate::authorize('viewAny', ApplicationLeave::class);
+        Gate::authorize('viewAny', ApplicationLeave::class);
 
         $applicationLeaves = ApplicationLeave::whereHas('employee', function ($query) {
-            $query->where('user_id', auth()->id());
+            $query->where('user_id', Auth::id());
         })->latest()->get();
 
         $approvedCount = $action->approvedLimit();
@@ -45,8 +46,8 @@ class ApplicationLeaveController extends Controller
      */
     public function store(StoreApplicationLeaveRequest $request, CreateNewApplication $action)
     {
-       Gate::authorize('create', ApplicationLeave::class);
-        if ($this->limit('create-application-leave:' . auth()->id(), 60, 20)) {
+        Gate::authorize('create', ApplicationLeave::class);
+        if ($this->limit('create-application-leave:' . Auth::id(), 60, 20)) {
             return back()->with('error', 'Too many attempts. Please try again later.');
         }
         DB::beginTransaction();
@@ -69,7 +70,7 @@ class ApplicationLeaveController extends Controller
 
             return redirect()->route('employee.application-leave.index')->with('success', 'Leave application submitted successfully.');
         } catch (\Exception $e) {
-            dd($e);
+            // dd($e);
             DB::rollBack();
             return back()->with('error', 'An error occurred while submitting the leave application. Please try again.');
         }

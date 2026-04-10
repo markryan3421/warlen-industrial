@@ -66,7 +66,7 @@ class PositionController extends Controller
         Gate::authorize('create', Position::class);
         $position->create($request->validated());
 
-        DB::commit();
+       // DB::commit();
         return redirect()->route('positions.index');
 
     }
@@ -97,7 +97,7 @@ class PositionController extends Controller
         Gate::authorize('update', $position);
         $updateposition->update($request->validated(), $position);
 
-        DB::commit();
+        //DB::commit();
 
         return redirect()->route('positions.index');
     }
@@ -110,7 +110,7 @@ class PositionController extends Controller
         Gate::authorize('delete', $position);
         $position->delete();
 
-        DB::commit();
+       // DB::commit();
         return redirect()->route('positions.index');
     }
     
