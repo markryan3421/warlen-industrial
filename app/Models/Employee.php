@@ -42,6 +42,7 @@ class Employee extends Model
         'user_id',
         'site_id',
         'slug_emp',
+        'avatar',
         'emp_code',
         'employee_number',
         'contract_start_date',

@@ -442,6 +442,7 @@ export default function Dashboard({
                     totalActiveEmployee={totalActiveEmployee}
                     openPayrollPeriod={openPayrollPeriod}
                     pendingApplicationLeave={pendingApplicationLeave}
+                    payrollActivityLink="/payroll-periods"
                 />
 
                 {/* Main Container with Border */}
@@ -515,11 +516,11 @@ export default function Dashboard({
                                                             <div className="flex items-center gap-2">
                                                                 <div className="w-3 h-3 rounded-full flex-shrink-0 ml-7" style={{ backgroundColor: item.color }} />
                                                                 <span className="text-gray-600 dark:text-gray-400 w-[130px]">
-                                                                {item.name} : 
-                                                                <span className="font-semibold text-gray-800 dark:text-gray-200">
-                                                                    &nbsp;{item.percentage}%
-                                                                </span> 
-                                                            </span>
+                                                                    {item.name} :
+                                                                    <span className="font-semibold text-gray-800 dark:text-gray-200">
+                                                                        &nbsp;{item.percentage}%
+                                                                    </span>
+                                                                </span>
                                                             </div>
                                                         </div>
                                                     ))}
@@ -551,10 +552,10 @@ export default function Dashboard({
                                                         <div className="flex items-center gap-1.5">
                                                             <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
                                                             <span className="text-gray-600 dark:text-gray-400 w-[105px]">
-                                                                {item.name} : 
+                                                                {item.name} :
                                                                 <span className="font-semibold text-gray-800 dark:text-gray-200">
                                                                     &nbsp;{item.percentage}%
-                                                                </span> 
+                                                                </span>
                                                             </span>
                                                         </div>
                                                     </div>

@@ -92,6 +92,11 @@ const hrExpendituresItems: NavItem[] = [
         href: '/hr/attendances',
         icon: Users,
     },
+    {
+        title: 'Application Leaves',
+        href: '/hr/application-leave',
+        icon: Clipboard,
+    },
     // {
     //     title: 'Attendance Logs',
     //     href: AttendanceController.attendanceLogs(),

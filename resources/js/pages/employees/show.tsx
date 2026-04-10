@@ -14,6 +14,7 @@ interface Employee {
     id: number;
     slug_emp: string;
     emp_code: number;
+    avatar: string;
     employee_number: string;
     emergency_contact_number: string;
     contract_start_date: string;
@@ -40,6 +41,7 @@ interface Employee {
         id: number;
         name: string;
         email: string;
+        avatar: string;
     };
 }
 
@@ -93,6 +95,10 @@ export default function Show({ employee }: PageProps) {
     // Animation classes (can be moved to global CSS, but inline for simplicity)
     const fadeInUp = 'animate-fade-in-up';
 
+    const avatarUrl = employee.avatar
+        ? employee.avatar.startsWith('http') ? employee.avatar : `/storage/${employee.avatar}`
+        : null;
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`Employee: ${employee.user?.name ?? employee.emp_code}`} />
@@ -145,9 +151,17 @@ export default function Show({ employee }: PageProps) {
                         <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-6 pb-4">
                             <div className="flex flex-col md:flex-row md:items-center gap-4">
                                 {/* Avatar placeholder */}
-                                <div className="h-20 w-20 rounded-full bg-primary/20 flex items-center justify-center text-primary text-2xl font-bold shadow-md">
-                                    {getInitials(employee.user?.name)}
-                                </div>
+                                {avatarUrl ? (
+                                    <img
+                                        src={avatarUrl}
+                                        alt={employee.user?.name}
+                                        className="h-20 w-20 rounded-full object-cover shadow-md"
+                                    />
+                                ) : (
+                                    <div className="h-20 w-20 rounded-full bg-primary/20 flex items-center justify-center text-primary text-2xl font-bold shadow-md">
+                                        {getInitials(employee.user?.name)}
+                                    </div>
+                                )}
                                 <div>
                                     <CardTitle className="text-2xl md:text-3xl flex items-center gap-3 flex-wrap">
                                         {employee.user?.name}

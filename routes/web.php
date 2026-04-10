@@ -11,10 +11,12 @@ use App\Http\Controllers\DeductionController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\EmployeeDashboardController;
 use App\Http\Controllers\EmployeeRole\ApplicationLeaveController as EmployeeApplicationLeaveController;
+use App\Http\Controllers\HrRole\HRApplicationLeaveController;
 use App\Http\Controllers\HrRole\HRAttendanceController;
 use App\Http\Controllers\HrRole\HRAttendanceImportController;
 use App\Http\Controllers\HrRole\HRBranchController;
 use App\Http\Controllers\HrRole\HRContributionVersionController;
+use App\Http\Controllers\HrRole\HRDashboardController;
 use App\Http\Controllers\HrRole\HRDeductionController;
 use App\Http\Controllers\HrRole\HREmployeeController;
 use App\Http\Controllers\HrRole\HRIncentiveController;
@@ -98,9 +100,7 @@ Route::middleware(['auth', 'employee', 'auth.session'])->group(function () {
 //intended for HR
 Route::middleware(['auth', 'hr', 'auth.session'])->group(function () {
 
-    Route::get('hr/dashboard', function () {
-        return Inertia::render('HR/dashboard');
-    })->name('hr.dashboard');
+    Route::get('hr/dashboard', HRDashboardController::class)->name('hr.dashboard');
 
     Route::get('/hr/attendance-logs', [HRAttendanceController::class, 'attendanceLogs'])->name('hr.attendance-logs');
     Route::get('/hr/attendance-exception-stats', [HRAttendanceController::class, 'attendanceExceptionStats'])->name('hr.attendance-exception-stats');
@@ -180,6 +180,16 @@ Route::middleware(['auth', 'hr', 'auth.session'])->group(function () {
         'edit' => 'hr.contribution-versions.edit',
         'update' => 'hr.contribution-versions.update',
         'destroy' => 'hr.contribution-versions.destroy',
+    ]);
+
+    Route::resource('hr/application-leave', HRApplicationLeaveController::class)->names([
+        'index' => 'hr.application-leave.index',
+        'create' => 'hr.application-leave.create',
+        'store' => 'hr.application-leave.store',
+        'edit' => 'hr.application-leave.edit',
+        'update' => 'hr.application-leave.update',
+        'destroy' => 'hr.application-leave.destroy',
+        'show' => 'hr.application-leave.show',
     ]);
 });
 
