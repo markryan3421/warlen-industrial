@@ -85,16 +85,16 @@ class FortifyServiceProvider extends ServiceProvider
                     $user = $request->user();
 
                     if ($user->hasRole('admin')) {
-                        return redirect()->intended(route('dashboard'));
+                        return redirect()->route('dashboard');
                     }
 
                     if ($user->hasRole('employee')) {
                         if ($user->employee && $user->employee->employee_status === 'active' && !$user->employee->deleted_at) {
-                            return redirect()->intended(route('employee.dashboard'));
+                            return redirect()->route('employee.dashboard');
                         }
                         Auth::logout();
-                         $request->session()->invalidate();
-                         $request->session()->regenerateToken();
+                        $request->session()->invalidate();
+                        $request->session()->regenerateToken();
                         return redirect()->route('login')->withErrors([
                             'email' => 'Your account is inactive or has been moved to archived. Please contact administrator.',
                         ]);
@@ -103,12 +103,12 @@ class FortifyServiceProvider extends ServiceProvider
                     // Check if HR head exists and is active
                     if ($user->hasRole('hr_head')) {
                         if ($user->employee && $user->employee->employee_status === 'active' && !$user->employee->deleted_at) {
-                            return redirect()->intended(route('hr.dashboard'));
+                            return redirect()->route('hr.dashboard');
                         }
 
                         Auth::logout();
-                         $request->session()->invalidate();
-                         $request->session()->regenerateToken();
+                        $request->session()->invalidate();
+                        $request->session()->regenerateToken();
                         return redirect()->route('login')->withErrors([
                             'email' => 'Your account is inactive or has been moved to archived. Please contact administrator.',
                         ]);
