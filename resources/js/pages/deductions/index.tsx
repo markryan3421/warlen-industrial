@@ -14,6 +14,7 @@ import { CustomHeader } from '@/components/custom-header';
 import DeductionController from '@/actions/App/Http/Controllers/DeductionController';
 import { toast } from 'sonner';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-modal';
+import { DeductionFormModal } from '@/components/deductions/deduction-form-modal';
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Deductions', href: '/deductions' }];
 
@@ -34,6 +35,8 @@ interface Deduction {
 
 interface Props {
     deductions: { data: Deduction[]; perPage: number; total: number; from: number; current_page: number; last_page: number; links: any[] } | Deduction[];
+    payroll_periods?: Array<{ id: number; start_date?: string; end_date?: string }>;
+    employees?: Array<{ id: number; emp_code: string | number | null; user?: { name: string } | null }>;
 }
 
 const formatCurrency = (amount: string | number) =>
@@ -42,7 +45,7 @@ const formatCurrency = (amount: string | number) =>
 const formatDate = (date: string) =>
     new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
-export default function Index({ deductions }: Props) {
+export default function Index({ deductions, payroll_periods = [], employees = [] }: Props) {
     const { delete: destroy } = useForm();
     const [selected, setSelected] = useState<Deduction | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
@@ -50,6 +53,8 @@ export default function Index({ deductions }: Props) {
     const [dateTo, setDateTo] = useState<Date | undefined>();
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [editingDeduction, setEditingDeduction] = useState<any>(null);
 
     // Delete confirmation states
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -92,8 +97,8 @@ export default function Index({ deductions }: Props) {
             const matchesDate = (() => {
                 if (!dateFrom && !dateTo) return true;
                 if (!item.payroll_period) return false;
-                const start = parseISO(item.payroll_period.start_date);
-                const end = parseISO(item.payroll_period.end_date);
+                const start = new Date(item.payroll_period.start_date);
+                const end = new Date(item.payroll_period.end_date);
                 if (dateFrom && dateTo) return start >= dateFrom && end <= dateTo;
                 if (dateFrom) return start >= dateFrom;
                 return end <= dateTo!;
@@ -124,6 +129,17 @@ export default function Index({ deductions }: Props) {
         setDateFrom(undefined);
         setDateTo(undefined);
         setCurrentPage(1);
+    };
+
+    const handleEdit = (deduction: Deduction) => {
+        setEditingDeduction({
+            id: deduction.id,
+            deduction_name: deduction.deduction_name,
+            deduction_amount: deduction.deduction_amount,
+            payroll_period_id: deduction.payroll_period?.id || '',
+            employee_ids: deduction.employees?.map(e => e.id) || [],
+        });
+        setIsCreateModalOpen(true);
     };
 
     const columns = [
@@ -169,6 +185,7 @@ export default function Index({ deductions }: Props) {
     ];
 
     const hasFilters = !!(searchTerm || dateFrom || dateTo);
+    const hasNoDataAtAll = allData.length === 0;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -187,7 +204,6 @@ export default function Index({ deductions }: Props) {
                 .pp-header { animation: headerReveal 0.35s cubic-bezier(0.22,1,0.36,1) both; }
             `}</style>
 
-
             {/* Header */}
             <div className="grid grid-rows-1 justify-center mx-8 md:grid-cols-2 md:mx-8 mt-3 lg:flex lg:justify-between items-center lg:mx-8 lg:mt-4 lg:-mb-2 pp-header">
                 <div>
@@ -197,15 +213,13 @@ export default function Index({ deductions }: Props) {
                         description='Manage and track employee deductions'
                     />
                 </div>
-                <Link href="/deductions/create" className='ml-auto'>
-                    <Button className="bg-[#1d4791] hover:bg-[#1d4791]/90 ">
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Deduction
-                    </Button>
-                </Link>
+                <Button onClick={() => setIsCreateModalOpen(true)} className="bg-[#1d4791] hover:bg-[#1d4791]/90 ml-auto">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Deduction
+                </Button>
             </div>
 
-            <div className="flex flex-1 flex-col gap-4 p-4 pp-row mx-4">
+            <div className="flex flex-1 flex-col gap-4 p-4 pp-row mx-4 mt-2">
                 {/* Table */}
                 <CustomTable
                     columns={columns}
@@ -214,7 +228,7 @@ export default function Index({ deductions }: Props) {
                     from={startIndex + 1}
                     onDelete={handleDeleteClick}
                     onView={setSelected}
-                    onEdit={(item) => router.get(`/deductions/${item.id}/edit`)}
+                    onEdit={handleEdit}
                     title="Deductions List"
                     toolbar={
                         <EmployeeFilterBar
@@ -239,6 +253,29 @@ export default function Index({ deductions }: Props) {
                             onSiteChange={() => { }}
                             onStatusChange={() => { }}
                         />
+                    }
+                    emptyState={
+                        hasNoDataAtAll && !hasFilters ? (
+                            <div className="flex flex-col items-center justify-center py-16">
+                                <div className="rounded-full bg-primary/10 p-6 mb-4">
+                                    <HandCoins className="h-12 w-12 text-primary" />
+                                </div>
+                                <h3 className="text-xl font-semibold mb-2">No deductions yet</h3>
+                                <p className="text-muted-foreground mb-4">Create your first deduction to get started</p>
+                                <Button onClick={() => setIsCreateModalOpen(true)} className="bg-[#1d4791] hover:bg-[#1d4791]/90">Create First Deduction</Button>
+                            </div>
+                        ) : filteredData.length === 0 && hasFilters ? (
+                            <div className="flex flex-col items-center justify-center py-16">
+                                <div className="rounded-full bg-muted p-6 mb-4">
+                                    <Search className="h-12 w-12 text-muted-foreground" />
+                                </div>
+                                <h3 className="text-xl font-semibold mb-2">No results found</h3>
+                                <p className="text-muted-foreground mb-4">
+                                    No deductions match "{searchTerm}" {dateFrom || dateTo ? 'in the selected date range' : ''}
+                                </p>
+                                <Button variant="outline" onClick={clearFilters}>Clear all filters</Button>
+                            </div>
+                        ) : null
                     }
                 />
 
@@ -269,6 +306,22 @@ export default function Index({ deductions }: Props) {
                     confirmText='Delete deduction'
                 />
             </div>
+
+            {/* Deduction Form Modal */}
+            <DeductionFormModal
+                isOpen={isCreateModalOpen}
+                onClose={() => {
+                    setIsCreateModalOpen(false);
+                    setEditingDeduction(null);
+                }}
+                onSuccess={() => {
+                    router.reload();
+                }}
+                payroll_periods={payroll_periods}
+                employees={employees}
+                deduction={editingDeduction}  // This matches the prop name 'deduction'
+                isEditing={!!editingDeduction}
+            />
 
             {/* View Dialog */}
             <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>

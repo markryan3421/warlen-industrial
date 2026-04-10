@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import InputError from '@/components/input-error';
 import { Users, Pencil, Plus } from 'lucide-react';
-import { EmployeeSelector } from './employee-selector';
+import { EmployeeSelector } from '../employee-selector';
+import { useEffect } from 'react';
 
 interface Employee {
     id: number;
@@ -69,13 +70,32 @@ export function IncentiveFormModal({
     getEmployeeName,
     selectedEmployeesList
 }: IncentiveFormModalProps) {
+
+    // Debug logging
+    useEffect(() => {
+        if (isOpen) {
+            console.log('Payroll periods received in modal:', payroll_periods);
+            console.log('Payroll periods count:', payroll_periods?.length);
+            if (payroll_periods && payroll_periods.length > 0) {
+                console.log('First payroll period:', payroll_periods[0]);
+            }
+        }
+    }, [isOpen, payroll_periods]);
+
     const formatDate = (dateString: string) => {
         if (!dateString) return '';
-        return new Date(dateString).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
+        try {
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return 'Invalid date';
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        } catch (error) {
+            console.error('Date formatting error:', error);
+            return 'Invalid date';
+        }
     };
 
     return (
@@ -101,10 +121,11 @@ export function IncentiveFormModal({
                     </DialogTitle>
                 </DialogHeader>
 
-                <form onSubmit={onSubmit} className="mt-4">
-                    <div className="grid grid-cols-2 gap-6">
+                <form onSubmit={onSubmit} className= "space-y-6">
+                    <div className="flex gap-6 flex-col md:flex-row">
                         {/* Left Column - Incentive Details */}
                         <div className="space-y-4">
+                            <h1 className = "font-semibold" >Incentive Details</h1>
                             <div className="space-y-2">
                                 <Label htmlFor="incentive_name">Incentive Name <span className="text-red-500">*</span></Label>
                                 <Input
@@ -133,12 +154,12 @@ export function IncentiveFormModal({
 
                             <div className="space-y-2">
                                 <Label htmlFor="payroll_period_id">Payroll Period <span className="text-red-500">*</span></Label>
-                                <div className="relative">
+                                <div className="relative w-65">
                                     <select
                                         id="payroll_period_id"
                                         value={formData.payroll_period_id}
                                         onChange={e => onDataChange('payroll_period_id', e.target.value)}
-                                        className="min-w-full p-2 pr-6 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 h-10 bg-white appearance-none cursor-pointer"
+                                        className="w-full p-2 pr-6 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 h-10 bg-white appearance-none cursor-pointer"
                                         style={{ color: formData.payroll_period_id ? 'black' : '#9CA3AF' }}
                                     >
                                         <option value="" className="text-gray-500 text-sm" hidden>Select a payroll period</option>
@@ -157,7 +178,7 @@ export function IncentiveFormModal({
                                             <option disabled className="text-gray-500">No payroll periods available</option>
                                         )}
                                     </select>
-                                    <div className="absolute inset-y-0 -right-8 flex items-center px-2 pointer-events-none">
+                                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
                                         <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                         </svg>

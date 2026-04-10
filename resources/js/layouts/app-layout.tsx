@@ -11,6 +11,7 @@ export default ({ children, breadcrumbs, ...props }: AppLayoutProps) => (
             closeButton
         />
         {children}
+        
         <Footer />
     </AppLayoutTemplate>
 );

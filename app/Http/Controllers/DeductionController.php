@@ -6,29 +6,43 @@ use App\Actions\Deduction\CreateNewDeduction;
 use App\Actions\Deduction\UpdateDeduction;
 use App\Http\Requests\Deduction\StoreDeductionRequest;
 use App\Models\Deduction;
+use App\Models\PayrollPeriod;
 use App\Repository\IncentiveRepository;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 class DeductionController extends Controller
 {
     public function __construct(protected IncentiveRepository $deductionRepository) {}
+    
     public function index()
     {
         Gate::authorize('viewAny', Deduction::class);
 
         $deductions = $this->deductionRepository->getDeductions();
 
-        return Inertia::render('deductions/index', compact('deductions'));
+        // Get ALL payroll periods without status filter
+        $payroll_periods = PayrollPeriod::query()
+            ->select('id', 'start_date', 'end_date', 'pay_date')
+            ->get();
+
+        $employees = $this->deductionRepository->getActiveEmployeesForIncentive();
+
+        return Inertia::render('deductions/index', [
+            'deductions' => $deductions,
+            'payroll_periods' => $payroll_periods,
+            'employees' => $employees,
+        ]);
     }
 
     public function create()
     {
+        // This can be removed or kept for backward compatibility
         Gate::authorize('create', Deduction::class);
 
         $payroll_periods = $this->deductionRepository->getOpenPayrollPeriods();
-
         $employees = $this->deductionRepository->getActiveEmployeesForIncentive();
 
         return Inertia::render('deductions/create', compact('payroll_periods', 'employees'));
@@ -48,7 +62,7 @@ class DeductionController extends Controller
 
             DB::commit();
 
-            return to_route('deductions.index')->with('success', 'Branch and site created successfully.');
+            return to_route('deductions.index')->with('success', 'Deduction created successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -64,7 +78,6 @@ class DeductionController extends Controller
         $deduction->load('payroll_period', 'employees');
 
         $employees = $this->deductionRepository->getActiveEmployeesForIncentive();
-
         $payroll_periods = $this->deductionRepository->getOpenPayrollPeriods();
 
         return Inertia::render('deductions/update', [
@@ -93,7 +106,7 @@ class DeductionController extends Controller
 
             DB::commit();
 
-            return to_route('deductions.index')->with('success', ' Deduction updated successfully.');
+            return to_route('deductions.index')->with('success', 'Deduction updated successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -115,7 +128,7 @@ class DeductionController extends Controller
 
             DB::commit();
 
-            return to_route('deductions.index')->with('success', ' Deduction deleted successfully.');
+            return to_route('deductions.index')->with('success', 'Deduction deleted successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
 

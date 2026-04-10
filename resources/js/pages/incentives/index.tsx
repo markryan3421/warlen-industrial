@@ -13,7 +13,7 @@ import type { BreadcrumbItem } from '@/types';
 import { toast } from '@/components/custom-toast';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-modal';
 import { IncentiveFormModal } from '@/components/incentives/incentive-form-modal';
-import { EmployeeSelectionModal } from '@/components/incentives/employee-selection-modal';
+import { EmployeeSelectionModal } from '@/components/employee-selection-modal';
 import { CustomPagination } from '@/components/custom-pagination';
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Incentives', href: '/incentives' }];
@@ -84,17 +84,17 @@ function useDebounce<T>(value: T, delay: number): T {
     return debouncedValue;
 }
 
-export default function Index({ 
-    incentives, 
-    payroll_periods, 
-    employees, 
-    editingIncentive, 
+export default function Index({
+    incentives,
+    payroll_periods,
+    employees,
+    editingIncentive,
     isEditing = false,
     filters = {}
 }: Props) {
     const { delete: destroy } = useForm();
     const [selected, setSelected] = useState<Incentive | null>(null);
-    
+
     // Local state for filters
     const [searchTerm, setSearchTerm] = useState(filters.search || '');
     const [dateFrom, setDateFrom] = useState<Date | undefined>(
@@ -103,7 +103,7 @@ export default function Index({
     const [dateTo, setDateTo] = useState<Date | undefined>(
         filters.date_to ? new Date(filters.date_to) : undefined
     );
-    
+
     const [currentPage, setCurrentPage] = useState(incentives.current_page || 1);
     const [itemsPerPage, setItemsPerPage] = useState(incentives.per_page || 10);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -111,12 +111,12 @@ export default function Index({
     const [selectedIncentive, setSelectedIncentive] = useState<Incentive | null>(null);
     const [showEmployeeModal, setShowEmployeeModal] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    
+
     // Debounced values for API requests
     const debouncedSearchTerm = useDebounce(searchTerm, 500);
     const debouncedDateFrom = useDebounce(dateFrom, 500);
     const debouncedDateTo = useDebounce(dateTo, 500);
-    
+
     const isInitialMount = useRef(true);
     const prevFiltersRef = useRef({ search: '', dateFrom: '', dateTo: '' });
 
@@ -136,21 +136,21 @@ export default function Index({
         perPage?: number;
     }) => {
         const params = new URLSearchParams();
-        
+
         const search = updates.search !== undefined ? updates.search : searchTerm;
         const from = updates.dateFrom !== undefined ? updates.dateFrom : dateFrom;
         const to = updates.dateTo !== undefined ? updates.dateTo : dateTo;
         const page = updates.page !== undefined ? updates.page : currentPage;
         const perPage = updates.perPage !== undefined ? updates.perPage : itemsPerPage;
-        
+
         if (search) params.append('search', search);
         if (from) params.append('date_from', from.toISOString().split('T')[0]);
         if (to) params.append('date_to', to.toISOString().split('T')[0]);
         params.append('page', String(page));
         params.append('per_page', String(perPage));
-        
+
         const url = `/incentives?${params.toString()}`;
-        
+
         router.visit(url, {
             preserveState: true,
             preserveScroll: true,
@@ -175,8 +175,8 @@ export default function Index({
         const currentSearch = debouncedSearchTerm || '';
         const currentDateFrom = debouncedDateFrom?.toISOString() || '';
         const currentDateTo = debouncedDateTo?.toISOString() || '';
-        
-        const filtersChanged = 
+
+        const filtersChanged =
             currentSearch !== prevFiltersRef.current.search ||
             currentDateFrom !== prevFiltersRef.current.dateFrom ||
             currentDateTo !== prevFiltersRef.current.dateTo;
@@ -188,7 +188,7 @@ export default function Index({
                 dateTo: debouncedDateTo,
                 page: 1 // Reset to first page
             });
-            
+
             prevFiltersRef.current = {
                 search: currentSearch,
                 dateFrom: currentDateFrom,
@@ -315,10 +315,10 @@ export default function Index({
         }
     };
 
-    const formatCurrency = (amount: string | number) => 
+    const formatCurrency = (amount: string | number) =>
         new Intl.NumberFormat('en-US', { style: 'currency', currency: 'PHP' }).format(Number(amount));
 
-    const formatDateSimple = (date: string) => 
+    const formatDateSimple = (date: string) =>
         date ? new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '';
 
     const hasFilters = !!(searchTerm || dateFrom || dateTo);
@@ -327,7 +327,7 @@ export default function Index({
     const [itemToDelete, setItemToDelete] = useState<any>(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
-    const getEmployeeName = useCallback((emp: Employee) => 
+    const getEmployeeName = useCallback((emp: Employee) =>
         emp.user?.name || emp.name || 'Unnamed Employee', []);
 
     const toggleEmployee = useCallback((id: number) => {
@@ -351,16 +351,20 @@ export default function Index({
     const columns = [
         { key: 'incentive_name', label: 'Incentive Name', render: (row: Incentive) => <span className="font-medium">{row.incentive_name}</span> },
         { key: 'incentive_amount', label: 'Amount', render: (row: Incentive) => formatCurrency(row.incentive_amount) },
-        { key: 'payroll_period', label: 'Payroll Period', render: (row: Incentive) => row.payroll_period ? (
-            <div>
-                <div>{formatDateSimple(row.payroll_period.start_date)} - {formatDateSimple(row.payroll_period.end_date)}</div>
-                <div className="text-xs text-muted-foreground">Pay: {formatDateSimple(row.payroll_period.pay_date)}</div>
-            </div>
-        ) : <span className="text-muted-foreground">N/A</span> },
-        { key: 'employees', label: 'Employees', render: (row: Incentive) => {
-            const count = row.employees?.length || 0;
-            return <Badge variant="secondary" className="bg-blue-100 text-blue-800">{count} {count === 1 ? 'Employee' : 'Employees'}</Badge>;
-        }},
+        {
+            key: 'payroll_period', label: 'Payroll Period', render: (row: Incentive) => row.payroll_period ? (
+                <div>
+                    <div>{formatDateSimple(row.payroll_period.start_date)} - {formatDateSimple(row.payroll_period.end_date)}</div>
+                    <div className="text-xs text-muted-foreground">Pay: {formatDateSimple(row.payroll_period.pay_date)}</div>
+                </div>
+            ) : <span className="text-muted-foreground">N/A</span>
+        },
+        {
+            key: 'employees', label: 'Employees', render: (row: Incentive) => {
+                const count = row.employees?.length || 0;
+                return <Badge variant="secondary" className="bg-blue-100 text-blue-800">{count} {count === 1 ? 'Employee' : 'Employees'}</Badge>;
+            }
+        },
         { key: 'actions', label: 'Actions', isAction: true }
     ];
 
@@ -371,78 +375,91 @@ export default function Index({
     ];
 
     // Generate pagination links for CustomPagination
-   const paginationLinks = useMemo(() => {
-    const links = [];
-    const totalPages = Math.ceil(incentives.total / itemsPerPage);
-    
-    // Helper to build URL with all current filters
-    const buildUrl = (page: number) => {
-        const params = new URLSearchParams();
-        if (searchTerm) params.append('search', searchTerm);
-        if (dateFrom) params.append('date_from', dateFrom.toISOString().split('T')[0]);
-        if (dateTo) params.append('date_to', dateTo.toISOString().split('T')[0]);
-        params.append('page', String(page));
-        params.append('per_page', String(itemsPerPage));
-        return `/incentives?${params.toString()}`;
-    };
-    
-    // Previous button
-    links.push({ 
-        active: false, 
-        label: 'pagination.previous', 
-        url: currentPage > 1 ? buildUrl(currentPage - 1) : null 
-    });
-    
-    // Page numbers
-    const maxVisiblePages = 5;
-    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-    
-    if (endPage - startPage + 1 < maxVisiblePages) {
-        startPage = Math.max(1, endPage - maxVisiblePages + 1);
-    }
-    
-    if (startPage > 1) {
-        links.push({ active: false, label: '1', url: buildUrl(1) });
-        if (startPage > 2) links.push({ active: false, label: '...', url: null });
-    }
-    
-    for (let i = startPage; i <= endPage; i++) {
-        links.push({ 
-            active: currentPage === i, 
-            label: String(i), 
-            url: buildUrl(i) 
+    const paginationLinks = useMemo(() => {
+        const links = [];
+        const totalPages = Math.ceil(incentives.total / itemsPerPage);
+
+        // Helper to build URL with all current filters
+        const buildUrl = (page: number) => {
+            const params = new URLSearchParams();
+            if (searchTerm) params.append('search', searchTerm);
+            if (dateFrom) params.append('date_from', dateFrom.toISOString().split('T')[0]);
+            if (dateTo) params.append('date_to', dateTo.toISOString().split('T')[0]);
+            params.append('page', String(page));
+            params.append('per_page', String(itemsPerPage));
+            return `/incentives?${params.toString()}`;
+        };
+
+        // Previous button
+        links.push({
+            active: false,
+            label: 'pagination.previous',
+            url: currentPage > 1 ? buildUrl(currentPage - 1) : null
         });
-    }
-    
-    if (endPage < totalPages) {
-        if (endPage < totalPages - 1) links.push({ active: false, label: '...', url: null });
-        links.push({ active: false, label: String(totalPages), url: buildUrl(totalPages) });
-    }
-    
-    // Next button
-    links.push({ 
-        active: false, 
-        label: 'pagination.next', 
-        url: currentPage < totalPages ? buildUrl(currentPage + 1) : null 
-    });
-    
-    return links;
-}, [currentPage, incentives.total, itemsPerPage, searchTerm, dateFrom, dateTo]);
+
+        // Page numbers
+        const maxVisiblePages = 5;
+        let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+        let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+        if (endPage - startPage + 1 < maxVisiblePages) {
+            startPage = Math.max(1, endPage - maxVisiblePages + 1);
+        }
+
+        if (startPage > 1) {
+            links.push({ active: false, label: '1', url: buildUrl(1) });
+            if (startPage > 2) links.push({ active: false, label: '...', url: null });
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            links.push({
+                active: currentPage === i,
+                label: String(i),
+                url: buildUrl(i)
+            });
+        }
+
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) links.push({ active: false, label: '...', url: null });
+            links.push({ active: false, label: String(totalPages), url: buildUrl(totalPages) });
+        }
+
+        // Next button
+        links.push({
+            active: false,
+            label: 'pagination.next',
+            url: currentPage < totalPages ? buildUrl(currentPage + 1) : null
+        });
+
+        return links;
+    }, [currentPage, incentives.total, itemsPerPage, searchTerm, dateFrom, dateTo]);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Incentives" />
 
+            <style>{`
+                @keyframes fadeUp {
+                    from { opacity: 0; transform: translateY(16px); }
+                    to   { opacity: 1; transform: translateY(0); }
+                }
+                .pp-row { animation: fadeUp 0.3s cubic-bezier(0.22,1,0.36,1) both; }
+                @keyframes headerReveal {
+                    from { opacity: 0; transform: translateY(-10px); }
+                    to   { opacity: 1; transform: translateY(0); }
+                }
+                .pp-header { animation: headerReveal 0.35s cubic-bezier(0.22,1,0.36,1) both; }
+            `}</style>
+
             <div className="flex flex-1 flex-col gap-4 p-4 mx-4">
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center pp-header">
                     <CustomHeader title="Incentives" icon={<Coins className="h-6 w-6" />} description='Manage employee incentives across payroll periods' />
                     <Button onClick={handleCreate} className="bg-[#1d4791] hover:bg-[#1d4791]/90">
                         <Plus className="h-4 w-4 mr-2" /> Add Incentive
                     </Button>
                 </div>
 
-                <CardContent className="p-0">
+                <CardContent className="p-0 pp-row">
                     <CustomTable
                         columns={columns}
                         actions={actions}
@@ -471,10 +488,10 @@ export default function Index({
                                 selectedBranch={undefined}
                                 selectedSite={undefined}
                                 status=""
-                                onPositionsChange={() => {}}
-                                onBranchChange={() => {}}
-                                onSiteChange={() => {}}
-                                onStatusChange={() => {}}
+                                onPositionsChange={() => { }}
+                                onBranchChange={() => { }}
+                                onSiteChange={() => { }}
+                                onStatusChange={() => { }}
                             />
                         }
                         emptyState={
@@ -497,7 +514,7 @@ export default function Index({
                             ) : null
                         }
                     />
-                    
+
                     {incentives.total > 0 && (
                         <div className="px-6 pb-4">
                             <CustomPagination
