@@ -1,7 +1,7 @@
 import { Head } from '@inertiajs/react';
 import { useForm } from '@inertiajs/react';
-import { Search, ChevronDown, User, Briefcase, MapPin, Calendar, Phone, Mail, Hash, Clock, LoaderCircle } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Search, ChevronDown, User, Briefcase, MapPin, Calendar, Phone, Mail, Hash, Clock, LoaderCircle, ImagePlus, PersonStanding } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { update } from '@/actions/App/Http/Controllers/EmployeeController';
 import InputError from '@/components/input-error';
@@ -179,6 +179,7 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
         employee_number: employee.employee_number || '',
         emergency_contact_number: employee.emergency_contact_number || '',
         employee_status: employee.employee_status || 'Inactive',
+        avatar: employee.avatar || '',
     });
 
     // Update status when dates change
@@ -270,6 +271,30 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
         );
     }
 
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const [avatarFile, setAvatarFile] = useState<File | null>(null);
+    const [avatarPreview, setAvatarPreview] = useState<string | null>(
+        employee.avatar ? `/storage/${employee.avatar}` : null
+    );
+
+    const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setAvatarFile(file);
+            const previewUrl = URL.createObjectURL(file);
+            setAvatarPreview(previewUrl);
+        }
+    };
+
+    const handleRemoveAvatar = () => {
+        setAvatarFile(null);
+        setAvatarPreview(null);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    };
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Edit Employee" />
@@ -309,6 +334,92 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
                     </div>
 
                     <form onSubmit={handleSubmit} className="space-y-6">
+                         {/* 1. Avatar */}
+                        <FormSection icon={PersonStanding} title="Avatar" index={1}>
+                            {/* Avatar Upload Section */}
+                            <div className="grid gap-2">
+                                <Label>Profile picture</Label>
+                                
+                                <div className="flex items-center gap-4">
+                                    {/* Avatar Preview */}
+                                    <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-full bg-muted">
+                                        {avatarPreview ? (
+                                            <img
+                                                src={avatarPreview}
+                                                alt="Profile preview"
+                                                className="h-full w-full object-cover"
+                                            />
+                                        ) : (
+                                            <div className="flex h-full w-full items-center justify-center bg-neutral-100 text-neutral-400 dark:bg-neutral-800">
+                                                <svg
+                                                    className="h-10 w-10"
+                                                    fill="currentColor"
+                                                    viewBox="0 0 24 24"
+                                                >
+                                                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                                                </svg>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Upload Buttons */}
+                                    <div className="flex flex-col gap-2">
+                                        <div className="flex gap-2">
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => fileInputRef.current?.click()}
+                                                disabled={processing}
+                                            >
+                                                Change avatar
+                                            </Button>
+                                            
+                                            {avatarPreview && (
+                                                <Button
+                                                    type="button"
+                                                    variant="destructive"
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        handleRemoveAvatar();
+                                                        setData('avatar', null);
+                                                    }}
+                                                    disabled={processing}
+                                                >
+                                                    Remove
+                                                </Button>
+                                            )}
+                                        </div>
+                                        
+                                        <p className="text-xs text-muted-foreground">
+                                            Recommended: Square image, at least 200x200px. Max size: 2MB
+                                        </p>
+                                    </div>
+
+                                    <Input
+                                        ref={fileInputRef}
+                                        id="avatar"
+                                        type="file"
+                                        name="avatar"
+                                        accept="image/jpeg,image/png,image/jpg,image/gif,image/webp"
+                                        onChange={(e) => {
+                                            handleAvatarChange(e);
+                                            const file = e.target.files?.[0];
+                                            setData('avatar', file as any);
+                                        }}
+                                        className="hidden"
+                                    />
+                                </div>
+
+                                {errors.avatar && (
+                                    <InputError
+                                        className="mt-2"
+                                        message={errors.avatar}
+                                    />
+                                )}
+                            </div>
+                        </FormSection>
+
                         {/* 1. User Details */}
                         <FormSection icon={User} title="User Details" index={0}>
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

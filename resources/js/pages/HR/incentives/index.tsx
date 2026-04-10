@@ -1,655 +1,328 @@
-import { Head, Link, router } from '@inertiajs/react';
-import { format } from 'date-fns';
-import { Briefcase, Eye, Pencil, Trash2, X, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Calendar } from 'lucide-react';
-import { useState, useMemo, useEffect } from 'react';
-import { Badge } from '@/components/ui/badge';
+import { Head, Link, router, useForm } from '@inertiajs/react';
+import AppLayout from '@/layouts/hr-layout';
 import { Button } from '@/components/ui/button';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import AppLayout from '@/layouts/app-layout';
-import HrLayout from '@/layouts/hr-layout';
+import { Briefcase, Coins, Plus, Search } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
+import { CustomTable } from '@/components/custom-table';
+import { EmployeeFilterBar } from '@/components/employee/employee-filter-bar';
+import { CustomPagination } from '@/components/custom-pagination';
 import type { BreadcrumbItem } from '@/types';
+import { CustomHeader } from '@/components/custom-header';
+import IncentiveController from '@/actions/App/Http/Controllers/HrRole/HRIncentiveController';
+import { toast } from 'sonner';
+import { DeleteConfirmationDialog } from '@/components/delete-confirmation-modal';
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Incentives',
-        href: '/incentives',
-    },
-];
-
-interface PayrollPeriod {
-    id: number;
-    start_date: string;
-    end_date: string;
-    pay_date: string;
-    payroll_per_status: string;
-}
+const breadcrumbs: BreadcrumbItem[] = [{ title: 'Incentives', href: '/incentives' }];
 
 interface Employee {
     id: number;
-    user?: {
-        name: string;
-        email: string;
-    };
-    position?: {
-        pos_name: string;
-    }
-    branch?: {
-        branch_name: string;
-    }
-    employee_status?: string;
-    hire_date?: string;
+    user?: { name: string };
+    position?: { pos_name: string };
+    branch?: { branch_name: string };
 }
 
 interface Incentive {
     id: number;
-    payroll_period_id: number;
     incentive_name: string;
     incentive_amount: string | number;
-    payroll_period?: PayrollPeriod;
+    payroll_period?: { start_date: string; end_date: string; pay_date: string };
     employees?: Employee[];
 }
 
 interface Props {
-    incentives: Incentive[];
-    filters?: {
-        date_from?: string;
-        date_to?: string;
-    };
+    incentives: { data: Incentive[]; perPage: number; total: number; from: number; current_page: number; last_page: number; links: any[] } | Incentive[];
 }
 
-export default function Index({ incentives, filters = {} }: Props) {
-    const [selectedIncentive, setSelectedIncentive] = useState<Incentive | null>(null);
-    const [isModalOpen, setIsModalOpen] = useState(false);
+const formatCurrency = (amount: string | number) =>
+    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'PHP' }).format(Number(amount));
+
+const formatDate = (date: string) =>
+    new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+export default function Index({ incentives }: Props) {
+    const { delete: destroy } = useForm();
+    const [selected, setSelected] = useState<Incentive | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [dateFrom, setDateFrom] = useState<Date | undefined>();
+    const [dateTo, setDateTo] = useState<Date | undefined>();
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
 
-    // Date range filter state
-    const [dateFrom, setDateFrom] = useState<Date | undefined>(
-        filters.date_from ? new Date(filters.date_from) : undefined
-    );
-    const [dateTo, setDateTo] = useState<Date | undefined>(
-        filters.date_to ? new Date(filters.date_to) : undefined
-    );
+    // Delete confirmation states
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [itemToDelete, setItemToDelete] = useState<any>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
-    // Separate month states for left and right calendars
-    const [leftCalendarMonth, setLeftCalendarMonth] = useState<Date>(new Date());
-    const [rightCalendarMonth, setRightCalendarMonth] = useState<Date>(() => {
-        const nextMonth = new Date();
-        nextMonth.setMonth(nextMonth.getMonth() + 1);
-        return nextMonth;
-    });
+    const handleDeleteClick = (incentive: Incentive) => {
+        setItemToDelete(incentive);
+        setDeleteDialogOpen(true);
+    };
 
-    // Pagination state with localStorage
-    const [currentPage, setCurrentPage] = useState(() => {
-        const saved = localStorage.getItem('incentives-currentPage');
-        return saved ? parseInt(saved) : 1;
-    });
-    const [itemsPerPage, setItemsPerPage] = useState(() => {
-        const saved = localStorage.getItem('incentives-itemsPerPage');
-        return saved ? parseInt(saved) : 10;
-    });
+    const confirmDelete = () => {
+        if (!itemToDelete) return;
 
-    // Save to localStorage whenever values change
-    useEffect(() => {
-        localStorage.setItem('incentives-currentPage', currentPage.toString());
-    }, [currentPage]);
-
-    useEffect(() => {
-        localStorage.setItem('incentives-itemsPerPage', itemsPerPage.toString());
-    }, [itemsPerPage]);
-
-    // Filter incentives based on date range and search term
-    const filteredIncentives = useMemo(() => {
-        let filtered = incentives;
-
-        // Apply date range filter
-        if (dateFrom || dateTo) {
-            filtered = filtered.filter(incentive => {
-                if (!incentive.payroll_period) return false;
-
-                const periodStart = new Date(incentive.payroll_period.start_date);
-                const periodEnd = new Date(incentive.payroll_period.end_date);
-
-                if (dateFrom && dateTo) {
-                    // Both dates selected - check if period overlaps with range
-                    return periodStart <= dateTo && periodEnd >= dateFrom;
-                } else if (dateFrom) {
-                    // Only from date selected - periods starting after or on from date
-                    return periodEnd >= dateFrom;
-                } else if (dateTo) {
-                    // Only to date selected - periods ending before or on to date
-                    return periodStart <= dateTo;
-                }
-
-                return true;
-            });
-        }
-
-        // Apply search filter
-        if (searchTerm.trim()) {
-            const term = searchTerm.toLowerCase().trim();
-            filtered = filtered.filter(incentive =>
-                incentive.incentive_name.toLowerCase().includes(term)
-            );
-        }
-
-        return filtered;
-    }, [incentives, dateFrom, dateTo, searchTerm]);
-
-    // Pagination logic
-    const totalItems = filteredIncentives.length;
-    const totalPages = Math.ceil(totalItems / itemsPerPage);
-
-    // Get current page items
-    const currentItems = useMemo(() => {
-        const startIndex = (currentPage - 1) * itemsPerPage;
-        const endIndex = startIndex + itemsPerPage;
-        return filteredIncentives.slice(startIndex, endIndex);
-    }, [filteredIncentives, currentPage, itemsPerPage]);
-
-    // Reset to first page when search or filter changes
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [searchTerm, dateFrom, dateTo]);
-
-    // Update URL when date filters change
-    useEffect(() => {
-        const params: any = {};
-
-        if (dateFrom) {
-            params.date_from = format(dateFrom, 'yyyy-MM-dd');
-        }
-        if (dateTo) {
-            params.date_to = format(dateTo, 'yyyy-MM-dd');
-        }
-
-        router.get('/hr/incentives', params, { preserveState: true, replace: true });
-    }, [dateFrom, dateTo]);
-
-    const deleteIncentive = (id: number) => {
-        if (confirm('Are you sure you want to delete this incentive?')) {
-            router.delete(`/hr/incentives/${id}`);
-        }
+        setIsDeleting(true);
+        destroy(IncentiveController.destroy(itemToDelete.id).url, {
+            onSuccess: (page) => {
+                const successMessage = (page.props as any).flash?.success || 'Incentive deleted successfully.';
+                toast.success(successMessage);
+                setDeleteDialogOpen(false);
+                setItemToDelete(null);
+            },
+            onError: (errors) => {
+                const errorMessage = Object.values(errors).flat()[0] || 'Failed to delete incentive.';
+                toast.error(errorMessage);
+            },
+            onFinish: () => {
+                setIsDeleting(false);
+            },
+        });
     }
 
-    const clearDateFilters = () => {
+    const allData: Incentive[] = Array.isArray(incentives) ? incentives : incentives?.data ?? [];
+
+   const filteredData = useMemo(() => {
+    return allData.filter(item => {
+        const matchesSearch = !searchTerm.trim() ||
+            item.incentive_name.toLowerCase().includes(searchTerm.toLowerCase());
+
+        const matchesDate = (() => {
+            if (!dateFrom && !dateTo) return true;
+            if (!item.payroll_period) return false;
+            
+            // Parse dates
+            const periodStart = new Date(item.payroll_period.start_date);
+            const periodEnd = new Date(item.payroll_period.end_date);
+            
+            // If only dateFrom is set
+            if (dateFrom && !dateTo) {
+                return periodEnd >= dateFrom;
+            }
+            
+            // If only dateTo is set
+            if (!dateFrom && dateTo) {
+                return periodStart <= dateTo;
+            }
+            
+            // If both are set - check for overlap
+            if (dateFrom && dateTo) {
+                // The period overlaps if:
+                // periodStart <= dateTo AND periodEnd >= dateFrom
+                return periodStart <= dateTo && periodEnd >= dateFrom;
+            }
+            
+            return true;
+        })();
+
+        return matchesSearch && matchesDate;
+    });
+}, [allData, searchTerm, dateFrom, dateTo]);
+
+    useEffect(() => { setCurrentPage(1); }, [searchTerm, dateFrom, dateTo]);
+
+    const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const currentData = filteredData.slice(startIndex, startIndex + itemsPerPage);
+
+    const paginationData = {
+        data: currentData,
+        perPage: itemsPerPage,
+        total: filteredData.length,
+        from: startIndex + 1,
+        current_page: currentPage,
+        last_page: totalPages,
+        links: [],
+    };
+
+    const clearFilters = () => {
+        setSearchTerm('');
         setDateFrom(undefined);
         setDateTo(undefined);
+        setCurrentPage(1);
     };
 
-    const clearSearch = () => {
-        setSearchTerm('');
-    };
+    const columns = [
+        {
+            key: 'incentive_name',
+            label: 'Incentive Name',
+            render: (row: Incentive) => <span className="font-medium">{row.incentive_name}</span>,
+        },
+        {
+            key: 'incentive_amount',
+            label: 'Amount',
+            render: (row: Incentive) => formatCurrency(row.incentive_amount),
+        },
+        {
+            key: 'payroll_period',
+            label: 'Payroll Period',
+            render: (row: Incentive) => row.payroll_period ? (
+                <div>
+                    <div>{formatDate(row.payroll_period.start_date)} - {formatDate(row.payroll_period.end_date)}</div>
+                    <div className="text-xs text-muted-foreground">Pay: {formatDate(row.payroll_period.pay_date)}</div>
+                </div>
+            ) : <span className="text-muted-foreground">N/A</span>,
+        },
+        {
+            key: 'employees',
+            label: 'Employees',
+            render: (row: Incentive) => {
+                const count = row.employees?.length ?? 0;
+                return (
+                    <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                        {count} {count === 1 ? 'Employee' : 'Employees'}
+                    </Badge>
+                );
+            },
+        },
+        { key: 'actions', label: 'Actions', isAction: true },
+    ];
 
-    const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
-    };
+    const actions = [
+        { label: 'View', icon: 'Eye' as const, route: '' },
+        { label: 'Edit', icon: 'Pencil' as const, route: '' },
+        { label: 'Delete', icon: 'Trash2' as const, route: '' },
+    ];
 
-    const formatCurrency = (amount: string | number) => {
-        const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: 'PHP',
-            minimumFractionDigits: 2
-        }).format(numAmount);
-    };
-
-    const viewIncentiveDetails = (incentive: Incentive) => {
-        setSelectedIncentive(incentive);
-        setIsModalOpen(true);
-    };
-
-    // Pagination helper functions
-    const goToPage = (page: number) => {
-        setCurrentPage(Math.max(1, Math.min(page, totalPages)));
-    };
-
-    const goToFirstPage = () => goToPage(1);
-    const goToLastPage = () => goToPage(totalPages);
-    const goToPreviousPage = () => goToPage(currentPage - 1);
-    const goToNextPage = () => goToPage(currentPage + 1);
-
-    // Generate page numbers for pagination controls - FIXED TYPES
-    const getPageNumbers = (): (number | string)[] => {
-        const delta = 2;
-        const range: number[] = [];
-        const rangeWithDots: (number | string)[] = [];
-        let l: number | undefined;
-
-        for (let i = 1; i <= totalPages; i++) {
-            if (i === 1 || i === totalPages || (i >= currentPage - delta && i <= currentPage + delta)) {
-                range.push(i);
-            }
-        }
-
-        range.forEach((i) => {
-            if (l) {
-                if (i - l === 2) {
-                    rangeWithDots.push(l + 1);
-                } else if (i - l !== 1) {
-                    rangeWithDots.push('...');
-                }
-            }
-            rangeWithDots.push(i);
-            l = i;
-        });
-
-        return rangeWithDots;
-    };
-
-    // Check if any filter is active
-    const hasActiveFilters = dateFrom || dateTo || searchTerm;
+    const hasFilters = !!(searchTerm || dateFrom || dateTo);
 
     return (
-        <HrLayout breadcrumbs={breadcrumbs}>
+        <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Incentives" />
-            <>
-                {/* Header Section */}
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 px-4 md:px-6 py-6">
-                    <div>
-                        <h1 className="text-3xl font-bold tracking-tight">Incentives</h1>
-                        <p className="text-muted-foreground mt-1">
-                            Manage and track employee incentives across different payroll periods
-                        </p>
-                    </div>
-                    <Link href="/hr/incentives/create">
-                        <Button size="default" className="gap-2">
-                            <Briefcase className="h-4 w-4" />
-                            Add Incentive
-                        </Button>
-                    </Link>
+
+            <style>{`
+                @keyframes fadeUp {
+                    from { opacity: 0; transform: translateY(16px); }
+                    to   { opacity: 1; transform: translateY(0); }
+                }
+                .pp-row { animation: fadeUp 0.3s cubic-bezier(0.22,1,0.36,1) both; }
+                @keyframes headerReveal {
+                    from { opacity: 0; transform: translateY(-10px); }
+                    to   { opacity: 1; transform: translateY(0); }
+                }
+                .pp-header { animation: headerReveal 0.35s cubic-bezier(0.22,1,0.36,1) both; }
+            `}</style>
+
+            {/* Header */}
+            <div className="grid grid-rows-1 justify-center mx-8 md:grid-cols-2 md:mx-8 mt-3 lg:flex lg:justify-between items-center lg:mx-8 lg:mt-4 lg:-mb-2 pp-header">
+                <div>
+                    <CustomHeader
+                        title='Incentives'
+                        icon={<Coins className="h-6 w-6" />}
+                        description='Manage and track employee incentives'
+                    />
                 </div>
+                <Link href="/hr/incentives/create" className='ml-auto'>
+                    <Button className="bg-[#1d4791] hover:bg-[#1d4791]/90 ">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Incentive
+                    </Button>
+                </Link>
+            </div>
 
-                {incentives.length === 0 ? (
-                    <Card className="border-dashed mx-4 md:mx-6">
-                        <CardContent className="flex flex-col items-center justify-center py-16 px-4 text-center">
-                            <div className="rounded-full bg-primary/10 p-6 mb-4">
-                                <Briefcase className="h-12 w-12 text-primary" />
-                            </div>
-                            <h3 className="text-xl font-semibold mb-2">No incentives yet</h3>
-                            <p className="text-muted-foreground mb-6 max-w-sm">
-                                Get started by creating your first incentive. Define incentives and their corresponding amounts for payroll periods.
-                            </p>
-                            <Link href="/hr/incentives/create">
-                                <Button className="gap-2">
-                                    <Briefcase className="h-4 w-4" />
-                                    Create Your First Incentive
-                                </Button>
-                            </Link>
-                        </CardContent>
-                    </Card>
-                ) : (
-                    <Card className="mx-4 md:mx-6">
-                        <CardHeader className="pb-3">
-                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                                <CardTitle>Incentive List</CardTitle>
+            <div className="flex flex-1 flex-col gap-4 p-4 pp-row mx-4">
+                {/* Table */}
+                <CustomTable
+                    columns={columns}
+                    actions={actions}
+                    data={currentData}
+                    from={startIndex + 1}
+                    onDelete={handleDeleteClick}
+                    onView={setSelected}
+                    onEdit={(item) => router.get(`/hr/incentives/${item.id}/edit`)}
+                    title="Incentives List"
+                    toolbar={
+                        <EmployeeFilterBar
+                            filters={{ search: true, position: false, branch: false, site: false, date: true, status: false }}
+                            searchTerm={searchTerm}
+                            onSearchChange={setSearchTerm}
+                            dateFrom={dateFrom}
+                            dateTo={dateTo}
+                            onDateFromChange={setDateFrom}
+                            onDateToChange={setDateTo}
+                            onClearAll={clearFilters}
+                            searchPlaceholder="Search by incentive name..."
+                            dateLabel="Payroll Period Date Range"
+                            allPositions={[]}
+                            branchesData={[]}
+                            selectedPositions={[]}
+                            selectedBranch={undefined}
+                            selectedSite={undefined}
+                            status=""
+                            onPositionsChange={() => { }}
+                            onBranchChange={() => { }}
+                            onSiteChange={() => { }}
+                            onStatusChange={() => { }}
+                        />
+                    }
+                />
 
-                                {/* Filter and Search controls */}
-                                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                                    {/* Search Bar */}
-                                    <div className="relative w-full sm:w-64">
-                                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                        <Input
-                                            type="text"
-                                            placeholder="Search by incentive name..."
-                                            value={searchTerm}
-                                            onChange={(e) => setSearchTerm(e.target.value)}
-                                            className="pl-10 pr-10 py-2 w-full h-9"
-                                        />
-                                        {searchTerm && (
-                                            <button
-                                                onClick={clearSearch}
-                                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                                            >
-                                                <X className="h-4 w-4" />
-                                            </button>
-                                        )}
-                                    </div>
-
-                                    {/* Date Range Picker with Clear Button */}
-                                    <div className="relative w-full sm:w-[300px]">
-                                        <Popover>
-                                            <PopoverTrigger asChild>
-                                                <Button
-                                                    variant="outline"
-                                                    className={`w-full justify-start text-left font-normal h-9 pr-10 ${!dateFrom && !dateTo ? 'text-muted-foreground' : ''
-                                                        }`}
-                                                >
-                                                    <Calendar className="mr-2 h-4 w-4" />
-                                                    {dateFrom || dateTo ? (
-                                                        <>
-                                                            {dateFrom && format(dateFrom, 'MMM d, yyyy')}
-                                                            {dateFrom && dateTo && ' - '}
-                                                            {dateTo && format(dateTo, 'MMM d, yyyy')}
-                                                        </>
-                                                    ) : (
-                                                        <span>Filter by date range</span>
-                                                    )}
-                                                </Button>
-                                            </PopoverTrigger>
-                                            <PopoverContent className="w-auto p-0" align="end">
-                                                <div className="flex">
-                                                    {/* Left Calendar - FIXED: removed captionLayout */}
-                                                    <div className="border-r">
-                                                        <CalendarComponent
-                                                            mode="range"
-                                                            selected={{
-                                                                from: dateFrom,
-                                                                to: dateTo,
-                                                            }}
-                                                            onSelect={(range) => {
-                                                                setDateFrom(range?.from);
-                                                                setDateTo(range?.to);
-                                                            }}
-                                                            month={leftCalendarMonth}
-                                                            onMonthChange={setLeftCalendarMonth}
-                                                            numberOfMonths={1}
-                                                            initialFocus
-                                                        />
-                                                    </div>
-
-                                                    {/* Right Calendar - FIXED: removed captionLayout */}
-                                                    <div>
-                                                        <CalendarComponent
-                                                            mode="range"
-                                                            selected={{
-                                                                from: dateFrom,
-                                                                to: dateTo,
-                                                            }}
-                                                            onSelect={(range) => {
-                                                                setDateFrom(range?.from);
-                                                                setDateTo(range?.to);
-                                                            }}
-                                                            month={rightCalendarMonth}
-                                                            onMonthChange={setRightCalendarMonth}
-                                                            numberOfMonths={1}
-                                                        />
-                                                    </div>
-                                                </div>
-                                            </PopoverContent>
-                                        </Popover>
-
-                                        {/* Clear button for date filter */}
-                                        {(dateFrom || dateTo) && (
-                                            <button
-                                                onClick={clearDateFilters}
-                                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                                                title="Clear date filter"
-                                            >
-                                                <X className="h-4 w-4" />
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        </CardHeader>
-
-                        <CardContent className="p-0">
-                            {filteredIncentives.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-                                    <div className="rounded-full bg-muted p-6 mb-4">
-                                        {searchTerm ? (
-                                            <Search className="h-12 w-12 text-muted-foreground" />
-                                        ) : (
-                                            <Calendar className="h-12 w-12 text-muted-foreground" />
-                                        )}
-                                    </div>
-                                    <h3 className="text-xl font-semibold mb-2">
-                                        {searchTerm ? 'No incentives found' : 'No incentives found for this date range'}
-                                    </h3>
-                                    <p className="text-muted-foreground mb-6 max-w-sm">
-                                        {searchTerm
-                                            ? `No incentives matching "${searchTerm}" found.`
-                                            : 'No incentives match the selected date range.'}
-                                    </p>
-                                </div>
-                            ) : (
-                                <>
-                                    <div className="rounded-md border">
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow className="bg-muted/50">
-                                                    <TableHead className="w-[250px]">Incentive Name</TableHead>
-                                                    <TableHead className="w-[150px]">Amount</TableHead>
-                                                    <TableHead className="min-w-[300px]">Payroll Period</TableHead>
-                                                    <TableHead className="w-[100px] text-center">Employees</TableHead>
-                                                    <TableHead className="w-[200px] text-right">Actions</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {currentItems.map((incentive) => (
-                                                    <TableRow key={incentive.id} className="hover:bg-muted/50">
-                                                        <TableCell className="font-medium">
-                                                            {incentive.incentive_name}
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            <Badge variant="secondary" className="font-mono">
-                                                                {formatCurrency(incentive.incentive_amount)}
-                                                            </Badge>
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            {incentive.payroll_period ? (
-                                                                <div className="flex flex-col">
-                                                                    <span className="text-sm">
-                                                                        {formatDate(incentive.payroll_period.start_date)} - {formatDate(incentive.payroll_period.end_date)}
-                                                                    </span>
-                                                                    <span className="text-xs text-muted-foreground">
-                                                                        Pay date: {formatDate(incentive.payroll_period.pay_date)}
-                                                                    </span>
-                                                                </div>
-                                                            ) : (
-                                                                <span className="text-muted-foreground">N/A</span>
-                                                            )}
-                                                        </TableCell>
-                                                        <TableCell className="text-center">
-                                                            <Badge variant="outline">
-                                                                {incentive.employees?.length || 0}
-                                                            </Badge>
-                                                        </TableCell>
-                                                        <TableCell className="text-right">
-                                                            <div className="flex items-center justify-end gap-2">
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="sm"
-                                                                    onClick={() => viewIncentiveDetails(incentive)}
-                                                                    className="hover:bg-primary/10 hover:text-primary"
-                                                                >
-                                                                    <Eye className="h-4 w-4" />
-                                                                    <span className="sr-only">View</span>
-                                                                </Button>
-                                                                <Link href={`/hr/incentives/${incentive.id}/edit`}>
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="sm"
-                                                                        className="hover:bg-primary/10 hover:text-primary"
-                                                                    >
-                                                                        <Pencil className="h-4 w-4" />
-                                                                        <span className="sr-only">Edit</span>
-                                                                    </Button>
-                                                                </Link>
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="sm"
-                                                                    onClick={() => deleteIncentive(incentive.id)}
-                                                                    className="hover:bg-destructive/10 hover:text-destructive"
-                                                                >
-                                                                    <Trash2 className="h-4 w-4" />
-                                                                    <span className="sr-only">Delete</span>
-                                                                </Button>
-                                                            </div>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
-                                    </div>
-
-                                    {/* Pagination Controls */}
-                                    <div className="grid grid-cols-3 items-center mt-4 px-6 py-4">
-                                        {/* Left column - Showing entries text */}
-                                        <div className="text-sm text-muted-foreground">
-                                            Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems} entries
-                                        </div>
-
-                                        {/* Center column - Show entries dropdown */}
-                                        <div className="flex items-center justify-center gap-2">
-                                            <span className="text-sm text-muted-foreground">Show</span>
-                                            <select
-                                                value={itemsPerPage}
-                                                onChange={(e) => {
-                                                    setItemsPerPage(Number(e.target.value));
-                                                    setCurrentPage(1);
-                                                }}
-                                                className="border rounded-md px-2 py-1 text-sm bg-background"
-                                            >
-                                                {[5, 10, 20, 50, 100].map(value => (
-                                                    <option key={value} value={value}>{value}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-
-                                        {/* Right column - Pagination controls */}
-                                        {totalPages > 1 && (
-                                            <div className="flex items-center justify-end gap-2">
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={goToFirstPage}
-                                                    disabled={currentPage === 1}
-                                                >
-                                                    <ChevronsLeft className="h-4 w-4" />
-                                                </Button>
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={goToPreviousPage}
-                                                    disabled={currentPage === 1}
-                                                >
-                                                    <ChevronLeft className="h-4 w-4" />
-                                                </Button>
-
-                                                {/* Page Numbers */}
-                                                <div className="flex items-center gap-1">
-                                                    {getPageNumbers().map((page, index) => (
-                                                        page === '...' ? (
-                                                            <span key={`dots-${index}`} className="px-2 py-1 text-muted-foreground">...</span>
-                                                        ) : (
-                                                            <Button
-                                                                key={page}
-                                                                variant={currentPage === page ? "default" : "outline"}
-                                                                size="sm"
-                                                                onClick={() => goToPage(Number(page))}
-                                                                className="min-w-[32px]"
-                                                            >
-                                                                {page}
-                                                            </Button>
-                                                        )
-                                                    ))}
-                                                </div>
-
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={goToNextPage}
-                                                    disabled={currentPage === totalPages}
-                                                >
-                                                    <ChevronRight className="h-4 w-4" />
-                                                </Button>
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={goToLastPage}
-                                                    disabled={currentPage === totalPages}
-                                                >
-                                                    <ChevronsRight className="h-4 w-4" />
-                                                </Button>
-                                            </div>
-                                        )}
-                                    </div>
-                                </>
-                            )}
-                        </CardContent>
-                    </Card>
+                {allData.length > 0 && (
+                    <div className="px-6 pb-4">
+                        <CustomPagination
+                            pagination={paginationData}
+                            perPage={String(itemsPerPage)}
+                            onPerPageChange={(val) => { setItemsPerPage(Number(val)); setCurrentPage(1); }}
+                            totalCount={allData.length}
+                            filteredCount={filteredData.length}
+                            search={searchTerm}
+                            resourceName="incentive"
+                        />
+                    </div>
                 )}
 
-                <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-                    <DialogContent className="max-w-4xl">
-                        <DialogHeader>
-                            <DialogTitle className="text-2xl">{selectedIncentive?.incentive_name}</DialogTitle>
-                            <DialogDescription>
-                                {selectedIncentive && (
-                                    <div className="flex items-center gap-2 mt-1">
-                                        <Badge variant="secondary" className="font-mono text-base">
-                                            {formatCurrency(selectedIncentive.incentive_amount)}
-                                        </Badge>
-                                        {selectedIncentive.payroll_period && (
-                                            <span className="text-sm text-muted-foreground">
-                                                • {formatDate(selectedIncentive.payroll_period.start_date)} - {formatDate(selectedIncentive.payroll_period.end_date)}
-                                            </span>
-                                        )}
-                                    </div>
-                                )}
-                            </DialogDescription>
-                        </DialogHeader>
+                <DeleteConfirmationDialog
+                    isOpen={deleteDialogOpen}
+                    onClose={() => {
+                        setDeleteDialogOpen(false);
+                        setItemToDelete(null);
+                    }}
+                    onConfirm={confirmDelete}
+                    title='Delete incentive'
+                    itemName={itemToDelete?.incentive_name || 'this incentive'}
+                    isLoading={isDeleting}
+                    confirmText='Delete incentive'
+                />
+            </div>
 
-                        {selectedIncentive && (
-                            <div className="mt-4">
-                                <h3 className="text-sm font-medium mb-3">Assigned Employees</h3>
+            {/* View Dialog */}
+            <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
+                <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle className="text-2xl">{selected?.incentive_name}</DialogTitle>
+                        <Badge variant="secondary" className="w-fit bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-lg px-4 py-1 mt-2">
+                            {formatCurrency(selected?.incentive_amount ?? 0)}
+                        </Badge>
+                    </DialogHeader>
 
-                                {selectedIncentive.employees && selectedIncentive.employees.length > 0 ? (
-                                    <div className="rounded-md border">
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow className="bg-muted/50">
-                                                    <TableHead>Employee Name</TableHead>
-                                                    <TableHead>Position</TableHead>
-                                                    <TableHead>Branch</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {selectedIncentive.employees.map((employee) => (
-                                                    <TableRow key={employee.id}>
-                                                        <TableCell className="font-medium">
-                                                            {employee.user?.name || `Employee #${employee.id}`}
-                                                        </TableCell>
-                                                        <TableCell>{employee.position?.pos_name || '—'}</TableCell>
-                                                        <TableCell>{employee.branch?.branch_name || '—'}</TableCell>
-                                                    </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
+                    {selected?.payroll_period && (
+                        <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                            <h4 className="font-semibold mb-2">Payroll Period</h4>
+                            <p className="text-sm">{formatDate(selected.payroll_period.start_date)} - {formatDate(selected.payroll_period.end_date)}</p>
+                            <p className="text-sm text-muted-foreground mt-1">Payment Date: {formatDate(selected.payroll_period.pay_date)}</p>
+                        </div>
+                    )}
+
+                    <h4 className="font-semibold">Assigned Employees ({selected?.employees?.length ?? 0})</h4>
+                    {selected?.employees?.length ? (
+                        <div className="border rounded-md divide-y max-h-96 overflow-y-auto">
+                            {selected.employees.map(emp => (
+                                <div key={emp.id} className="p-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                                    <div className="font-medium">{emp.user?.name ?? `Employee #${emp.id}`}</div>
+                                    <div className="text-sm text-muted-foreground mt-1">
+                                        {[emp.position?.pos_name, emp.branch?.branch_name].filter(Boolean).join(' • ')}
                                     </div>
-                                ) : (
-                                    <div className="text-center py-8 text-muted-foreground border rounded-md">
-                                        No employees assigned to this incentive
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </DialogContent>
-                </Dialog>
-            </>
-        </HrLayout>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center py-8 text-muted-foreground border rounded-md">
+                            No employees assigned to this incentive
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
+        </AppLayout>
     );
 }

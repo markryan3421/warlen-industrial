@@ -36,7 +36,8 @@ class Deduction extends Model
                 'deduction_name',
                 'deduction_amount',
             ])
-            ->logOnlyDirty();
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
     }
 
     protected function getActivityDisplayNames(): array

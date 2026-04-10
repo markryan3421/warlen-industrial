@@ -5,6 +5,18 @@ import laravel from 'laravel-vite-plugin';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
+    // server: {
+    //     host: true,
+    //     port: 5173,
+    //     strictPort: false,
+    //     proxy: {
+    //         '': {
+    //             target: 'http://192.168.1.251:8000',
+    //             changeOrigin: true,
+    //             secure: false,
+    //         }
+    //     }
+    // },
     plugins: [
         laravel({
             input: ['resources/css/app.css', 'resources/js/app.tsx'],
@@ -24,4 +36,12 @@ export default defineConfig({
     esbuild: {
         jsx: 'automatic',
     },
+    build: {
+        // Ensure assets are built to public/build
+        outDir: 'public/build',
+        manifest: true,
+        rollupOptions: {
+            input: 'resources/js/app.jsx'
+        }
+    }
 });

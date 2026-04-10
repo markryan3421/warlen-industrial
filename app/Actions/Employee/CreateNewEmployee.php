@@ -6,6 +6,7 @@ use App\Models\Employee;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
 
@@ -23,7 +24,7 @@ class CreateNewEmployee
             $role = Role::firstOrCreate(['name' => 'employee']);
             $user->assignRole($role);
 
-            return Employee::create([
+            $employeeData = [
                 'position_id' => $data['position_id'],
                 'branch_id' => $data['branch_id'],
                 'user_id' => $user->id,
@@ -36,7 +37,19 @@ class CreateNewEmployee
                 'contract_end_date' => $data['contract_end_date'],
                 'pay_frequency' => $data['pay_frequency'],
                 'employee_status' => $data['employee_status'],
-            ]);
+            ];
+
+            // Handle avatar upload – store on Employee, not User
+            if (isset($data['avatar']) && $data['avatar'] instanceof \Illuminate\Http\UploadedFile) {
+                $avatarPath = $data['avatar']->store('avatars', 'public');
+                $employeeData['avatar'] = $avatarPath;
+            } elseif (isset($data['remove_avatar']) && $data['remove_avatar'] === 'true') {
+                $employeeData['avatar'] = null;
+            }
+
+            $employee = Employee::create($employeeData);
+
+            return $employee;
         });
     }
 }

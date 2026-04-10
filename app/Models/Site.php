@@ -36,7 +36,8 @@ class Site extends Model
                 'branch.branch_name',
                 'site_name',
             ])
-            ->logOnlyDirty();
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
     }
 
     protected function getActivityDisplayNames(): array

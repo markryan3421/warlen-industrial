@@ -4,48 +4,47 @@ namespace App\Http\Controllers;
 
 use App\Actions\Deduction\CreateNewDeduction;
 use App\Actions\Deduction\UpdateDeduction;
-use App\Enums\PayrollPeriodStatusEnum;
 use App\Http\Requests\Deduction\StoreDeductionRequest;
 use App\Models\Deduction;
-use App\Models\Employee;
 use App\Models\PayrollPeriod;
-// use GuzzleHttp\Promise\Create;
-// use Illuminate\Http\Request;
+use App\Repository\IncentiveRepository;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 class DeductionController extends Controller
 {
+    public function __construct(protected IncentiveRepository $deductionRepository) {}
     
     public function index()
     {
         Gate::authorize('viewAny', Deduction::class);
 
-        $payroll_periods = PayrollPeriod::query()
-            ->get([
-                'id',
-                'start_date',
-                'end_date',
-                'pay_date',
-                'payroll_per_status',
-            ]);
-        $deductions = Deduction::query()
-            ->with(['payroll_period', 'employees', 'employees.user', 'employees.position', 'employees.branch'])
-            ->get(['id', 'payroll_period_id', 'deduction_name', 'deduction_amount']);
+        $deductions = $this->deductionRepository->getDeductions();
 
-        return Inertia::render('deductions/index', compact('payroll_periods', 'deductions'));
+        // Get ALL payroll periods without status filter
+        $payroll_periods = PayrollPeriod::query()
+            ->select('id', 'start_date', 'end_date', 'pay_date')
+            ->get();
+
+        $employees = $this->deductionRepository->getActiveEmployeesForIncentive();
+
+        return Inertia::render('deductions/index', [
+            'deductions' => $deductions,
+            'payroll_periods' => $payroll_periods,
+            'employees' => $employees,
+        ]);
     }
 
     public function create()
     {
+        // This can be removed or kept for backward compatibility
         Gate::authorize('create', Deduction::class);
 
-        $payroll_periods = PayrollPeriod::query()
-            ->where('payroll_per_status', PayrollPeriodStatusEnum::OPEN->value)
-            ->get(['id', 'start_date', 'end_date', 'pay_date', 'payroll_per_status']);
+        $payroll_periods = $this->deductionRepository->getOpenPayrollPeriods();
+        $employees = $this->deductionRepository->getActiveEmployeesForIncentive();
 
-        $employees = Employee::with('user')->where('employee_status', 'active')->get();
         return Inertia::render('deductions/create', compact('payroll_periods', 'employees'));
     }
 
@@ -61,28 +60,25 @@ class DeductionController extends Controller
 
             $action->create($request->validated());
 
-            $this->cacheForget('deductions');
-
             DB::commit();
 
-            return to_route('deductions.index')->with('success', 'Branch and site created successfully.');
+            return to_route('deductions.index')->with('success', 'Deduction created successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
 
             return back()
                 ->with('error', 'Failed to create deduction. Please try again.' . $e->getMessage());
         }
-
     }
 
     public function edit(Deduction $deduction)
     {
         Gate::authorize('update', $deduction);
+
         $deduction->load('payroll_period', 'employees');
-        $employees = Employee::with('user')->where('employee_status', 'active')->get();
 
-
-        $payroll_periods = PayrollPeriod::query()->where('payroll_per_status', PayrollPeriodStatusEnum::OPEN->value)->get();
+        $employees = $this->deductionRepository->getActiveEmployeesForIncentive();
+        $payroll_periods = $this->deductionRepository->getOpenPayrollPeriods();
 
         return Inertia::render('deductions/update', [
             'deduction' => $deduction,
@@ -96,7 +92,7 @@ class DeductionController extends Controller
         return Inertia::render('deductions/show');
     }
 
-    public function update(UpdateDeduction $action, StoreDeductionRequest $request , Deduction $deduction)
+    public function update(UpdateDeduction $action, StoreDeductionRequest $request, Deduction $deduction)
     {
         Gate::authorize('update', $deduction);
 
@@ -108,11 +104,9 @@ class DeductionController extends Controller
 
             $action->update($request->validated(), $deduction);
 
-            $this->cacheForget('deductions');
-
             DB::commit();
 
-            return to_route('deductions.index')->with('success', ' Deduction updated successfully.');
+            return to_route('deductions.index')->with('success', 'Deduction updated successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -132,11 +126,9 @@ class DeductionController extends Controller
 
             $deduction->delete();
 
-            $this->cacheForget('deductions');
-
             DB::commit();
 
-            return to_route('deductions.index')->with('success', ' Deduction deleted successfully.');
+            return to_route('deductions.index')->with('success', 'Deduction deleted successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
 

@@ -41,6 +41,7 @@ class HRAttendanceImportController extends Controller
             $spreadsheet = IOFactory::load($absolutePath);
 
             $result = $this->runImport($spreadsheet, $sheet);
+            $this->cacheForget('payroll_periods');
 
             return response()->json([
                 'message'  => 'Import completed.',

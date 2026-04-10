@@ -92,12 +92,18 @@ trait EmployeeValidationRules
                 'sometimes',
             ],
 
+            'avatar' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:2048'],
         ];
     }
 
     protected function empMessages(): array
     {
         return [
+            // Avatar Messsages
+            'avatar.image' => 'The avatar must be an image.',
+            'avatar.mimes' => 'The avatar must be a valid image file (jpeg, png, jpg, gif, webp).',
+            'avatar.max' => 'The avatar must not exceed 2MB in size.',
+
             // Emergency Contact Number Messages
             'emergency_contact_number.required' => 'The emergency contact number is required.',
             'emergency_contact_number.numeric' => 'The emergency contact number must contain only numbers.',

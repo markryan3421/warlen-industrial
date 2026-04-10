@@ -42,6 +42,7 @@ class Employee extends Model
         'user_id',
         'site_id',
         'slug_emp',
+        'avatar',
         'emp_code',
         'employee_number',
         'contract_start_date',
@@ -81,7 +82,8 @@ class Employee extends Model
                 'pay_frequency',
                 'employee_status',
             ])
-            ->logOnlyDirty();
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
     }
 
     protected function getActivityDisplayNames(): array
@@ -203,7 +205,7 @@ class Employee extends Model
     protected function employeeStatus(): Attribute
     {
         return Attribute::make(
-            get: fn($value) => Str::title($value),
+            //get: fn($value) => Str::title($value),
             set: fn($value) => strtolower(trim(strip_tags($value))),
         );
     }

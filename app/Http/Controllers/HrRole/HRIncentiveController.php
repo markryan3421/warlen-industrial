@@ -4,29 +4,28 @@ namespace App\Http\Controllers\HrRole;
 
 use App\Actions\Incentive\CreateNewIncentive;
 use App\Actions\Incentive\UpdateIncentive;
-use App\Enums\PayrollPeriodStatusEnum;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Incentive\StoreIncentiveRequest;
 use App\Http\Requests\Incentive\UpdateIncentiveRequest;
-use App\Models\Employee;
 use App\Models\Incentive;
-use App\Models\PayrollPeriod;
+use App\Repository\IncentiveRepository;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 
 class HRIncentiveController extends Controller
 {
+    public function __construct(protected IncentiveRepository $incentiveRepository) {}
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
         Gate::authorize('viewAny', Incentive::class);
-        $payroll_periods = PayrollPeriod::get();
-        $incentives = Incentive::with(['payroll_period', 'employees', 'employees.user', 'employees.position', 'employees.branch'])->get();
 
-        return Inertia::render('HR/incentives/index', compact('incentives', 'payroll_periods'));
+        $incentives = $this->incentiveRepository->getIncentives();
+
+        return Inertia::render('HR/incentives/index', compact('incentives'));
     }
 
     /**
@@ -35,8 +34,9 @@ class HRIncentiveController extends Controller
     public function create()
     {
         Gate::authorize('create', Incentive::class);
-        $payroll_periods = PayrollPeriod::query()->where('payroll_per_status', PayrollPeriodStatusEnum::OPEN->value)->get();
-        $employees = Employee::with('user')->where('employee_status', 'active')->get();
+        $payroll_periods = $this->incentiveRepository->getOpenPayrollPeriods();
+
+        $employees =  $this->incentiveRepository->getActiveEmployeesForIncentive();
 
         return Inertia::render('HR/incentives/create', compact('payroll_periods', 'employees'));
     }
@@ -53,6 +53,7 @@ class HRIncentiveController extends Controller
         try {
             $incentive->create($request->validated());
             DB::commit();
+
             return redirect()->route('hr.incentives.index')->with('success', 'Incentive created successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
@@ -75,10 +76,11 @@ class HRIncentiveController extends Controller
     {
         Gate::authorize('update', $incentive);
         $incentive->load('payroll_period', 'employees');
-        $employees = Employee::with('user')->where('employee_status', 'active')->get();
 
-        $payroll_periods = PayrollPeriod::query()->where('payroll_per_status', PayrollPeriodStatusEnum::OPEN->value)->get();
+        $payroll_periods = $this->incentiveRepository->getOpenPayrollPeriods();
 
+        $employees = $this->incentiveRepository->getActiveEmployeesForIncentive();
+    
         return Inertia::render('HR/incentives/update', [
             'incentive' => $incentive,
             'employees' => $employees,
@@ -98,6 +100,7 @@ class HRIncentiveController extends Controller
         try {
             $updateincentive->update($request->validated(), $incentive);
             DB::commit();
+
             return redirect()->route('hr.incentives.index')->with('success', 'Incentive updated successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
@@ -112,6 +115,7 @@ class HRIncentiveController extends Controller
     {
         Gate::authorize('delete', $incentive);
         $incentive->delete();
+        
         return redirect()->route('hr.incentives.index')->with('success', 'Incentive deleted successfully.');
     }
 }

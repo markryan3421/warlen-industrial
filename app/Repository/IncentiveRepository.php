@@ -18,7 +18,7 @@ class IncentiveRepository
     public function getEmployees(): Collection
     {
         return Employee::with('user')
-                ->where('employee_status', 'inactive')
+                ->where('employee_status', 'active')
                 ->get(['id', 'user_id', 'employee_status', 'emp_code']);
     }
 }

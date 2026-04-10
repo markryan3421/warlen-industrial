@@ -63,10 +63,37 @@ export function ActivityLogsFilterBar({
         }))
     ];
 
-    // Model options with "All Models" as default
+    // Helper function to format model name (capitalize first letter of each word)
+    const formatModelName = (model: string): string => {
+        // Split by spaces, underscores, or camelCase
+        let words: string[] = [];
+        
+        // Check if the model name contains underscores or spaces
+        if (model.includes('_') || model.includes(' ')) {
+            // Split by underscore or space
+            words = model.split(/[_\s]+/);
+        } else {
+            // Split camelCase into words
+            words = model.split(/(?=[A-Z])/);
+            // Filter out empty strings
+            words = words.filter(w => w.length > 0);
+        }
+        
+        // Capitalize first letter of each word and join with space
+        const formatted = words.map(word => 
+            word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+        ).join(' ');
+        
+        return formatted;
+    };
+
+    // Model options with "All Models" as default, with formatted names
     const modelOptions = [
         { value: 'all', label: 'All Models' },
-        ...availableModels.map(model => ({ value: model, label: model }))
+        ...availableModels.map(model => ({ 
+            value: model, 
+            label: formatModelName(model)
+        }))
     ];
 
     // User options with "All Users" as default
@@ -97,6 +124,13 @@ export function ActivityLogsFilterBar({
     const getActionDisplayLabel = () => {
         const selected = actionOptions.find(opt => opt.value === actionFilter);
         return selected?.label || 'All Actions';
+    };
+
+    // Get the current display label for the model filter (formatted)
+    const getModelDisplayLabel = () => {
+        if (modelFilter === 'all') return 'All Models';
+        const formatted = formatModelName(modelFilter);
+        return formatted;
     };
 
     return (

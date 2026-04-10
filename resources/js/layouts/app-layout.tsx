@@ -1,3 +1,4 @@
+import Footer from "@/components/custom-footer";
 import { Toaster } from "@/components/ui/sonner"
 import AppLayoutTemplate from '@/layouts/app/app-sidebar-layout';
 import type { AppLayoutProps } from '@/types';
@@ -10,5 +11,7 @@ export default ({ children, breadcrumbs, ...props }: AppLayoutProps) => (
             closeButton
         />
         {children}
+        
+        <Footer />
     </AppLayoutTemplate>
 );

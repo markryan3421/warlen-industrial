@@ -1,7 +1,6 @@
-import { Head } from '@inertiajs/react';
-import { useForm } from '@inertiajs/react';
-import { Search, ChevronDown, User, Briefcase, MapPin, Calendar, Phone, Mail, Hash, Clock, LoaderCircle } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Head, useForm, usePage } from '@inertiajs/react';
+import { Search, ChevronDown, User, Briefcase, MapPin, Calendar, Phone, Mail, Hash, Clock, LoaderCircle, PersonStanding } from 'lucide-react';
+import { useEffect, useState, useRef } from 'react';
 import { toast } from 'sonner';
 import { store } from '@/actions/App/Http/Controllers/EmployeeController';
 import InputError from '@/components/input-error';
@@ -176,6 +175,7 @@ function SearchableDropdown({
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function Create({ positions, branches, site = [] }: Props) {
+    const { auth } = usePage<any>().props;
     const [availableSites, setAvailableSites] = useState<Site[]>([]);
     const [positionSearch, setPositionSearch] = useState('');
     const [branchSearch, setBranchSearch] = useState('');
@@ -188,6 +188,7 @@ export default function Create({ positions, branches, site = [] }: Props) {
         position_id: '',
         branch_id: '',
         site_id: '',
+        avatar: '',
         employee_number: '',
         emp_code: '',
         contract_start_date: '',
@@ -254,9 +255,32 @@ export default function Create({ positions, branches, site = [] }: Props) {
         s.name.toLowerCase().includes(siteSearch.toLowerCase())
     ).slice(0, 5);
 
+    const [avatarPreview, setAvatarPreview] = useState<string | null>(
+        auth.user.avatar ? `/storage/${auth.user.avatar}` : null
+    );
+    const [avatarFile, setAvatarFile] = useState<File | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setAvatarFile(file);
+            const previewUrl = URL.createObjectURL(file);
+            setAvatarPreview(previewUrl);
+        }
+    };
+
+    const handleRemoveAvatar = () => {
+        setAvatarFile(null);
+        setAvatarPreview(null);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    };
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Create Employee" />
+            <Head title="Create Employee" />    
 
             <style>{`
                 @keyframes formFadeUp {
@@ -292,9 +316,95 @@ export default function Create({ positions, branches, site = [] }: Props) {
                         </Button>
                     </div>
 
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                        {/* 1. User Details */}
-                        <FormSection icon={User} title="User Details" index={0}>
+                    <form onSubmit={handleSubmit} className="space-y-6" encType="multipart/form-data">
+                        {/* 1. Avatar */}
+                        <FormSection icon={PersonStanding} title="Avatar" index={1}>
+                            {/* Avatar Upload Section */}
+                            <div className="grid gap-2">
+                                <Label>Profile picture</Label>
+                                
+                                <div className="flex items-center gap-4">
+                                    {/* Avatar Preview */}
+                                    <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-full bg-muted">
+                                        {avatarPreview ? (
+                                            <img
+                                                src={avatarPreview}
+                                                alt="Profile preview"
+                                                className="h-full w-full object-cover"
+                                            />
+                                        ) : (
+                                            <div className="flex h-full w-full items-center justify-center bg-neutral-100 text-neutral-400 dark:bg-neutral-800">
+                                                <svg
+                                                    className="h-10 w-10"
+                                                    fill="currentColor"
+                                                    viewBox="0 0 24 24"
+                                                >
+                                                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                                                </svg>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Upload Buttons */}
+                                    <div className="flex flex-col gap-2">
+                                        <div className="flex gap-2">
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => fileInputRef.current?.click()}
+                                                disabled={processing}
+                                            >
+                                                Choose image
+                                            </Button>
+                                            
+                                            {avatarPreview && (
+                                                <Button
+                                                    type="button"
+                                                    variant="destructive"
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        handleRemoveAvatar();
+                                                        setData('avatar', null as any);
+                                                    }}
+                                                    disabled={processing}
+                                                >
+                                                    Remove
+                                                </Button>
+                                            )}
+                                        </div>
+                                        
+                                        <p className="text-xs text-muted-foreground">
+                                            Recommended: Square image, at least 200x200px. Max size: 2MB
+                                        </p>
+                                    </div>
+
+                                    <Input
+                                        ref={fileInputRef}
+                                        id="avatar"
+                                        type="file"
+                                        name="avatar"
+                                        accept="image/jpeg,image/png,image/jpg,image/gif,image/webp"
+                                        onChange={(e) => {
+                                            handleAvatarChange(e);
+                                            const file = e.target.files?.[0];
+                                            setData('avatar', file as any);
+                                        }}
+                                        className="hidden"
+                                    />
+                                </div>
+
+                                {errors.avatar && (
+                                    <InputError
+                                        className="mt-2"
+                                        message={errors.avatar}
+                                    />
+                                )}
+                            </div>
+                        </FormSection>
+
+                        {/* 2. User Details */}
+                        <FormSection icon={User} title="User Details" index={2}>
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div className="space-y-2">
                                     <Label className="text-sm font-semibold">
@@ -350,7 +460,7 @@ export default function Create({ positions, branches, site = [] }: Props) {
                         </FormSection>
 
                         {/* 2. Employee Details */}
-                        <FormSection icon={Briefcase} title="Employee Details" index={1}>
+                        <FormSection icon={Briefcase} title="Employee Details" index={3}>
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div className="space-y-2">
                                     <Label className="text-sm font-semibold">
@@ -437,7 +547,7 @@ export default function Create({ positions, branches, site = [] }: Props) {
                         </FormSection>
 
                         {/* 3. Contract Period */}
-                        <FormSection icon={Calendar} title="Contract Period" index={3}>
+                        <FormSection icon={Calendar} title="Contract Period" index={4}>
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div className="space-y-2">
                                     <Label className="text-sm font-semibold">
@@ -466,7 +576,7 @@ export default function Create({ positions, branches, site = [] }: Props) {
                         </FormSection>
 
                         {/* 4. Location Assignment */}
-                        <FormSection icon={MapPin} title="Location Assignment" index={2}>
+                        <FormSection icon={MapPin} title="Location Assignment" index={5}>
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <SearchableDropdown
                                     label="Branch"

@@ -97,7 +97,7 @@ export default function EmployeeStats() {
             `}</style>
 
                 {/* Section header — navy pattern matching CustomTable */}
-                <div className="rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+                <div className="rounded-xl border border-slate-200 overflow-hidden shadow-sm m-3">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between bg-[#1d4791] px-5 py-4">
                         <div>
                             <h1 className="text-base font-semibold tracking-tight text-white">Employee Dashboard</h1>
@@ -127,7 +127,7 @@ export default function EmployeeStats() {
                                         title="Net Salary"
                                         value={formatCurrency(selectedMonthData.net_pay)}
                                         icon={PhilippinePeso}
-                                        trend={selectedMonthData.net_pay > 0 ? '+ from last month' : undefined}
+                                        trend={selectedMonthData.net_pay > 0 ? '+ from last week' : undefined}
                                         animate={isAnimating}
                                         delay={0} subtitle={undefined} />
                                     <MetricCard
@@ -198,7 +198,7 @@ export default function EmployeeStats() {
 
                 {/* Lifetime Summary — separate card */}
                 {lifetime && (
-                    <div className="rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+                    <div className="rounded-xl border border-slate-200 overflow-hidden shadow-sm m-3">
                         <div className="flex items-center gap-2 bg-[#1d4791] px-5 py-4">
                             <Award className="h-4 w-4 text-white/80" />
                             <h2 className="text-sm font-semibold text-white tracking-tight">Lifetime Totals</h2>
