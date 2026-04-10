@@ -4,6 +4,7 @@ namespace App\Actions\Employee;
 
 use App\Models\Employee;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
 
@@ -51,8 +52,23 @@ class UpdateEmployee
             'employee_status' => $data['employee_status'],
         ]);
 
+        // Handle avatar upload – store on Employee, not User
+        if (isset($data['avatar']) && $data['avatar'] instanceof \Illuminate\Http\UploadedFile) {
+            // Delete old avatar if exists
+            if ($employee->avatar && Storage::disk('public')->exists($employee->avatar)) {
+                Storage::disk('public')->delete($employee->avatar);
+            }
+            $avatarPath = $data['avatar']->store('avatars', 'public');
+            $employee->avatar = $avatarPath;
+        } elseif (isset($data['remove_avatar']) && $data['remove_avatar'] === 'true') {
+            if ($employee->avatar && Storage::disk('public')->exists($employee->avatar)) {
+                Storage::disk('public')->delete($employee->avatar);
+            }
+            $employee->avatar = null;
+        }
+
+        $employee->save();
 
         return $employee;
     }
 }
- 
