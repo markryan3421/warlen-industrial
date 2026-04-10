@@ -15,10 +15,10 @@ class PayrollProcessingService
     protected EmployeeLookupService $employeeLookupService;
     protected ContributionService $contributionService;
     protected IncentiveService $incentiveService;
-    protected DeductionService $deductionService; 
+    protected DeductionService $deductionService;
     protected PayrollCalculatorService $payrollCalculatorService;
     protected PayrollItemService $payrollItemService;
-    
+
     protected const PROGRESS_BROADCAST_INTERVAL = 10; // Broadcast every 10% progress
     protected const MICROSECONDS_DELAY = 50000; // 0.05 seconds delay
 
@@ -38,12 +38,12 @@ class PayrollProcessingService
     public function processPayrollForPeriod(PayrollPeriod $payrollPeriod): void
     {
         $startTime = microtime(true);
-        
+
         try {
             DB::beginTransaction();
 
             $attendanceStats = $this->getAttendanceStats($payrollPeriod);
-            
+
             if ($attendanceStats->isEmpty()) {
                 $this->handleEmptyAttendance($payrollPeriod);
                 DB::commit();
@@ -51,16 +51,15 @@ class PayrollProcessingService
             }
 
             $this->clearExistingPayrolls($payrollPeriod);
-            
+
             $result = $this->processEmployees($payrollPeriod, $attendanceStats);
-            
+
             $this->finalizeProcessing($payrollPeriod, $result);
-            
+
             DB::commit();
-            
+
             $duration = round(microtime(true) - $startTime, 2);
             Log::info("Payroll processing completed for period {$payrollPeriod->id} in {$duration} seconds");
-            
         } catch (\Exception $e) {
             DB::rollBack();
             $this->handleProcessingError($payrollPeriod, $e);
@@ -85,9 +84,9 @@ class PayrollProcessingService
     {
         $message = "Payroll period {$payrollPeriod->period_name} completed with no attendance data";
         Log::warning($message);
-        
+
         $payrollPeriod->update(['payroll_per_status' => 'completed']);
-        
+
         $event = new PayrollEvent($payrollPeriod, $message, 100);
         broadcast($event);
     }
@@ -118,21 +117,21 @@ class PayrollProcessingService
 
         foreach ($attendanceStats as $index => $stats) {
             $result = $this->createPayrollForEmployee($payrollPeriod, $stats);
-            
+
             if ($result) {
                 $processedCount++;
             } else {
                 $skippedCount++;
             }
-            
+
             $progress = $this->calculateProgress($index + 1, $totalEmployees);
-            
+
             // Broadcast progress at intervals to reduce network traffic
             if ($this->shouldBroadcastProgress($progress, $lastBroadcastProgress, $index, $totalEmployees)) {
                 $this->broadcastProgress($payrollPeriod, $progress, $processedCount, $skippedCount);
                 $lastBroadcastProgress = $progress;
             }
-            
+
             // Small delay to prevent overwhelming the system
             usleep(self::MICROSECONDS_DELAY);
         }
@@ -157,25 +156,25 @@ class PayrollProcessingService
      */
     protected function shouldBroadcastProgress(int $currentProgress, int $lastProgress, int $index, int $total): bool
     {
-        return $currentProgress >= $lastProgress + self::PROGRESS_BROADCAST_INTERVAL || 
-               $index + 1 === $total; // Always broadcast on last employee
+        return $currentProgress >= $lastProgress + self::PROGRESS_BROADCAST_INTERVAL ||
+            $index + 1 === $total; // Always broadcast on last employee
     }
 
     /**
      * Broadcast progress event
      */
     protected function broadcastProgress(
-        PayrollPeriod $payrollPeriod, 
-        int $progress, 
-        int $processedCount, 
-        int $skippedCount, 
+        PayrollPeriod $payrollPeriod,
+        int $progress,
+        int $processedCount,
+        int $skippedCount,
         ?string $customMessage = null
     ): void {
         $message = $customMessage ?? "Processing payroll: {$progress}% complete ({$processedCount} processed, {$skippedCount} skipped)";
-        
+
         $event = new PayrollEvent($payrollPeriod, $message, $progress);
         broadcast($event);
-        
+
         Log::info("Broadcasting progress: {$progress}% for period {$payrollPeriod->id}");
     }
 
@@ -186,19 +185,19 @@ class PayrollProcessingService
     {
         $hasProcessedEmployees = $result['processed'] > 0;
         $finalStatus = $hasProcessedEmployees ? 'completed' : 'pending';
-        $successMessage = $hasProcessedEmployees 
-            ? "Payroll period {$payrollPeriod->period_name} completed successfully" 
+        $successMessage = $hasProcessedEmployees
+            ? "Payroll period {$payrollPeriod->period_name} completed successfully"
             : "Payroll period {$payrollPeriod->period_name} completed with no processed employees";
-        
+
         $payrollPeriod->update(['payroll_per_status' => $finalStatus]);
-        
+
         Log::info("Payroll processed for period: {$payrollPeriod->id}", [
             'processed' => $result['processed'],
             'skipped' => $result['skipped'],
             'total' => $result['total'],
             'status' => $finalStatus
         ]);
-        
+
         $completeEvent = new PayrollEvent($payrollPeriod, $successMessage, 100);
         broadcast($completeEvent);
     }
@@ -210,9 +209,9 @@ class PayrollProcessingService
     {
         $errorMessage = "Payroll processing failed for period {$payrollPeriod->id}: " . $e->getMessage();
         Log::error($errorMessage);
-        
+
         $payrollPeriod->update(['payroll_per_status' => 'failed']);
-        
+
         $errorEvent = new PayrollEvent($payrollPeriod, "Payroll processing failed: " . $e->getMessage(), null);
         broadcast($errorEvent);
     }
@@ -224,7 +223,7 @@ class PayrollProcessingService
     {
         try {
             $employee = $this->employeeLookupService->findEmployee(
-                $stats->employee_id, 
+                $stats->employee_id,
                 $stats->employee_name ?? null
             );
 
@@ -241,9 +240,9 @@ class PayrollProcessingService
             }
 
             $payrollData = $this->calculatePayrollData($payrollPeriod, $stats, $employee);
-            
+
             $payroll = $this->createPayrollRecord($payrollPeriod, $employee, $payrollData);
-            
+
             $this->payrollItemService->createPayrollItems(
                 $payroll,
                 $stats,
@@ -262,7 +261,6 @@ class PayrollProcessingService
             );
 
             return true;
-            
         } catch (\Exception $e) {
             Log::error("Failed to process payroll for employee", [
                 'employee_id' => $stats->employee_id,
@@ -294,54 +292,62 @@ class PayrollProcessingService
     /**
      * Calculate all payroll data for an employee
      */
-    protected function calculatePayrollData(PayrollPeriod $payrollPeriod, AttendancePeriodStat $stats, $employee): array
-    {
-        $basePay = $this->payrollCalculatorService->calculateBasePay($stats, $employee);
-        $overtimePay = $this->payrollCalculatorService->calculateOvertimePay($stats, $employee);
-        $holidayOvertimePay = $this->payrollCalculatorService->calculateHolidayOvertimePay($stats, $employee);
-        
-        $subsidyPay = $stats->subsidy_pay ?? 0;
-        $lateMinutes = $stats->late_minutes ?? 0;
-        $lateDeduction = $this->payrollCalculatorService->calculateLateDeduction($lateMinutes, $employee);
-        $aflDeduction = $stats->afl_deduction ?? 0;
-        $cutPayment = $stats->cut_payment ?? 0;
+  /**
+ * Calculate all payroll data for an employee
+ */
+protected function calculatePayrollData(PayrollPeriod $payrollPeriod, AttendancePeriodStat $stats, $employee): array
+{
+    $basePay = $this->payrollCalculatorService->calculateBasePay($stats, $employee);
+    $overtimePay = $this->payrollCalculatorService->calculateOvertimePay($stats, $employee);
+    $holidayOvertimePay = $this->payrollCalculatorService->calculateHolidayOvertimePay($stats, $employee);
+    
+    $subsidyPay = $stats->subsidy_pay ?? 0;
+    $lateMinutes = $stats->late_minutes ?? 0;
+    $lateDeduction = $this->payrollCalculatorService->calculateLateDeduction($lateMinutes, $employee);
+    $aflDeduction = $stats->afl_deduction ?? 0;
+    $cutPayment = $stats->cut_payment ?? 0;
 
-        // Get incentives and deductions
-        $incentives = $this->incentiveService->getEmployeeIncentives($payrollPeriod->id, $employee->id);
-        $deductions = $this->deductionService->getEmployeeDeductions($payrollPeriod->id, $employee->id);
-        
-        $totalIncentives = $this->incentiveService->calculateTotalIncentives($incentives);
-        $totalCustomDeductions = $this->deductionService->calculateTotalDeductions($deductions);
+    // FIX: Pass the attendance stats to incentive service
+    $incentives = $this->incentiveService->getEmployeeIncentives(
+        $payrollPeriod->id, 
+        $employee->id,
+        $stats  // <--- THIS IS THE FIX - PASS THE ATTENDANCE STATS
+    );
+    
+    $deductions = $this->deductionService->getEmployeeDeductions($payrollPeriod->id, $employee->id);
+    
+    $totalIncentives = $this->incentiveService->calculateTotalIncentives($incentives);
+    $totalCustomDeductions = $this->deductionService->calculateTotalDeductions($deductions);
 
-        $grossPay = $basePay + $overtimePay + $holidayOvertimePay + $subsidyPay + $totalIncentives;
-        $contributions = $this->contributionService->calculateGovernmentContributions($grossPay);
-        
-        $totalDeductions = $lateDeduction + $aflDeduction + $cutPayment + $totalCustomDeductions +
-                          $contributions['sss']['employee'] + 
-                          $contributions['pagibig']['employee'] + 
-                          $contributions['philhealth']['employee'];
-        
-        $netPay = $grossPay - $totalDeductions;
+    $grossPay = $basePay + $overtimePay + $holidayOvertimePay + $subsidyPay + $totalIncentives;
+    $contributions = $this->contributionService->calculateGovernmentContributions($grossPay);
+    
+    $totalDeductions = $lateDeduction + $aflDeduction + $cutPayment + $totalCustomDeductions +
+                      $contributions['sss']['employee'] + 
+                      $contributions['pagibig']['employee'] + 
+                      $contributions['philhealth']['employee'];
+    
+    $netPay = $grossPay - $totalDeductions;
 
-        return [
-            'basePay' => $basePay,
-            'overtimePay' => $overtimePay,
-            'holidayOvertimePay' => $holidayOvertimePay,
-            'subsidyPay' => $subsidyPay,
-            'lateMinutes' => $lateMinutes,
-            'lateDeduction' => $lateDeduction,
-            'aflDeduction' => $aflDeduction,
-            'cutPayment' => $cutPayment,
-            'incentives' => $incentives,
-            'deductions' => $deductions, // Add this
-            'totalIncentives' => $totalIncentives,
-            'totalCustomDeductions' => $totalCustomDeductions, // Add this
-            'grossPay' => $grossPay,
-            'contributions' => $contributions,
-            'totalDeductions' => $totalDeductions,
-            'netPay' => $netPay
-        ];
-    }
+    return [
+        'basePay' => $basePay,
+        'overtimePay' => $overtimePay,
+        'holidayOvertimePay' => $holidayOvertimePay,
+        'subsidyPay' => $subsidyPay,
+        'lateMinutes' => $lateMinutes,
+        'lateDeduction' => $lateDeduction,
+        'aflDeduction' => $aflDeduction,
+        'cutPayment' => $cutPayment,
+        'incentives' => $incentives,
+        'deductions' => $deductions,
+        'totalIncentives' => $totalIncentives,
+        'totalCustomDeductions' => $totalCustomDeductions,
+        'grossPay' => $grossPay,
+        'contributions' => $contributions,
+        'totalDeductions' => $totalDeductions,
+        'netPay' => $netPay
+    ];
+}
 
     /**
      * Create payroll record in database

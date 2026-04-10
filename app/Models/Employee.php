@@ -82,7 +82,8 @@ class Employee extends Model
                 'pay_frequency',
                 'employee_status',
             ])
-            ->logOnlyDirty();
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
     }
 
     protected function getActivityDisplayNames(): array

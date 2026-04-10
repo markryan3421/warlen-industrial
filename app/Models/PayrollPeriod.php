@@ -48,7 +48,8 @@ class PayrollPeriod extends Model
                 'pay_date',
                 'payroll_per_status',
             ])
-            ->logOnlyDirty();
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
     }
 
     protected function getActivityDisplayNames(): array

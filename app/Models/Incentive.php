@@ -34,7 +34,8 @@ class Incentive extends Model
                 'incentive_name',
                 'incentive_amount'
             ])
-            ->logOnlyDirty();
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
     }
 
     protected function getActivityDisplayNames(): array
