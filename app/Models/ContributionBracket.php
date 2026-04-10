@@ -38,7 +38,8 @@ class ContributionBracket extends Model
                 'employee_share',
                 'employer_share',
             ])
-            ->logOnlyDirty();
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
     }
 
     protected function getActivityDisplayNames(): array

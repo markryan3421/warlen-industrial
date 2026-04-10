@@ -40,7 +40,8 @@ class Payroll extends Model
                 'total_deduction',
                 'net_pay',
             ])
-            ->logOnlyDirty();
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
     }
 
     protected function getActivityDisplayNames(): array

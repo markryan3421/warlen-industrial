@@ -54,7 +54,8 @@ class ApplicationLeave extends Model
                 'rejected_by',
                 'remarks',
             ])
-            ->logOnlyDirty();
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
     }
 
     protected function getActivityDisplayNames(): array

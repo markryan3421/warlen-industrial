@@ -38,7 +38,8 @@ class Branch extends Model
                 'branch_address',
                 // 'branch_slug'
             ])
-            ->logOnlyDirty();
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
     }
 
     protected function getActivityDisplayNames(): array

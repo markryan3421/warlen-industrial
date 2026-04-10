@@ -41,7 +41,8 @@ class ContributionVersion extends Model
                 // 'effective_from',
                 // 'effective_to',
             ])
-            ->logOnlyDirty();
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
     }
 
     protected function getActivityDisplayNames(): array

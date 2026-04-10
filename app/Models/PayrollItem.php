@@ -37,7 +37,8 @@ class PayrollItem extends Model
                 'type',
                 'amount',
             ])
-            ->logOnlyDirty();
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
     }
 
     protected function getActivityDisplayNames(): array

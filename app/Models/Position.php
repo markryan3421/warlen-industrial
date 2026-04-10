@@ -41,7 +41,8 @@ class Position extends Model
     {
         return LogOptions::defaults()
             ->logOnly(['pos_name', 'basic_salary'])
-            ->logOnlyDirty();
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
     }
 
     protected function getActivityDisplayNames(): array
