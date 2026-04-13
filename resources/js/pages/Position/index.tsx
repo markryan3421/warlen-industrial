@@ -13,7 +13,7 @@
     import { toast } from '@/components/custom-toast';
     import { DeleteConfirmationDialog } from '@/components/delete-confirmation-modal';
     import { IncentiveFormModal } from '@/components/incentives/incentive-form-modal';
-    import { EmployeeSelectionModal } from '@/components/incentives/employee-selection-modal';
+   // import { EmployeeSelectionModal } from '@/components/incentives/employee-selection-modal';
     import { CustomPagination } from '@/components/custom-pagination';
 
     const breadcrumbs: BreadcrumbItem[] = [{ title: 'Incentives', href: '/incentives' }];
