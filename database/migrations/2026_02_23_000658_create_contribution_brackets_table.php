@@ -15,10 +15,10 @@ return new class extends Migration
         Schema::create('contribution_brackets', function (Blueprint $table) {
             $table->id();
             $table->foreignIdFor(ContributionVersion::class,'contribution_version_id')->constrained('contribution_versions')->cascadeOnDelete();
-            $table->decimal('salary_from');
-            $table->decimal('salary_to');
-            $table->decimal('employee_share');
-            $table->decimal('employer_share');
+            $table->decimal('salary_from', 15, 2);
+            $table->decimal('salary_to', 15, 2);
+            $table->decimal('employee_share',12,2);
+            $table->decimal('employer_share',12,2);
             $table->timestamps();
         });
     }
