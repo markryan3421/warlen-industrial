@@ -37,32 +37,36 @@ class EmployeeContributionSettingsController extends Controller
         DB::beginTransaction();
 
         try {
-            // Prepare data for upsert
-            $upsertData = [];
-            foreach ($validated['settings'] as $settingData) {
-                $upsertData[] = [
-                    'employee_id' => $settingData['employee_id'],
-                    'contribution_version_id' => $validated['contribution_version_id'],
-                    'is_exempted' => $settingData['is_exempted'] ?? false,
-                    'fixed_amount' => $settingData['fixed_amount'] ?? null,
-                    'monthly_cap' => $settingData['monthly_cap'] ?? null,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ];
-            }
+            $totalCount = count($validated['settings']);
+            $chunkSize = 500;
 
-            // Use upsert for better performance (update or insert in single query)
-            EmployeeContributionSetting::upsert(
-                $upsertData,
-                ['employee_id', 'contribution_version_id'], // Unique constraint columns
-                ['is_exempted', 'fixed_amount', 'monthly_cap', 'updated_at'] // Columns to update
-            );
+            foreach (array_chunk($validated['settings'], $chunkSize) as $chunk) {
+                $upsertData = [];
+                foreach ($chunk as $settingData) {
+                    $upsertData[] = [
+                        'employee_id' => $settingData['employee_id'],
+                        'contribution_version_id' => $validated['contribution_version_id'],
+                        'is_exempted' => $settingData['is_exempted'] ?? false,
+                        'fixed_amount' => $settingData['fixed_amount'] ?? null,
+                        'monthly_cap' => $settingData['monthly_cap'] ?? null,
+                    ];
+                }
+
+                EmployeeContributionSetting::upsert(
+                    $upsertData,
+                    ['employee_id', 'contribution_version_id'],
+                    ['is_exempted', 'fixed_amount', 'monthly_cap', 'updated_at']
+                );
+
+                $upsertData = null;
+                unset($upsertData);
+            }
 
             DB::commit();
 
             return response()->json([
                 'message' => 'Settings saved successfully',
-                'updated_count' => count($upsertData)
+                'updated_count' => $totalCount
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -70,7 +74,6 @@ class EmployeeContributionSettingsController extends Controller
             return response()->json(['message' => 'Failed to save settings: ' . $e->getMessage()], 500);
         }
     }
-
     public function getEmployees()
     {
         $employees = Employee::query()
