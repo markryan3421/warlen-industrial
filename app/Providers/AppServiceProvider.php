@@ -122,7 +122,7 @@ class AppServiceProvider extends ServiceProvider
         // PayrollPeriod::observe(PayrollPeriodObserver::class);
 
         ApplicationLeave::observe(ApplicationLeaveObserver::class);
-        //Employee::observe(new \App\Observers\EmployeeObserver());
+        // Employee::observe(new \App\Observers\EmployeeObserver());
     }
 
     private function configureRateLimiting(): void

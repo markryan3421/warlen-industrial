@@ -5,6 +5,7 @@ namespace App\Models;
 
 use App\Concerns\LogsActivityTrait;
 use App\Models\Branch;
+use App\Models\EmployeeContributionSetting;
 use App\Models\Position;
 use App\Models\User;
 use App\Policies\EmployeePolicy;
@@ -84,6 +85,11 @@ class Employee extends Model
             ])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();
+    }
+
+    public function contributionSettings(): HasMany
+    {
+        return $this->hasMany(EmployeeContributionSetting::class, 'employee_id');
     }
 
     protected function getActivityDisplayNames(): array
