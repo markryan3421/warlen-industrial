@@ -82,19 +82,21 @@ export default function Login({
                                                 <Label htmlFor="email" className='font-bold text-sm'>
                                                     Email Address
                                                 </Label>
-                                                <div className="relative">
-                                                    <Mail className='absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500' />
-                                                    <Input
-                                                        id="email"
-                                                        name="email"
-                                                        type="email"
-                                                        placeholder="admin@warlen.com"
-                                                        className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 bg-gray-50 focus:bg-white rounded-md"
-                                                        required
-                                                        autoFocus
-                                                        tabIndex={1}
-                                                        autoComplete="email"
-                                                    />
+                                                <div>
+                                                    <div className="relative">
+                                                        <Mail className='absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500' />
+                                                        <Input
+                                                            id="email"
+                                                            name="email"
+                                                            type="email"
+                                                            placeholder="admin@warlen.com"
+                                                            className="w-full pl-10 pr-4 py-2 text-sm text-black border border-gray-300 bg-gray-50 focus:bg-white rounded-md"
+                                                            required
+                                                            autoFocus
+                                                            tabIndex={1}
+                                                            autoComplete="email"
+                                                        />
+                                                    </div>
                                                     {errors?.email && (
                                                         <InputError message={errors.email} className='text-xs mt-1' />
                                                     )}
@@ -116,7 +118,7 @@ export default function Login({
                                                         name="password"
                                                         type={showPassword ? "text" : "password"}
                                                         placeholder="••••••••••••••••"
-                                                        className="w-full pl-10 pr-10 py-2 text-sm border border-gray-300 bg-gray-50 focus:bg-white rounded-md"
+                                                        className="w-full pl-10 pr-10 py-2 text-sm text-black border border-gray-300 bg-gray-50 focus:bg-white rounded-md"
                                                         required
                                                         tabIndex={2}
                                                         autoComplete="current-password"

@@ -1,3 +1,4 @@
+import PositionController from '@/actions/App/Http/Controllers/HrRole/HRPositionController';
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import { Briefcase, Search , BriefcaseBusiness} from 'lucide-react';
 import { useState, useMemo } from 'react';
@@ -11,7 +12,7 @@ import { CustomHeader } from '@/components/custom-header';
 import { CustomTable } from '@/components/custom-table';
 import { CustomPagination } from '@/components/custom-pagination';
 import { PositionTableConfig } from '@/config/tables/position-table';
-import PositionController from '@/actions/App/Http/Controllers/HrRole/HRPositionController';
+
 import { toast } from '@/components/custom-toast';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-modal';
 

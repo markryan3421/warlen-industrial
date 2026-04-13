@@ -8,6 +8,7 @@ use App\Http\Controllers\AttendanceImportController;
 use App\Http\Controllers\BranchController;
 use App\Http\Controllers\ContributionVersionController;
 use App\Http\Controllers\DeductionController;
+use App\Http\Controllers\EmployeeContributionSettingsController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\EmployeeDashboardController;
 use App\Http\Controllers\EmployeeRole\ApplicationLeaveController as EmployeeApplicationLeaveController;
@@ -49,6 +50,11 @@ Route::middleware(['auth', 'admin', 'auth.session'])->group(function () {
     });
     //admin dashboard
     Route::get('dashboard', AdminDashboardController::class)->name('dashboard');
+
+      Route::get('/employee-contribution-settings', [EmployeeContributionSettingsController::class, 'getSettingsByVersion']);
+Route::get('/employees/list', [EmployeeContributionSettingsController::class, 'getEmployees']);
+    // Bulk save settings
+    Route::post('/employee-contribution-settings/bulk', [EmployeeContributionSettingsController::class, 'bulkStore']);
 
     Route::resource('branches', BranchController::class)->except(['show']);
     Route::delete('/branches/{branch:branch_slug}', [BranchController::class, 'destroy'])->name('branches.destroy');

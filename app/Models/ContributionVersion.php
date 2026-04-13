@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Concerns\LogsActivityTrait;
 use App\Models\ContributionBracket;
+use App\Models\EmployeeContributionSetting;
 use App\Policies\ContributionVersionPolicy;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Attributes\UsePolicy;
@@ -43,6 +44,11 @@ class ContributionVersion extends Model
             ])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();
+    }
+
+    public function employeeContributionSettings(): HasMany
+    {
+        return $this->hasMany(EmployeeContributionSetting::class, 'contribution_version_id');
     }
 
     protected function getActivityDisplayNames(): array

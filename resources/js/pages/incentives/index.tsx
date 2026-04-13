@@ -278,12 +278,14 @@ export default function Index({
             payroll_period_id: String(incentive.payroll_period_id || ''),
             employee_ids: incentive.employees?.map(emp => emp.id) || [],
         });
-        setIsEditModalOpen(true);
+        setIsEditModalOpen(true);  // ← This should be true
+        setIsCreateModalOpen(false); // ← Make sure create modal is false
     };
 
     const handleCreate = () => {
         reset();
-        setIsCreateModalOpen(true);
+        setIsCreateModalOpen(true);  // ← This should be true
+        setIsEditModalOpen(false);   // ← Make sure edit modal is false
     };
 
     const handleCloseModal = () => {
@@ -291,7 +293,7 @@ export default function Index({
         setIsEditModalOpen(false);
         setSelectedIncentive(null);
         setShowEmployeeModal(false);
-        reset();
+        reset(); // This resets the form
     };
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -551,7 +553,7 @@ export default function Index({
             <IncentiveFormModal
                 isOpen={isCreateModalOpen || isEditModalOpen}
                 onClose={handleCloseModal}
-                isEditing={isEditModalOpen}
+                isEditing={isEditModalOpen}  // ← This is key - make sure it's false when creating
                 incentive={selectedIncentive}
                 payroll_periods={payroll_periods}
                 employees={employees}

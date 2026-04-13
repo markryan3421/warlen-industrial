@@ -28,7 +28,7 @@ class DeductionController extends Controller
             ->select('id', 'start_date', 'end_date', 'pay_date')
             ->get();
 
-        $employees = $this->deductionRepository->getActiveEmployeesForIncentive();
+        $employees = $this->deductionRepository->getEmployees();
 
         return Inertia::render('deductions/index', [
             'deductions' => $deductions,
@@ -43,7 +43,7 @@ class DeductionController extends Controller
         Gate::authorize('create', Deduction::class);
 
         $payroll_periods = $this->deductionRepository->getOpenPayrollPeriods();
-        $employees = $this->deductionRepository->getActiveEmployeesForIncentive();
+        $employees = $this->deductionRepository->getEmployees();
 
         return Inertia::render('deductions/create', compact('payroll_periods', 'employees'));
     }
@@ -77,7 +77,7 @@ class DeductionController extends Controller
 
         $deduction->load('payroll_period', 'employees');
 
-        $employees = $this->deductionRepository->getActiveEmployeesForIncentive();
+        $employees = $this->deductionRepository->getEmployees();
         $payroll_periods = $this->deductionRepository->getOpenPayrollPeriods();
 
         return Inertia::render('deductions/update', [

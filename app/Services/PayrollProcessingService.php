@@ -292,9 +292,6 @@ class PayrollProcessingService
     /**
      * Calculate all payroll data for an employee
      */
-  /**
- * Calculate all payroll data for an employee
- */
 protected function calculatePayrollData(PayrollPeriod $payrollPeriod, AttendancePeriodStat $stats, $employee): array
 {
     $basePay = $this->payrollCalculatorService->calculateBasePay($stats, $employee);
@@ -307,11 +304,11 @@ protected function calculatePayrollData(PayrollPeriod $payrollPeriod, Attendance
     $aflDeduction = $stats->afl_deduction ?? 0;
     $cutPayment = $stats->cut_payment ?? 0;
 
-    // FIX: Pass the attendance stats to incentive service
+    // Get incentives and deductions
     $incentives = $this->incentiveService->getEmployeeIncentives(
         $payrollPeriod->id, 
         $employee->id,
-        $stats  // <--- THIS IS THE FIX - PASS THE ATTENDANCE STATS
+        $stats
     );
     
     $deductions = $this->deductionService->getEmployeeDeductions($payrollPeriod->id, $employee->id);
@@ -320,7 +317,9 @@ protected function calculatePayrollData(PayrollPeriod $payrollPeriod, Attendance
     $totalCustomDeductions = $this->deductionService->calculateTotalDeductions($deductions);
 
     $grossPay = $basePay + $overtimePay + $holidayOvertimePay + $subsidyPay + $totalIncentives;
-    $contributions = $this->contributionService->calculateGovernmentContributions($grossPay);
+    
+    // Pass the employee ID to the contribution service
+    $contributions = $this->contributionService->calculateGovernmentContributions($grossPay, $employee->id);
     
     $totalDeductions = $lateDeduction + $aflDeduction + $cutPayment + $totalCustomDeductions +
                       $contributions['sss']['employee'] + 
