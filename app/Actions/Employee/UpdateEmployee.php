@@ -33,8 +33,8 @@ class UpdateEmployee
 
         $user->update($userData);
 
-        $role = Role::firstOrCreate(['name' => 'employee']);
-        $user->assignRole($role);
+       // $role = Role::firstOrCreate(['name' => 'employee']);
+       // $user->assignRole($role);
 
         //dd($data['employee_status']);
         $employee->update([

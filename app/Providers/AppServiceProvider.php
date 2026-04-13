@@ -111,6 +111,7 @@ class AppServiceProvider extends ServiceProvider
             // Contributions
             'contribution_bracket' => 'App\Models\ContributionBracket',
             'contribution_version' => 'App\Models\ContributionVersion',
+            'employee_contribution_setting' => 'App\Models\EmployeeContributionSetting',
         ]);
     }
 
