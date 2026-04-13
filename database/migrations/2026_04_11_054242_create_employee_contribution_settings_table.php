@@ -23,7 +23,7 @@ return new class extends Migration
             $table->decimal('monthly_cap', 15, 2)->nullable();  //for pagibig only
             $table->timestamps();
 
-            $table->unique(['employee_id', 'contribution_version_id']);
+            $table->unique(['employee_id', 'contribution_version_id'], 'employee_contribution_settings_unique');
         });
     }
 

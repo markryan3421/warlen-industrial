@@ -32,60 +32,71 @@ const ExpendituresItems: NavItem[] = [
     {
         title: 'Dashboard',
         href: '/dashboard',
+        exactMatch: true,
         icon: LayoutDashboard,
     },
     {
         title: 'Branches',
-        href: BranchController.index(),
+        href: '/branches',
         icon: Building2,
+        pattern: '/branches',
     },
     {
         title: 'Contributions',
         href: '/contribution-versions',
         icon: Handshake,
+        pattern: '/contribution-versions',
     },
     {
         title: 'Incentives',
         href: '/incentives',
         icon: Coins,
+        pattern: '/incentives',
     },
     {
         title: 'Deduction',
         href: '/deductions',
         icon: HandCoins,
+        pattern: '/deductions',
     }
 ];
 
 const AccessControlItems: NavItem[] = [
     {
         title: 'Run Payroll',
-        href: PayrollController.index(),
+        href: '/payrolls',
         icon: Banknote,
+        pattern: '/payrolls',
     },
     {
         title: 'Employees',
         href: '/employees',
         icon: CircleUser,
+        pattern: '/employees',
     },
     {
         title: 'Application Leaves',
-        href: ApplicationLeaveController.index(),
+        href: '/application-leave',
         icon: Clipboard,
+        pattern: '/application-leave',
     },
     {
         title: 'Payroll Periods',
-        href: PayrollPeriodController.index(),
+        href: '/payroll-periods',
         icon: Calendar,
+        pattern: '/payroll-periods',
     },
     {
         title: 'Positions',
         href: '/positions',
         icon: UserCog,
+        pattern: '/positions',
     },
     {
         title: 'Activity Logs',
-        href: LogsController.index(),
+        href: '/activity-logs',
         icon: History,
+        pattern: '/activity-logs',
     },
 ];
 
