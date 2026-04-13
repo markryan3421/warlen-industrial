@@ -10,7 +10,7 @@ use App\Http\Requests\Incentive\UpdateIncentiveRequest;
 use App\Models\Employee;
 use App\Models\Incentive;
 use App\Models\PayrollPeriod;
-use Illuminate\Http\Request;
+use App\Repository\IncentiveRepository;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -21,7 +21,8 @@ class IncentiveController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request)
+    public function __construct(private IncentiveRepository $incentiveRepository) {}
+    public function index()
     {
         Gate::authorize('viewAny', Incentive::class);
 
@@ -50,69 +51,19 @@ class IncentiveController extends Controller
             $incentivesQuery->where('incentive_name', 'like', '%' . $search . '%');
         }
 
-        // Apply date filters through payroll period relationship
-        if ($dateFrom) {
-            $incentivesQuery->whereHas('payroll_period', function($query) use ($dateFrom) {
-                $query->whereDate('start_date', '>=', $dateFrom);
-            });
-        }
-
-        if ($dateTo) {
-            $incentivesQuery->whereHas('payroll_period', function($query) use ($dateTo) {
-                $query->whereDate('end_date', '<=', $dateTo);
-            });
-        }
-
-        // PAGINATE instead of get()
-        $incentives = $incentivesQuery->paginate($perPage);
-        
-        // Append query parameters to pagination links
-        if ($search) {
-            $incentives->appends('search', $search);
-        }
-        if ($dateFrom) {
-            $incentives->appends('date_from', $dateFrom);
-        }
-        if ($dateTo) {
-            $incentives->appends('date_to', $dateTo);
-        }
-        $incentives->appends('per_page', $perPage);
-        
-        Log::info('Incentives pagination:', [
-            'total' => $incentives->total(),
-            'current_page' => $incentives->currentPage(),
-            'per_page' => $incentives->perPage(),
-            'from' => $incentives->firstItem(),
-            'to' => $incentives->lastItem()
-        ]);
-        
-        // Get OPEN payroll periods
-        $payroll_periods = PayrollPeriod::query()
-            ->where('payroll_per_status', PayrollPeriodStatusEnum::OPEN->value)
-            ->get(['id', 'start_date', 'end_date', 'pay_date', 'payroll_per_status']);
-        
-        Log::info('Open payroll periods count: ' . $payroll_periods->count());
-        
-        // If no open periods, try to get all periods (for testing)
-        if ($payroll_periods->count() === 0) {
-            Log::warning('No OPEN payroll periods found. Getting all periods for testing.');
-            $payroll_periods = PayrollPeriod::query()
+          $payroll_periods = $this->cacheRemember('payroll_periods', 60, function () {
+            return PayrollPeriod::query()
+                ->where('payroll_per_status', PayrollPeriodStatusEnum::OPEN->value)
                 ->get(['id', 'start_date', 'end_date', 'pay_date', 'payroll_per_status']);
-            Log::info('All payroll periods count (fallback): ' . $payroll_periods->count());
-        }
+        });
 
-        // Get employees
-        $employees = Employee::with('user')
-            ->get(['id', 'emp_code', 'user_id'])
-            ->map(function ($employee) {
-                return [
-                    'id' => $employee->id,
-                    'emp_code' => $employee->emp_code,
-                    'user' => $employee->user ? [
-                        'name' => $employee->user->name
-                    ] : null,
-                ];
-            });
+        // $employees = $this->cacheRemember('employees', 60, function () {
+        //     return Employee::with('user')
+        //         ->where('employee_status', 'active')
+        //         ->get(['id', 'user_id', 'employee_status']);
+        // });
+    $employees = $this->incentiveRepository->getEmployees();
+
 
         Log::info('Employees count: ' . $employees->count());
             
