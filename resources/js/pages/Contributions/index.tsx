@@ -542,7 +542,7 @@ export default function Index({
                                             data={displayData}
                                             from={contributionVersions.from}
                                             onDelete={handleDeleteClick}
-                                            onView={viewDetails}
+                                            onView={viewBrackets}
                                             onEdit={handleEdit}
                                             title="Contribution Table"
                                         />
@@ -928,7 +928,6 @@ export default function Index({
                 />
             )}
 
-            {/* Brackets Modal */}
             {/* Brackets Modal */}
             <Dialog open={isBracketsModalOpen} onOpenChange={setIsBracketsModalOpen}>
                 <DialogContent className="sm:max-w-[800px] max-h-[80vh] overflow-y-auto">
