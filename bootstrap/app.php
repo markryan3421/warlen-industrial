@@ -31,7 +31,6 @@ return Application::configure(basePath: dirname(__DIR__))
             AddLinkHeadersForPreloadedAssets::class,
         ]);
     })
-<<<<<<< HEAD
 
     //   ->withSchedule(function (Schedule $schedule) {
     //     // Run daily at midnight to update statuses
@@ -43,8 +42,6 @@ return Application::configure(basePath: dirname(__DIR__))
     //     // Run every minute for testing (remove in production)
     //     // $schedule->command('app:update-employee-statuses')->everyMinute();
     // })
-=======
->>>>>>> d20df55e0968a675753d5c0da117a14784215297
     ->withExceptions(function (Exceptions $exceptions): void {
         //
     })->create();
