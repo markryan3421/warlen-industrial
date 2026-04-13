@@ -14,7 +14,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
-use Illuminate\Support\Facades\Log;
 
 class DeductionController extends Controller
 {

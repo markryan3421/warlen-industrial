@@ -10,48 +10,63 @@ import { useCurrentUrl } from '@/hooks/use-current-url';
 import { cn } from '@/lib/utils';
 import type { NavItem } from '@/types';
 
-export function NavMain({ items = [], label, isCollapsed = false }: { items: NavItem[], label: string, isCollapsed?: boolean }) {
-    const { isCurrentUrl } = useCurrentUrl();
+interface NavMainProps {
+    items: NavItem[];
+    label: string;
+    isCollapsed?: boolean;
+}
+
+export function NavMain({ items, label, isCollapsed = false }: NavMainProps) {
+    const { isCurrentOrParentUrl, isCurrentUrl } = useCurrentUrl();
 
     return (
         <>
             <SidebarGroup className="px-2 py-1">
-                {/* Only show label when not collapsed */}
                 {!isCollapsed && (
                     <SidebarGroupLabel className="px-2 pb-1 text-xs font-regular text-muted-foreground tracking-wider">
                         {label}
                     </SidebarGroupLabel>
                 )}
                 <SidebarMenu>
-                    {items.map((item) => (
+                    {items.map((item) => {
+                    let isActive = false;
+                    
+                    if (item.exactMatch) {
+                        // Exact match only (for dashboard)
+                        isActive = isCurrentUrl(item.href);
+                    } else {
+                        // Use pattern if provided, otherwise use href
+                        const matchPattern = item.pattern || item.href;
+                        isActive = isCurrentOrParentUrl(matchPattern);
+                    }
+                    
+                    // Debug (remove in production)
+                    if (process.env.NODE_ENV === 'development') {
+                        console.log(`[NavMain] ${item.title}:`, {
+                            href: item.href,
+                            pattern: item.pattern,
+                            matchPattern: item.pattern || item.href,
+                            currentUrl: useCurrentUrl().currentUrl,
+                            isActive,
+                            usingExactMatch: !!item.exactMatch
+                        });
+                    }
+                    
+                    return (
                         <SidebarMenuItem key={item.title}>
                             <SidebarMenuButton
                                 asChild
-                                isActive={isCurrentUrl(item.href)}
-                                tooltip={isCollapsed ? { children: item.title } : undefined}
+                                isActive={isActive}
+                                tooltip={{ children: item.title }}
                             >
-                                <Link
-                                    href={item.href}
-                                    prefetch
-                                    preserveScroll={true}
-                                    preserveState={true}
-                                >
-                                    {item.icon && (
-                                        <item.icon className={cn(
-                                            "shrink-0 transition-all duration-200 ease-in-oushrink-0 transition-transform duration-200 ease-in-out group-data-[collapsible=icon]:scale-115 group-data-[collapsible=icon]:ml-0 group-data-[collapsible=icon]:transition-transform duration-300 ease-in-out",
-                                            isCollapsed && "scale-110"
-                                        )} />
-                                    )}
-                                    <span className={cn(
-                                        "transition-all duration-200 ease-linear",
-                                        isCollapsed && "hidden"
-                                    )}>
-                                        {item.title}
-                                    </span>
+                                <Link href={item.href} prefetch>
+                                    {item.icon && <item.icon />}
+                                    <span>{item.title}</span>
                                 </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
-                    ))}
+                    );
+                })}
                 </SidebarMenu>
             </SidebarGroup>
         </>

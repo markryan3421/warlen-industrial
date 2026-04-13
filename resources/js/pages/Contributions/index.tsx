@@ -182,7 +182,7 @@ export default function Index({
 
     // Tab state
     const [activeTab, setActiveTab] = useState('versions');
-    
+
     // Employee settings states
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [employeeSettings, setEmployeeSettings] = useState<Record<number, Record<number, EmployeeContributionSettingData>>>({});
@@ -250,7 +250,7 @@ export default function Index({
     const handleClearAllFilters = () => {
         setTypeFilter("");
     };
-    
+
     const viewBrackets = (version: ContributionVersion) => {
         setSelectedVersion(version);
         setIsBracketsModalOpen(true);
@@ -280,13 +280,13 @@ export default function Index({
     // Fetch employees and their settings
     const fetchEmployeesAndSettings = async () => {
         if (!hasRecords) return;
-        
+
         setLoadingEmployees(true);
         try {
             // Fetch employees
             const employeesResponse = await fetch('/employees/list');
             const employeesData = await employeesResponse.json();
-            
+
             let employeesList = [];
             if (employeesData.data && Array.isArray(employeesData.data)) {
                 employeesList = employeesData.data;
@@ -296,9 +296,9 @@ export default function Index({
                 employeesList = [];
             }
             setEmployees(employeesList);
-            
+
             // Fetch settings for all contribution versions
-            const settingsPromises = versions.map(version => 
+            const settingsPromises = versions.map(version =>
                 fetch(`/employee-contribution-settings?contribution_version_id=${version.id}`)
                     .then(res => {
                         if (!res.ok) throw new Error('Failed to fetch settings');
@@ -306,9 +306,9 @@ export default function Index({
                     })
                     .catch(() => [])
             );
-            
+
             const allSettings = await Promise.all(settingsPromises);
-            
+
             const settingsMap: Record<number, Record<number, EmployeeContributionSettingData>> = {};
             versions.forEach((version, index) => {
                 settingsMap[version.id] = {};
@@ -317,7 +317,7 @@ export default function Index({
                     settingsMap[version.id][setting.employee_id] = setting;
                 });
             });
-            
+
             setEmployeeSettings(settingsMap);
             // Store original settings for comparison
             setOriginalEmployeeSettings(JSON.parse(JSON.stringify(settingsMap)));
@@ -337,9 +337,9 @@ export default function Index({
     }, [versions.length, activeTab]);
 
     const updateEmployeeSetting = (
-        contributionVersionId: number, 
-        employeeId: number, 
-        field: string, 
+        contributionVersionId: number,
+        employeeId: number,
+        field: string,
         value: any
     ) => {
         setEmployeeSettings(prev => ({
@@ -359,15 +359,15 @@ export default function Index({
     const saveContributionSettings = (contributionVersionId: number) => {
         const currentSettings = employeeSettings[contributionVersionId] || {};
         const originalSettings = originalEmployeeSettings[contributionVersionId] || {};
-        
+
         // Find only changed settings
         const changedSettings = [];
         const allEmployeeIds = new Set([...Object.keys(currentSettings), ...Object.keys(originalSettings)]);
-        
+
         for (const employeeId of allEmployeeIds) {
             const current = currentSettings[Number(employeeId)];
             const original = originalSettings[Number(employeeId)];
-            
+
             // Compare if setting has changed
             const hasChanged = JSON.stringify({
                 is_exempted: current?.is_exempted || false,
@@ -378,7 +378,7 @@ export default function Index({
                 fixed_amount: original?.fixed_amount || null,
                 monthly_cap: original?.monthly_cap || null,
             });
-            
+
             if (hasChanged && current) {
                 changedSettings.push({
                     employee_id: Number(employeeId),
@@ -388,18 +388,18 @@ export default function Index({
                 });
             }
         }
-        
+
         // If no changes, show message and return
         if (changedSettings.length === 0) {
             toast.info('No changes to save');
             return;
         }
-        
+
         setSavingSettings(prev => ({ ...prev, [contributionVersionId]: true }));
-        
+
         // Get CSRF token
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-        
+
         fetch('/employee-contribution-settings/bulk', {
             method: 'POST',
             headers: {
@@ -413,36 +413,36 @@ export default function Index({
                 settings: changedSettings,
             }),
         })
-        .then(async response => {
-            const data = await response.json();
-            if (response.ok) {
-                toast.success(`${data.message || 'Settings saved successfully!'} (${changedSettings.length} employee${changedSettings.length > 1 ? 's' : ''} updated)`);
-                // Update original settings after successful save
-                const updatedOriginalSettings = { ...originalEmployeeSettings };
-                for (const setting of changedSettings) {
-                    if (!updatedOriginalSettings[contributionVersionId]) {
-                        updatedOriginalSettings[contributionVersionId] = {};
+            .then(async response => {
+                const data = await response.json();
+                if (response.ok) {
+                    toast.success(`${data.message || 'Settings saved successfully!'} (${changedSettings.length} employee${changedSettings.length > 1 ? 's' : ''} updated)`);
+                    // Update original settings after successful save
+                    const updatedOriginalSettings = { ...originalEmployeeSettings };
+                    for (const setting of changedSettings) {
+                        if (!updatedOriginalSettings[contributionVersionId]) {
+                            updatedOriginalSettings[contributionVersionId] = {};
+                        }
+                        updatedOriginalSettings[contributionVersionId][setting.employee_id] = {
+                            employee_id: setting.employee_id,
+                            contribution_version_id: contributionVersionId,
+                            is_exempted: setting.is_exempted,
+                            fixed_amount: setting.fixed_amount,
+                            monthly_cap: setting.monthly_cap,
+                        };
                     }
-                    updatedOriginalSettings[contributionVersionId][setting.employee_id] = {
-                        employee_id: setting.employee_id,
-                        contribution_version_id: contributionVersionId,
-                        is_exempted: setting.is_exempted,
-                        fixed_amount: setting.fixed_amount,
-                        monthly_cap: setting.monthly_cap,
-                    };
+                    setOriginalEmployeeSettings(updatedOriginalSettings);
+                } else {
+                    toast.error(data.message || 'Failed to save settings');
                 }
-                setOriginalEmployeeSettings(updatedOriginalSettings);
-            } else {
-                toast.error(data.message || 'Failed to save settings');
-            }
-        })
-        .catch(error => {
-            console.error('Save error:', error);
-            toast.error('An error occurred while saving');
-        })
-        .finally(() => {
-            setSavingSettings(prev => ({ ...prev, [contributionVersionId]: false }));
-        });
+            })
+            .catch(error => {
+                console.error('Save error:', error);
+                toast.error('An error occurred while saving');
+            })
+            .finally(() => {
+                setSavingSettings(prev => ({ ...prev, [contributionVersionId]: false }));
+            });
     };
 
     return (
@@ -464,7 +464,7 @@ export default function Index({
 
             <CustomToast />
             <div className="flex h-full flex flex-col gap-4 rounded-xl p-4 mx-4 -mt-1">
-                
+
                 <div className="flex flex-row justify-between gap-4 mt-2 pp-header">
                     <CustomHeader
                         icon={<Handshake className="h-6 w-6" />}
@@ -542,7 +542,7 @@ export default function Index({
                                             data={displayData}
                                             from={contributionVersions.from}
                                             onDelete={handleDeleteClick}
-                                            onView={viewDetails}
+                                            onView={viewBrackets}
                                             onEdit={handleEdit}
                                             title="Contribution Table"
                                         />
@@ -579,322 +579,322 @@ export default function Index({
                         )}
                     </TabsContent>
 
-        {/* Tab 2: Employee Contribution Settings - Updated for PhilHealth percentage with Bulk Actions */}
-<TabsContent value="employee-settings">
-    <div className="space-y-6">
-        {loadingEmployees ? (
-            <Card>
-                <CardContent className="flex items-center justify-center py-16">
-                    <LoaderCircle className="h-8 w-8 animate-spin text-muted-foreground" />
-                    <span className="ml-2 text-muted-foreground">Loading employees...</span>
-                </CardContent>
-            </Card>
-        ) : employees.length === 0 ? (
-            <Card>
-                <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-                    <div className="rounded-full bg-muted p-4 mb-4">
-                        <Users className="h-8 w-8 text-muted-foreground" />
-                    </div>
-                    <p className="text-muted-foreground font-medium">No active employees found</p>
-                    <p className="text-sm text-muted-foreground mt-1">Please add active employees first to configure contribution settings.</p>
-                </CardContent>
-            </Card>
-        ) : (
-            versions.map((version) => {
-                const settingsForVersion = employeeSettings[version.id] || {};
-                const isSaving = savingSettings[version.id] || false;
-                const totalEmployees = employees.length;
-                const exemptedCount = Object.values(settingsForVersion).filter(s => s.is_exempted).length;
-                const allExempted = exemptedCount === totalEmployees && totalEmployees > 0;
-                
-                // Determine if this is PhilHealth to show percentage label
-                const isPhilHealth = version.type === 'philhealth';
-                const isPagIbig = version.type === 'pagibig';
-                const isSSS = version.type === 'sss';
-                
-                // Bulk action handlers
-                const setAllExempted = (exempted: boolean) => {
-                    employees.forEach((employee) => {
-                        updateEmployeeSetting(version.id, employee.id, 'is_exempted', exempted);
-                    });
-                    toast.success(`All employees ${exempted ? 'exempted from' : 'enabled for'} ${getContributionTypeLabel(version.type)}`);
-                };
-                
-                const setAllFixedAmount = (amount: string) => {
-                    if (!isSSS && !allExempted) {
-                        employees.forEach((employee) => {
-                            const currentSetting = settingsForVersion[employee.id] || {};
-                            if (!currentSetting.is_exempted) {
-                                updateEmployeeSetting(version.id, employee.id, 'fixed_amount', amount);
-                            }
-                        });
-                        toast.success(`Fixed amount set to ${isPhilHealth ? amount + '%' : '₱' + amount} for all non-exempted employees`);
-                    }
-                };
-                
-                const setAllMonthlyCap = (cap: string) => {
-                    if (!isSSS && !allExempted) {
-                        employees.forEach((employee) => {
-                            const currentSetting = settingsForVersion[employee.id] || {};
-                            if (!currentSetting.is_exempted) {
-                                updateEmployeeSetting(version.id, employee.id, 'monthly_cap', cap);
-                            }
-                        });
-                        toast.success(`Monthly cap set to ₱${cap} for all non-exempted employees`);
-                    }
-                };
-                
-                return (
-                    <Card key={version.id} className="overflow-hidden shadow-sm hover:shadow-md transition-all duration-200">
-                        {/* Card Header with Gradient */}
-                        <div className={`${getContributionTypeBgColor(version.type)} border-b`}>
-                            <CardHeader className="pb-3">
-                                <div className="flex items-center justify-between flex-wrap gap-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className={`p-2.5 rounded-xl ${getContributionTypeColor(version.type)} bg-white shadow-sm`}>
-                                            {isSSS ? (
-                                                <Shield className="h-5 w-5" />
-                                            ) : (
-                                                <Heart className="h-5 w-5" />
-                                            )}
+                    {/* Tab 2: Employee Contribution Settings - Updated for PhilHealth percentage with Bulk Actions */}
+                    <TabsContent value="employee-settings">
+                        <div className="space-y-6">
+                            {loadingEmployees ? (
+                                <Card>
+                                    <CardContent className="flex items-center justify-center py-16">
+                                        <LoaderCircle className="h-8 w-8 animate-spin text-muted-foreground" />
+                                        <span className="ml-2 text-muted-foreground">Loading employees...</span>
+                                    </CardContent>
+                                </Card>
+                            ) : employees.length === 0 ? (
+                                <Card>
+                                    <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+                                        <div className="rounded-full bg-muted p-4 mb-4">
+                                            <Users className="h-8 w-8 text-muted-foreground" />
                                         </div>
-                                        <div>
-                                            <CardTitle className="text-xl flex items-center gap-2">
-                                                {getContributionTypeLabel(version.type)}
-                                                <Badge variant="outline" className="text-xs font-normal">
-                                                    {isSSS ? 'Brackets Based' : (isPhilHealth ? 'Percentage Based (5% default)' : 'Fixed Amount')}
-                                                </Badge>
-                                            </CardTitle>
-                                            <CardDescription className="mt-1">
-                                                {isSSS 
-                                                    ? 'Configure exemption only. SSS contributions are calculated using salary brackets.'
-                                                    : isPhilHealth
-                                                    ? 'Configure exemption, percentage rate (default 5%), and optional monthly cap. Employee share is 50% of the total.'
-                                                    : `Configure exemption, fixed amount per payroll, and optional monthly cap for ${getContributionTypeLabel(version.type)}.`}
-                                            </CardDescription>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <div className="text-right">
-                                            <div className="text-sm text-muted-foreground">
-                                                {exemptedCount} of {totalEmployees} employees exempted
-                                            </div>
-                                            <div className="w-32 h-1.5 bg-gray-200 rounded-full mt-1 overflow-hidden">
-                                                <div 
-                                                    className="h-full bg-green-500 rounded-full transition-all duration-300"
-                                                    style={{ width: `${totalEmployees > 0 ? (exemptedCount / totalEmployees) * 100 : 0}%` }}
-                                                />
-                                            </div>
-                                        </div>
-                                        <Button
-                                            size="sm"
-                                            onClick={() => saveContributionSettings(version.id)}
-                                            disabled={isSaving}
-                                            className="gap-2 shadow-sm"
-                                        >
-                                            {isSaving && <LoaderCircle className="h-4 w-4 animate-spin" />}
-                                            <Save className="h-4 w-4" />
-                                            Save Settings
-                                        </Button>
-                                    </div>
-                                </div>
-                            </CardHeader>
-                        </div>
-                        
-                        <CardContent className="p-0">
-                            {/* Bulk Actions Bar */}
-                            <div className="p-3 border-b bg-muted/20 flex flex-wrap items-center gap-3">
-                                <span className="text-sm font-medium text-muted-foreground">Bulk Actions:</span>
-                                
-                                {/* Bulk Exempt Toggle */}
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setAllExempted(!allExempted)}
-                                    className="gap-1"
-                                >
-                                    {allExempted ? 'Enable All' : 'Exempt All'}
-                                </Button>
-                                
-                                {!isSSS && (
-                                    <>
-                                        {/* Bulk Fixed Amount - Disabled when all employees are enabled (not exempted) */}
-                                        <div className="flex items-center gap-1">
-                                            <span className="text-sm text-muted-foreground">Set Amount:</span>
-                                            <div className="relative w-28">
-                                                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">
-                                                    {isPhilHealth ? '' : '₱'}
-                                                </span>
-                                                <Input
-                                                    type="number"
-                                                    step="0.01"
-                                                    placeholder={isPhilHealth ? "5.00" : "0.00"}
-                                                    className={`pl-6 h-8 text-sm ${allExempted ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                                    disabled={allExempted}
-                                                    onKeyDown={(e) => {
-                                                        if (e.key === 'Enter' && !allExempted) {
-                                                            const target = e.target as HTMLInputElement;
-                                                            setAllFixedAmount(target.value);
-                                                            target.value = '';
-                                                        }
-                                                    }}
-                                                />
-                                                {isPhilHealth && (
-                                                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">%</span>
-                                                )}
-                                            </div>
-                                            <span className="text-xs text-muted-foreground">press Enter</span>
-                                        </div>
-                                        
-                                        {/* Bulk Monthly Cap - Disabled when all employees are enabled (not exempted) */}
-                                        <div className="flex items-center gap-1">
-                                            <span className="text-sm text-muted-foreground">Set Cap:</span>
-                                            <div className="relative w-28">
-                                                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">₱</span>
-                                                <Input
-                                                    type="number"
-                                                    step="0.01"
-                                                    placeholder="No cap"
-                                                    className={`pl-6 h-8 text-sm ${allExempted ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                                    disabled={allExempted}
-                                                    onKeyDown={(e) => {
-                                                        if (e.key === 'Enter' && !allExempted) {
-                                                            const target = e.target as HTMLInputElement;
-                                                            setAllMonthlyCap(target.value);
-                                                            target.value = '';
-                                                        }
-                                                    }}
-                                                />
-                                            </div>
-                                            <span className="text-xs text-muted-foreground">press Enter</span>
-                                        </div>
-                                    </>
-                                )}
-                            </div>
-                            
-                            <div className="overflow-x-auto">
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow className="bg-muted/30">
-                                            <TableHead className="font-semibold">Employee Name</TableHead>
-                                            <TableHead className="w-24 text-center font-semibold">Exempted</TableHead>
-                                            {!isSSS && (
-                                                <>
-                                                    <TableHead className="w-44 font-semibold">
-                                                        {isPhilHealth ? 'Rate (%)' : 'Fixed Amount (per payroll)'}
-                                                    </TableHead>
-                                                    <TableHead className="w-44 font-semibold">Monthly Cap</TableHead>
-                                                </>
-                                            )}
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {employees.map((employee) => {
-                                            const setting = settingsForVersion[employee.id] || {
-                                                employee_id: employee.id,
-                                                contribution_version_id: version.id,
-                                                is_exempted: false,
-                                                fixed_amount: null,
-                                                monthly_cap: null,
-                                            };
-                                            
-                                            return (
-                                                <TableRow key={employee.id} className="hover:bg-muted/30 transition-colors duration-150">
-                                                    <TableCell className="font-medium">
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-                                                                <span className="text-xs font-semibold text-primary">
-                                                                    {employee.user?.name?.charAt(0).toUpperCase() || 'E'}
-                                                                </span>
+                                        <p className="text-muted-foreground font-medium">No active employees found</p>
+                                        <p className="text-sm text-muted-foreground mt-1">Please add active employees first to configure contribution settings.</p>
+                                    </CardContent>
+                                </Card>
+                            ) : (
+                                versions.map((version) => {
+                                    const settingsForVersion = employeeSettings[version.id] || {};
+                                    const isSaving = savingSettings[version.id] || false;
+                                    const totalEmployees = employees.length;
+                                    const exemptedCount = Object.values(settingsForVersion).filter(s => s.is_exempted).length;
+                                    const allExempted = exemptedCount === totalEmployees && totalEmployees > 0;
+
+                                    // Determine if this is PhilHealth to show percentage label
+                                    const isPhilHealth = version.type === 'philhealth';
+                                    const isPagIbig = version.type === 'pagibig';
+                                    const isSSS = version.type === 'sss';
+
+                                    // Bulk action handlers
+                                    const setAllExempted = (exempted: boolean) => {
+                                        employees.forEach((employee) => {
+                                            updateEmployeeSetting(version.id, employee.id, 'is_exempted', exempted);
+                                        });
+                                        toast.success(`All employees ${exempted ? 'exempted from' : 'enabled for'} ${getContributionTypeLabel(version.type)}`);
+                                    };
+
+                                    const setAllFixedAmount = (amount: string) => {
+                                        if (!isSSS && !allExempted) {
+                                            employees.forEach((employee) => {
+                                                const currentSetting = settingsForVersion[employee.id] || {};
+                                                if (!currentSetting.is_exempted) {
+                                                    updateEmployeeSetting(version.id, employee.id, 'fixed_amount', amount);
+                                                }
+                                            });
+                                            toast.success(`Fixed amount set to ${isPhilHealth ? amount + '%' : '₱' + amount} for all non-exempted employees`);
+                                        }
+                                    };
+
+                                    const setAllMonthlyCap = (cap: string) => {
+                                        if (!isSSS && !allExempted) {
+                                            employees.forEach((employee) => {
+                                                const currentSetting = settingsForVersion[employee.id] || {};
+                                                if (!currentSetting.is_exempted) {
+                                                    updateEmployeeSetting(version.id, employee.id, 'monthly_cap', cap);
+                                                }
+                                            });
+                                            toast.success(`Monthly cap set to ₱${cap} for all non-exempted employees`);
+                                        }
+                                    };
+
+                                    return (
+                                        <Card key={version.id} className="overflow-hidden shadow-sm hover:shadow-md transition-all duration-200">
+                                            {/* Card Header with Gradient */}
+                                            <div className={`${getContributionTypeBgColor(version.type)} border-b`}>
+                                                <CardHeader className="pb-3">
+                                                    <div className="flex items-center justify-between flex-wrap gap-4">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className={`p-2.5 rounded-xl ${getContributionTypeColor(version.type)} bg-white shadow-sm`}>
+                                                                {isSSS ? (
+                                                                    <Shield className="h-5 w-5" />
+                                                                ) : (
+                                                                    <Heart className="h-5 w-5" />
+                                                                )}
                                                             </div>
-                                                            <span>{employee.user?.name || `Employee #${employee.id}`}</span>
+                                                            <div>
+                                                                <CardTitle className="text-xl flex items-center gap-2">
+                                                                    {getContributionTypeLabel(version.type)}
+                                                                    <Badge variant="outline" className="text-xs font-normal">
+                                                                        {isSSS ? 'Brackets Based' : (isPhilHealth ? 'Percentage Based (5% default)' : 'Fixed Amount')}
+                                                                    </Badge>
+                                                                </CardTitle>
+                                                                <CardDescription className="mt-1">
+                                                                    {isSSS
+                                                                        ? 'Configure exemption only. SSS contributions are calculated using salary brackets.'
+                                                                        : isPhilHealth
+                                                                            ? 'Configure exemption, percentage rate (default 5%), and optional monthly cap. Employee share is 50% of the total.'
+                                                                            : `Configure exemption, fixed amount per payroll, and optional monthly cap for ${getContributionTypeLabel(version.type)}.`}
+                                                                </CardDescription>
+                                                            </div>
                                                         </div>
-                                                    </TableCell>
-                                                    <TableCell className="text-center">
-                                                        <Switch
-                                                            checked={setting.is_exempted || false}
-                                                            onCheckedChange={(checked) => 
-                                                                updateEmployeeSetting(version.id, employee.id, 'is_exempted', checked)
-                                                            }
-                                                            className="data-[state=checked]:bg-green-500"
-                                                        />
-                                                    </TableCell>
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="text-right">
+                                                                <div className="text-sm text-muted-foreground">
+                                                                    {exemptedCount} of {totalEmployees} employees exempted
+                                                                </div>
+                                                                <div className="w-32 h-1.5 bg-gray-200 rounded-full mt-1 overflow-hidden">
+                                                                    <div
+                                                                        className="h-full bg-green-500 rounded-full transition-all duration-300"
+                                                                        style={{ width: `${totalEmployees > 0 ? (exemptedCount / totalEmployees) * 100 : 0}%` }}
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                            <Button
+                                                                size="sm"
+                                                                onClick={() => saveContributionSettings(version.id)}
+                                                                disabled={isSaving}
+                                                                className="gap-2 shadow-sm"
+                                                            >
+                                                                {isSaving && <LoaderCircle className="h-4 w-4 animate-spin" />}
+                                                                <Save className="h-4 w-4" />
+                                                                Save Settings
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                </CardHeader>
+                                            </div>
+
+                                            <CardContent className="p-0">
+                                                {/* Bulk Actions Bar */}
+                                                <div className="p-3 border-b bg-muted/20 flex flex-wrap items-center gap-3">
+                                                    <span className="text-sm font-medium text-muted-foreground">Bulk Actions:</span>
+
+                                                    {/* Bulk Exempt Toggle */}
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => setAllExempted(!allExempted)}
+                                                        className="gap-1"
+                                                    >
+                                                        {allExempted ? 'Enable All' : 'Exempt All'}
+                                                    </Button>
+
                                                     {!isSSS && (
                                                         <>
-                                                            <TableCell>
-                                                                <div className="relative">
-                                                                    {isPhilHealth ? (
-                                                                        <>
-                                                                            <Input
-                                                                                type="number"
-                                                                                step="0.01"
-                                                                                placeholder="5.00"
-                                                                                value={setting.fixed_amount || ''}
-                                                                                onChange={(e) => 
-                                                                                    updateEmployeeSetting(version.id, employee.id, 'fixed_amount', e.target.value)
-                                                                                }
-                                                                                disabled={setting.is_exempted}
-                                                                                className={`pl-3 pr-8 ${setting.is_exempted ? 'bg-muted/50' : ''}`}
-                                                                            />
-                                                                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">%</span>
-                                                                        </>
-                                                                    ) : (
-                                                                        <>
-                                                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">₱</span>
-                                                                            <Input
-                                                                                type="number"
-                                                                                step="0.01"
-                                                                                placeholder="0.00"
-                                                                                value={setting.fixed_amount || ''}
-                                                                                onChange={(e) => 
-                                                                                    updateEmployeeSetting(version.id, employee.id, 'fixed_amount', e.target.value)
-                                                                                }
-                                                                                disabled={setting.is_exempted}
-                                                                                className={`pl-7 ${setting.is_exempted ? 'bg-muted/50' : ''}`}
-                                                                            />
-                                                                        </>
+                                                            {/* Bulk Fixed Amount - Disabled when all employees are enabled (not exempted) */}
+                                                            <div className="flex items-center gap-1">
+                                                                <span className="text-sm text-muted-foreground">Set Amount:</span>
+                                                                <div className="relative w-28">
+                                                                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">
+                                                                        {isPhilHealth ? '' : '₱'}
+                                                                    </span>
+                                                                    <Input
+                                                                        type="number"
+                                                                        step="0.01"
+                                                                        placeholder={isPhilHealth ? "5.00" : "0.00"}
+                                                                        className={`pl-6 h-8 text-sm ${allExempted ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                                        disabled={allExempted}
+                                                                        onKeyDown={(e) => {
+                                                                            if (e.key === 'Enter' && !allExempted) {
+                                                                                const target = e.target as HTMLInputElement;
+                                                                                setAllFixedAmount(target.value);
+                                                                                target.value = '';
+                                                                            }
+                                                                        }}
+                                                                    />
+                                                                    {isPhilHealth && (
+                                                                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">%</span>
                                                                     )}
                                                                 </div>
-                                                                {isPhilHealth && (
-                                                                    <p className="text-xs text-muted-foreground mt-1">
-                                                                        Default: 5% (2.5% employee, 2.5% employer)
-                                                                    </p>
-                                                                )}
-                                                            </TableCell>
-                                                            <TableCell>
-                                                                <div className="relative">
-                                                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">₱</span>
+                                                                <span className="text-xs text-muted-foreground">press Enter</span>
+                                                            </div>
+
+                                                            {/* Bulk Monthly Cap - Disabled when all employees are enabled (not exempted) */}
+                                                            <div className="flex items-center gap-1">
+                                                                <span className="text-sm text-muted-foreground">Set Cap:</span>
+                                                                <div className="relative w-28">
+                                                                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">₱</span>
                                                                     <Input
                                                                         type="number"
                                                                         step="0.01"
                                                                         placeholder="No cap"
-                                                                        value={setting.monthly_cap || ''}
-                                                                        onChange={(e) => 
-                                                                            updateEmployeeSetting(version.id, employee.id, 'monthly_cap', e.target.value)
-                                                                        }
-                                                                        disabled={setting.is_exempted}
-                                                                        className={`pl-7 ${setting.is_exempted ? 'bg-muted/50' : ''}`}
+                                                                        className={`pl-6 h-8 text-sm ${allExempted ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                                        disabled={allExempted}
+                                                                        onKeyDown={(e) => {
+                                                                            if (e.key === 'Enter' && !allExempted) {
+                                                                                const target = e.target as HTMLInputElement;
+                                                                                setAllMonthlyCap(target.value);
+                                                                                target.value = '';
+                                                                            }
+                                                                        }}
                                                                     />
                                                                 </div>
-                                                            </TableCell>
+                                                                <span className="text-xs text-muted-foreground">press Enter</span>
+                                                            </div>
                                                         </>
                                                     )}
-                                                </TableRow>
-                                            );
-                                        })}
-                                    </TableBody>
-                                </Table>
-                            </div>
-                        </CardContent>
-                    </Card>
-                );
-            })
-        )}
-    </div>
-</TabsContent>
+                                                </div>
+
+                                                <div className="overflow-x-auto">
+                                                    <Table>
+                                                        <TableHeader>
+                                                            <TableRow className="bg-muted/30">
+                                                                <TableHead className="font-semibold">Employee Name</TableHead>
+                                                                <TableHead className="w-24 text-center font-semibold">Exempted</TableHead>
+                                                                {!isSSS && (
+                                                                    <>
+                                                                        <TableHead className="w-44 font-semibold">
+                                                                            {isPhilHealth ? 'Rate (%)' : 'Fixed Amount (per payroll)'}
+                                                                        </TableHead>
+                                                                        <TableHead className="w-44 font-semibold">Monthly Cap</TableHead>
+                                                                    </>
+                                                                )}
+                                                            </TableRow>
+                                                        </TableHeader>
+                                                        <TableBody>
+                                                            {employees.map((employee) => {
+                                                                const setting = settingsForVersion[employee.id] || {
+                                                                    employee_id: employee.id,
+                                                                    contribution_version_id: version.id,
+                                                                    is_exempted: false,
+                                                                    fixed_amount: null,
+                                                                    monthly_cap: null,
+                                                                };
+
+                                                                return (
+                                                                    <TableRow key={employee.id} className="hover:bg-muted/30 transition-colors duration-150">
+                                                                        <TableCell className="font-medium">
+                                                                            <div className="flex items-center gap-2">
+                                                                                <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                                                                                    <span className="text-xs font-semibold text-primary">
+                                                                                        {employee.user?.name?.charAt(0).toUpperCase() || 'E'}
+                                                                                    </span>
+                                                                                </div>
+                                                                                <span>{employee.user?.name || `Employee #${employee.id}`}</span>
+                                                                            </div>
+                                                                        </TableCell>
+                                                                        <TableCell className="text-center">
+                                                                            <Switch
+                                                                                checked={setting.is_exempted || false}
+                                                                                onCheckedChange={(checked) =>
+                                                                                    updateEmployeeSetting(version.id, employee.id, 'is_exempted', checked)
+                                                                                }
+                                                                                className="data-[state=checked]:bg-green-500"
+                                                                            />
+                                                                        </TableCell>
+                                                                        {!isSSS && (
+                                                                            <>
+                                                                                <TableCell>
+                                                                                    <div className="relative">
+                                                                                        {isPhilHealth ? (
+                                                                                            <>
+                                                                                                <Input
+                                                                                                    type="number"
+                                                                                                    step="0.01"
+                                                                                                    placeholder="5.00"
+                                                                                                    value={setting.fixed_amount || ''}
+                                                                                                    onChange={(e) =>
+                                                                                                        updateEmployeeSetting(version.id, employee.id, 'fixed_amount', e.target.value)
+                                                                                                    }
+                                                                                                    disabled={setting.is_exempted}
+                                                                                                    className={`pl-3 pr-8 ${setting.is_exempted ? 'bg-muted/50' : ''}`}
+                                                                                                />
+                                                                                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">%</span>
+                                                                                            </>
+                                                                                        ) : (
+                                                                                            <>
+                                                                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">₱</span>
+                                                                                                <Input
+                                                                                                    type="number"
+                                                                                                    step="0.01"
+                                                                                                    placeholder="0.00"
+                                                                                                    value={setting.fixed_amount || ''}
+                                                                                                    onChange={(e) =>
+                                                                                                        updateEmployeeSetting(version.id, employee.id, 'fixed_amount', e.target.value)
+                                                                                                    }
+                                                                                                    disabled={setting.is_exempted}
+                                                                                                    className={`pl-7 ${setting.is_exempted ? 'bg-muted/50' : ''}`}
+                                                                                                />
+                                                                                            </>
+                                                                                        )}
+                                                                                    </div>
+                                                                                    {isPhilHealth && (
+                                                                                        <p className="text-xs text-muted-foreground mt-1">
+                                                                                            Default: 5% (2.5% employee, 2.5% employer)
+                                                                                        </p>
+                                                                                    )}
+                                                                                </TableCell>
+                                                                                <TableCell>
+                                                                                    <div className="relative">
+                                                                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">₱</span>
+                                                                                        <Input
+                                                                                            type="number"
+                                                                                            step="0.01"
+                                                                                            placeholder="No cap"
+                                                                                            value={setting.monthly_cap || ''}
+                                                                                            onChange={(e) =>
+                                                                                                updateEmployeeSetting(version.id, employee.id, 'monthly_cap', e.target.value)
+                                                                                            }
+                                                                                            disabled={setting.is_exempted}
+                                                                                            className={`pl-7 ${setting.is_exempted ? 'bg-muted/50' : ''}`}
+                                                                                        />
+                                                                                    </div>
+                                                                                </TableCell>
+                                                                            </>
+                                                                        )}
+                                                                    </TableRow>
+                                                                );
+                                                            })}
+                                                        </TableBody>
+                                                    </Table>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    );
+                                })
+                            )}
+                        </div>
+                    </TabsContent>
                 </Tabs>
 
-                <DeleteConfirmationDialog 
+                <DeleteConfirmationDialog
                     isOpen={deleteDialogOpen}
                     onClose={() => {
                         setDeleteDialogOpen(false);
@@ -936,7 +936,7 @@ export default function Index({
                             Contribution Brackets - {selectedVersion && getContributionTypeLabel(selectedVersion.type)}
                         </DialogTitle>
                         <DialogDescription>
-                            View salary brackets and contribution percentages for this contribution type.
+                            View salary brackets and contribution amounts/percentages for this contribution type.
                         </DialogDescription>
                     </DialogHeader>
 
@@ -947,27 +947,43 @@ export default function Index({
                                     <TableHeader>
                                         <TableRow className="bg-muted/50">
                                             <TableHead>Salary Range</TableHead>
-                                            <TableHead className="text-right">Employee Share (%)</TableHead>
-                                            <TableHead className="text-right">Employer Share (%)</TableHead>
+                                            <TableHead className="text-right">
+                                                {selectedVersion.type === 'sss' ? 'Employee Share (₱)' : 'Employee Share (%)'}
+                                            </TableHead>
+                                            <TableHead className="text-right">
+                                                {selectedVersion.type === 'sss' ? 'Employer Share (₱)' : 'Employer Share (%)'}
+                                            </TableHead>
+                                            {selectedVersion.type === 'sss' && (
+                                                <TableHead className="text-right">Total (₱)</TableHead>
+                                            )}
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {selectedVersion.contribution_brackets
-                                            .filter((bracket, index, self) =>
-                                                index === self.findIndex(b => b.id === bracket.id)
-                                            )
-                                            .map((bracket) => {
-                                                return (
-                                                    <TableRow key={bracket.id}>
-                                                        <TableCell className="font-medium">
-                                                            ₱{bracket.salary_from.toLocaleString()} - ₱{bracket.salary_to.toLocaleString()}
-                                                            {bracket.salary_to === 999999999 && ' (and above)'}
-                                                        </TableCell>
-                                                        <TableCell className="text-right">{bracket.employee_share}%</TableCell>
-                                                        <TableCell className="text-right">{bracket.employer_share}%</TableCell>
-                                                    </TableRow>
-                                                );
-                                            })}
+                                        {selectedVersion.contribution_brackets.map((bracket) => (
+                                            <TableRow key={bracket.id}>
+                                                <TableCell className="font-medium">
+                                                    ₱{Number(bracket.salary_from).toLocaleString()} -
+                                                    {bracket.salary_to
+                                                        ? ` ₱${Number(bracket.salary_to).toLocaleString()}`
+                                                        : ' Above'}
+                                                </TableCell>
+                                                <TableCell className="text-right">
+                                                    {selectedVersion.type === 'sss'
+                                                        ? `₱${Number(bracket.employee_share).toLocaleString()}`
+                                                        : `${Number(bracket.employee_share)}%`}
+                                                </TableCell>
+                                                <TableCell className="text-right">
+                                                    {selectedVersion.type === 'sss'
+                                                        ? `₱${Number(bracket.employer_share).toLocaleString()}`
+                                                        : `${Number(bracket.employer_share)}%`}
+                                                </TableCell>
+                                                {selectedVersion.type === 'sss' && (
+                                                    <TableCell className="text-right font-semibold">
+                                                        ₱{(Number(bracket.employee_share) + Number(bracket.employer_share)).toLocaleString()}
+                                                    </TableCell>
+                                                )}
+                                            </TableRow>
+                                        ))}
                                     </TableBody>
                                 </Table>
                             </div>
@@ -1069,6 +1085,7 @@ function CreateContributionModal({ isOpen, onClose, existingTypes }: CreateContr
     };
 
     const allTypesTaken = existingTypes.length >= 3;
+    const isSSS = data.type === 'sss';
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
@@ -1123,110 +1140,112 @@ function CreateContributionModal({ isOpen, onClose, existingTypes }: CreateContr
                             <InputError message={errors.type} />
                         </div>
 
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between">
-                                <label className="text-sm font-medium">Salary Ranges & Contributions</label>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={addSalaryRange}
-                                    className='hover:cursor-pointer'
-                                >
-                                    <Plus className="h-4 w-4 mr-2" />
-                                    Add Range
-                                </Button>
+                        {isSSS && (
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-sm font-medium">Salary Ranges & Contributions</label>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={addSalaryRange}
+                                        className='hover:cursor-pointer'
+                                    >
+                                        <Plus className="h-4 w-4 mr-2" />
+                                        Add Range
+                                    </Button>
+                                </div>
+
+                                {errors.salary_ranges && typeof errors.salary_ranges === 'string' && (
+                                    <div className="text-sm text-red-600">
+                                        <InputError message={errors.salary_ranges} />
+                                    </div>
+                                )}
+
+                                {data.salary_ranges.map((range, index) => (
+                                    <div key={index} className="relative p-4 border rounded-lg bg-muted/5">
+                                        {data.salary_ranges.length > 1 && (
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                className="absolute -top-2 -right-2 h-8 w-8 rounded-full bg-background border shadow-sm"
+                                                onClick={() => removeSalaryRange(index)}
+                                            >
+                                                <Trash2 className="h-4 w-4 text-destructive" />
+                                            </Button>
+                                        )}
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-medium">Salary From (₱)</label>
+                                                <Input
+                                                    type="number"
+                                                    value={range.salary_from}
+                                                    onChange={e => updateSalaryRange(index, 'salary_from', e.target.value)}
+                                                    placeholder="0.00"
+                                                />
+                                                <InputError message={getNestedError(index, 'salary_from')} />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-medium">Salary To (₱)</label>
+                                                <Input
+                                                    type="number"
+                                                    value={range.salary_to}
+                                                    onChange={e => updateSalaryRange(index, 'salary_to', e.target.value)}
+                                                    placeholder="0.00"
+                                                />
+                                                <InputError message={getNestedError(index, 'salary_to')} />
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                            <div className="space-y-2">
+                                                <div className="flex items-center gap-1">
+                                                    <label className="text-sm font-medium">Employee Share</label>
+                                                    <Percent className="h-3 w-3 text-muted-foreground" />
+                                                </div>
+                                                <div className="relative">
+                                                    <Input
+                                                        type="number"
+                                                        value={range.employee_share}
+                                                        onChange={e => updateSalaryRange(index, 'employee_share', e.target.value)}
+                                                        placeholder="0.00"
+                                                        className="pr-8"
+                                                    />
+                                                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                                        <span className="text-sm text-muted-foreground">%</span>
+                                                    </div>
+                                                </div>
+                                                <InputError message={getNestedError(index, 'employee_share')} />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <div className="flex items-center gap-1">
+                                                    <label className="text-sm font-medium">Employer Share</label>
+                                                    <Percent className="h-3 w-3 text-muted-foreground" />
+                                                </div>
+                                                <div className="relative">
+                                                    <Input
+                                                        type="number"
+                                                        value={range.employer_share}
+                                                        onChange={e => updateSalaryRange(index, 'employer_share', e.target.value)}
+                                                        placeholder="0.00"
+                                                        className="pr-8"
+                                                    />
+                                                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                                        <span className="text-sm text-muted-foreground">%</span>
+                                                    </div>
+                                                </div>
+                                                <InputError message={getNestedError(index, 'employer_share')} />
+                                            </div>
+                                        </div>
+                                        <div className="mt-2 text-xs text-muted-foreground">
+                                            <p>Enter contribution percentage (e.g., 10 for 10%)</p>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
-
-                            {errors.salary_ranges && typeof errors.salary_ranges === 'string' && (
-                                <div className="text-sm text-red-600">
-                                    <InputError message={errors.salary_ranges} />
-                                </div>
-                            )}
-
-                            {data.salary_ranges.map((range, index) => (
-                                <div key={index} className="relative p-4 border rounded-lg bg-muted/5">
-                                    {data.salary_ranges.length > 1 && (
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="icon"
-                                            className="absolute -top-2 -right-2 h-8 w-8 rounded-full bg-background border shadow-sm"
-                                            onClick={() => removeSalaryRange(index)}
-                                        >
-                                            <Trash2 className="h-4 w-4 text-destructive" />
-                                        </Button>
-                                    )}
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-medium">Salary From (₱)</label>
-                                            <Input
-                                                type="number"
-                                                value={range.salary_from}
-                                                onChange={e => updateSalaryRange(index, 'salary_from', e.target.value)}
-                                                placeholder="0.00"
-                                            />
-                                            <InputError message={getNestedError(index, 'salary_from')} />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-medium">Salary To (₱)</label>
-                                            <Input
-                                                type="number"
-                                                value={range.salary_to}
-                                                onChange={e => updateSalaryRange(index, 'salary_to', e.target.value)}
-                                                placeholder="0.00"
-                                            />
-                                            <InputError message={getNestedError(index, 'salary_to')} />
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                                        <div className="space-y-2">
-                                            <div className="flex items-center gap-1">
-                                                <label className="text-sm font-medium">Employee Share</label>
-                                                <Percent className="h-3 w-3 text-muted-foreground" />
-                                            </div>
-                                            <div className="relative">
-                                                <Input
-                                                    type="number"
-                                                    value={range.employee_share}
-                                                    onChange={e => updateSalaryRange(index, 'employee_share', e.target.value)}
-                                                    placeholder="0.00"
-                                                    className="pr-8"
-                                                />
-                                                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                                                    <span className="text-sm text-muted-foreground">%</span>
-                                                </div>
-                                            </div>
-                                            <InputError message={getNestedError(index, 'employee_share')} />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <div className="flex items-center gap-1">
-                                                <label className="text-sm font-medium">Employer Share</label>
-                                                <Percent className="h-3 w-3 text-muted-foreground" />
-                                            </div>
-                                            <div className="relative">
-                                                <Input
-                                                    type="number"
-                                                    value={range.employer_share}
-                                                    onChange={e => updateSalaryRange(index, 'employer_share', e.target.value)}
-                                                    placeholder="0.00"
-                                                    className="pr-8"
-                                                />
-                                                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                                                    <span className="text-sm text-muted-foreground">%</span>
-                                                </div>
-                                            </div>
-                                            <InputError message={getNestedError(index, 'employer_share')} />
-                                        </div>
-                                    </div>
-                                    <div className="mt-2 text-xs text-muted-foreground">
-                                        <p>Enter contribution percentage (e.g., 10 for 10%)</p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+                        )}
 
                         <div className="flex justify-end space-x-3 pt-4">
                             <Button
@@ -1334,6 +1353,8 @@ function EditContributionModal({ isOpen, onClose, contributionVersion, existingT
         return errors[`salary_ranges.${index}.${field}`];
     };
 
+    const isSSS = data.type === 'sss';
+
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
             <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
@@ -1372,110 +1393,112 @@ function EditContributionModal({ isOpen, onClose, contributionVersion, existingT
                         <InputError message={errors.type} />
                     </div>
 
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                            <label className="text-sm font-medium">Salary Ranges & Contributions</label>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={addSalaryRange}
-                                className='hover:cursor-pointer'
-                            >
-                                <Plus className="h-4 w-4 mr-2" />
-                                Add Range
-                            </Button>
+                    {isSSS && (
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <label className="text-sm font-medium">Salary Ranges & Contributions</label>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={addSalaryRange}
+                                    className='hover:cursor-pointer'
+                                >
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    Add Range
+                                </Button>
+                            </div>
+
+                            {errors.salary_ranges && typeof errors.salary_ranges === 'string' && (
+                                <div className="text-sm text-red-600">
+                                    <InputError message={errors.salary_ranges} />
+                                </div>
+                            )}
+
+                            {data.salary_ranges.map((range, index) => (
+                                <div key={index} className="relative p-4 border rounded-lg bg-muted/5">
+                                    {data.salary_ranges.length > 1 && (
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            className="absolute -top-2 -right-2 h-8 w-8 rounded-full bg-background border shadow-sm"
+                                            onClick={() => removeSalaryRange(index)}
+                                        >
+                                            <Trash2 className="h-4 w-4 text-destructive" />
+                                        </Button>
+                                    )}
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-medium">Salary From (₱)</label>
+                                            <Input
+                                                type="number"
+                                                value={range.salary_from}
+                                                onChange={e => updateSalaryRange(index, 'salary_from', e.target.value)}
+                                                placeholder="0.00"
+                                            />
+                                            <InputError message={getNestedError(index, 'salary_from')} />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-medium">Salary To (₱)</label>
+                                            <Input
+                                                type="number"
+                                                value={range.salary_to}
+                                                onChange={e => updateSalaryRange(index, 'salary_to', e.target.value)}
+                                                placeholder="0.00"
+                                            />
+                                            <InputError message={getNestedError(index, 'salary_to')} />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                        <div className="space-y-2">
+                                            <div className="flex items-center gap-1">
+                                                <label className="text-sm font-medium">Employee Share</label>
+                                                <Percent className="h-3 w-3 text-muted-foreground" />
+                                            </div>
+                                            <div className="relative">
+                                                <Input
+                                                    type="number"
+                                                    value={range.employee_share}
+                                                    onChange={e => updateSalaryRange(index, 'employee_share', e.target.value)}
+                                                    placeholder="0.00"
+                                                    className="pr-8"
+                                                />
+                                                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                                    <span className="text-sm text-muted-foreground">%</span>
+                                                </div>
+                                            </div>
+                                            <InputError message={getNestedError(index, 'employee_share')} />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <div className="flex items-center gap-1">
+                                                <label className="text-sm font-medium">Employer Share</label>
+                                                <Percent className="h-3 w-3 text-muted-foreground" />
+                                            </div>
+                                            <div className="relative">
+                                                <Input
+                                                    type="number"
+                                                    value={range.employer_share}
+                                                    onChange={e => updateSalaryRange(index, 'employer_share', e.target.value)}
+                                                    placeholder="0.00"
+                                                    className="pr-8"
+                                                />
+                                                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                                    <span className="text-sm text-muted-foreground">%</span>
+                                                </div>
+                                            </div>
+                                            <InputError message={getNestedError(index, 'employer_share')} />
+                                        </div>
+                                    </div>
+                                    <div className="mt-2 text-xs text-muted-foreground">
+                                        <p>Enter contribution percentage (e.g., 10 for 10%)</p>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
-
-                        {errors.salary_ranges && typeof errors.salary_ranges === 'string' && (
-                            <div className="text-sm text-red-600">
-                                <InputError message={errors.salary_ranges} />
-                            </div>
-                        )}
-
-                        {data.salary_ranges.map((range, index) => (
-                            <div key={index} className="relative p-4 border rounded-lg bg-muted/5">
-                                {data.salary_ranges.length > 1 && (
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        className="absolute -top-2 -right-2 h-8 w-8 rounded-full bg-background border shadow-sm"
-                                        onClick={() => removeSalaryRange(index)}
-                                    >
-                                        <Trash2 className="h-4 w-4 text-destructive" />
-                                    </Button>
-                                )}
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-medium">Salary From (₱)</label>
-                                        <Input
-                                            type="number"
-                                            value={range.salary_from}
-                                            onChange={e => updateSalaryRange(index, 'salary_from', e.target.value)}
-                                            placeholder="0.00"
-                                        />
-                                        <InputError message={getNestedError(index, 'salary_from')} />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-medium">Salary To (₱)</label>
-                                        <Input
-                                            type="number"
-                                            value={range.salary_to}
-                                            onChange={e => updateSalaryRange(index, 'salary_to', e.target.value)}
-                                            placeholder="0.00"
-                                        />
-                                        <InputError message={getNestedError(index, 'salary_to')} />
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                                    <div className="space-y-2">
-                                        <div className="flex items-center gap-1">
-                                            <label className="text-sm font-medium">Employee Share</label>
-                                            <Percent className="h-3 w-3 text-muted-foreground" />
-                                        </div>
-                                        <div className="relative">
-                                            <Input
-                                                type="number"
-                                                value={range.employee_share}
-                                                onChange={e => updateSalaryRange(index, 'employee_share', e.target.value)}
-                                                placeholder="0.00"
-                                                className="pr-8"
-                                            />
-                                            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                                                <span className="text-sm text-muted-foreground">%</span>
-                                            </div>
-                                        </div>
-                                        <InputError message={getNestedError(index, 'employee_share')} />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <div className="flex items-center gap-1">
-                                            <label className="text-sm font-medium">Employer Share</label>
-                                            <Percent className="h-3 w-3 text-muted-foreground" />
-                                        </div>
-                                        <div className="relative">
-                                            <Input
-                                                type="number"
-                                                value={range.employer_share}
-                                                onChange={e => updateSalaryRange(index, 'employer_share', e.target.value)}
-                                                placeholder="0.00"
-                                                className="pr-8"
-                                            />
-                                            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                                                <span className="text-sm text-muted-foreground">%</span>
-                                            </div>
-                                        </div>
-                                        <InputError message={getNestedError(index, 'employer_share')} />
-                                    </div>
-                                </div>
-                                <div className="mt-2 text-xs text-muted-foreground">
-                                    <p>Enter contribution percentage (e.g., 10 for 10%)</p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+                    )}
 
                     <div className="flex justify-end space-x-3 pt-4">
                         <Button
