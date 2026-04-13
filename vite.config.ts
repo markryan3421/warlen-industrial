@@ -5,17 +5,18 @@ import laravel from 'laravel-vite-plugin';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
+    // setup to access the dev server from the host machine
     // server: {
-    //     host: true,
+    //     host: '0.0.0.0',
     //     port: 5173,
-    //     strictPort: false,
-    //     proxy: {
-    //         '': {
-    //             target: 'http://192.168.1.251:8000',
-    //             changeOrigin: true,
-    //             secure: false,
-    //         }
-    //     }
+    //     hmr: {
+    //         host: '192.168.1.23', // Your computer's IP
+    //         protocol: 'ws',
+    //     },
+    //     // Optional: Watch for file changes
+    //     watch: {
+    //         usePolling: true,
+    //     },
     // },
     plugins: [
         laravel({

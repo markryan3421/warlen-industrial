@@ -51,7 +51,8 @@ return [
     | the application so that it's available within Artisan commands.
     |
     */
-
+    // 'http://10.104.217.116:8000'
+    // 'http://localhost' default url
     'url' => env('APP_URL', 'http://localhost'),
 
     /*
