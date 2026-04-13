@@ -31,6 +31,7 @@ class DatabaseSeeder extends Seeder
            // PositionSeeder::class, // Make sure this runs first
             //DeductionSeeder::class,
             //UserSeeder::class,
+            ContributionSeeder::class,
             EmployeeSeeder::class
         ]);
     }
