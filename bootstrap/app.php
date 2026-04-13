@@ -4,7 +4,7 @@ use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Foundation\Application;
-use Illuminate\Console\Scheduling\Schedule;
+// use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
@@ -31,7 +31,6 @@ return Application::configure(basePath: dirname(__DIR__))
             AddLinkHeadersForPreloadedAssets::class,
         ]);
     })
-<<<<<<< HEAD
 
     //   ->withSchedule(function (Schedule $schedule) {
     //     // Run daily at midnight to update statuses
@@ -43,8 +42,6 @@ return Application::configure(basePath: dirname(__DIR__))
     //     // Run every minute for testing (remove in production)
     //     // $schedule->command('app:update-employee-statuses')->everyMinute();
     // })
-=======
->>>>>>> d20df55e0968a675753d5c0da117a14784215297
     ->withExceptions(function (Exceptions $exceptions): void {
         //
     })->create();

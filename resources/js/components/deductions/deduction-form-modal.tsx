@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from '@/components/custom-toast';
 import { EmployeeSelectionModal } from '@/components/employee-selection-modal';
-import { Users, Pencil, Plus } from 'lucide-react';
+import { Users, Pencil, Plus, PhilippinePeso } from 'lucide-react';
 
 interface Employee {
     id: number;
@@ -104,9 +104,9 @@ export function DeductionFormModal({
     useEffect(() => {
         if (!isOpen) {
             reset();
+            setShowEmployeeModal(false);
         }
     }, [isOpen, reset]);
-
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -114,7 +114,8 @@ export function DeductionFormModal({
         const options = {
             onSuccess: () => {
                 toast.success(isEditing ? 'Deduction updated successfully!' : 'Deduction created successfully!');
-                onClose();
+                reset(); // Reset the form first
+                onClose(); // Then close the modal
                 if (onSuccess) onSuccess();
             },
             onError: (errors) => {
@@ -197,13 +198,17 @@ export function DeductionFormModal({
                                 {/* Deduction Amount */}
                                 <div className="space-y-2">
                                     <Label htmlFor="deduction_amount">Deduction Amount <span className="text-red-500">*</span></Label>
-                                    <Input
-                                        type='number'
-                                        id="deduction_amount"
-                                        value={data.deduction_amount}
-                                        onChange={e => setData('deduction_amount', e.target.value)}
-                                        placeholder="Enter deduction amount"
-                                    />
+                                    <div className="relative">
+                                        <PhilippinePeso className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
+                                        <Input
+                                            type='number'
+                                            id="deduction_amount"
+                                            value={data.deduction_amount}
+                                            onChange={e => setData('deduction_amount', e.target.value)}
+                                            placeholder="Enter deduction amount"
+                                            className ="pl-8"
+                                        />
+                                    </div>
                                     <InputError message={errors.deduction_amount} />
                                 </div>
 
