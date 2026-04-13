@@ -107,6 +107,7 @@ export function DeductionFormModal({
         }
     }, [isOpen, reset]);
 
+
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -156,31 +157,31 @@ export function DeductionFormModal({
             <Dialog open={isOpen} onOpenChange={onClose}>
                 <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
-                    <DialogTitle className="text-2xl flex items-center gap-2">
-                        {isEditing ? (
-                            <div className="flex items-center justify-center w-10 h-10 bg-blue-900 rounded-xl">
-                                <Pencil className="h-5 w-5 text-white" />
+                        <DialogTitle className="text-2xl flex items-center gap-2">
+                            {isEditing ? (
+                                <div className="flex items-center justify-center w-10 h-10 bg-blue-900 rounded-xl">
+                                    <Pencil className="h-5 w-5 text-white" />
+                                </div>
+                            ) : (
+                                <div className="flex items-center justify-center w-10 h-10 bg-blue-900 rounded-xl">
+                                    <Plus className="h-5 w-5 text-white" />
+                                </div>
+                            )}
+                            <div>
+                                <span>{isEditing ? 'Edit Deduction' : 'Add Deduction'}</span>
+                                <div className="text-xs text-muted-foreground mt-0.5">
+                                    {isEditing ? 'Edit an existing deduction' : 'Add a new deduction'}
+                                </div>
                             </div>
-                        ) : (
-                            <div className="flex items-center justify-center w-10 h-10 bg-blue-900 rounded-xl">
-                                <Plus className="h-5 w-5 text-white" />
-                            </div>
-                        )}
-                        <div>
-                            <span>{isEditing ? 'Edit Deduction' : 'Add Deduction'}</span>
-                            <div className="text-xs text-muted-foreground mt-0.5">
-                                {isEditing ? 'Edit an existing deduction' : 'Add a new deduction'}
-                            </div>
-                        </div>
-                    </DialogTitle>
-                </DialogHeader>
+                        </DialogTitle>
+                    </DialogHeader>
 
                     <form onSubmit={submit} className="space-y-6">
                         {/* Two Column Layout */}
                         <div className="flex gap-6 flex-col md:flex-row">
                             {/* Left Column - Deduction Details */}
                             <div className="flex-1 space-y-4">
-                                <h1 className = "font-semibold" >Deduction Details</h1>
+                                <h1 className="font-semibold" >Deduction Details</h1>
                                 {/* Deduction Name */}
                                 <div className="space-y-2">
                                     <Label htmlFor="deduction_name">Deduction Name <span className="text-red-500">*</span></Label>
@@ -249,7 +250,7 @@ export function DeductionFormModal({
 
                                 <div
                                     className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-colors"
-                                    onClick={() => {setShowEmployeeModal(true)}}
+                                    onClick={() => { setShowEmployeeModal(true) }}
                                 >
                                     {selectedEmployeesList.length > 0 ? (
                                         <div>
@@ -281,12 +282,12 @@ export function DeductionFormModal({
                         </div>
 
                         {/* Buttons */}
-                        <div className="flex gap-2 pt-4 border-t">
-                            <Button type="submit" disabled={processing}>
-                                {processing ? (isEditing ? 'Updating...' : 'Creating...') : (isEditing ? 'Update Deduction' : 'Create Deduction')}
-                            </Button>
+                        <div className="flex justify-end gap-2 pt-4 border-t">
                             <Button variant='outline' type="button" onClick={onClose}>
                                 Cancel
+                            </Button>
+                            <Button type="submit" disabled={processing}>
+                                {processing ? (isEditing ? 'Updating...' : 'Creating...') : (isEditing ? 'Update' : 'Create')}
                             </Button>
                         </div>
                     </form>
