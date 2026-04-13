@@ -124,7 +124,13 @@ export function AppSidebar() {
                             className="py-10"
                             asChild
                         >
-                            <Link href={dashboard()} prefetch className="h-8 w-8 hover:bg-transparent">
+                            <Link 
+                                href={dashboard()} 
+                                prefetch 
+                                className="h-8 w-8 hover:bg-transparent"
+                                preserveScroll={true}
+                                preserveState={true}
+                            >
                                 <AppLogo />
                             </Link>
                         </SidebarMenuButton>
