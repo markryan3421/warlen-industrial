@@ -48,10 +48,16 @@ Route::middleware(['auth', 'admin', 'auth.session'])->group(function () {
     Route::get('payroll', function () {
         return Inertia::render('payroll/index');
     });
+
+    Route::delete('/employees/bulk-destroy', [EmployeeController::class, 'bulkDestroy']);
+    Route::put('/employees/bulk-restore', [EmployeeController::class, 'bulkRestore']);
+    Route::delete('/employees/bulk-force-delete', [EmployeeController::class, 'bulkForceDelete']);
+    Route::put('/employees/{employee:slug_emp}/restore', [EmployeeController::class, 'restore'])->name('employees.restore')->withTrashed();
     Route::get('/payrolls/{id}/print-data', [PayrollController::class, 'getPrintData'])->name('payrolls.print-data');
 
     //admin dashboard
     Route::get('dashboard', AdminDashboardController::class)->name('dashboard');
+
 
     Route::get('/employee-contribution-settings', [EmployeeContributionSettingsController::class, 'getSettingsByVersion']);
     Route::get('/employees/list', [EmployeeContributionSettingsController::class, 'getEmployees']);

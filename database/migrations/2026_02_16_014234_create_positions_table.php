@@ -17,7 +17,6 @@ return new class extends Migration
             $table->decimal('basic_salary');
             $table->string('pos_slug')->unique();
             $table->boolean('is_salary_fixed')->default(false);
-            $table->softDeletes();
             $table->timestamps();
         });
     }
