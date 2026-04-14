@@ -29,10 +29,10 @@ class PayrollController extends Controller
         // Apply search filter
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->whereHas('employee.user', function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('employee.user', function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%");
-                })->orWhereHas('employee', function($q) use ($search) {
+                })->orWhereHas('employee', function ($q) use ($search) {
                     $q->where('emp_code', 'like', "%{$search}%");
                 });
             });
@@ -41,29 +41,29 @@ class PayrollController extends Controller
         // Apply position filter
         if ($request->filled('positions')) {
             $positions = explode(',', $request->positions);
-            $query->whereHas('employee.position', function($q) use ($positions) {
+            $query->whereHas('employee.position', function ($q) use ($positions) {
                 $q->whereIn('pos_name', $positions);
             });
         }
 
-if ($request->filled('date_from') || $request->filled('date_to')) {
-    $query->whereHas('payrollPeriod', function($q) use ($request) {
-        if ($request->filled('date_from') && $request->filled('date_to')) {
-            // Full range: period must overlap the selected range
-            $q->whereDate('start_date', '<=', $request->date_to)
-              ->whereDate('end_date', '>=', $request->date_from);
-        } elseif ($request->filled('date_from')) {
-            // Only from date: period must contain this exact date
-            // (started on or before it AND ends on or after it)
-            $q->whereDate('start_date', '<=', $request->date_from)
-              ->whereDate('end_date', '>=', $request->date_from);
-        } elseif ($request->filled('date_to')) {
-            // Only to date: period must contain this exact date
-            $q->whereDate('start_date', '<=', $request->date_to)
-              ->whereDate('end_date', '>=', $request->date_to);
+        if ($request->filled('date_from') || $request->filled('date_to')) {
+            $query->whereHas('payrollPeriod', function ($q) use ($request) {
+                if ($request->filled('date_from') && $request->filled('date_to')) {
+                    // Full range: period must overlap the selected range
+                    $q->whereDate('start_date', '<=', $request->date_to)
+                        ->whereDate('end_date', '>=', $request->date_from);
+                } elseif ($request->filled('date_from')) {
+                    // Only from date: period must contain this exact date
+                    // (started on or before it AND ends on or after it)
+                    $q->whereDate('start_date', '<=', $request->date_from)
+                        ->whereDate('end_date', '>=', $request->date_from);
+                } elseif ($request->filled('date_to')) {
+                    // Only to date: period must contain this exact date
+                    $q->whereDate('start_date', '<=', $request->date_to)
+                        ->whereDate('end_date', '>=', $request->date_to);
+                }
+            });
         }
-    });
-}
 
         // Get total count before pagination
         $totalCount = $query->count();
@@ -71,7 +71,7 @@ if ($request->filled('date_from') || $request->filled('date_to')) {
         // Apply pagination
         $perPage = $request->input('perPage', 10);
         $payrolls = $query->paginate($perPage);
-        
+
         // Get filtered count
         $filteredCount = $payrolls->total();
 
@@ -88,7 +88,7 @@ if ($request->filled('date_from') || $request->filled('date_to')) {
 
         // Calculate totals for the filtered payrolls
         $payrollsCollection = $payrolls->getCollection();
-        
+
         return Inertia::render('payrolls/index', [
             'payrolls' => $payrolls->items(),
             'pagination' => [
@@ -120,13 +120,34 @@ if ($request->filled('date_from') || $request->filled('date_to')) {
         ]);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
+   public function getPrintData($id)
+{
+    $payroll = Payroll::with(['employee.user', 'employee.position', 'payrollPeriod', 'payrollItems'])
+        ->findOrFail($id);
+
+    return response()->json([
+        'id' => $payroll->id,
+        'employee_name' => $payroll->employee->user->name,
+        'employee_code' => $payroll->employee->emp_code,
+        'position' => $payroll->employee->position->pos_name ?? 'N/A',
+        'payroll_period' => $payroll->payrollPeriod->period_name ?? 'N/A',
+        'start_date' => $payroll->payrollPeriod->start_date ?? '',
+        'end_date' => $payroll->payrollPeriod->end_date ?? '',
+        'pay_date' => $payroll->payrollPeriod->pay_date ?? '',
+        'gross_pay' => $payroll->gross_pay,
+        'total_deduction' => $payroll->total_deduction,
+        'net_pay' => $payroll->net_pay,
+        'avatar' => $payroll->employee->avatar,
+        'earnings' => $payroll->payrollItems->where('type', 'earning')->values()->map(fn($item) => [
+            'description' => $item->description ?? $item->code ?? 'Earning',
+            'amount' => $item->amount,
+        ]),
+        'deductions' => $payroll->payrollItems->where('type', 'deduction')->values()->map(fn($item) => [
+            'description' => $item->description ?? $item->code ?? 'Deduction',
+            'amount' => $item->amount,
+        ]),
+    ]);
+} 
 
     /**
      * Store a newly created resource in storage.

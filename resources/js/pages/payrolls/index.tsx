@@ -3,12 +3,13 @@ import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import type { BreadcrumbItem } from '@/types';
-import { X, Bell, User, Search } from 'lucide-react';
+import { X, Bell, User, Search, Printer } from 'lucide-react';
 import PayrollProcessingCards from '@/components/payroll-processing-cards';
 import { CustomTable } from '@/components/custom-table';
 import { CustomPagination } from '@/components/custom-pagination';
 import { toast } from 'sonner';
 import { TableSkeleton } from '@/components/table-skeleton';
+import PayrollPrintLayout from '@/components/payroll-print-layout';
 import { EmployeeFilterBar } from '@/components/employee/employee-filter-bar';
 import { format, parseISO, isValid } from 'date-fns';
 
@@ -69,15 +70,17 @@ export default function Index({
     const [isTableLoading, setIsTableLoading] = useState(true);
     const [isFiltering, setIsFiltering] = useState(false);
     const [isInitialLoad, setIsInitialLoad] = useState(true);
+    const [selectedPrintPayrollId, setSelectedPrintPayrollId] = useState<number | null>(null);
+    const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
 
     // ── Filter state ──────────────────────────────────────────────────────────
     const parseDate = (d?: string) => { if (!d) return undefined; const p = parseISO(d); return isValid(p) ? p : undefined; };
 
-    const [searchTerm, setSearchTerm]               = useState(filters.search ?? '');
+    const [searchTerm, setSearchTerm] = useState(filters.search ?? '');
     const [selectedPositions, setSelectedPositions] = useState<string[]>(filters.positions?.split(',').filter(Boolean) ?? []);
-    const [dateFrom, setDateFrom]                   = useState<Date | undefined>(() => parseDate(filters.date_from));
-    const [dateTo, setDateTo]                       = useState<Date | undefined>(() => parseDate(filters.date_to));
-    const [perPage, setPerPage]                     = useState(filters.perPage ?? String(serverPagination.per_page ?? 10));
+    const [dateFrom, setDateFrom] = useState<Date | undefined>(() => parseDate(filters.date_from));
+    const [dateTo, setDateTo] = useState<Date | undefined>(() => parseDate(filters.date_to));
+    const [perPage, setPerPage] = useState(filters.perPage ?? String(serverPagination.per_page ?? 10));
 
     // ── Ref always holds latest filter values (avoids stale closures) ─────────
     const filtersRef = useRef({ searchTerm, selectedPositions, dateFrom, dateTo, perPage });
@@ -93,25 +96,25 @@ export default function Index({
         const { searchTerm: s, selectedPositions: pos, dateFrom: from, dateTo: to, perPage: pp } = filtersRef.current;
 
         const params: Record<string, string | number> = {};
-        const rs  = overrides.search     !== undefined ? overrides.search     : s;
-        const rp  = overrides.positions  !== undefined ? overrides.positions  : pos;
-        const rf  = overrides.from       !== undefined ? overrides.from       : from;
-        const rt  = overrides.to         !== undefined ? overrides.to         : to;
-        const rpp = overrides.perPage    !== undefined ? overrides.perPage    : pp;
+        const rs = overrides.search !== undefined ? overrides.search : s;
+        const rp = overrides.positions !== undefined ? overrides.positions : pos;
+        const rf = overrides.from !== undefined ? overrides.from : from;
+        const rt = overrides.to !== undefined ? overrides.to : to;
+        const rpp = overrides.perPage !== undefined ? overrides.perPage : pp;
 
-        if (rs?.trim())            params.search    = rs.trim();
-        if (rp?.length)            params.positions = rp.join(',');
-        if (rf && isValid(rf))     params.date_from = format(rf, 'yyyy-MM-dd');
-        if (rt && isValid(rt))     params.date_to   = format(rt, 'yyyy-MM-dd');
-        if (rpp && rpp !== '10')   params.perPage   = rpp;
-        if (overrides.page)        params.page      = overrides.page;
+        if (rs?.trim()) params.search = rs.trim();
+        if (rp?.length) params.positions = rp.join(',');
+        if (rf && isValid(rf)) params.date_from = format(rf, 'yyyy-MM-dd');
+        if (rt && isValid(rt)) params.date_to = format(rt, 'yyyy-MM-dd');
+        if (rpp && rpp !== '10') params.perPage = rpp;
+        if (overrides.page) params.page = overrides.page;
 
         setIsFiltering(true);
         router.get('/payrolls', params, {
             preserveState: true, preserveScroll: true, replace: true,
             only: ['payrolls', 'pagination', 'filters', 'totalCount', 'filteredCount',
-                   'totalOvertimePay', 'totalOvertimeHours', 'totalDeductions',
-                   'totalNetPay', 'totalGrossPay', 'activeEmployee'],
+                'totalOvertimePay', 'totalOvertimeHours', 'totalDeductions',
+                'totalNetPay', 'totalGrossPay', 'activeEmployee'],
             onFinish: () => setIsFiltering(false),
         });
     }, []);
@@ -153,18 +156,18 @@ export default function Index({
         const { searchTerm: s, selectedPositions: pos, dateFrom: from, dateTo: to, perPage: pp } = filtersRef.current;
 
         const params: Record<string, string | number> = { page };
-        if (s?.trim())             params.search    = s.trim();
-        if (pos?.length)           params.positions = pos.join(',');
+        if (s?.trim()) params.search = s.trim();
+        if (pos?.length) params.positions = pos.join(',');
         if (from && isValid(from)) params.date_from = format(from, 'yyyy-MM-dd');
-        if (to && isValid(to))     params.date_to   = format(to, 'yyyy-MM-dd');
-        if (pp && pp !== '10')     params.perPage   = pp;
+        if (to && isValid(to)) params.date_to = format(to, 'yyyy-MM-dd');
+        if (pp && pp !== '10') params.perPage = pp;
 
         setIsFiltering(true);
         router.get('/payrolls', params, {
             preserveState: true, preserveScroll: true, replace: true,
             only: ['payrolls', 'pagination', 'filters', 'totalCount', 'filteredCount',
-                   'totalOvertimePay', 'totalOvertimeHours', 'totalDeductions',
-                   'totalNetPay', 'totalGrossPay', 'activeEmployee'],
+                'totalOvertimePay', 'totalOvertimeHours', 'totalDeductions',
+                'totalNetPay', 'totalGrossPay', 'activeEmployee'],
             onFinish: () => setIsFiltering(false),
         });
     }, []);
@@ -215,7 +218,7 @@ export default function Index({
             setIsFiltering(true);
             router.reload({
                 only: ['payrolls', 'pagination', 'totalOvertimePay', 'totalOvertimeHours',
-                       'totalDeductions', 'totalNetPay', 'totalGrossPay', 'activeEmployee'],
+                    'totalDeductions', 'totalNetPay', 'totalGrossPay', 'activeEmployee'],
                 onFinish: () => setIsFiltering(false),
             });
         });
@@ -231,18 +234,18 @@ export default function Index({
     }, [allPositions]);
 
     const payrollTableData = useMemo(() => payrolls.map(p => ({
-        id:               p.id,
-        period_name:      p.payroll_period?.period_name  ?? 'N/A',
-        period_start:     p.payroll_period?.start_date   ?? '',
-        period_end:       p.payroll_period?.end_date     ?? '',
-        emp_code:         p.employee?.emp_code           ?? 'N/A',
-        employee_name:    p.employee?.user.name          ?? 'Unknown Employee',
-        position_name:    p.employee?.position?.pos_name ?? 'No Position',
-        pay_frequency:    p.employee?.pay_frequency      ?? 'N/A',
-        gross_pay:        p.gross_pay       ?? 0,
-        total_deduction:  p.total_deduction ?? 0,
-        net_pay:          p.net_pay         ?? 0,
-        _original:        p,
+        id: p.id,
+        period_name: p.payroll_period?.period_name ?? 'N/A',
+        period_start: p.payroll_period?.start_date ?? '',
+        period_end: p.payroll_period?.end_date ?? '',
+        emp_code: p.employee?.emp_code ?? 'N/A',
+        employee_name: p.employee?.user.name ?? 'Unknown Employee',
+        position_name: p.employee?.position?.pos_name ?? 'No Position',
+        pay_frequency: p.employee?.pay_frequency ?? 'N/A',
+        gross_pay: p.gross_pay ?? 0,
+        total_deduction: p.total_deduction ?? 0,
+        net_pay: p.net_pay ?? 0,
+        _original: p,
     })), [payrolls]);
 
     // ── Pagination with filters baked into every link URL ────────────────────
@@ -252,11 +255,11 @@ export default function Index({
         if (!serverPagination?.links?.length) return serverPagination;
 
         const baseParams = new URLSearchParams();
-        if (searchTerm.trim())              baseParams.set('search',    searchTerm.trim());
-        if (selectedPositions.length)       baseParams.set('positions', selectedPositions.join(','));
-        if (dateFrom && isValid(dateFrom))  baseParams.set('date_from', format(dateFrom, 'yyyy-MM-dd'));
-        if (dateTo   && isValid(dateTo))    baseParams.set('date_to',   format(dateTo,   'yyyy-MM-dd'));
-        if (perPage  && perPage !== '10')   baseParams.set('perPage',   perPage);
+        if (searchTerm.trim()) baseParams.set('search', searchTerm.trim());
+        if (selectedPositions.length) baseParams.set('positions', selectedPositions.join(','));
+        if (dateFrom && isValid(dateFrom)) baseParams.set('date_from', format(dateFrom, 'yyyy-MM-dd'));
+        if (dateTo && isValid(dateTo)) baseParams.set('date_to', format(dateTo, 'yyyy-MM-dd'));
+        if (perPage && perPage !== '10') baseParams.set('perPage', perPage);
 
         const links = serverPagination.links.map((link: any) => {
             if (!link.url) return link;
@@ -273,7 +276,15 @@ export default function Index({
 
     const activeFiltersCount = useMemo(() =>
         [searchTerm.trim(), selectedPositions.length, dateFrom, dateTo].filter(Boolean).length,
-    [searchTerm, selectedPositions, dateFrom, dateTo]);
+        [searchTerm, selectedPositions, dateFrom, dateTo]);
+
+    // Payroll details modal
+    const handlePrintPayroll = useCallback((row: any) => {
+        if (row?._original) {
+            setSelectedPrintPayrollId(row._original.id);
+            setIsPrintModalOpen(true);
+        }
+    }, []);
 
     // ── Helpers ───────────────────────────────────────────────────────────────
     const formatCurrency = useCallback((n: number) =>
@@ -284,14 +295,16 @@ export default function Index({
 
     // ── Action handlers ───────────────────────────────────────────────────────
     const handleViewPayroll = useCallback((row: any) => {
-        if (row?._original) { setSelectedPayroll(row._original); setIsModalOpen(true); }
+        if (row?._original) {
+            setSelectedPrintPayrollId(row._original.id);
+            setIsPrintModalOpen(true); // This will open the print modal directly
+        }
     }, []);
-
     const handleDeletePayroll = useCallback((id: string | number) => {
         if (!confirm('Are you sure you want to delete this payroll record?')) return;
         destroy(`/payrolls/${id}`, {
             onSuccess: () => { toast.success('Payroll record deleted successfully'); applyFilters(); },
-            onError:   () => toast.error('Failed to delete payroll record'),
+            onError: () => toast.error('Failed to delete payroll record'),
         });
     }, [destroy, applyFilters]);
 
@@ -311,7 +324,7 @@ export default function Index({
             render: (row: any) => (
                 <span className="text-xs text-gray-500">
                     {row.period_start ? new Date(row.period_start).toLocaleDateString() : 'N/A'} –{' '}
-                    {row.period_end   ? new Date(row.period_end).toLocaleDateString()   : 'N/A'}
+                    {row.period_end ? new Date(row.period_end).toLocaleDateString() : 'N/A'}
                 </span>
             ),
         },
@@ -324,14 +337,16 @@ export default function Index({
                 </div>
             ),
         },
-        { label: 'FREQUENCY',  key: 'pay_frequency',  render: (row: any) => <span>{row.pay_frequency}</span> },
-        { label: 'GROSS PAY',  key: 'gross_pay',       render: (row: any) => <span className="font-medium text-green-600">{formatCurrency(row.gross_pay)}</span> },
+        { label: 'FREQUENCY', key: 'pay_frequency', render: (row: any) => <span>{row.pay_frequency}</span> },
+        { label: 'GROSS PAY', key: 'gross_pay', render: (row: any) => <span className="font-medium text-green-600">{formatCurrency(row.gross_pay)}</span> },
         { label: 'DEDUCTIONS', key: 'total_deduction', render: (row: any) => <span className="text-red-600">{formatCurrency(row.total_deduction)}</span> },
-        { label: 'NET PAY',    key: 'net_pay',          render: (row: any) => <span className="font-bold text-blue-600">{formatCurrency(row.net_pay)}</span> },
-        { label: 'ACTIONS',    key: 'actions',          isAction: true },
+        { label: 'NET PAY', key: 'net_pay', render: (row: any) => <span className="font-bold text-blue-600">{formatCurrency(row.net_pay)}</span> },
+        { label: 'ACTIONS', key: 'actions', isAction: true },
     ], [formatCurrency]);
 
-    const actions = useMemo(() => [{ label: 'View', icon: 'Eye', route: '', className: '' }], []);
+    const actions = useMemo(() => [
+        { label: 'View', icon: 'Eye', route: '', className: '', onClick: (row: any) => handleViewPayroll(row) },
+    ], [handleViewPayroll]);
 
     const skeletonColumns = useMemo(() => [
         'EMPLOYEE', 'PERIOD', 'POSITION', 'FREQUENCY', 'GROSS PAY', 'DEDUCTIONS', 'NET PAY', 'ACTIONS',
@@ -349,7 +364,7 @@ export default function Index({
             dateFrom={dateFrom} dateTo={dateTo}
             onSearchChange={handleSearchChange}
             onPositionsChange={handlePositionsChange}
-            onBranchChange={() => {}} onSiteChange={() => {}} onStatusChange={() => {}}
+            onBranchChange={() => { }} onSiteChange={() => { }} onStatusChange={() => { }}
             onDateFromChange={handleDateFromChange}
             onDateToChange={handleDateToChange}
             onClearAll={clearFilters}
@@ -409,7 +424,7 @@ export default function Index({
                                 from={serverPagination?.from || 0}
                                 title="Payroll Records"
                                 onView={handleViewPayroll}
-                                onEdit={() => {}}
+                                onEdit={() => { }}
                                 onDelete={handleDeletePayroll}
                                 toolbar={toolbar}
                                 filterEmptyState={
@@ -448,76 +463,14 @@ export default function Index({
                 </div>
             </div>
 
-            {/* Payroll Details Modal */}
-            {selectedPayroll && (
-                <div className={`fixed inset-0 z-50 flex items-center justify-center ${isModalOpen ? 'visible' : 'invisible'}`}>
-                    <div className="absolute inset-0 bg-black/50" onClick={() => setIsModalOpen(false)} />
-                    <div className="relative bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-2xl w-full mx-4 p-6 max-h-[90vh] overflow-auto">
-                        <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-xl font-bold">Payroll Details</h2>
-                            <Button variant="ghost" size="sm" onClick={() => setIsModalOpen(false)}>
-                                <X className="h-4 w-4" />
-                            </Button>
-                        </div>
-                        <div className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                {[
-                                    ['Employee',      selectedPayroll.employee?.user.name],
-                                    ['Employee Code', selectedPayroll.employee?.emp_code],
-                                    ['Period',        `${selectedPayroll.payroll_period?.start_date} – ${selectedPayroll.payroll_period?.end_date}`],
-                                    ['Pay Frequency', selectedPayroll.employee?.pay_frequency],
-                                ].map(([label, value]) => (
-                                    <div key={label as string}>
-                                        <label className="text-sm font-medium text-gray-500">{label}</label>
-                                        <p>{value}</p>
-                                    </div>
-                                ))}
-                                <div>
-                                    <label className="text-sm font-medium text-gray-500">Gross Pay</label>
-                                    <p className="text-green-600 font-semibold">{formatCurrency(selectedPayroll.gross_pay)}</p>
-                                </div>
-                                <div>
-                                    <label className="text-sm font-medium text-gray-500">Total Deductions</label>
-                                    <p className="text-red-600 font-semibold">{formatCurrency(selectedPayroll.total_deduction)}</p>
-                                </div>
-                                <div>
-                                    <label className="text-sm font-medium text-gray-500">Net Pay</label>
-                                    <p className="text-blue-600 font-bold text-lg">{formatCurrency(selectedPayroll.net_pay)}</p>
-                                </div>
-                            </div>
-
-                            {!!selectedPayroll.payroll_items?.length && (
-                                <div>
-                                    <h3 className="font-semibold mb-2">Payroll Items</h3>
-                                    <div className="border rounded-lg overflow-hidden">
-                                        <table className="w-full text-sm">
-                                            <thead className="bg-gray-50">
-                                                <tr>
-                                                    {['Code', 'Description', 'Type', 'Amount'].map(h => (
-                                                        <th key={h} className="px-3 py-2 text-left">{h}</th>
-                                                    ))}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {selectedPayroll.payroll_items.map((item, i) => (
-                                                    <tr key={i} className="border-t">
-                                                        <td className="px-3 py-2">{item.code}</td>
-                                                        <td className="px-3 py-2">{item.description ?? '-'}</td>
-                                                        <td className={`px-3 py-2 text-right ${item.type === 'earning' ? 'text-green-600' : 'text-red-600'}`}>
-                                                            {item.type === 'earning' ? 'Earning' : 'Deduction'}
-                                                        </td>
-                                                        <td className="px-3 py-2 text-right">{formatCurrency(item.amount)}</td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )}
+            <PayrollPrintLayout
+                isOpen={isPrintModalOpen}
+                onClose={() => {
+                    setIsPrintModalOpen(false);
+                    setSelectedPrintPayrollId(null);
+                }}
+                payrollId={selectedPrintPayrollId}
+            />
         </AppLayout>
     );
 }

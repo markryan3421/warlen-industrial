@@ -48,11 +48,13 @@ Route::middleware(['auth', 'admin', 'auth.session'])->group(function () {
     Route::get('payroll', function () {
         return Inertia::render('payroll/index');
     });
+    Route::get('/payrolls/{id}/print-data', [PayrollController::class, 'getPrintData'])->name('payrolls.print-data');
+
     //admin dashboard
     Route::get('dashboard', AdminDashboardController::class)->name('dashboard');
 
-      Route::get('/employee-contribution-settings', [EmployeeContributionSettingsController::class, 'getSettingsByVersion']);
-Route::get('/employees/list', [EmployeeContributionSettingsController::class, 'getEmployees']);
+    Route::get('/employee-contribution-settings', [EmployeeContributionSettingsController::class, 'getSettingsByVersion']);
+    Route::get('/employees/list', [EmployeeContributionSettingsController::class, 'getEmployees']);
     // Bulk save settings
     Route::post('/employee-contribution-settings/bulk', [EmployeeContributionSettingsController::class, 'bulkStore']);
 

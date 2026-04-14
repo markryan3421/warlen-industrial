@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import InputError from '@/components/input-error';
-import { Users, Pencil, Plus } from 'lucide-react';
+import { Users, Pencil, Plus, PhilippinePeso } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 interface Employee {
@@ -113,7 +113,7 @@ export function IncentiveFormModal({
                         {/* Left Column - Incentive Details */}
                         <div className="flex-1 space-y-4">
                             <h2 className="text-lg font-semibold">Incentive Details</h2>
-                            
+
                             <div className="space-y-2">
                                 <Label htmlFor="incentive_name">Incentive Name <span className="text-red-500">*</span></Label>
                                 <Input
@@ -129,36 +129,38 @@ export function IncentiveFormModal({
 
                             <div className="space-y-2">
                                 <Label htmlFor="incentive_amount">Incentive Amount <span className="text-red-500">*</span></Label>
-                                <Input
-                                    type='number'
-                                    id="incentive_amount"
-                                    value={formData.incentive_amount}
-                                    onChange={e => onDataChange('incentive_amount', e.target.value)}
-                                    placeholder="Enter incentive amount"
-                                    className="h-10"
-                                />
-                                <InputError message={errors.incentive_amount} />
+                                <div className="relative">
+                                    <PhilippinePeso className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
+                                    <Input
+                                        type='number'
+                                        id="incentive_amount"
+                                        value={formData.incentive_amount}
+                                        onChange={e => onDataChange('incentive_amount', e.target.value)}
+                                        placeholder="Enter incentive amount"
+                                        className="h-10 pl-8"
+                                    />
+                                    <InputError message={errors.incentive_amount} />
+                                </div>
                             </div>
 
                             <div className="space-y-2">
                                 <Label htmlFor="payroll_period_id">Payroll Period <span className="text-red-500">*</span></Label>
-                                <div className="relative">
+                                <div className="relative w-65">
                                     <select
                                         id="payroll_period_id"
                                         value={formData.payroll_period_id}
                                         onChange={e => onDataChange('payroll_period_id', e.target.value)}
-                                        className="w-full p-2 pr-8 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 h-10 bg-white cursor-pointer"
+                                        className="w-full p-2 pr-8 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 h-10 bg-white appearance-none cursor-pointer"
                                         style={{ color: formData.payroll_period_id ? 'black' : '#9CA3AF' }}
                                     >
-                                        <option value="" className="text-gray-500 text-sm">
-                                            Select a payroll period
-                                        </option>
+                                        <option value="" className="text-gray-500 text-sm" hidden>Select a payroll period</option>
                                         {payroll_periods && payroll_periods.length > 0 ? (
                                             payroll_periods.map(period => (
                                                 <option
                                                     key={period.id}
                                                     value={period.id}
-                                                    className="text-gray-900 text-sm"
+                                                    className="text-gray-900 text-sm hover:cursor-pointer rounded-xl border border-gray-200 my-1 px-2 py-1"
+                                                    style={{ borderRadius: '30px', border: '1px solid #ffffff', margin: '2px 0', padding: '4px 8px' }}
                                                 >
                                                     {formatDate(period.start_date)} - {formatDate(period.end_date)}
                                                 </option>
@@ -167,15 +169,16 @@ export function IncentiveFormModal({
                                             <option disabled className="text-gray-500">No payroll periods available</option>
                                         )}
                                     </select>
-                                    {/* <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
                                         <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                         </svg>
-                                    </div> */}
+                                    </div>
                                 </div>
                                 <InputError message={errors.payroll_period_id} />
                             </div>
                         </div>
+
 
                         {/* Right Column - Employee Selection Button */}
                         <div className="flex-1 space-y-4">
@@ -225,6 +228,6 @@ export function IncentiveFormModal({
                     </div>
                 </form>
             </DialogContent>
-        </Dialog>
+        </Dialog >
     );
 }

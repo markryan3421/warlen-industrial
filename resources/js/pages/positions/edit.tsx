@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch'; // Import Switch component
-import AppLayout from '@/layouts/hr-layout';
+import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import { ArrowLeft, Briefcase, CheckCircle, DollarSign, Save, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -16,7 +16,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Positions',
-        href: '/hr/positions',
+        href: '/positions/edit',
     },
     {
         title: 'Update Position',
@@ -45,7 +45,7 @@ export default function Update({ position }: PageProps) {
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
-        put(`/hr/positions/${position.pos_slug}`);
+        put(`/positions/${position.pos_slug}`);
     };
 
     const handleSalaryToggle = (checked: boolean) => {

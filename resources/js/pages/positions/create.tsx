@@ -7,64 +7,65 @@ import { StaticTable } from '@/components/static-table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch'; // Import Switch component
-import AppLayout from '@/layouts/hr-layout';
-import type { BreadcrumbItem } from '@/types';
-import { ArrowLeft, Briefcase, CheckCircle, DollarSign, Save, X } from 'lucide-react';
+import { Switch } from '@/components/ui/switch'; // Import Switch component if available
+import AppLayout from '@/layouts/app-layout';
+import { ArrowLeft, PlusCircle, Briefcase, CheckCircle, DollarSign, Save, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import type { BreadcrumbItem } from '@/types';
+import { toast } from '@/components/custom-toast';
+
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Positions',
-        href: '/hr/positions',
+        href: '/positions',
     },
     {
-        title: 'Update Position',
-        href: '#',
+        title: 'Create Position',
+        href: '/positions/create',
     },
 ];
 
-interface Position {
-    pos_slug: string;
-    id: number;
-    pos_name: string;
-    basic_salary: number;
-    is_salary_fixed: boolean;
-}
-
-interface PageProps {
-    position: Position;
-}
-
-export default function Update({ position }: PageProps) {
-    const { data, setData, put, processing, errors } = useForm({
-        pos_name: position.pos_name,
-        basic_salary: position.basic_salary,
-        is_salary_fixed: position.is_salary_fixed,
+export default function Create() {
+    const { data, setData, post, processing, errors } = useForm({
+        pos_name: '',
+        basic_salary: '',
+        is_salary_fixed: false,
     })
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
-        put(`/hr/positions/${position.pos_slug}`);
-    };
+        post('/positions', {
+            onSuccess: (page: { props: any; }) => {
+                const successMessage = (page.props as any).flash?.success || 'Position created successfully.';
+                toast.success(successMessage);
+            },
+            onError: (errors: { [s: string]: unknown; } | ArrayLike<unknown>) => {
+                const errorMessage = String(Object.values(errors).flat()[0]) || 'Failed to create position.';
+                toast.error(errorMessage);
+            },
+        });
+    }
 
     const handleSalaryToggle = (checked: boolean) => {
         setData('is_salary_fixed', checked);
     }
 
-    // Format currency
-    const formatCurrency = (value: number) => {
+    // Format currency for preview
+    const formatCurrency = (value: string | number) => {
+        const numValue = typeof value === 'string' ? parseFloat(value) : value;
+        if (isNaN(numValue) || numValue === 0) return 'Not set';
         return new Intl.NumberFormat('en-PH', {
             style: 'currency',
             currency: 'PHP',
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
-        }).format(value);
+        }).format(numValue);
     };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Update Position" />
+            <Head title="Create Position" />
 
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -85,16 +86,16 @@ export default function Update({ position }: PageProps) {
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div>
                             <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-                                Update Position
+                                Create New Position
                             </h1>
                             <p className="text-muted-foreground mt-2">
-                                Modify position details and salary configuration
+                                Define a new job role and configure salary settings
                             </p>
                         </div>
                         <div className="flex items-center gap-3">
                             <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-primary/10 rounded-full">
-                                <Briefcase className="h-4 w-4 text-primary" />
-                                <span className="text-sm font-medium text-primary">Edit Mode</span>
+                                <PlusCircle className="h-4 w-4 text-primary" />
+                                <span className="text-sm font-medium text-primary">New Position</span>
                             </div>
                         </div>
                     </div>
@@ -126,10 +127,14 @@ export default function Update({ position }: PageProps) {
                                     value={data.pos_name}
                                     onChange={e => setData('pos_name', e.target.value)}
                                     className="w-full transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                                    placeholder="Enter position name"
+                                    placeholder="e.g., Software Engineer, HR Manager, Accountant"
                                     disabled={processing}
+                                    autoFocus
                                 />
                                 <InputError message={errors.pos_name} />
+                                <p className="text-xs text-muted-foreground">
+                                    Choose a descriptive name that clearly identifies the role
+                                </p>
                             </motion.div>
 
                             {/* Fixed Salary Toggle */}
@@ -195,7 +200,7 @@ export default function Update({ position }: PageProps) {
                                 <InputError message={errors.basic_salary} />
 
                                 <AnimatePresence>
-                                    {data.is_salary_fixed && (
+                                    {data.is_salary_fixed && data.basic_salary && (
                                         <motion.div
                                             initial={{ opacity: 0, height: 0 }}
                                             animate={{ opacity: 1, height: 'auto' }}
@@ -205,13 +210,13 @@ export default function Update({ position }: PageProps) {
                                         >
                                             <div className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 p-3 rounded-lg">
                                                 <CheckCircle className="h-4 w-4 flex-shrink-0" />
-                                                <p>This position has a fixed salary of {formatCurrency(data.basic_salary)}</p>
+                                                <p>This position will have a fixed salary of {formatCurrency(data.basic_salary)}</p>
                                             </div>
                                         </motion.div>
                                     )}
                                 </AnimatePresence>
 
-                                {!data.is_salary_fixed && data.basic_salary > 0 && (
+                                {!data.is_salary_fixed && data.basic_salary && (
                                     <motion.div
                                         initial={{ opacity: 0 }}
                                         animate={{ opacity: 1 }}
@@ -219,6 +224,12 @@ export default function Update({ position }: PageProps) {
                                     >
                                         Base salary set to {formatCurrency(data.basic_salary)} (flexible range)
                                     </motion.div>
+                                )}
+
+                                {!data.basic_salary && (
+                                    <p className="text-xs text-muted-foreground">
+                                        Enter the minimum or fixed salary amount for this position
+                                    </p>
                                 )}
                             </motion.div>
 
@@ -247,12 +258,12 @@ export default function Update({ position }: PageProps) {
                                     {processing ? (
                                         <>
                                             <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                                            Updating...
+                                            Creating...
                                         </>
                                     ) : (
                                         <>
                                             <Save className="h-4 w-4" />
-                                            Update Position
+                                            Create Position
                                         </>
                                     )}
                                 </Button>
@@ -261,21 +272,26 @@ export default function Update({ position }: PageProps) {
                     </form>
                 </motion.div>
 
-                {/* Preview Section (Optional) */}
-                {data.basic_salary > 0 && (
+                {/* Preview Section - Shows live preview as user types */}
+                {(data.pos_name || data.basic_salary) && (
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5, delay: 0.6 }}
                         className="mt-8 p-6 bg-gradient-to-r from-primary/5 to-primary/10 rounded-xl border"
                     >
-                        <h3 className="text-sm font-semibold text-muted-foreground mb-3">Salary Preview</h3>
+                        <h3 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
+                            <CheckCircle className="h-4 w-4" />
+                            Position Preview
+                        </h3>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                            <div className="p-3 bg-background rounded-lg">
-                                <p className="text-xs text-muted-foreground">Position</p>
-                                <p className="font-semibold">{data.pos_name || 'Not set'}</p>
+                            <div className="p-3 bg-background rounded-lg transition-all hover:shadow-md">
+                                <p className="text-xs text-muted-foreground">Position Name</p>
+                                <p className="font-semibold text-lg">
+                                    {data.pos_name || <span className="text-muted-foreground italic">Not set</span>}
+                                </p>
                             </div>
-                            <div className="p-3 bg-background rounded-lg">
+                            <div className="p-3 bg-background rounded-lg transition-all hover:shadow-md">
                                 <p className="text-xs text-muted-foreground">Salary Type</p>
                                 <p className="font-semibold">
                                     {data.is_salary_fixed ? (
@@ -285,13 +301,24 @@ export default function Update({ position }: PageProps) {
                                     )}
                                 </p>
                             </div>
-                            <div className="p-3 bg-background rounded-lg">
+                            <div className="p-3 bg-background rounded-lg transition-all hover:shadow-md">
                                 <p className="text-xs text-muted-foreground">Basic Salary</p>
-                                <p className="font-semibold text-primary">
-                                    {data.basic_salary ? formatCurrency(data.basic_salary) : 'Not set'}
+                                <p className="font-semibold text-primary text-lg">
+                                    {data.basic_salary ? formatCurrency(data.basic_salary) : <span className="text-muted-foreground italic">Not set</span>}
                                 </p>
                             </div>
                         </div>
+
+                        {/* Additional Info */}
+                        {data.pos_name && data.basic_salary && (
+                            <div className="mt-4 p-3 bg-primary/5 rounded-lg border border-primary/20">
+                                <p className="text-sm text-center text-muted-foreground">
+                                    Ready to create <strong className="text-primary">{data.pos_name}</strong> position with
+                                    {data.is_salary_fixed ? ' fixed salary of ' : ' flexible starting salary of '}
+                                    <strong className="text-primary">{formatCurrency(data.basic_salary)}</strong>
+                                </p>
+                            </div>
+                        )}
                     </motion.div>
                 )}
             </motion.div>
