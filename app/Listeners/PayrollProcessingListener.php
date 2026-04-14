@@ -11,14 +11,13 @@ use Illuminate\Queue\InteractsWithQueue;
 class PayrollProcessingListener implements ShouldQueue, ShouldBeEncrypted
 {
     protected $payrollService;
-
+    public $tries = 3;
     /**
      * Create the event listener.
      */
     public function __construct(PayrollProcessingService $payrollService)
     {
         $this->payrollService = $payrollService;
-      
     }
 
     /**

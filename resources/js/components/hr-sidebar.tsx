@@ -168,11 +168,9 @@ export function HrSidebar() {
 
             <SidebarContent className={isExpanded ? 'px-5' : '-ml-3 px-5'}>
                 <NavMain items={hrExpendituresItems} label="Expenditures" />
-                <NavMain items={hrAccessControlItems} label="Access Control" />
             </SidebarContent>
 
             <SidebarFooter>
-                <NavMain items={footerNavItems} /> {/* Use NavMain for footer items */}
                 <NavUser />
             </SidebarFooter>
         </Sidebar>

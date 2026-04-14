@@ -19,6 +19,8 @@ return new class extends Migration
             $table->foreignId('contribution_version_id')->constrained('contribution_versions')->cascadeOnUpdate()->cascadeOnDelete();
             $table->boolean('is_exempted')->default(false);
             $table->decimal('fixed_amount', 15, 2)->nullable(); // For pagibig & philhealth only
+            $table->decimal('contributed_amount', 15, 2)->nullable();// total contributed sss and pagibig;
+            $table->decimal('remaining_balance', 15, 2)->nullable(); //base on employee_share 
 
             $table->decimal('monthly_cap', 15, 2)->nullable();  //for pagibig only
             $table->timestamps();

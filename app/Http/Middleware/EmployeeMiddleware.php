@@ -16,14 +16,14 @@ class EmployeeMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-          if(! Auth::check()){
-              return $next($request);
+        if (! Auth::check()) {
+            return redirect()->route('login');
         }
 
-         if (Auth::check() && Auth::user()->hasRole('employee')) {
+        if (Auth::check() && Auth::user()->hasRole('employee')) {
             return $next($request);
         }
-        
+
         abort(403, 'Unauthorized access. Employee privileges required.');
     }
 }

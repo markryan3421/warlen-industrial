@@ -1,10 +1,9 @@
 import PositionController from '@/actions/App/Http/Controllers/HrRole/HRPositionController';
 import { Head, Link, router, useForm } from '@inertiajs/react';
-import { Briefcase, Search , BriefcaseBusiness} from 'lucide-react';
+import { Briefcase, Search, BriefcaseBusiness } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { TableSearchHeader } from '@/components/table-search-header';
 import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/hr-layout';
 import type { BreadcrumbItem } from '@/types';
 import { CustomToast } from '@/components/custom-toast';
@@ -12,7 +11,6 @@ import { CustomHeader } from '@/components/custom-header';
 import { CustomTable } from '@/components/custom-table';
 import { CustomPagination } from '@/components/custom-pagination';
 import { PositionTableConfig } from '@/config/tables/position-table';
-
 import { toast } from '@/components/custom-toast';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-modal';
 
@@ -64,16 +62,24 @@ export default function Index({ positions, filters = { search: '', perPage: '10'
         perPage: filters?.perPage || '10',
     });
 
+    // Transform positions to convert boolean to Yes/No
+    const transformedPositions = useMemo(() => {
+        return positions.data.map(position => ({
+            ...position,
+            is_salary_fixed_display: position.is_salary_fixed ? 'Fixed' : 'Not Fixed'
+        }));
+    }, [positions.data]);
+
     const filteredPositions = useMemo(() => {
         if (!data.search) {
-            return positions.data;
+            return transformedPositions;
         }
 
         const term = data.search.toLowerCase().trim();
-        return positions.data.filter(position =>
+        return transformedPositions.filter(position =>
             position.pos_name.toLowerCase().includes(term)
         );
-    }, [positions.data, data.search]);
+    }, [transformedPositions, data.search]);
 
     const handleSearchChange = (value: string) => {
         setData('search', value);
@@ -129,7 +135,7 @@ export default function Index({ positions, filters = { search: '', perPage: '10'
 
     const confirmDelete = () => {
         if (!positionToDelete) return;
-        
+
         setIsDeleting(true);
         destroy(PositionController.destroy(positionToDelete.pos_slug).url, {
             onSuccess: (page) => {
@@ -152,16 +158,27 @@ export default function Index({ positions, filters = { search: '', perPage: '10'
     const hasNoPositions = positions.data.length === 0;
     const hasNoFilterResults = hasActiveFilters && filteredPositions.length === 0;
 
+    // Update columns to use the display value for is_salary_fixed
+    const updatedColumns = PositionTableConfig.columns.map(col => {
+        if (col.key === 'is_salary_fixed') {
+            return {
+                ...col,
+                render: (row: any) => <span>{row.is_salary_fixed_display}</span>
+            };
+        }
+        return col;
+    });
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Positions" />
             <CustomToast />
 
             <div className="flex flex-col gap-4 p-4">
-                
+
                 {/* Header with title */}
                 <div className="flex justify-between items-center">
-                    <CustomHeader 
+                    <CustomHeader
                         title="Positions"
                         description="Manage job positions and their corresponding basic salaries."
                         icon={<BriefcaseBusiness />}
@@ -191,14 +208,14 @@ export default function Index({ positions, filters = { search: '', perPage: '10'
                         </div>
                     ) : (
                         <>
-                            <CustomTable 
+                            <CustomTable
                                 title="Position Lists"
-                                columns={PositionTableConfig.columns}
+                                columns={updatedColumns}
                                 actions={PositionTableConfig.actions}
                                 data={filteredPositions}
                                 from={positions.from ?? 1}
                                 onDelete={handleDeleteClick}
-                                onView={() => {}}
+                                onView={() => { }}
                                 onEdit={handleEditClick}
                                 toolbar={
                                     <TableSearchHeader
@@ -208,7 +225,6 @@ export default function Index({ positions, filters = { search: '', perPage: '10'
                                         searchPlaceholder="Search positions..."
                                     />
                                 }
-                                // Only show empty state when filtering and no results
                                 emptyState={
                                     hasNoFilterResults ? (
                                         <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
@@ -229,7 +245,7 @@ export default function Index({ positions, filters = { search: '', perPage: '10'
                                 }
                             />
 
-                            <CustomPagination 
+                            <CustomPagination
                                 pagination={positions}
                                 perPage={data.perPage}
                                 onPerPageChange={handlePerPageChange}
@@ -238,7 +254,7 @@ export default function Index({ positions, filters = { search: '', perPage: '10'
                                 search={data.search}
                                 resourceName='positions'
                             />
-                            
+
                             {/* Delete Confirmation Dialog */}
                             <DeleteConfirmationDialog
                                 isOpen={deleteDialogOpen}
@@ -252,12 +268,6 @@ export default function Index({ positions, filters = { search: '', perPage: '10'
                                 isLoading={isDeleting}
                                 confirmText="Delete Position"
                             />
-                            
-                            {!hasNoFilterResults && (
-                                <div className="text-sm text-gray-500">
-                                    Showing {filteredPositions.length} of {positions.total} {filteredPositions.length === 1 ? 'entry' : 'entries'}
-                                </div>
-                            )}
                         </>
                     )}
                 </div>

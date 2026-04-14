@@ -77,9 +77,9 @@ function useDebounce<T>(value: T, delay: number): T {
     return debouncedValue;
 }
 
-export default function Index({ 
-    deductions, 
-    payroll_periods = [], 
+export default function Index({
+    deductions,
+    payroll_periods = [],
     employees = [],
     editingDeduction,
     isEditing = false,
@@ -264,12 +264,21 @@ export default function Index({
     const handleView = (deduction: Deduction) => setSelected(deduction);
 
     const handleEdit = (deduction: Deduction) => {
+        console.log('=== HANDLE EDIT DEBUG ===');
+        console.log('Full deduction object:', deduction);
+        console.log('Deduction employees:', deduction.employees);
+
+        // Extract employee IDs from the employees relationship
+        const employeeIds = deduction.employees?.map(emp => emp.id) || [];
+
+        console.log('Extracted employee IDs:', employeeIds);
+
         setSelectedDeduction(deduction);
         setData({
             deduction_name: deduction.deduction_name,
             deduction_amount: String(deduction.deduction_amount),
-            payroll_period_id: String(deduction.payroll_period_id || ''),
-            employee_ids: deduction.employees?.map(emp => emp.id) || [],
+            payroll_period_id: String(deduction.payroll_period?.id || ''),
+            employee_ids: employeeIds,  // Use the extracted IDs
         });
         setIsEditModalOpen(true);
         setIsCreateModalOpen(false);
@@ -558,14 +567,9 @@ export default function Index({
                 deduction={selectedDeduction}
                 payroll_periods={payroll_periods}
                 employees={employees}
-                formData={data}
-                errors={errors}
-                processing={processing}
-                onDataChange={(key, value) => setData(key as any, value)}
-                onSubmit={handleSubmit}
-                onShowEmployeeModal={() => setShowEmployeeModal(true)}
-                getEmployeeName={getEmployeeName}
-                selectedEmployeesList={selectedEmployeesList}
+                onSuccess={() => {
+                    router.reload();
+                }}
             />
 
             <EmployeeSelectionModal

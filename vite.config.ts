@@ -10,7 +10,7 @@ export default defineConfig({
     //     host: '0.0.0.0',
     //     port: 5173,
     //     hmr: {
-    //         host: '10.104.217.116', // Your computer's IP
+    //         host: '10.186.216.116', // Your computer's IP
     //         protocol: 'ws',
     //     },
     //     // Optional: Watch for file changes

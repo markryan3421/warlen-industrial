@@ -1,4 +1,3 @@
-// components/deductions/deduction-form-modal.tsx
 import { useForm } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
 import InputError from '@/components/input-error';
@@ -32,6 +31,8 @@ interface DeductionFormModalProps {
         deduction_name: string;
         deduction_amount: string | number;
         payroll_period_id?: number;
+        payroll_period?: PayrollPeriod;
+        employees?: Employee[];
         employee_ids?: number[];
     } | null;
     payroll_periods?: PayrollPeriod[];
@@ -49,41 +50,83 @@ export function DeductionFormModal({
     onSuccess
 }: DeductionFormModalProps) {
     const [showEmployeeModal, setShowEmployeeModal] = useState(false);
+    const [modalKey, setModalKey] = useState(0); // Force re-render when modal changes
 
-    const { data, setData, post, put, processing, errors, reset } = useForm({
+    // Separate form instances for create and edit
+    const createForm = useForm({
         deduction_name: '',
         deduction_amount: '',
         payroll_period_id: '',
         employee_ids: [] as number[],
     });
 
-    // Debug logging - check what's being received
-    useEffect(() => {
-        if (isOpen) {
-            console.log('=== Deduction Form Modal Debug ===');
-            console.log('Payroll periods received:', payroll_periods);
-            console.log('Payroll periods count:', payroll_periods?.length);
-            console.log('Employees count:', employees?.length);
-            console.log('Is editing:', isEditing);
-            console.log('Deduction data:', deduction);
+    const editForm = useForm({
+        deduction_name: '',
+        deduction_amount: '',
+        payroll_period_id: '',
+        employee_ids: [] as number[],
+    });
 
-            if (payroll_periods && payroll_periods.length > 0) {
-                console.log('First payroll period sample:', payroll_periods[0]);
-            }
-        }
-    }, [isOpen, payroll_periods, employees, isEditing, deduction]);
+    // Use the appropriate form based on mode
+    const currentForm = isEditing ? editForm : createForm;
+    const { data, setData, processing, errors, reset } = currentForm;
 
-    // Initialize form with editing data if provided
+    // Initialize edit form when deduction data is available
     useEffect(() => {
         if (isEditing && deduction && isOpen) {
-            setData({
+            console.log('Initializing edit form with:', deduction);
+            
+            // Extract employee IDs from the employees array
+            const employeeIds = deduction.employees?.map(emp => emp.id) || [];
+            
+            console.log('Extracted employee IDs:', employeeIds);
+            
+            editForm.setData({
                 deduction_name: deduction.deduction_name,
                 deduction_amount: String(deduction.deduction_amount),
-                payroll_period_id: String(deduction.payroll_period_id || ''),
-                employee_ids: deduction.employee_ids || [],
+                payroll_period_id: String(deduction.payroll_period?.id || deduction.payroll_period_id || ''),
+                employee_ids: employeeIds,
             });
         }
     }, [isEditing, deduction, isOpen]);
+
+    // Reset create form when opening in create mode
+    useEffect(() => {
+        if (!isEditing && isOpen) {
+            console.log('Resetting create form');
+            createForm.reset();
+            // Force modal to re-render with fresh state
+            setModalKey(prev => prev + 1);
+        }
+    }, [isEditing, isOpen]);
+
+    // Reset ALL forms and states when modal closes
+    useEffect(() => {
+        if (!isOpen) {
+            // Small delay to ensure cleanup happens after animation
+            const timer = setTimeout(() => {
+                createForm.reset();
+                editForm.reset();
+                setShowEmployeeModal(false);
+                // Force a key change to reset component state
+                setModalKey(prev => prev + 1);
+            }, 100);
+            
+            return () => clearTimeout(timer);
+        }
+    }, [isOpen]);
+
+    // Debug logging
+    useEffect(() => {
+        if (isOpen) {
+            console.log(`=== ${isEditing ? 'Edit' : 'Create'} Deduction Form Modal Debug ===`);
+            console.log('Is editing:', isEditing);
+            console.log('Deduction data:', deduction);
+            console.log('Current form data:', data);
+            console.log('Employee IDs:', data.employee_ids);
+            console.log('Selected employees count:', employees.filter(emp => data.employee_ids.includes(emp.id)).length);
+        }
+    }, [isOpen, isEditing, deduction, data, employees]);
 
     const formatDate = (dateString?: string) => {
         if (!dateString) return 'No date';
@@ -100,22 +143,13 @@ export function DeductionFormModal({
         }
     };
 
-    // Reset form when modal closes
-    useEffect(() => {
-        if (!isOpen) {
-            reset();
-            setShowEmployeeModal(false);
-        }
-    }, [isOpen, reset]);
-
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
 
         const options = {
             onSuccess: () => {
                 toast.success(isEditing ? 'Deduction updated successfully!' : 'Deduction created successfully!');
-                reset(); // Reset the form first
-                onClose(); // Then close the modal
+                onClose();
                 if (onSuccess) onSuccess();
             },
             onError: (errors) => {
@@ -124,9 +158,9 @@ export function DeductionFormModal({
         };
 
         if (isEditing && deduction) {
-            put(`/deductions/${deduction.id}`, options);
+            editForm.put(`/deductions/${deduction.id}`, options);
         } else {
-            post('/deductions', options);
+            createForm.post('/deductions', options);
         }
     };
 
@@ -152,10 +186,13 @@ export function DeductionFormModal({
 
     const selectedEmployeesList = employees.filter(emp => data.employee_ids.includes(emp.id));
 
+    // Don't render if not open
+    if (!isOpen) return null;
+
     return (
         <>
             {/* Main Form Modal */}
-            <Dialog open={isOpen} onOpenChange={onClose}>
+            <Dialog key={modalKey} open={isOpen} onOpenChange={onClose}>
                 <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle className="text-2xl flex items-center gap-2">
@@ -182,7 +219,8 @@ export function DeductionFormModal({
                         <div className="flex gap-6 flex-col md:flex-row">
                             {/* Left Column - Deduction Details */}
                             <div className="flex-1 space-y-4">
-                                <h1 className="font-semibold" >Deduction Details</h1>
+                                <h1 className="font-semibold">Deduction Details</h1>
+
                                 {/* Deduction Name */}
                                 <div className="space-y-2">
                                     <Label htmlFor="deduction_name">Deduction Name <span className="text-red-500">*</span></Label>
@@ -206,7 +244,7 @@ export function DeductionFormModal({
                                             value={data.deduction_amount}
                                             onChange={e => setData('deduction_amount', e.target.value)}
                                             placeholder="Enter deduction amount"
-                                            className ="pl-8"
+                                            className="pl-8"
                                         />
                                     </div>
                                     <InputError message={errors.deduction_amount} />
@@ -229,8 +267,7 @@ export function DeductionFormModal({
                                                     <option
                                                         key={period.id}
                                                         value={period.id}
-                                                        className="text-gray-900 text-sm hover:cursor-pointer rounded-xl border border-gray-200 my-1 px-2 py-1"
-                                                        style={{ borderRadius: '30px', border: '1px solid #ffffff', margin: '2px 0', padding: '4px 8px' }}
+                                                        className="text-gray-900 text-sm hover:cursor-pointer"
                                                     >
                                                         {formatDate(period.start_date)} - {formatDate(period.end_date)}
                                                     </option>
@@ -255,7 +292,7 @@ export function DeductionFormModal({
 
                                 <div
                                     className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-colors"
-                                    onClick={() => { setShowEmployeeModal(true) }}
+                                    onClick={() => setShowEmployeeModal(true)}
                                 >
                                     {selectedEmployeesList.length > 0 ? (
                                         <div>
@@ -277,7 +314,7 @@ export function DeductionFormModal({
                                         <div>
                                             <Users className="h-8 w-8 text-gray-400 mx-auto mb-2" />
                                             <p className="text-sm text-gray-500">Click to select employees</p>
-                                            <p className="text-xs text-gray-400 mt-1">Choose who will receive this incentive</p>
+                                            <p className="text-xs text-gray-400 mt-1">Choose employees for this deduction</p>
                                         </div>
                                     )}
                                 </div>
@@ -308,9 +345,7 @@ export function DeductionFormModal({
                 onToggle={toggleEmployee}
                 onRemove={removeEmployee}
                 onAddAll={addAllEmployees}
-                onRemoveAll={(ids) => {
-                    setData('employee_ids', []);
-                }}
+                onRemoveAll={() => setData('employee_ids', [])}
             />
         </>
     );
