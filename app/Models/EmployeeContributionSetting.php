@@ -23,6 +23,8 @@ class EmployeeContributionSetting extends Model
         'is_exempted',
         'fixed_amount',
         'monthly_cap',
+        'contributed_amount',
+        'remaining_balance',
     ];
 
     protected $casts = [
