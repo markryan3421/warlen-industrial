@@ -130,7 +130,7 @@ class AppServiceProvider extends ServiceProvider
     {
         RateLimiter::for('limit-actions', function (Request $request) {
             return $request->user()
-                ? Limit::perMinute(15)->by($request->user()->id)
+                ? Limit::perMinute(60)->by($request->user()->id)
                 : Limit::perMinute(5)->by($request->ip());
         });
     }

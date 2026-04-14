@@ -46,7 +46,6 @@ class ContributionService
             if ($philhealthVersion) {
                 $contributions['philhealth'] = $this->calculatePhilHealthContribution($philhealthVersion, $grossPay, $employeeId);
             }
-
         } catch (\Exception $e) {
             Log::error("Error calculating government contributions: " . $e->getMessage());
         }
@@ -60,70 +59,85 @@ class ContributionService
     private function calculateSSSContribution($version, float $grossPay, ?int $employeeId): array
     {
         $result = ['employee' => 0, 'employer' => 0];
-        
-        // Skip calculation if gross pay is 0
+
         if ($grossPay <= 0) {
             Log::info("SSS calculation skipped: gross pay is zero");
             return $result;
         }
-        
-        // Check if employee has settings for SSS
+
+        // 1. Employee‑specific settings (exemption / fixed amount)
         if ($employeeId) {
             $employeeSetting = EmployeeContributionSetting::where('employee_id', $employeeId)
                 ->where('contribution_version_id', $version->id)
                 ->first();
-            
-            // If employee is exempted, return zero contributions
+
             if ($employeeSetting && $employeeSetting->is_exempted === true) {
                 Log::info("SSS exempted for employee ID: {$employeeId}");
                 return $result;
             }
-            
-            // Check if fixed_amount is set and employee is not exempted
+
             if ($employeeSetting && $employeeSetting->fixed_amount !== null && $employeeSetting->is_exempted === false) {
-                // Use fixed amount from employee settings
                 $fixedAmount = (float) $employeeSetting->fixed_amount;
-                
                 $result = [
                     'employee' => $fixedAmount,
                     'employer' => $fixedAmount,
                 ];
-                
-                Log::info("SSS Fixed Amount from Employee Settings:", [
+                Log::info("SSS Fixed Amount from Employee Settings", [
                     'employee_id' => $employeeId,
                     'fixed_amount' => $fixedAmount,
-                    'employee_amount' => $result['employee'],
-                    'employer_amount' => $result['employer']
                 ]);
-                
                 return $result;
             }
         }
-        
-        // Find the bracket based on salary range
+
+        // 2. Special rule: gross pay >= 34,750 → employee_share = 1,750
+        if ($grossPay >= 34750) {
+            // Find the appropriate employer share from the bracket (or nearest bracket)
+            $bracket = $version->contributionBrackets()
+                ->where('salary_from', '<=', $grossPay)
+                ->where('salary_to', '>=', $grossPay)
+                ->first();
+
+            if (!$bracket) {
+                $bracket = $this->findNearestBracket($version, $grossPay);
+            }
+
+            $employerShare = $bracket ? (float) $bracket->employer_share : 0;
+
+            $result = [
+                'employee' => 1750.00,
+                'employer' => round($employerShare, 2),
+            ];
+
+            Log::info("SSS Special Rule (>=₱34,750):", [
+                'gross_pay' => $grossPay,
+                'employee_amount' => $result['employee'],
+                'employer_amount' => $result['employer']
+            ]);
+            return $result;
+        }
+
+        // 3. Standard bracket lookup
         $bracket = $version->contributionBrackets()
             ->where('salary_from', '<=', $grossPay)
             ->where('salary_to', '>=', $grossPay)
             ->first();
-        
+
         if ($bracket) {
-            // Use fixed amounts directly from the bracket (not percentages)
             $result = [
                 'employee' => round((float) $bracket->employee_share, 2),
                 'employer' => round((float) $bracket->employer_share, 2),
             ];
         } else {
-            // If salary is outside all brackets, use the nearest bracket
             $nearestBracket = $this->findNearestBracket($version, $grossPay);
             if ($nearestBracket) {
-                // Use fixed amounts from nearest bracket
                 $result = [
                     'employee' => round((float) $nearestBracket->employee_share, 2),
                     'employer' => round((float) $nearestBracket->employer_share, 2),
                 ];
             }
         }
-        
+
         Log::info("SSS Fixed Amount Calculation:", [
             'gross_pay' => $grossPay,
             'employee_amount' => $result['employee'],
@@ -139,27 +153,27 @@ class ContributionService
     private function calculatePhilHealthContribution($version, float $grossPay, ?int $employeeId): array
     {
         $result = ['employee' => 0, 'employer' => 0];
-        
+
         // Skip calculation if gross pay is 0
         if ($grossPay <= 0) {
             Log::info("PhilHealth calculation skipped: gross pay is zero");
             return $result;
         }
-        
+
         $defaultRate = 5.00; // Default 5% total (2.5% employee, 2.5% employer)
-        
+
         // Check if employee has settings for PhilHealth
         if ($employeeId) {
             $employeeSetting = EmployeeContributionSetting::where('employee_id', $employeeId)
                 ->where('contribution_version_id', $version->id)
                 ->first();
-            
+
             // If employee is exempted, return zero contributions
             if ($employeeSetting && $employeeSetting->is_exempted === true) {
                 Log::info("PhilHealth exempted for employee ID: {$employeeId}");
                 return $result;
             }
-            
+
             // Check if fixed_amount is set (this will be used as percentage rate)
             if ($employeeSetting && $employeeSetting->fixed_amount !== null) {
                 $rate = (float) $employeeSetting->fixed_amount;
@@ -170,7 +184,7 @@ class ContributionService
                     'employee' => round($totalContribution / 2, 2),
                     'employer' => round($totalContribution / 2, 2),
                 ];
-                
+
                 Log::info("PhilHealth Percentage Calculation:", [
                     'employee_id' => $employeeId,
                     'rate' => $rate . '%',
@@ -179,18 +193,18 @@ class ContributionService
                     'employee_amount' => $result['employee'],
                     'employer_amount' => $result['employer']
                 ]);
-                
+
                 return $result;
             }
         }
-        
+
         // Use default 5% if no employee setting or no fixed_amount
         $totalContribution = round($grossPay * ($defaultRate / 100), 2);
         $result = [
             'employee' => round($totalContribution / 2, 2),
             'employer' => round($totalContribution / 2, 2),
         ];
-        
+
         Log::info("PhilHealth Default 5% Calculation:", [
             'gross_pay' => $grossPay,
             'rate' => $defaultRate . '%',
@@ -198,7 +212,7 @@ class ContributionService
             'employee_amount' => $result['employee'],
             'employer_amount' => $result['employer']
         ]);
-        
+
         return $result;
     }
 
@@ -208,25 +222,25 @@ class ContributionService
     private function calculateContributionWithEmployeeSettings($version, float $grossPay, string $type, ?int $employeeId): array
     {
         $result = ['employee' => 0, 'employer' => 0];
-        
+
         // Skip calculation if gross pay is 0
         if ($grossPay <= 0) {
             Log::info("{$type} calculation skipped: gross pay is zero");
             return $result;
         }
-        
+
         // Check if employee has settings for this contribution
         if ($employeeId) {
             $employeeSetting = EmployeeContributionSetting::where('employee_id', $employeeId)
                 ->where('contribution_version_id', $version->id)
                 ->first();
-            
+
             // If employee is exempted, return zero contributions
             if ($employeeSetting && $employeeSetting->is_exempted === true) {
                 Log::info("{$type} exempted for employee ID: {$employeeId}");
                 return $result;
             }
-            
+
             // For Pag-IBIG, check if fixed_amount is set
             if ($version->type === 'pagibig' && $employeeSetting && $employeeSetting->fixed_amount !== null) {
                 // Use fixed amount from employee settings
@@ -235,31 +249,31 @@ class ContributionService
                     'employee' => $fixedAmount,
                     'employer' => $fixedAmount, // Employer matches employee for Pag-IBIG
                 ];
-                
+
                 Log::info("{$type} Fixed Amount Calculation:", [
                     'employee_id' => $employeeId,
                     'fixed_amount' => $fixedAmount,
                     'employee_amount' => $result['employee'],
                     'employer_amount' => $result['employer']
                 ]);
-                
+
                 return $result;
             }
         }
-        
+
         // For Pag-IBIG when no fixed amount is set, use default value of 200
         $defaultPagIBIGAmount = 200.00;
         $result = [
             'employee' => $defaultPagIBIGAmount,
             'employer' => $defaultPagIBIGAmount,
         ];
-        
+
         Log::info("{$type} Default Fixed Amount Calculation:", [
             'default_amount' => $defaultPagIBIGAmount,
             'employee_amount' => $result['employee'],
             'employer_amount' => $result['employer']
         ]);
-        
+
         return $result;
     }
 
@@ -269,22 +283,22 @@ class ContributionService
     private function calculatePagIBIGContribution($version, float $grossPay, string $type): array
     {
         $result = ['employee' => 0, 'employer' => 0];
-        
+
         // Skip calculation if gross pay is 0
         if ($grossPay <= 0) {
             return $result;
         }
-        
+
         $bracket = $version->contributionBrackets()
             ->where('salary_from', '<=', $grossPay)
             ->where('salary_to', '>=', $grossPay)
             ->first();
-        
+
         if ($bracket) {
             // Convert percentage to actual amount for Pag-IBIG
             $employeePercentage = (float) $bracket->employee_share;
             $employerPercentage = (float) $bracket->employer_share;
-            
+
             $result = [
                 'employee' => round($grossPay * ($employeePercentage / 100), 2),
                 'employer' => round($grossPay * ($employerPercentage / 100), 2),
@@ -295,14 +309,14 @@ class ContributionService
             if ($nearestBracket) {
                 $employeePercentage = (float) $nearestBracket->employee_share;
                 $employerPercentage = (float) $nearestBracket->employer_share;
-                
+
                 $result = [
                     'employee' => round($grossPay * ($employeePercentage / 100), 2),
                     'employer' => round($grossPay * ($employerPercentage / 100), 2),
                 ];
             }
         }
-        
+
         Log::info("{$type} Bracket Calculation:", [
             'gross_pay' => $grossPay,
             'employee_amount' => $result['employee'],
@@ -321,7 +335,7 @@ class ContributionService
         $bracket = $version->contributionBrackets()
             ->orderByRaw('ABS(salary_to - ?)', [$salary])
             ->first();
-        
+
         return $bracket;
     }
 }
