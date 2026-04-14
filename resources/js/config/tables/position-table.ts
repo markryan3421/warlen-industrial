@@ -11,7 +11,7 @@ export const PositionTableConfig = {
             className: 'border px-4 py-3',
         },
         {
-            label: 'Fixed',
+            label: 'Salary Status',
             key: 'is_salary_fixed',
             className: 'border px-4 py-3',
         },

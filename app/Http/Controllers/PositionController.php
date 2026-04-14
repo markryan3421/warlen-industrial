@@ -86,7 +86,7 @@ class PositionController extends Controller
     public function edit(Position $position)
     {
         Gate::authorize('update', $position);
-        return Inertia::render('positions/update', compact('position'));
+        return Inertia::render('positions/edit', compact('position'));
     }
 
     /**
