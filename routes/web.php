@@ -43,7 +43,7 @@ Route::get('/', function () {
 })->name('home');
 
 
-Route::middleware(['auth', 'admin', 'auth.session'])->group(function () {
+Route::middleware(['auth', 'admin', 'auth.session', 'throttle:limit-actions'])->group(function () {
 
     Route::get('payroll', function () {
         return Inertia::render('payroll/index');
@@ -87,7 +87,7 @@ Route::middleware(['auth', 'admin', 'auth.session'])->group(function () {
 });
 
 //Intended for employee
-Route::middleware(['auth', 'employee', 'auth.session'])->group(function () {
+Route::middleware(['auth', 'employee', 'auth.session', 'throttle:limit-actions'])->group(function () {
 
     // Route::get('employee/dashboard', function () {
     //     return Inertia::render('employee-role/dashboard');
@@ -106,7 +106,7 @@ Route::middleware(['auth', 'employee', 'auth.session'])->group(function () {
 });
 
 //intended for HR
-Route::middleware(['auth', 'hr', 'auth.session'])->group(function () {
+Route::middleware(['auth', 'hr', 'auth.session', 'throttle:limit-actions'])->group(function () {
 
     Route::get('hr/dashboard', HRDashboardController::class)->name('hr.dashboard');
 
