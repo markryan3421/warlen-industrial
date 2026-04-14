@@ -404,7 +404,6 @@ export default function PayrollPrintLayout({ isOpen, onClose, payrollId }: Payro
                         </div>
                     </div>
 
-                    {/* Rest of your content remains the same */}
                     <div className="border rounded-lg px-4 -mt-5 bg-white">
                         {/* Regular Earnings (Non-incentive) */}
                         {otherEarnings.length > 0 && (
@@ -438,23 +437,23 @@ export default function PayrollPrintLayout({ isOpen, onClose, payrollId }: Payro
                         {incentives.length > 0 && (
                             <div className='border-b pb-5'>
                                 <div className="flex items-center gap-2 py-4">
-                                    <div className="p-1.5 rounded-lg bg-amber-100">
-                                        <HandCoins className="h-4 w-4 text-amber-600" />
+                                    <div className="p-1.5 rounded-lg bg-orange-100">
+                                        <HandCoins className="h-4 w-4 text-orange-600" />
                                     </div>
                                     <h3 className="font-semibold text-md text-gray-700">INCENTIVES</h3>
                                 </div>
                                 <div className="space-y-2">
                                     {incentives.map((item, index) => (
                                         <div key={index} className="flex justify-between items-center last:border-0">
-                                            <span className="text-sm text-gray-700">{item.description || 'N/A'}</span>
-                                            <span className="text-sm font-medium text-amber-600">
+                                            <span className="text-sm text-gray-700">{item.description ? item.description.replace(/^(INCENTIVE|INCENTIVES)\s*-\s*/i, '').trim() : 'N/A'}</span>
+                                            <span className="text-sm font-medium text-orange-600">
                                                 {formatCurrency(item.amount)}
                                             </span>
                                         </div>
                                     ))}
                                     <div className="flex justify-between items-center pt-2 border-t mt-2">
                                         <span className="text-sm font-semibold text-gray-800">Total Incentives</span>
-                                        <span className="text-sm font-semibold text-amber-700">
+                                        <span className="text-sm font-semibold text-orange-700">
                                             {formatCurrency(totalIncentives)}
                                         </span>
                                     </div>
@@ -466,8 +465,8 @@ export default function PayrollPrintLayout({ isOpen, onClose, payrollId }: Payro
                         {contributions.length > 0 && (
                             <div className='border-b pb-5'>
                                 <div className="flex items-center gap-2 py-4">
-                                    <div className="p-1.5 rounded-lg bg-purple-100">
-                                        <Landmark className="h-4 w-4 text-purple-600" />
+                                    <div className="p-1.5 rounded-lg bg-blue-100">
+                                        <Landmark className="h-4 w-4 text-blue-600" />
                                     </div>
                                     <h3 className="font-semibold text-md text-gray-700">GOVERNMENT CONTRIBUTIONS</h3>
                                 </div>
@@ -475,14 +474,14 @@ export default function PayrollPrintLayout({ isOpen, onClose, payrollId }: Payro
                                     {contributions.map((item, index) => (
                                         <div key={index} className="flex justify-between items-center last:border-0">
                                             <span className="text-sm text-gray-700">{item.description || 'N/A'}</span>
-                                            <span className="text-sm font-medium text-purple-600">
+                                            <span className="text-sm font-medium text-blue-600">
                                                 {formatCurrency(item.amount)}
                                             </span>
                                         </div>
                                     ))}
                                     <div className="flex justify-between items-center pt-2 border-t mt-2">
                                         <span className="text-sm font-semibold text-gray-800">Total Contributions</span>
-                                        <span className="text-sm font-semibold text-purple-700">
+                                        <span className="text-sm font-semibold text-blue-700">
                                             {formatCurrency(totalContributions)}
                                         </span>
                                     </div>
@@ -490,26 +489,28 @@ export default function PayrollPrintLayout({ isOpen, onClose, payrollId }: Payro
                             </div>
                         )}
 
-                        {/* Other Deductions (Late, Absences, etc.) */}
+                        {/* Other Deductions - Just showing deduction names without "DEDUCTIONS" in the item description */}
                         {otherDeductions.length > 0 && (
                             <div className='border-b pb-5'>
                                 <div className="flex items-center gap-2 py-4">
                                     <div className="p-1.5 rounded-lg bg-red-100">
                                         <Minus className="h-4 w-4 text-red-600" />
                                     </div>
-                                    <h3 className="font-semibold text-md text-gray-700">OTHER DEDUCTIONS</h3>
+                                    <h3 className="font-semibold text-md text-gray-700">DEDUCTIONS</h3>
                                 </div>
                                 <div className="space-y-2">
                                     {otherDeductions.map((item, index) => (
                                         <div key={index} className="flex justify-between items-center last:border-0">
-                                            <span className="text-sm text-gray-700">{item.description || 'N/A'}</span>
+                                            <span className="text-sm text-gray-700">
+                                                {item.description ? item.description.replace(/^(DEDUCTION|DEDUCTIONS)\s*-\s*/i, '').trim() : 'N/A'}
+                                            </span>
                                             <span className="text-sm font-medium text-red-600">
                                                 {formatCurrency(item.amount)}
                                             </span>
                                         </div>
                                     ))}
                                     <div className="flex justify-between items-center pt-2 border-t mt-2">
-                                        <span className="text-sm font-semibold text-gray-800">Total Other Deductions</span>
+                                        <span className="text-sm font-semibold text-gray-800">Total Deductions</span>
                                         <span className="text-sm font-semibold text-red-700">
                                             {formatCurrency(totalOtherDeductions)}
                                         </span>
@@ -550,7 +551,7 @@ export default function PayrollPrintLayout({ isOpen, onClose, payrollId }: Payro
                                 )}
                                 {totalOtherDeductions > 0 && (
                                     <div className="flex justify-between pl-4 text-xs text-gray-500">
-                                        <span>├─ Other Deductions:</span>
+                                        <span>├─ Deductions:</span>
                                         <span>{formatCurrency(totalOtherDeductions)}</span>
                                     </div>
                                 )}

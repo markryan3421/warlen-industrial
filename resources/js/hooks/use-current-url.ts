@@ -6,7 +6,7 @@ import { toUrl } from '@/lib/utils';
 export type IsCurrentUrlFn = (
     urlToCheck: NonNullable<InertiaLinkProps['href']>,
     currentUrl?: string,
-    startsWith?: boolean,  // ✅ Add this parameter
+    startsWith?: boolean,
 ) => boolean;
 
 export type IsCurrentOrParentUrlFn = (
@@ -22,8 +22,9 @@ export type WhenCurrentUrlFn = <TIfTrue, TIfFalse = null>(
 
 export type UseCurrentUrlReturn = {
     currentUrl: string;
+    currentPath: string; // Add this - path without query params
     isCurrentUrl: IsCurrentUrlFn;
-    isCurrentOrParentUrl: IsCurrentOrParentUrlFn;  // ✅ Add this
+    isCurrentOrParentUrl: IsCurrentOrParentUrlFn;
     isActiveUrl: (path: string, options?: { exact?: boolean; strict?: boolean }) => boolean;
     getActiveSection: (items: Array<{ href: string; pattern?: string }>) => string | null;
     whenCurrentUrl: WhenCurrentUrlFn;
@@ -32,41 +33,55 @@ export type UseCurrentUrlReturn = {
 export function useCurrentUrl(): UseCurrentUrlReturn {
     const { url } = usePage();
     
+    // Get the path without query parameters and hash
+    const getPathWithoutParams = (fullUrl: string) => {
+        return fullUrl.split('?')[0].split('#')[0];
+    };
+    
     // Normalize URL (remove trailing slashes for consistent matching)
     const normalizeUrl = (path: string) => {
         return path.replace(/\/$/, '');
     };
     
-    const currentUrlNormalized = normalizeUrl(url);
+    const fullUrl = url;
+    const currentPath = getPathWithoutParams(fullUrl);
+    const currentUrlNormalized = normalizeUrl(currentPath);
     
     // Enhanced isCurrentUrl with startsWith support
     const isCurrentUrl: IsCurrentUrlFn = (
         urlToCheck: NonNullable<InertiaLinkProps['href']>,
         currentUrl?: string,
-        startsWith: boolean = false,  // ✅ Default to false for exact match
+        startsWith: boolean = false,
     ) => {
-        const urlToCompare = currentUrl ? normalizeUrl(currentUrl) : currentUrlNormalized;
+        const urlToCompare = currentUrl ? normalizeUrl(getPathWithoutParams(currentUrl)) : currentUrlNormalized;
         const urlString = normalizeUrl(toUrl(urlToCheck));
         
         if (startsWith) {
-            // For parent/child matching: /branches matches /branches/create
             return urlToCompare === urlString || urlToCompare.startsWith(`${urlString}/`);
         }
         
-        // Exact match only
         return urlToCompare === urlString;
     };
     
-    // ✅ Add this method - it's what your nav-main needs!
+    // This is the key function for parent/child matching
     const isCurrentOrParentUrl: IsCurrentOrParentUrlFn = (
         urlToCheck: NonNullable<InertiaLinkProps['href']>,
         currentUrl?: string,
     ) => {
-        // This calls isCurrentUrl with startsWith = true
-        return isCurrentUrl(urlToCheck, currentUrl, true);
+        // Remove query parameters and hash from the URL to check
+        const urlToCheckPath = getPathWithoutParams(toUrl(urlToCheck));
+        const currentPathToUse = currentUrl ? getPathWithoutParams(currentUrl) : currentPath;
+        
+        // Normalize both paths
+        const normalizedCheckPath = normalizeUrl(urlToCheckPath);
+        const normalizedCurrentPath = normalizeUrl(currentPathToUse);
+        
+        // Check if current path matches or is a child of the check path
+        return normalizedCurrentPath === normalizedCheckPath || 
+               normalizedCurrentPath.startsWith(`${normalizedCheckPath}/`);
     };
     
-    // Your existing isActiveUrl (keeping for compatibility)
+    // Your existing isActiveUrl
     const isActiveUrl = (path: string, options?: { exact?: boolean; strict?: boolean }) => {
         const { exact = false, strict = false } = options || {};
         const normalizedPath = normalizeUrl(path);
@@ -102,9 +117,10 @@ export function useCurrentUrl(): UseCurrentUrlReturn {
     };
     
     return {
-        currentUrl: url,
+        currentUrl: fullUrl,
+        currentPath, // Add this
         isCurrentUrl,
-        isCurrentOrParentUrl,  // ✅ CRITICAL: Return this!
+        isCurrentOrParentUrl,
         isActiveUrl,
         getActiveSection,
         whenCurrentUrl,
