@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 
 class EmployeeContributionSetting extends Model
 {
@@ -54,6 +55,20 @@ class EmployeeContributionSetting extends Model
             'fixed_amount' => 'Amount',
             'monthly_cap' => 'Monthly Cap',
         ];
+    }
+
+    protected function fixedAmount(): Attribute
+    {
+        return Attribute::make(
+            set: fn($value) => is_numeric($value) ? (float) $value : 0,
+        );
+    }
+
+    protected function monthlyCap(): Attribute
+    {
+        return Attribute::make(
+            set: fn($value) => is_numeric($value) ? (float) $value : 0,
+        );
     }
 
 

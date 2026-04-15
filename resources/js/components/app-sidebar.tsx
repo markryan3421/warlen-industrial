@@ -77,7 +77,7 @@ const AccessControlItems: NavItem[] = [
     },
     {
         title: 'Application Leaves',
-        href: '/application-leaves',
+        href: '/application-leave',
         icon: Clipboard,
     },
     {
