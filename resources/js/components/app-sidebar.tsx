@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { LayoutDashboard, History, CircleUser, Building2, Handshake, Coins  , UserCog, Clipboard, Banknote, LayoutDashboardIcon, HandCoins } from 'lucide-react';
+import { LayoutDashboard, History, CircleUser, Building2, Handshake, Coins  , UserCog, Clipboard, Banknote, LayoutDashboardIcon, HandCoins, ChartSpline } from 'lucide-react';
 import { FileBadge, Calendar, UserRoundCog, Contact, BookUser } from 'lucide-react';
 import { Users } from 'lucide-react';
 import LogsController from "@/actions/App/Http/Controllers/ActivityLogController";
@@ -34,6 +34,12 @@ const ExpendituresItems: NavItem[] = [
         href: '/dashboard',
         exactMatch: true,
         icon: LayoutDashboard,
+    },
+    {
+        title: 'Analytics',
+        href: '/ai/dashboard',
+        exactMatch: true,
+        icon: ChartSpline,
     },
     {
         title: 'Branches',
