@@ -1,6 +1,6 @@
 import { Head, Link, useForm, router } from '@inertiajs/react';
 import { format } from 'date-fns';
-import { Users, Search, UserPlus, Archive, UsersRound, Trash2 } from 'lucide-react';
+import { Users, Search, UserPlus, Archive, UsersRound, Trash2, RotateCcw } from 'lucide-react';
 import { useState, useRef, useMemo } from 'react';
 import { toast } from 'sonner';
 import EmployeeController from '@/actions/App/Http/Controllers/EmployeeController';
@@ -11,7 +11,7 @@ import type { BranchData } from '@/components/employee/employee-filter-bar';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
-
+import { RestoreConfirmationDialog } from '@/components/restore-confirmation-modal';
 import { EmployeeFilterBar } from '@/components/employee/employee-filter-bar';
 import { EmployeesTableConfig } from '@/config/tables/employees-table';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-modal';
@@ -112,9 +112,17 @@ export default function Index({
     // ── Bulk selection state ─────────────────────────────────────────────────
     const [selectedIds, setSelectedIds] = useState<(string | number)[]>([]);
     const [bulkLoading, setBulkLoading] = useState(false);
+    const [bulkArchiveConfirmOpen, setBulkArchiveConfirmOpen] = useState(false);
 
     // ── Archived pagination state (client-side) ──────────────────────────────
     // ── Archived pagination state (client-side) ──────────────────────────────
+    // Single restore confirmation
+    const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
+    const [itemToRestore, setItemToRestore] = useState<Employee | null>(null);
+    const [isRestoring, setIsRestoring] = useState(false);
+
+    // Bulk restore confirmation
+    const [bulkRestoreConfirmOpen, setBulkRestoreConfirmOpen] = useState(false);
     const [archivedPage, setArchivedPage] = useState(1);
     const [archivedPerPage, setArchivedPerPage] = useState(10);
 
@@ -308,11 +316,12 @@ export default function Index({
             replace: true
         });
     };
-
-    // ── Bulk action handlers ─────────────────────────────────────────────────
-    const handleBulkArchive = async () => {
+    const handleBulkArchive = () => {
         if (selectedIds.length === 0) return;
-        if (!confirm(`Move ${selectedIds.length} employee(s) to archive?`)) return;
+        setBulkArchiveConfirmOpen(true);
+    };
+
+    const confirmBulkArchive = async () => {
         setBulkLoading(true);
         try {
             await router.post('/employees/bulk-destroy', {
@@ -325,12 +334,37 @@ export default function Index({
             toast.error('Failed to archive employees.');
         } finally {
             setBulkLoading(false);
+            setBulkArchiveConfirmOpen(false);
         }
     };
 
-    const handleBulkRestore = async () => {
+    // ── Restore handlers with confirmation modal ────────────────────────────────
+    const handleRestoreClick = (employee: Employee) => {
+        setItemToRestore(employee);
+        setRestoreDialogOpen(true);
+    };
+
+    const confirmSingleRestore = () => {
+        if (!itemToRestore) return;
+        setIsRestoring(true);
+        router.put(route('employees.restore', itemToRestore.slug_emp), {}, {
+            onSuccess: () => {
+                toast.success('Employee restored');
+                setSelectedIds([]);
+                setRestoreDialogOpen(false);
+                setItemToRestore(null);
+            },
+            onError: () => toast.error('Restore failed'),
+            onFinish: () => setIsRestoring(false),
+        });
+    };
+
+    const handleBulkRestoreClick = () => {
         if (selectedIds.length === 0) return;
-        if (!confirm(`Restore ${selectedIds.length} employee(s)?`)) return;
+        setBulkRestoreConfirmOpen(true);
+    };
+
+    const confirmBulkRestore = async () => {
         setBulkLoading(true);
         try {
             await router.post('/employees/bulk-restore', {
@@ -343,19 +377,8 @@ export default function Index({
             toast.error('Failed to restore employees.');
         } finally {
             setBulkLoading(false);
+            setBulkRestoreConfirmOpen(false);
         }
-    };
-
-    const handleRestore = (employee: Employee) => {
-        if (!confirm(`Restore ${employee.user?.name || employee.emp_code}?`)) return;
-
-        router.put(route('employees.restore', employee.slug_emp), {}, {
-            onSuccess: () => {
-                toast.success('Employee restored');
-                setSelectedIds([]);
-            },
-            onError: () => toast.error('Restore failed'),
-        });
     };
 
 
@@ -506,6 +529,34 @@ export default function Index({
                                 </div>
                             ) : (
                                 <>
+                                    {/* Bulk action bar for active tab */}
+                                    {selectedIds.length > 0 && (
+                                        <div className="mb-4 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 px-4 py-3 flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <div className="h-8 w-8 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                                                    <Archive className="h-4 w-4 text-red-600 dark:text-red-400" />
+                                                </div>
+                                                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                                    {selectedIds.length} employee{selectedIds.length !== 1 ? 's' : ''} selected
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <Button
+                                                    variant="destructive"
+                                                    size="sm"
+                                                    onClick={handleBulkArchive}
+                                                    disabled={bulkLoading}
+                                                    className="shadow-sm"
+                                                >
+                                                    <Archive className="h-4 w-4 mr-1" />
+                                                    Move to Archive
+                                                </Button>
+                                                <Button variant="ghost" size="sm" onClick={() => setSelectedIds([])}>
+                                                    Cancel
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    )}
                                     <CustomTable
                                         title="Active Employee Lists"
                                         columns={EmployeesTableConfig.columns}
@@ -604,6 +655,32 @@ export default function Index({
                                 </div>
                             ) : (
                                 <>
+                                    {selectedIds.length > 0 && (
+                                        <div className="mb-4 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 px-4 py-3 flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <div className="h-8 w-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                                                    <RotateCcw className="h-4 w-4 text-green-600 dark:text-green-400" />
+                                                </div>
+                                                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                                    {selectedIds.length} employee{selectedIds.length !== 1 ? 's' : ''} selected
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <Button
+                                                    size="sm"
+                                                    onClick={handleBulkRestoreClick}
+                                                    disabled={bulkLoading}
+                                                    className="bg-green-600 hover:bg-green-700 text-white shadow-sm focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                                                >
+                                                    <RotateCcw className="h-4 w-4 mr-1" />
+                                                    Restore
+                                                </Button>
+                                                <Button variant="ghost" size="sm" onClick={() => setSelectedIds([])}>
+                                                    Cancel
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    )}
                                     <CustomTable
                                         title="Archived Employee Lists"
                                         columns={EmployeesTableConfig.columns}
@@ -614,7 +691,7 @@ export default function Index({
                                         onView={handleView}
                                         onEdit={handleEdit}
                                         actions={archivedActions}                // ← second one (overwrites? Actually duplicate prop)
-                                        onRestore={handleRestore}
+                                        onRestore={handleRestoreClick}
                                         selectable={true}
                                         selectedIds={selectedIds}
                                         onSelectChange={setSelectedIds}
@@ -685,38 +762,6 @@ export default function Index({
                         </TabsContent>
                     </Tabs>
                 </div>
-
-                {/* Floating Bulk Action Bar */}
-                {selectedIds.length > 0 && (
-                    <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 px-4 py-2 flex items-center gap-3 animate-fadeUp">
-                        <span className="text-sm font-medium">{selectedIds.length} selected</span>
-                        {activeTab === 'active' ? (
-                            <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={handleBulkArchive}
-                                disabled={bulkLoading}
-                            >
-                                Move to Archive
-                            </Button>
-                        ) : (
-                            <>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={handleBulkRestore}
-                                    disabled={bulkLoading}
-                                >
-                                    Restore
-                                </Button>
-                            </>
-                        )}
-                        <Button variant="ghost" size="sm" onClick={() => setSelectedIds([])}>
-                            Cancel
-                        </Button>
-                    </div>
-                )}
-
                 <DeleteConfirmationDialog
                     isOpen={deleteDialogOpen}
                     onClose={() => {
@@ -724,10 +769,43 @@ export default function Index({
                         setItemToDelete(null);
                     }}
                     onConfirm={confirmDelete}
-                    title='Delete employee'
+                    title='Archive Employee'
                     itemName={itemToDelete?.user?.name || itemToDelete?.emp_code || 'this employee'}
                     isLoading={isDeleting}
-                    confirmText='Delete employee'
+                    confirmText='Archive'
+                />
+
+                <DeleteConfirmationDialog
+                    isOpen={bulkArchiveConfirmOpen}
+                    onClose={() => setBulkArchiveConfirmOpen(false)}
+                    onConfirm={confirmBulkArchive}
+                    title="Archive Employees"
+                    description={`Move ${selectedIds.length} selected employee(s) to archive? They can be restored later.`}
+                    confirmText="Archive"
+                    isLoading={bulkLoading}
+                />
+
+                {/* Single Restore Confirmation Dialog */}
+                <RestoreConfirmationDialog
+                    isOpen={restoreDialogOpen}
+                    onClose={() => {
+                        setRestoreDialogOpen(false);
+                        setItemToRestore(null);
+                    }}
+                    onConfirm={confirmSingleRestore}
+                    itemName={itemToRestore?.user?.name || itemToRestore?.emp_code}
+                    isLoading={isRestoring}
+                />
+
+                {/* Bulk Restore Confirmation Dialog */}
+                <RestoreConfirmationDialog
+                    isOpen={bulkRestoreConfirmOpen}
+                    onClose={() => setBulkRestoreConfirmOpen(false)}
+                    onConfirm={confirmBulkRestore}
+                    title="Restore Employees"
+                    description={`Restore ${selectedIds.length} selected employee(s)? They will become active again.`}
+                    confirmText="Restore All"
+                    isLoading={bulkLoading}
                 />
             </div>
         </AppLayout>
