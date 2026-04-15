@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\AdminDashboardController;
+use App\Http\Controllers\AIInsightController;
 use App\Http\Controllers\ApplicationLeaveController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AttendanceImportController;
@@ -58,8 +59,7 @@ Route::middleware(['auth', 'admin', 'auth.session', 'throttle:limit-actions'])->
     //admin dashboard
     Route::get('dashboard', AdminDashboardController::class)->name('dashboard');
 
-
-    Route::get('/employee-contribution-settings', [EmployeeContributionSettingsController::class, 'getSettingsByVersion']);
+      Route::get('/employee-contribution-settings', [EmployeeContributionSettingsController::class, 'getSettingsByVersion']);   
     Route::get('/employees/list', [EmployeeContributionSettingsController::class, 'getEmployees']);
     // Bulk save settings
     Route::post('/employee-contribution-settings/bulk', [EmployeeContributionSettingsController::class, 'bulkStore']);
@@ -205,6 +205,15 @@ Route::middleware(['auth', 'hr', 'auth.session', 'throttle:limit-actions'])->gro
         'destroy' => 'hr.application-leave.destroy',
         'show' => 'hr.application-leave.show',
     ]);
+});
+
+// AI Routes for Inertia (these return JSON for API calls)
+Route::middleware(['auth', 'admin', 'auth.session'])->prefix('ai')->group(function () {
+    Route::get('/dashboard', [AIInsightController::class, 'dashboard'])->name('ai.dashboard');
+    Route::get('/insights', [AIInsightController::class, 'getInsights']);
+    Route::post('/generate-insights', [AIInsightController::class, 'generateInsights']); // Add this
+    Route::post('/deep-analysis', [AIInsightController::class, 'deepAnalysis']);
+    Route::get('/attendance', [AIInsightController::class, 'analyzeAttendance']);
 });
 
 

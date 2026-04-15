@@ -1,19 +1,8 @@
 // components/app-sidebar.tsx
 import { Link } from '@inertiajs/react';
-import {
-    LayoutDashboard,
-    History,
-    CircleUser,
-    Building2,
-    Handshake,
-    Coins,
-    UserCog,
-    Clipboard,
-    Calendar,
-    Banknote,
-    HandCoins,
-    Users
-} from 'lucide-react';
+import { LayoutDashboard, History, CircleUser, Building2, Handshake, Coins  , UserCog, Clipboard, Banknote, LayoutDashboardIcon, HandCoins, ChartSpline } from 'lucide-react';
+import { FileBadge, Calendar, UserRoundCog, Contact, BookUser } from 'lucide-react';
+import { Users } from 'lucide-react';
 import LogsController from "@/actions/App/Http/Controllers/ActivityLogController";
 import ApplicationLeaveController from '@/actions/App/Http/Controllers/ApplicationLeaveController';
 import BranchController from '@/actions/App/Http/Controllers/BranchController';
@@ -45,6 +34,12 @@ const ExpendituresItems: NavItem[] = [
         href: '/dashboard',
         icon: LayoutDashboard,
         exactMatch: true, // Dashboard only active on exact match
+    },
+    {
+        title: 'Analytics',
+        href: '/ai/dashboard',
+        exactMatch: true,
+        icon: ChartSpline,
     },
     {
         title: 'Branches',
@@ -82,7 +77,7 @@ const AccessControlItems: NavItem[] = [
     },
     {
         title: 'Application Leaves',
-        href: '/application-leaves',
+        href: '/application-leave',
         icon: Clipboard,
     },
     {

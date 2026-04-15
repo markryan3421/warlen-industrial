@@ -1,6 +1,4 @@
-// config/tables/payroll-table-config.tsx
-
-import { User, MapPin, Building2, Eye } from 'lucide-react';
+import { Eye } from 'lucide-react';
 
 export interface PayrollTableRow {
     id: number;
@@ -167,9 +165,7 @@ export const getPayrollTableColumns = (formatCurrency: (amount: number) => strin
 export const getPayrollTableActions = (handleViewPayroll: (row: PayrollTableRow) => void) => [
     {
         label: 'View',
-        icon: Eye,
-        route: '',
-        className: '',
+        icon: 'Eye',
         onClick: (row: PayrollTableRow) => handleViewPayroll(row),
     },
 ];
