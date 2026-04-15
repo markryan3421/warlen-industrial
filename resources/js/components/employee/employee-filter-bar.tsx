@@ -1,13 +1,4 @@
-/**
- * reusable-filter-bar.tsx
- *
- * Reusable filter bar for any table/list page.
- * Configurable to show/hide specific filters based on the context.
- * All controls are h-9 (36px) to match the table's internal density.
- * 
- * This component is purely presentational — all state management is handled
- * by the parent component (like employees/index.tsx or branches/index.tsx).
- */
+// components/employee/employee-filter-bar.tsx
 
 import { X } from 'lucide-react';
 import { useMemo } from 'react';
@@ -46,6 +37,8 @@ export interface FilterConfig {
 interface EmployeeFilterBarProps {
     // Data
     allPositions?: string[];
+    allBranches?: string[];  // Add this for simple branch array
+    allSites?: string[];      // Add this for site filtering
     branchesData?: BranchData[];
     
     // Filter values
@@ -79,6 +72,8 @@ interface EmployeeFilterBarProps {
 // ─── Component ────────────────────────────────────────────────────────────────
 export function EmployeeFilterBar({
     allPositions = [],
+    allBranches = [],  // Add this
+    allSites = [],      // Add this
     branchesData = [],
     searchTerm = '',
     selectedPositions = [],
@@ -107,24 +102,33 @@ export function EmployeeFilterBar({
     dateLabel = "Date",
 }: EmployeeFilterBarProps) {
 
-    // searchTerm + onSearchChange
-    // selectedPositions + onPositionChange
-    // selectedBranch + onBranchChange
-    // selectedSite + onSiteChange
-    // status + onStatusChange
-    // dateFrom + onDateFromChange
-    // dateTo + onDateToChange
+    // Create branch options from either allBranches or branchesData
+    const branchOptions = useMemo(() => {
+        // If we have allBranches (simple string array)
+        if (allBranches && allBranches.length > 0) {
+            return allBranches.map(branch => ({ value: branch, label: branch }));
+        }
+        // Otherwise use branchesData
+        return branchesData.map(b => ({ value: b.branch_name, label: b.branch_name }));
+    }, [allBranches, branchesData]);
 
-    const branchOptions = useMemo(
-        () => branchesData.map(b => ({ value: b.branch_name, label: b.branch_name })),
-        [branchesData],
-    );
-
+    // Get site options based on selected branch
     const siteOptions = useMemo(() => {
         if (!selectedBranch) return [];
+        
+        // First try to get sites from branchesData
         const branch = branchesData.find(b => b.branch_name === selectedBranch);
-        return (branch?.sites ?? []).map(s => ({ value: s.site_name, label: s.site_name }));
-    }, [branchesData, selectedBranch]);
+        if (branch && branch.sites && branch.sites.length > 0) {
+            return branch.sites.map(s => ({ value: s.site_name, label: s.site_name }));
+        }
+        
+        // If no sites in branchesData, use allSites
+        if (allSites && allSites.length > 0) {
+            return allSites.map(site => ({ value: site, label: site }));
+        }
+        
+        return [];
+    }, [branchesData, selectedBranch, allSites]);
 
     // Check if any filter is active
     const hasActiveFilters = !!(
@@ -186,7 +190,7 @@ export function EmployeeFilterBar({
                     />
                 )}
 
-                {filters.site && selectedBranch && onSiteChange && (
+                {filters.site && selectedBranch && onSiteChange && siteOptions.length > 0 && (
                     <SingleSelectPopover
                         label="Site"
                         options={siteOptions}
@@ -235,4 +239,3 @@ export function EmployeeFilterBar({
         </div>
     );
 }
-
