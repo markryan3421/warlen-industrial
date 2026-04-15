@@ -781,7 +781,7 @@ export default function Index({
                     onConfirm={confirmBulkArchive}
                     title="Archive Employees"
                     description={`Move ${selectedIds.length} selected employee(s) to archive? They can be restored later.`}
-                    confirmText="Archive"
+                    confirmText="Archive All"
                     isLoading={bulkLoading}
                 />
 
@@ -793,7 +793,7 @@ export default function Index({
                         setItemToRestore(null);
                     }}
                     onConfirm={confirmSingleRestore}
-                    itemName={itemToRestore?.user?.name || itemToRestore?.emp_code}
+                    itemName={itemToRestore?.user?.name || itemToRestore?.emp_code || 'this employee'}
                     isLoading={isRestoring}
                 />
 

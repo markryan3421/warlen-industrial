@@ -10,6 +10,16 @@ import {
 } from 'lucide-react';
 import { PageSkeleton } from '@/components/skeletons/page-skeleton';
 import { toast } from 'sonner';
+import { type BreadcrumbItem } from '@/types';
+import AppLayout from '@/layouts/app-layout';
+import { Head, Link } from '@inertiajs/react';
+
+const breadcrumbs: BreadcrumbItem[] = [
+    {
+        title: 'AI Insights',
+        href: '/ai/dashboard',
+    },
+];
 
 /* ─────────────────────────────────────────────────────────────
    Keyframes — injected once
@@ -135,7 +145,7 @@ function NavyCardHeader({ icon, title, count, action }: {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   FilterToolbar
+   FilterToolbar — corrected (no AppLayout/Head)
    ───────────────────────────────────────────────────────────── */
 function FilterToolbar({ state, onGenerate, generating }: {
     state: ReturnType<typeof useInsightFilter>;
@@ -424,7 +434,6 @@ function InsightListPanel({ items, title, icon, type, onGenerate, generating, is
     type: string; onGenerate: () => void; generating: boolean; isAnomaly?: boolean;
 }) {
     const f = useInsightFilter(items);
-    // Use collapsible rows when there are many items for density
     const collapsible = items.length > 15;
 
     return (
@@ -576,7 +585,7 @@ function OverviewPreviewCard({ items, title, icon, type, onGenerate, generating,
 }
 
 /* ─────────────────────────────────────────────────────────────
-   Main Dashboard
+   Main Dashboard — correctly wrapped with AppLayout
    ───────────────────────────────────────────────────────────── */
 export default function AIDashboard({
     storedInsights: initialInsights,
@@ -622,214 +631,216 @@ export default function AIDashboard({
     const actionable    = [...(insights.attendance ?? []), ...(insights.payroll ?? [])].filter(x => x.actionable).length;
 
     return (
-        <div className="min-h-screen bg-slate-50/60">
-
-            {/* ── Navy Hero ── */}
-            <div style={scaleIn(0)} className="bg-[#1d4791] relative overflow-hidden">
-                <div className="absolute inset-0 opacity-[0.05]"
-                    style={{ backgroundImage: 'repeating-linear-gradient(45deg,#fff 0,#fff 1px,transparent 1px,transparent 14px)' }} />
-                <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-7">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div style={fadeUp(60)}>
-                            <div className="flex items-center gap-3 mb-1.5">
-                                <div className="h-8 w-8 rounded-lg bg-white/15 flex items-center justify-center">
-                                    <Brain className="h-4 w-4 text-white" />
-                                </div>
-                                <h1 className="text-lg font-bold text-white tracking-tight">AI Insights Dashboard</h1>
-                                <span className="hidden sm:inline-flex items-center text-[9px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-full bg-white/15 text-white/70 border border-white/15">
-                                    Advanced Analytics
-                                </span>
-                            </div>
-                            <p className="text-white/55 text-xs max-w-lg">
-                                Data-driven recommendations to optimise workforce, reduce costs, and improve productivity.
-                            </p>
-                            <div className="flex items-center flex-wrap gap-4 mt-2">
-                                {lastAnalyzed && (
-                                    <span className="flex items-center gap-1 text-white/45 text-[11px]">
-                                        <Calendar className="h-3 w-3" />
-                                        Last analysed: {new Date(lastAnalyzed).toLocaleDateString()}
-                                    </span>
-                                )}
-                                {totalInsights > 0 && (
-                                    <div className="flex items-center gap-3 text-[11px]">
-                                        {highPriority > 0 && (
-                                            <span className="flex items-center gap-1 font-semibold text-[#f5a48a]">
-                                                <AlertTriangle className="h-3 w-3" />{highPriority} high priority
-                                            </span>
-                                        )}
-                                        {actionable > 0 && (
-                                            <span className="flex items-center gap-1 font-medium text-white/60">
-                                                <Sparkles className="h-3 w-3" />{actionable} actionable
-                                            </span>
-                                        )}
+        <AppLayout breadcrumbs={breadcrumbs}>
+            <Head title="AI Insights Dashboard" />
+            <div className="min-h-screen bg-slate-50/60">
+                {/* ── Navy Hero ── */}
+                <div style={scaleIn(0)} className="bg-[#1d4791] relative overflow-hidden">
+                    <div className="absolute inset-0 opacity-[0.05]"
+                        style={{ backgroundImage: 'repeating-linear-gradient(45deg,#fff 0,#fff 1px,transparent 1px,transparent 14px)' }} />
+                    <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-7">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div style={fadeUp(60)}>
+                                <div className="flex items-center gap-3 mb-1.5">
+                                    <div className="h-8 w-8 rounded-lg bg-white/15 flex items-center justify-center">
+                                        <Brain className="h-4 w-4 text-white" />
                                     </div>
-                                )}
+                                    <h1 className="text-lg font-bold text-white tracking-tight">AI Insights Dashboard</h1>
+                                    <span className="hidden sm:inline-flex items-center text-[9px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-full bg-white/15 text-white/70 border border-white/15">
+                                        Advanced Analytics
+                                    </span>
+                                </div>
+                                <p className="text-white/55 text-xs max-w-lg">
+                                    Data-driven recommendations to optimise workforce, reduce costs, and improve productivity.
+                                </p>
+                                <div className="flex items-center flex-wrap gap-4 mt-2">
+                                    {lastAnalyzed && (
+                                        <span className="flex items-center gap-1 text-white/45 text-[11px]">
+                                            <Calendar className="h-3 w-3" />
+                                            Last analysed: {new Date(lastAnalyzed).toLocaleDateString()}
+                                        </span>
+                                    )}
+                                    {totalInsights > 0 && (
+                                        <div className="flex items-center gap-3 text-[11px]">
+                                            {highPriority > 0 && (
+                                                <span className="flex items-center gap-1 font-semibold text-[#f5a48a]">
+                                                    <AlertTriangle className="h-3 w-3" />{highPriority} high priority
+                                                </span>
+                                            )}
+                                            {actionable > 0 && (
+                                                <span className="flex items-center gap-1 font-medium text-white/60">
+                                                    <Sparkles className="h-3 w-3" />{actionable} actionable
+                                                </span>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                            <div style={fadeUp(140)}>
+                                <button
+                                    onClick={() => generateFreshInsights('all')} disabled={generating}
+                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white text-[#1d4791] text-xs font-bold shadow-lg hover:bg-slate-50 transition-colors disabled:opacity-60">
+                                    <Sparkles className="h-3.5 w-3.5" style={generating ? { animation: 'spinSlow 1s linear infinite' } : {}} />
+                                    {generating ? 'Generating…' : 'Generate All'}
+                                </button>
                             </div>
                         </div>
-                        <div style={fadeUp(140)}>
-                            <button
-                                onClick={() => generateFreshInsights('all')} disabled={generating}
-                                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white text-[#1d4791] text-xs font-bold shadow-lg hover:bg-slate-50 transition-colors disabled:opacity-60">
-                                <Sparkles className="h-3.5 w-3.5" style={generating ? { animation: 'spinSlow 1s linear infinite' } : {}} />
-                                {generating ? 'Generating…' : 'Generate All'}
-                            </button>
-                        </div>
                     </div>
                 </div>
-            </div>
 
-            {/* ── Body ── */}
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-5 space-y-5">
-                {/* Back button */}
-                <a href="/dashboard" className='inline-flex items-center gap-2 text-xs font-medium text-[#1d4791] hover:text-[#1d4791]/90'>
-                    <ArrowLeft className="h-3 w-3" />
-                    Back
-                </a>
+                {/* ── Body ── */}
+                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-5 space-y-5">
+                    {/* Back button - using Inertia Link */}
+                    <Link href="/dashboard" className="inline-flex items-center gap-2 text-xs font-medium text-[#1d4791] hover:text-[#1d4791]/90">
+                        <ArrowLeft className="h-3 w-3" />
+                        Back
+                    </Link>
 
-                {/* Stat tiles */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                    <StatCard delay={40}  label="Total Insights" value={totalInsights}                   icon={<Lightbulb className="h-5 w-5" />} sub={highPriority > 0 ? `${highPriority} high priority` : undefined} />
-                    <StatCard delay={70}  label="Payroll"        value={insights.payroll?.length ?? 0}   icon={<DollarSign className="h-5 w-5" />} />
-                    <StatCard delay={100} label="Attendance"     value={insights.attendance?.length ?? 0} icon={<Users className="h-5 w-5" />} />
-                    <StatCard delay={130} label="Anomalies"      value={insights.anomalies?.length ?? 0}  icon={<AlertTriangle className="h-5 w-5" />}
-                        sub={insights.anomalies?.filter(x => x.impact === 'high').length
-                            ? `${insights.anomalies.filter(x => x.impact === 'high').length} critical`
-                            : undefined}
-                    />
-                </div>
-
-                {/* Impact distribution */}
-                {totalInsights > 0 && (
-                    <div style={fadeUp(160)} className="bg-white rounded-xl border border-slate-200 shadow-sm px-5 py-4">
-                        <p className="text-[10px] font-bold tracking-widest uppercase text-slate-400 mb-3">Impact Distribution</p>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-                            <ImpactBreakdownBar items={insights.payroll ?? []}    label="Payroll" />
-                            <ImpactBreakdownBar items={insights.attendance ?? []} label="Attendance" />
-                            <ImpactBreakdownBar items={insights.anomalies ?? []}  label="Anomalies" />
-                        </div>
+                    {/* Stat tiles */}
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                        <StatCard delay={40}  label="Total Insights" value={totalInsights}                   icon={<Lightbulb className="h-5 w-5" />} sub={highPriority > 0 ? `${highPriority} high priority` : undefined} />
+                        <StatCard delay={70}  label="Payroll"        value={insights.payroll?.length ?? 0}   icon={<DollarSign className="h-5 w-5" />} />
+                        <StatCard delay={100} label="Attendance"     value={insights.attendance?.length ?? 0} icon={<Users className="h-5 w-5" />} />
+                        <StatCard delay={130} label="Anomalies"      value={insights.anomalies?.length ?? 0}  icon={<AlertTriangle className="h-5 w-5" />}
+                            sub={insights.anomalies?.filter(x => x.impact === 'high').length
+                                ? `${insights.anomalies.filter(x => x.impact === 'high').length} critical`
+                                : undefined}
+                        />
                     </div>
-                )}
 
-                {/* Executive summary */}
-                {executiveSummary && executiveSummary !== 'No summary available' && (
-                    <div style={fadeUp(200)} className="rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-white">
-                        <NavyCardHeader icon={<Sparkles className="h-4 w-4" />} title="Executive Summary" />
-                        <div className="px-5 py-4">
-                            <p className="text-slate-700 leading-relaxed text-sm">{executiveSummary}</p>
+                    {/* Impact distribution */}
+                    {totalInsights > 0 && (
+                        <div style={fadeUp(160)} className="bg-white rounded-xl border border-slate-200 shadow-sm px-5 py-4">
+                            <p className="text-[10px] font-bold tracking-widest uppercase text-slate-400 mb-3">Impact Distribution</p>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                                <ImpactBreakdownBar items={insights.payroll ?? []}    label="Payroll" />
+                                <ImpactBreakdownBar items={insights.attendance ?? []} label="Attendance" />
+                                <ImpactBreakdownBar items={insights.anomalies ?? []}  label="Anomalies" />
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )}
 
-                {/* ── Tabs ── */}
-                <div style={fadeUp(240)}>
-                    <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-                        <TabsList className="h-9 bg-white border border-slate-200 rounded-lg shadow-sm p-1 gap-0.5 w-full sm:w-auto sm:inline-flex">
-                            {[
-                                { value: 'overview',   icon: <BarChart3 className="h-3.5 w-3.5" />,    label: 'Overview' },
-                                { value: 'payroll',    icon: <DollarSign className="h-3.5 w-3.5" />,   label: 'Payroll',    count: insights.payroll?.length },
-                                { value: 'attendance', icon: <Users className="h-3.5 w-3.5" />,         label: 'Attendance', count: insights.attendance?.length },
-                                { value: 'anomalies',  icon: <AlertTriangle className="h-3.5 w-3.5" />, label: 'Anomalies',  count: insights.anomalies?.length },
-                            ].map(tab => (
-                                <TabsTrigger key={tab.value} value={tab.value}
-                                    className="flex-1 sm:flex-none h-7 px-3 text-xs font-semibold gap-1.5 tracking-wide rounded-md
-                                               data-[state=active]:bg-[#1d4791] data-[state=active]:text-white data-[state=active]:shadow-sm
-                                               text-slate-500 hover:text-slate-700 transition-all">
-                                    {tab.icon}
-                                    <span>{tab.label}</span>
-                                    {(tab.count ?? 0) > 0 && (
-                                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
-                                            activeTab === tab.value ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
-                                        }`}>{tab.count}</span>
-                                    )}
-                                </TabsTrigger>
-                            ))}
-                        </TabsList>
+                    {/* Executive summary */}
+                    {executiveSummary && executiveSummary !== 'No summary available' && (
+                        <div style={fadeUp(200)} className="rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-white">
+                            <NavyCardHeader icon={<Sparkles className="h-4 w-4" />} title="Executive Summary" />
+                            <div className="px-5 py-4">
+                                <p className="text-slate-700 leading-relaxed text-sm">{executiveSummary}</p>
+                            </div>
+                        </div>
+                    )}
 
-                        {/* OVERVIEW */}
-                        <TabsContent value="overview" className="space-y-4 mt-0">
-                            <div className="grid gap-4 md:grid-cols-2">
+                    {/* ── Tabs ── */}
+                    <div style={fadeUp(240)}>
+                        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+                            <TabsList className="h-9 bg-white border border-slate-200 rounded-lg shadow-sm p-1 gap-0.5 w-full sm:w-auto sm:inline-flex">
+                                {[
+                                    { value: 'overview',   icon: <BarChart3 className="h-3.5 w-3.5" />,    label: 'Overview' },
+                                    { value: 'payroll',    icon: <DollarSign className="h-3.5 w-3.5" />,   label: 'Payroll',    count: insights.payroll?.length },
+                                    { value: 'attendance', icon: <Users className="h-3.5 w-3.5" />,         label: 'Attendance', count: insights.attendance?.length },
+                                    { value: 'anomalies',  icon: <AlertTriangle className="h-3.5 w-3.5" />, label: 'Anomalies',  count: insights.anomalies?.length },
+                                ].map(tab => (
+                                    <TabsTrigger key={tab.value} value={tab.value}
+                                        className="flex-1 sm:flex-none h-7 px-3 text-xs font-semibold gap-1.5 tracking-wide rounded-md
+                                                   data-[state=active]:bg-[#1d4791] data-[state=active]:text-white data-[state=active]:shadow-sm
+                                                   text-slate-500 hover:text-slate-700 transition-all">
+                                        {tab.icon}
+                                        <span>{tab.label}</span>
+                                        {(tab.count ?? 0) > 0 && (
+                                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
+                                                activeTab === tab.value ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
+                                            }`}>{tab.count}</span>
+                                        )}
+                                    </TabsTrigger>
+                                ))}
+                            </TabsList>
+
+                            {/* OVERVIEW */}
+                            <TabsContent value="overview" className="space-y-4 mt-0">
+                                <div className="grid gap-4 md:grid-cols-2">
+                                    <OverviewPreviewCard
+                                        items={insights.payroll ?? []} title="Payroll Insights"
+                                        icon={<DollarSign className="h-4 w-4" />} type="payroll"
+                                        onGenerate={() => generateFreshInsights('payroll')} generating={generating}
+                                        onViewAll={() => setActiveTab('payroll')}
+                                    />
+                                    <OverviewPreviewCard
+                                        items={insights.attendance ?? []} title="Attendance Insights"
+                                        icon={<Users className="h-4 w-4" />} type="attendance"
+                                        onGenerate={() => generateFreshInsights('attendance')} generating={generating}
+                                        onViewAll={() => setActiveTab('attendance')}
+                                    />
+                                </div>
                                 <OverviewPreviewCard
+                                    items={insights.anomalies ?? []} title="Recent Anomalies"
+                                    icon={<AlertTriangle className="h-4 w-4" />} type="anomalies"
+                                    onGenerate={() => generateFreshInsights('anomalies')} generating={generating}
+                                    onViewAll={() => setActiveTab('anomalies')} isAnomaly previewCount={6}
+                                />
+                            </TabsContent>
+
+                            {/* PAYROLL */}
+                            <TabsContent value="payroll" className="mt-0">
+                                <InsightListPanel
                                     items={insights.payroll ?? []} title="Payroll Insights"
                                     icon={<DollarSign className="h-4 w-4" />} type="payroll"
                                     onGenerate={() => generateFreshInsights('payroll')} generating={generating}
-                                    onViewAll={() => setActiveTab('payroll')}
                                 />
-                                <OverviewPreviewCard
-                                    items={insights.attendance ?? []} title="Attendance Insights"
-                                    icon={<Users className="h-4 w-4" />} type="attendance"
-                                    onGenerate={() => generateFreshInsights('attendance')} generating={generating}
-                                    onViewAll={() => setActiveTab('attendance')}
-                                />
-                            </div>
-                            <OverviewPreviewCard
-                                items={insights.anomalies ?? []} title="Recent Anomalies"
-                                icon={<AlertTriangle className="h-4 w-4" />} type="anomalies"
-                                onGenerate={() => generateFreshInsights('anomalies')} generating={generating}
-                                onViewAll={() => setActiveTab('anomalies')} isAnomaly previewCount={6}
-                            />
-                        </TabsContent>
+                            </TabsContent>
 
-                        {/* PAYROLL */}
-                        <TabsContent value="payroll" className="mt-0">
-                            <InsightListPanel
-                                items={insights.payroll ?? []} title="Payroll Insights"
-                                icon={<DollarSign className="h-4 w-4" />} type="payroll"
-                                onGenerate={() => generateFreshInsights('payroll')} generating={generating}
-                            />
-                        </TabsContent>
-
-                        {/* ATTENDANCE */}
-                        <TabsContent value="attendance" className="space-y-4 mt-0">
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                {[
-                                    { label: 'Avg Attendance', value: '70.19%' },
-                                    { label: 'Avg Late Min',   value: '26.23'  },
-                                    { label: 'Absent Days',    value: '54'     },
-                                    { label: 'Analysed',       value: '35'     },
-                                ].map((s, i) => (
-                                    <div key={s.label} style={fadeUp(i * 40)} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                                        <div className="h-0.5 bg-[#1d4791]/25" />
-                                        <div className="px-4 py-3">
-                                            <p className="text-[10px] font-bold tracking-widest uppercase text-slate-400 mb-0.5">{s.label}</p>
-                                            <p className="text-xl font-bold text-slate-800">{s.value}</p>
+                            {/* ATTENDANCE */}
+                            <TabsContent value="attendance" className="space-y-4 mt-0">
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                    {[
+                                        { label: 'Avg Attendance', value: '70.19%' },
+                                        { label: 'Avg Late Min',   value: '26.23'  },
+                                        { label: 'Absent Days',    value: '54'     },
+                                        { label: 'Analysed',       value: '35'     },
+                                    ].map((s, i) => (
+                                        <div key={s.label} style={fadeUp(i * 40)} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                                            <div className="h-0.5 bg-[#1d4791]/25" />
+                                            <div className="px-4 py-3">
+                                                <p className="text-[10px] font-bold tracking-widest uppercase text-slate-400 mb-0.5">{s.label}</p>
+                                                <p className="text-xl font-bold text-slate-800">{s.value}</p>
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
-                            </div>
+                                    ))}
+                                </div>
 
-                            {insights.attendance?.filter(i => i.title?.includes('Department')).length > 0 && (
+                                {insights.attendance?.filter(i => i.title?.includes('Department')).length > 0 && (
+                                    <InsightListPanel
+                                        items={insights.attendance.filter(i => i.title?.includes('Department'))}
+                                        title="Department Rankings" icon={<TrendingUp className="h-4 w-4" />} type="attendance"
+                                        onGenerate={() => generateFreshInsights('attendance')} generating={generating}
+                                    />
+                                )}
+                                {insights.attendance?.filter(i => i.title?.includes('Monthly Trend')).length > 0 && (
+                                    <InsightListPanel
+                                        items={insights.attendance.filter(i => i.title?.includes('Monthly Trend'))}
+                                        title="Monthly Trends" icon={<BarChart3 className="h-4 w-4" />} type="attendance"
+                                        onGenerate={() => generateFreshInsights('attendance')} generating={generating}
+                                    />
+                                )}
                                 <InsightListPanel
-                                    items={insights.attendance.filter(i => i.title?.includes('Department'))}
-                                    title="Department Rankings" icon={<TrendingUp className="h-4 w-4" />} type="attendance"
+                                    items={insights.attendance?.filter(i => !i.title?.includes('Department') && !i.title?.includes('Monthly Trend')) ?? []}
+                                    title="All Attendance Insights" icon={<Users className="h-4 w-4" />} type="attendance"
                                     onGenerate={() => generateFreshInsights('attendance')} generating={generating}
                                 />
-                            )}
-                            {insights.attendance?.filter(i => i.title?.includes('Monthly Trend')).length > 0 && (
-                                <InsightListPanel
-                                    items={insights.attendance.filter(i => i.title?.includes('Monthly Trend'))}
-                                    title="Monthly Trends" icon={<BarChart3 className="h-4 w-4" />} type="attendance"
-                                    onGenerate={() => generateFreshInsights('attendance')} generating={generating}
-                                />
-                            )}
-                            <InsightListPanel
-                                items={insights.attendance?.filter(i => !i.title?.includes('Department') && !i.title?.includes('Monthly Trend')) ?? []}
-                                title="All Attendance Insights" icon={<Users className="h-4 w-4" />} type="attendance"
-                                onGenerate={() => generateFreshInsights('attendance')} generating={generating}
-                            />
-                        </TabsContent>
+                            </TabsContent>
 
-                        {/* ANOMALIES */}
-                        <TabsContent value="anomalies" className="mt-0">
-                            <InsightListPanel
-                                items={insights.anomalies ?? []} title="Anomalies"
-                                icon={<AlertTriangle className="h-4 w-4" />} type="anomalies"
-                                onGenerate={() => generateFreshInsights('anomalies')} generating={generating}
-                                isAnomaly
-                            />
-                        </TabsContent>
-                    </Tabs>
+                            {/* ANOMALIES */}
+                            <TabsContent value="anomalies" className="mt-0">
+                                <InsightListPanel
+                                    items={insights.anomalies ?? []} title="Anomalies"
+                                    icon={<AlertTriangle className="h-4 w-4" />} type="anomalies"
+                                    onGenerate={() => generateFreshInsights('anomalies')} generating={generating}
+                                    isAnomaly
+                                />
+                            </TabsContent>
+                        </Tabs>
+                    </div>
                 </div>
             </div>
-        </div>
+        </AppLayout>
     );
 }
