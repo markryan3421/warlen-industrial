@@ -24,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 'admin' => AdminMiddleware::class,
                 'hr' => \App\Http\Middleware\HrMiddleware::class,
                 'employee' => \App\Http\Middleware\EmployeeMiddleware::class,
+                'adminhr' => \App\Http\Middleware\AdminHrMiddleware::class,
         ]);
         $middleware->web(append: [
             HandleAppearance::class,
