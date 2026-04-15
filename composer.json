@@ -17,6 +17,7 @@
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.10.1",
         "laravel/wayfinder": "^0.1.13",
+        "openai-php/laravel": "^0.19.1",
         "phpoffice/phpspreadsheet": "^5.5",
         "spatie/laravel-activitylog": "^4.12",
         "spatie/laravel-permission": "^7.2",

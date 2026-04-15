@@ -145,16 +145,16 @@ export default function Index({
         dateTo,
         perPage
     });
-    
+
     useEffect(() => {
-        filtersRef.current = { 
-            searchTerm, 
-            selectedPositions, 
-            selectedBranches, 
-            selectedSites, 
-            dateFrom, 
-            dateTo, 
-            perPage 
+        filtersRef.current = {
+            searchTerm,
+            selectedPositions,
+            selectedBranches,
+            selectedSites,
+            dateFrom,
+            dateTo,
+            perPage
         };
     }, [searchTerm, selectedPositions, selectedBranches, selectedSites, dateFrom, dateTo, perPage]);
 
@@ -261,14 +261,14 @@ export default function Index({
         if (!url) return;
         const match = url.match(/[?&]page=(\d+)/);
         const page = match ? parseInt(match[1]) : 1;
-        const { 
-            searchTerm: s, 
-            selectedPositions: pos, 
-            selectedBranches: br, 
-            selectedSites: st, 
-            dateFrom: from, 
-            dateTo: to, 
-            perPage: pp 
+        const {
+            searchTerm: s,
+            selectedPositions: pos,
+            selectedBranches: br,
+            selectedSites: st,
+            dateFrom: from,
+            dateTo: to,
+            perPage: pp
         } = filtersRef.current;
 
         const params: Record<string, string | number> = { page };
@@ -368,15 +368,15 @@ export default function Index({
         if (!selectedBranches.length || !selectedBranches[0]) {
             return [];
         }
-        
+
         const selectedBranch = selectedBranches[0];
         const branchData = branchesData.find(b => b.branch_name === selectedBranch);
-        
+
         // Return sites for the selected branch, or empty array if no sites
         if (branchData && branchData.sites && branchData.sites.length > 0) {
             return branchData.sites.map(site => site.site_name);
         }
-        
+
         return [];
     }, [selectedBranches, branchesData]);
 
@@ -400,12 +400,12 @@ export default function Index({
     // Filter payroll table data based on selected site
     const filteredPayrollTableData = useMemo(() => {
         let data = payrollTableData;
-        
+
         // If site is selected, filter by site
         if (selectedSites.length && selectedSites[0]) {
             data = data.filter(row => row.site_name === selectedSites[0]);
         }
-        
+
         return data;
     }, [payrollTableData, selectedSites]);
 
@@ -475,8 +475,8 @@ export default function Index({
                 status: false
             }}
             allPositions={positionNames}
-            allBranches={branchNames}
-            allSites={siteNames}
+            allBranches={branchNames}  // Pass the branch names
+            allSites={siteNames}       // Pass the site names
             branchesData={branchesData}
             searchTerm={searchTerm}
             selectedPositions={selectedPositions}
@@ -489,7 +489,7 @@ export default function Index({
             onPositionsChange={handlePositionsChange}
             onBranchChange={handleBranchChange}
             onSiteChange={handleSiteChange}
-            onStatusChange={() => {}}
+            onStatusChange={() => { }}
             onDateFromChange={handleDateFromChange}
             onDateToChange={handleDateToChange}
             onClearAll={clearFilters}
@@ -549,7 +549,7 @@ export default function Index({
                                 from={serverPagination?.from || 0}
                                 title="Payroll Records"
                                 onView={handleViewPayroll}
-                                onEdit={() => {}}
+                                onEdit={() => { }}
                                 onDelete={handleDeletePayroll}
                                 toolbar={toolbar}
                                 filterEmptyState={

@@ -20,7 +20,7 @@ class EmployeeRepository
     {
         return Employee::query()
             ->with([
-                'position' => fn($query) => $query->withTrashed()->getPosition(),
+                'position' => fn($query) => $query->getPosition(),
                 'branch' => fn($query) => $query->getBranch(),
                 'branch.sites' => fn($query) => $query->getSiteName(),
                 'site' => fn($query) => $query->getSiteName(),
@@ -60,7 +60,7 @@ class EmployeeRepository
         return Employee::query()
             ->onlyTrashed()
             ->with([
-                'position' => fn($query) => $query->withTrashed()->getPosition(),
+                'position' => fn($query) => $query->getPosition(),
                 'branch' => fn($query) => $query->getBranch(),
                 'site' => fn($query) => $query->getSiteName(),
                 'user' => fn($query) => $query->getUserName(),
