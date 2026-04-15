@@ -63,7 +63,7 @@ export function NavMain({ items, label, isCollapsed = false }: NavMainProps) {
                                     tooltip={{ children: item.title }}
                                 >
                                     <Link href={item.href} prefetch>
-                                        {item.icon && <item.icon className="h-4 w-4" />}
+                                        {item.icon && <item.icon className="h-4 w-4 mt-2" />}
                                         <span>{item.title}</span>
                                     </Link>
                                 </SidebarMenuButton>

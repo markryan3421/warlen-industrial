@@ -1,5 +1,5 @@
 import { Head, useForm, router } from '@inertiajs/react';
-import { Calendar, Sheet, ChartSpline, Clock, ScrollText, Upload, Loader2 } from 'lucide-react';
+import { Calendar, Sheet, ChartSpline, Clock, ScrollText, Upload, Loader2, Search } from 'lucide-react';
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 
 // Components
@@ -244,6 +244,7 @@ export default function AttendanceManagement({
     const [isTableLoading, setIsTableLoading] = useState(false);
     const [localSearch, setLocalSearch] = useState(filters.search || '');
     const [animateHeader, setAnimateHeader] = useState(false);
+    const [refreshKey, setRefreshKey] = useState(0);
 
     const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -252,6 +253,26 @@ export default function AttendanceManagement({
         perPage: filters.perPage || '10',
     });
 
+    // Check if any filters are active
+    const hasFilters = !!localSearch;
+
+    // Refresh data function
+    const refreshData = useCallback(() => {
+        setIsTableLoading(true); // Show loading immediately
+        setRefreshKey(prev => prev + 1);
+
+        router.reload({
+            preserveState: false,
+            preserveScroll: true,
+            only: ['logs', 'exceptionStats', 'schedules', 'periodStats', 'totalCounts', 'filteredCounts'],
+            onFinish: () => {
+                // Small delay to ensure data is rendered
+                setTimeout(() => {
+                    setIsTableLoading(false);
+                }, 300);
+            }
+        });
+    }, []);
     // ==========================================================================
     // SYNC STATE WITH PROPS
     // ==========================================================================
@@ -275,7 +296,7 @@ export default function AttendanceManagement({
     }, [filters.perPage, data.perPage, setData]);
 
     // ==========================================================================
-    // HANDLE LOADING STATE - FIXED
+    // HANDLE LOADING STATE
     // ==========================================================================
 
     useEffect(() => {
@@ -292,10 +313,8 @@ export default function AttendanceManagement({
 
         const onFinish = () => {
             if (!isMounted) return;
-            // Clear any existing timeout
             if (timeoutId) clearTimeout(timeoutId);
 
-            // Only set loading false after a short delay to ensure DOM is updated
             timeoutId = setTimeout(() => {
                 if (isMounted && isNavigating) {
                     setIsTableLoading(false);
@@ -316,20 +335,16 @@ export default function AttendanceManagement({
     }, []);
 
     // ==========================================================================
-    // TAB CHANGE HANDLER - INSTANT SKELETON WITH HEADER ANIMATION
+    // TAB CHANGE HANDLER
     // ==========================================================================
 
     const handleMainTabChange = useCallback((tabId: string) => {
         if (tabId === activeMainTab) return;
 
-        // Trigger header animation
         setAnimateHeader(false);
         setTimeout(() => setAnimateHeader(true), 10);
-
-        // Show skeleton immediately
         setIsTableLoading(true);
 
-        // Build URL with reset to page 1
         const queryString: Record<string, string> = {
             tab: tabId,
             perPage: data.perPage,
@@ -340,42 +355,28 @@ export default function AttendanceManagement({
             queryString.search = localSearch.trim();
         }
 
-        // Navigate
         router.get('/attendances', queryString, {
             preserveState: true,
             preserveScroll: true,
-            onSuccess: () => {
-                // Success is handled by onFinish
-            },
-            onError: () => {
-                // If error occurs, hide loading
-                setIsTableLoading(false);
-            }
+            onError: () => setIsTableLoading(false)
         });
 
-        // Update active tab immediately for UI responsiveness
         setActiveMainTab(tabId);
     }, [activeMainTab, data.perPage, localSearch]);
 
     const handleSubTabChange = useCallback((value: string) => {
         if (value === activeSubTab) return;
-        // Simply change the sub-tab without loading state since no data fetch is needed
         setActiveSubTab(value as typeof activeSubTab);
     }, [activeSubTab]);
 
-    // Cleanup loading state on unmount
     useEffect(() => {
-        return () => {
-            setIsTableLoading(false);
-        };
+        return () => setIsTableLoading(false);
     }, []);
 
-    // Reset sub-tab when main tab changes
     useEffect(() => {
         setActiveSubTab('table');
     }, [activeMainTab]);
 
-    // Trigger header animation on initial load
     useEffect(() => {
         setTimeout(() => setAnimateHeader(true), 100);
     }, []);
@@ -393,7 +394,6 @@ export default function AttendanceManagement({
         }
 
         searchTimer.current = setTimeout(() => {
-            // Only show loading if search actually changed
             if (value !== localSearch) {
                 setIsTableLoading(true);
             }
@@ -568,7 +568,7 @@ export default function AttendanceManagement({
                         links: exceptionStats?.links || [],
                     },
                     config: AttendanceExceptionStatsTableConfig,
-                    title: 'Attendance Exception Stats',
+                    title: 'Exception Stats',
                     totalCount: totalCounts?.exceptionStats || exceptionStats?.total || 0,
                     filteredCount: filteredCounts?.exceptionStats || exceptionStats?.data?.length || 0,
                 };
@@ -586,7 +586,7 @@ export default function AttendanceManagement({
                         links: schedules?.links || [],
                     },
                     config: AttendanceSchedulesTableConfig,
-                    title: 'Attendance Schedules',
+                    title: 'Schedules',
                     totalCount: totalCounts?.schedules || schedules?.total || 0,
                     filteredCount: filteredCounts?.schedules || schedules?.data?.length || 0,
                 };
@@ -604,7 +604,7 @@ export default function AttendanceManagement({
                         links: periodStats?.links || [],
                     },
                     config: AttendancePeriodStatsTableConfig,
-                    title: 'Period Statistics',
+                    title: 'Period Stats',
                     totalCount: totalCounts?.periodStats || periodStats?.total || 0,
                     filteredCount: filteredCounts?.periodStats || periodStats?.data?.length || 0,
                 };
@@ -712,7 +712,6 @@ export default function AttendanceManagement({
                 .pp-header { 
                     animation: headerReveal 0.35s cubic-bezier(0.22,1,0.36,1) both; 
                 }
-                /* Header animation trigger class */
                 .header-animate {
                     animation: headerReveal 0.35s cubic-bezier(0.22,1,0.36,1) both;
                 }
@@ -721,7 +720,6 @@ export default function AttendanceManagement({
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4 overflow-hidden mx-4">
                 {/* Header Section */}
                 <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 rounded-xl">
-                    {/* Header Section with animation - always first */}
                     <div className={`${animateHeader ? 'header-animate' : 'opacity-0'} w-full lg:w-auto`}>
                         <CustomHeader
                             icon={
@@ -750,7 +748,16 @@ export default function AttendanceManagement({
                                 </DialogDescription>
                             </DialogHeader>
                             <div className="mt-4">
-                                <BiometricImport />
+                                <BiometricImport
+                                    onSuccess={() => {
+                                        setIsDialogOpen(false);
+                                        setIsTableLoading(true); // Show loading immediately
+                                        // Small delay to ensure dialog closes before refresh
+                                        setTimeout(() => {
+                                            refreshData();
+                                        }, 100);
+                                    }}
+                                />
                             </div>
                         </DialogContent>
                     </Dialog>
@@ -769,7 +776,6 @@ export default function AttendanceManagement({
                                         className="px-3 md:px-5 py-3 mr-0.5 border-b-2 data-[state=active]:border-b-4 data-[state=active]:rounded-t-xl data-[state=active]:border-primary data-[state=inactive]:border-gray-300 data-[state=inactive]:border-b-2 rounded-t-xl rounded-b-none bg-transparent data-[state=active]:shadow-none data-[state=active]:text-primary data-[state=inactive]:text-gray-600 hover:data-[state=inactive]:border-gray-500 transition-all duration-200"
                                     >
                                         <Icon className="h-4 w-4 lg:mr-2" />
-                                        {/* Hide label on mobile and tablet, show on desktop/laptop */}
                                         <span className="hidden lg:inline">{tab.label}</span>
                                         {tab.count > 0 && (
                                             <span className={`
@@ -788,6 +794,7 @@ export default function AttendanceManagement({
                         </TabsList>
                     </Tabs>
                 </div>
+
                 {/* Sub Tabs for Logs and Exceptions */}
                 {(activeMainTab === 'logs' || activeMainTab === 'exceptions') && (
                     <div className="flex flex-col justify-center lg:flex-row items-center lg:justify-between xl:justify-between gap-4 w-full pp-row">
@@ -912,6 +919,7 @@ export default function AttendanceManagement({
                 )}
 
                 {/* Content Area */}
+                {/* Content Area */}
                 <div className="relative min-h-[400px]">
                     {activeSubTab === 'table' ? (
                         <>
@@ -926,47 +934,45 @@ export default function AttendanceManagement({
                                     />
                                 </div>
                             ) : (
-                                <>
-                                    {current.data.length > 0 ? (
-                                        <div className="pp-row">
-                                            <CustomTable
-                                                columns={current.config.columns}
-                                                actions={current.config.actions}
-                                                data={current.data}
-                                                from={current.pagination?.from || 0}
-                                                to={current.pagination?.to || 0}
-                                                total={current.pagination?.total || 0}
-                                                filteredCount={current.filteredCount}
-                                                totalCount={current.totalCount}
-                                                searchTerm={localSearch}
-                                                onDelete={() => { }}
-                                                onView={() => { }}
-                                                onEdit={() => { }}
-                                                title={current.title || currentMainTab.label}
-                                            />
-                                        </div>
-                                    ) : (
-                                        <div className="flex flex-col items-center justify-center py-16 text-center">
-                                            <div className="rounded-full bg-gray-100 p-6 mb-4">
-                                                {activeMainTab === 'logs' && <ScrollText className="h-12 w-12 text-gray-400" />}
-                                                {activeMainTab === 'exceptions' && <ChartSpline className="h-12 w-12 text-gray-400" />}
-                                                {activeMainTab === 'schedules' && <Clock className="h-12 w-12 text-gray-400" />}
-                                                {activeMainTab === 'periods' && <Calendar className="h-12 w-12 text-gray-400" />}
+                                <div className="pp-row">
+                                    <CustomTable
+                                        key={refreshKey}
+                                        columns={current.config.columns}
+                                        actions={current.config.actions}
+                                        data={current.data}
+                                        from={current.pagination?.from || 0}
+                                        to={current.pagination?.to || 0}
+                                        totalCount={current.totalCount}
+                                        filteredCount={current.filteredCount}
+                                        searchTerm={localSearch}
+                                        onDelete={() => { }}
+                                        onView={() => { }}
+                                        onEdit={() => { }}
+                                        title={current.title || currentMainTab.label}
+                                        filterEmptyState={
+                                            // This will only show when CustomTable has no data and no loading
+                                            <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
+                                                <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center mb-3">
+                                                    {activeMainTab === 'logs' && <ScrollText className="h-5 w-5 text-slate-400 dark:text-slate-500" />}
+                                                    {activeMainTab === 'exceptions' && <ChartSpline className="h-5 w-5 text-slate-400 dark:text-slate-500" />}
+                                                    {activeMainTab === 'schedules' && <Clock className="h-5 w-5 text-slate-400 dark:text-slate-500" />}
+                                                    {activeMainTab === 'periods' && <Calendar className="h-5 w-5 text-slate-400 dark:text-slate-500" />}
+                                                </div>
+                                                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1">No results found</h3>
+                                                <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 max-w-xs">
+                                                    {localSearch
+                                                        ? `No ${(current.title || currentMainTab.label).toLowerCase()} matching "${localSearch}".`
+                                                        : `No ${(current.title || currentMainTab.label).toLowerCase()} available at the moment.`}
+                                                </p>
+                                                {localSearch && (
+                                                    <Button variant="outline" size="sm" onClick={handleResetFilters}>
+                                                        Clear filters
+                                                    </Button>
+                                                )}
                                             </div>
-                                            <h3 className="text-lg font-semibold mb-2">No records found</h3>
-                                            <p className="text-gray-500 mb-6 max-w-sm">
-                                                {localSearch
-                                                    ? `No results match "${localSearch}". Try adjusting your search.`
-                                                    : `No ${currentMainTab.label.toLowerCase()} available at the moment.`}
-                                            </p>
-                                            {localSearch && (
-                                                <Button onClick={handleResetFilters} variant="outline">
-                                                    Clear Search
-                                                </Button>
-                                            )}
-                                        </div>
-                                    )}
-                                </>
+                                        }
+                                    />
+                                </div>
                             )}
 
                             {/* Pagination */}
