@@ -6,6 +6,7 @@ import {
 import { useState, useRef } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
+import { router } from "@inertiajs/react";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -31,16 +32,47 @@ interface ImportResult {
     errors?: ImportError[];   // optional — guard everywhere with ?? []
 }
 
+interface BiometricImportProps {
+    onSuccess?: () => void;  // Callback for successful import
+    refreshRoute?: string;    // Route to refresh after import
+    refreshOnly?: string[];   // Specific data to refresh (for Inertia only)
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Component
 // ─────────────────────────────────────────────────────────────────────────────
-export default function BiometricImport() {
+export default function BiometricImport({ 
+    onSuccess, 
+    refreshRoute,
+    refreshOnly = ['payrolls', 'pagination', 'filters', 'totalCount', 'filteredCount']
+}: BiometricImportProps = {}) {
     const [file, setFile] = useState<File | null>(null);
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState<ImportResult | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [dragging, setDragging] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
+
+    // ── Refresh function ──────────────────────────────────────────────────────
+    const refreshData = () => {
+        // If a custom refresh route is provided, use it
+        if (refreshRoute) {
+            router.visit(refreshRoute, {
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+                only: refreshOnly,
+            });
+        } 
+        // Otherwise, reload the current page
+        else {
+            router.reload({
+                preserveState: true,
+                preserveScroll: true,
+                only: refreshOnly,
+            });
+        }
+    };
 
     // ── File validation & selection ──────────────────────────────────────────
     const handleFile = (f: File) => {
@@ -97,6 +129,15 @@ export default function BiometricImport() {
                 skipped: data.skipped ?? 0,
                 errors: data.errors ?? [],
             });
+
+            // Auto-refresh after successful import (with a small delay to ensure the import is complete)
+            if (data.imported > 0) {
+                setTimeout(() => {
+                    refreshData();
+                    // Call the onSuccess callback if provided
+                    if (onSuccess) onSuccess();
+                }, 1500); // 1.5 second delay to show success message
+            }
         } catch (err: any) {
             const msg =
                 err.response?.data?.message ??
@@ -113,6 +154,12 @@ export default function BiometricImport() {
         setResult(null);
         setError(null);
         if (inputRef.current) inputRef.current.value = "";
+    };
+
+    // ── Manual refresh handler ───────────────────────────────────────────────
+    const handleManualRefresh = () => {
+        refreshData();
+        // Optional: Show a toast or notification
     };
 
     // ── Helpers ──────────────────────────────────────────────────────────────
@@ -134,16 +181,6 @@ export default function BiometricImport() {
     // ─────────────────────────────────────────────────────────────────────────
     return (
         <div className="mx-auto max-w-md space-y-4 p-4">
-
-            {/* ── Title ───────────────────────────────────────────────────────────
-            <div className="mb-2">
-                <h2 className="text-lg font-bold text-stone-800 dark:text-stone-100">
-                    Biometric Attendance Import
-                </h2>
-                <p className="text-sm text-stone-400 dark:text-stone-500">
-                    Upload the XLS file exported from the biometric device.
-                </p>
-            </div> */}
 
             {/* ── Drop zone ─────────────────────────────────────────────────────── */}
             <div
@@ -248,12 +285,21 @@ export default function BiometricImport() {
             {result && (
                 <div className="overflow-hidden rounded-2xl border border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-950">
 
-                    {/* Header */}
-                    <div className="flex items-center gap-2 border-b border-stone-100 px-5 py-4 dark:border-stone-800">
-                        <CheckCircle className="h-5 w-5 text-emerald-500" />
-                        <span className="font-semibold text-stone-800 dark:text-stone-100">
-                            Import Complete
-                        </span>
+                    {/* Header with refresh button */}
+                    <div className="flex items-center justify-between border-b border-stone-100 px-5 py-4 dark:border-stone-800">
+                        <div className="flex items-center gap-2">
+                            <CheckCircle className="h-5 w-5 text-emerald-500" />
+                            <span className="font-semibold text-stone-800 dark:text-stone-100">
+                                Import Complete
+                            </span>
+                        </div>
+                        <button
+                            onClick={handleManualRefresh}
+                            className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/50 transition-colors"
+                        >
+                            <Loader2 className="h-3 w-3" />
+                            Refresh Data
+                        </button>
                     </div>
 
                     {/* Stats — all three values are now guaranteed to be numbers */}
@@ -272,13 +318,22 @@ export default function BiometricImport() {
                         ))}
                     </div>
 
+                    {/* Auto-refresh message */}
+                    {result.imported > 0 && (
+                        <div className="border-t border-stone-100 px-5 py-3 dark:border-stone-800">
+                            <p className="text-xs text-center text-stone-500 dark:text-stone-400">
+                                Data will refresh automatically in a moment...
+                            </p>
+                        </div>
+                    )}
+
                     {/* Error list — only shown if there are errors */}
                     {errors.length > 0 && (
                         <div className="border-t border-stone-100 px-5 py-3 dark:border-stone-800">
                             <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-stone-400">
                                 Failed rows
                             </p>
-                            <ul className="space-y-1">
+                            <ul className="space-y-1 max-h-40 overflow-y-auto">
                                 {errors.map((e, i) => (
                                     <li
                                         key={i}

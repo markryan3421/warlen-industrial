@@ -1,4 +1,3 @@
-// components/custom-table.tsx
 import * as LucidIcons from "lucide-react";
 import { useRoute } from "ziggy-js";
 import {
@@ -10,7 +9,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "./ui/button";
 
-// ─── Types ──────────────────────────────────────────────────────────────
+// ─── Brand tokens (60-30-10) ──────────────────────────────────────────────────
+// 60% → slate/stone neutrals  — surfaces, text, borders, dividers
+// 30% → #1d4791  navy          — header, index badges, primary hover accents
+// 10% → #d85e39  burnt orange  — delete action, destructive states only
+
 interface TableColumn {
     label: string;
     key: string;
@@ -50,16 +53,9 @@ interface CustomTableProps {
     title?: string;
     toolbar?: React.ReactNode;
     filterEmptyState?: React.ReactNode;
-
-    // NEW: bulk selection props
-    selectable?: boolean;
-    selectedIds?: (string | number)[];
-    onSelectChange?: (ids: (string | number)[]) => void;
-    selectAll?: boolean;
-    onRestore?: (row: TableRow) => void;
 }
 
-// ─── Helpers (unchanged) ────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 function formatCellValue(col: TableColumn, row: TableRow): string {
     const val = row[col.key];
     if (val === null || val === undefined) return "—";
@@ -80,6 +76,7 @@ function formatCellValue(col: TableColumn, row: TableRow): string {
     return String(val);
 }
 
+// Row-number badge — 30% navy
 function IndexBadge({ value }: { value: number }) {
     return (
         <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-[#1d4791]/10 dark:bg-[#1d4791]/25 text-[#1d4791] dark:text-blue-300 text-[11px] font-black tabular-nums">
@@ -88,7 +85,9 @@ function IndexBadge({ value }: { value: number }) {
     );
 }
 
+// Cell value — handles all display types
 function CellValue({ col, row }: { col: TableColumn; row: TableRow }) {
+    // Render row (for relationships)
     if (col.render) {
         const rendered = col.render(row);
         if (col.isBadge) {
@@ -101,6 +100,7 @@ function CellValue({ col, row }: { col: TableColumn; row: TableRow }) {
         return <>{rendered}</>;
     }
 
+    // Image row
     if (col.isImage) {
         return (
             <div className="flex justify-center">
@@ -113,6 +113,7 @@ function CellValue({ col, row }: { col: TableColumn; row: TableRow }) {
         );
     }
 
+    // Badge row
     if (col.isBadge) {
         const rendered = col.render ? col.render(row) : formatCellValue(col, row);
         return (
@@ -122,6 +123,7 @@ function CellValue({ col, row }: { col: TableColumn; row: TableRow }) {
         );
     }
 
+    // Date row
     if (col.isDate) {
         return (
             <span className="text-[13px] font-medium text-slate-600 dark:text-slate-300 whitespace-nowrap">
@@ -132,6 +134,7 @@ function CellValue({ col, row }: { col: TableColumn; row: TableRow }) {
         );
     }
 
+    // Default row
     return (
         <span className="block truncate max-w-[220px]">
             {formatCellValue(col, row)}
@@ -139,6 +142,7 @@ function CellValue({ col, row }: { col: TableColumn; row: TableRow }) {
     );
 }
 
+// ─── Empty state ──────────────────────────────────────────────────────────────
 function EmptyState() {
     return (
         <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
@@ -155,13 +159,13 @@ function EmptyState() {
     );
 }
 
+// ─── Action dropdown ──────────────────────────────────────────────────────────
 function ActionDropdown({
     row,
     actions,
     onDelete,
     onView,
     onEdit,
-    onRestore,
     route,
 }: {
     row: TableRow;
@@ -169,7 +173,6 @@ function ActionDropdown({
     onDelete: (r: TableRow) => void;
     onView: (r: TableRow) => void;
     onEdit: (r: TableRow) => void;
-    onRestore?: (r: TableRow) => void;
     route: ReturnType<typeof useRoute>;
 }) {
     const nonDestructive = actions.filter(a => a.label !== "Delete");
@@ -178,6 +181,7 @@ function ActionDropdown({
     const handleAction = (action: ActionConfig) => {
         if (action.label === "Delete") {
             if (row.id !== undefined && row.id !== null) {
+                // Pass the entire row to onDelete
                 onDelete(row);
             } else {
                 console.error('Cannot delete: row has no id', row);
@@ -186,17 +190,12 @@ function ActionDropdown({
             onView(row);
         } else if (action.label === "Edit") {
             onEdit(row);
-        } else if (action.label === "Restore") {
-            onRestore?.(row);
         } else if (action.route) {
             if (row.id !== undefined && row.id !== null) {
                 window.location.href = route(action.route, row.id);
             } else {
                 console.error('Cannot navigate: row has no id', row);
             }
-        }
-        if (action.label === 'Restore') {
-            onRestore?.(row);
         }
     };
 
@@ -214,6 +213,7 @@ function ActionDropdown({
                     align="end"
                     className="min-w-[160px] rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl shadow-slate-900/10 dark:shadow-slate-950/40 p-1"
                 >
+                    {/* Non-destructive actions */}
                     {nonDestructive.map((action, i) => {
                         const Icon = LucidIcons[action.icon] as React.ElementType;
                         return (
@@ -228,6 +228,7 @@ function ActionDropdown({
                         );
                     })}
 
+                    {/* Separator + destructive */}
                     {destructive.length > 0 && nonDestructive.length > 0 && (
                         <DropdownMenuSeparator className="my-1 border-slate-100 dark:border-slate-800" />
                     )}
@@ -250,7 +251,7 @@ function ActionDropdown({
     );
 }
 
-// ─── Main Component ────────────────────────────────────────────────────
+// ─── Main component ────────────────────────────────────────────────────────────
 export const CustomTable = ({
     columns,
     actions,
@@ -267,43 +268,81 @@ export const CustomTable = ({
     title,
     toolbar,
     filterEmptyState,
-    selectable = false,
-    selectedIds = [],
-    onSelectChange,
-    selectAll = false,
-    onRestore,
 }: CustomTableProps) => {
     const route = useRoute();
+
     const dataColumns = columns.filter(col => !col.isAction);
     const hasActions = columns.some(col => col.isAction);
-    const actionProps = { actions, onDelete, onView, onEdit, onRestore, route };
 
-    const handleSelectAll = (checked: boolean) => {
-        if (!onSelectChange) return;
-        if (checked) {
-            onSelectChange(data.map(row => row.id).filter(id => id != null));
-        } else {
-            onSelectChange([]);
+    // Prepare action props for reuse
+    const actionProps = { actions, onDelete, onView, onEdit, route };
+
+    // Determine display text for record count with header styling
+    const getHeaderRecordDisplayText = () => {
+        if (searchTerm && filteredCount !== undefined && totalCount !== undefined) {
+            return (
+                <>
+                    Showing <span className="font-black text-white">{data.length}</span> of{' '}
+                    <span className="font-black text-white">{filteredCount.toLocaleString()}</span> filtered records
+                    <span className="text-blue-200/60 ml-1">
+                        (from {totalCount.toLocaleString()} total)
+                    </span>
+                </>
+            );
         }
+
+        if (total !== undefined && total > 0) {
+            return (
+                <>
+                    Showing <span className="font-black text-white">{to || from + data.length - 1}</span> of{' '}
+                    <span className="font-black text-white">{total.toLocaleString()}</span> records
+                </>
+            );
+        }
+
+        return (
+            <>
+                Showing <span className="font-black text-white">{data.length}</span> records
+            </>
+        );
     };
 
-    const handleSelectRow = (row: TableRow, checked: boolean) => {
-        if (!onSelectChange) return;
-        const id = row.id;
-        if (id == null) return;
-        const newSelected = checked
-            ? [...selectedIds, id]
-            : selectedIds.filter(i => i !== id);
-        onSelectChange(newSelected);
+    // Determine display text for record count with footer styling
+    const getFooterRecordDisplayText = () => {
+        if (searchTerm && filteredCount !== undefined && totalCount !== undefined) {
+            return (
+                <>
+                    Showing <span className="font-black text-gray-600 dark:text-gray-300">{data.length}</span> of{' '}
+                    <span className="font-black text-gray-600 dark:text-gray-300">{filteredCount.toLocaleString()}</span> filtered records
+                    <span className="text-gray-400 dark:text-gray-500 ml-1">
+                        (from {totalCount.toLocaleString()} total)
+                    </span>
+                </>
+            );
+        }
+
+        if (total !== undefined && total > 0) {
+            return (
+                <>
+                    Showing <span className="font-black text-gray-600 dark:text-gray-300">{to || from + data.length - 1}</span> of{' '}
+                    <span className="font-black text-gray-600 dark:text-gray-300">{total.toLocaleString()}</span> records
+                </>
+            );
+        }
+
+        return (
+            <>
+                Showing <span className="font-black text-gray-600 dark:text-gray-300">{data.length}</span> records
+            </>
+        );
     };
 
-    const getHeaderRecordDisplayText = () => { /* same as before */ };
-    const getFooterRecordDisplayText = () => { /* same as before */ };
-
+    // If no data, show empty state
     if (!data || data.length === 0) {
         return (
             <div className="w-full font-sans">
                 <div className="rounded-2xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
+                    {/* Header bar */}
                     <div className="flex items-center gap-3 px-5 py-4 bg-[#1d4791] dark:bg-[#1d4791]">
                         <div className="w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center flex-shrink-0">
                             <LucidIcons.Table2 className="w-4 h-4 text-white" strokeWidth={1.75} />
@@ -317,22 +356,26 @@ export const CustomTable = ({
                             </p>
                         </div>
                     </div>
+
+                    {/* Toolbar if provided */}
                     {toolbar && (
                         <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40">
                             {toolbar}
                         </div>
                     )}
+
+                    {/* Empty state */}
                     {filterEmptyState ?? <EmptyState />}
                 </div>
             </div>
         );
     }
 
-    // ── DESKTOP VIEW (≥1024px) with selection column ────────────────────
     return (
         <div className="w-full font-sans">
             <div className="rounded-2xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
-                {/* Header bar */}
+
+                {/* ── Header bar — 30% navy ─────────────────────────────────── */}
                 <div className="flex items-center gap-3 px-5 py-4 bg-[#1d4791] dark:bg-[#1d4791]">
                     <div className="w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center flex-shrink-0">
                         <LucidIcons.Table2 className="w-4 h-4 text-white" strokeWidth={1.75} />
@@ -347,40 +390,104 @@ export const CustomTable = ({
                     </div>
                 </div>
 
+                {/* ── Optional toolbar slot ────────────────────────────────── */}
                 {toolbar && (
                     <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40">
                         {toolbar}
                     </div>
                 )}
 
-                {/* MOBILE (<768px) - no selection for simplicity, can be added later */}
+                {/* ══════════════════════════════════════════════════════════════
+                    MOBILE  (< 768px) — stacked field cards
+                ══════════════════════════════════════════════════════════════ */}
                 <div className="block md:hidden">
-                    {/* ... same as before, no checkboxes ... */}
+                    <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                        {data.map((row, index) => (
+                            <div
+                                key={row.id || index}
+                                className="px-4 py-4 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors duration-150"
+                            >
+                                {/* Card header */}
+                                <div className="flex items-center justify-between mb-3">
+                                    <IndexBadge value={from + index} />
+                                    {hasActions && (
+                                        <ActionDropdown
+                                            {...actionProps}
+                                            row={row}
+                                        />
+                                    )}
+                                </div>
+
+                                {/* Field grid */}
+                                <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
+                                    {dataColumns.map(col => (
+                                        <div key={col.key} className="flex flex-col min-w-0">
+                                            <dt className="text-[10px] font-bold tracking-widest uppercase text-slate-400 dark:text-slate-500 mb-0.5 truncate">
+                                                {col.label}
+                                            </dt>
+                                            <dd className="text-[13px] text-slate-700 dark:text-slate-300 overflow-hidden">
+                                                <CellValue col={col} row={row} />
+                                            </dd>
+                                        </div>
+                                    ))}
+                                </dl>
+                            </div>
+                        ))}
+                    </div>
                 </div>
 
-                {/* TABLET (768px–1023px) - also no checkboxes to keep cards clean */}
+                {/* ══════════════════════════════════════════════════════════════
+                    TABLET  (768px – 1023px) — 2-col card grid
+                ══════════════════════════════════════════════════════════════ */}
                 <div className="hidden md:block lg:hidden">
-                    {/* ... same as before ... */}
+                    <div className="p-4 grid grid-cols-2 gap-3">
+                        {data.map((row, index) => (
+                            <div
+                                key={row.id || index}
+                                className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/60 p-4 hover:border-[#1d4791]/40 dark:hover:border-[#1d4791]/50 hover:shadow-md transition-all duration-200 group"
+                            >
+                                {/* Card header */}
+                                <div className="flex items-center justify-between mb-3 pb-3 border-b border-slate-100 dark:border-slate-700/60">
+                                    <IndexBadge value={from + index} />
+                                    {hasActions && (
+                                        <ActionDropdown
+                                            {...actionProps}
+                                            row={row}
+                                        />
+                                    )}
+                                </div>
+
+                                {/* Field list */}
+                                <dl className="space-y-2">
+                                    {dataColumns.map(col => (
+                                        <div key={col.key} className="flex items-start justify-between gap-3 min-w-0">
+                                            <dt className="text-[10px] font-bold tracking-widest uppercase text-slate-400 dark:text-slate-500 shrink-0 pt-0.5">
+                                                {col.label}
+                                            </dt>
+                                            <dd className="text-[12.5px] font-medium text-slate-700 dark:text-slate-300 text-right overflow-hidden max-w-[55%]">
+                                                <CellValue col={col} row={row} />
+                                            </dd>
+                                        </div>
+                                    ))}
+                                </dl>
+                            </div>
+                        ))}
+                    </div>
                 </div>
 
-                {/* DESKTOP (≥1024px) - full table with selection */}
+                {/* ══════════════════════════════════════════════════════════════
+                    DESKTOP  (≥ 1024px) — full data table
+                ══════════════════════════════════════════════════════════════ */}
                 <div className="hidden lg:block overflow-x-auto">
                     <table className="w-full border-collapse text-[13px] text-slate-700 dark:text-slate-300">
+                        {/* Column headers */}
                         <thead>
                             <tr className="border-b border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-800/80">
-                                {selectable && (
-                                    <th className="w-10 px-2 py-3 text-center">
-                                        <input
-                                            type="checkbox"
-                                            checked={selectAll}
-                                            onChange={(e) => handleSelectAll(e.target.checked)}
-                                            className="rounded border-slate-300 dark:border-slate-600"
-                                        />
-                                    </th>
-                                )}
+                                {/* # column */}
                                 <th className="w-14 px-5 py-3 text-center text-[10px] font-black tracking-widest uppercase text-[#1d4791] dark:text-blue-400 whitespace-nowrap">
                                     #
                                 </th>
+
                                 {columns.map(col => (
                                     <th
                                         key={col.key}
@@ -391,32 +498,29 @@ export const CustomTable = ({
                                 ))}
                             </tr>
                         </thead>
+
                         <tbody>
                             {data.map((row, index) => (
                                 <tr
                                     key={row.id || index}
                                     className="group border-b border-slate-100 dark:border-slate-800 last:border-0 bg-white dark:bg-slate-900 hover:bg-[#1d4791]/[0.03] dark:hover:bg-[#1d4791]/10 transition-colors duration-150"
                                 >
-                                    {selectable && (
-                                        <td className="px-2 py-3.5 text-center">
-                                            <input
-                                                type="checkbox"
-                                                checked={selectedIds.includes(row.id)}
-                                                onChange={(e) => handleSelectRow(row, e.target.checked)}
-                                                className="rounded border-slate-300 dark:border-slate-600"
-                                            />
-                                        </td>
-                                    )}
+                                    {/* Row index */}
                                     <td className="px-5 py-3.5 text-center align-middle">
                                         <IndexBadge value={from + index} />
                                     </td>
+
+                                    {/* Data cells */}
                                     {columns.map(col => (
                                         <td
                                             key={col.key}
                                             className={`px-4 py-3.5 align-middle text-left text-slate-700 dark:text-slate-300 overflow-hidden ${col.className ?? ""}`}
                                         >
                                             {col.isAction ? (
-                                                <ActionDropdown {...actionProps} row={row} />
+                                                <ActionDropdown
+                                                    {...actionProps}
+                                                    row={row}
+                                                />
                                             ) : (
                                                 <CellValue col={col} row={row} />
                                             )}
@@ -428,9 +532,10 @@ export const CustomTable = ({
                     </table>
                 </div>
 
-                {/* Footer */}
+                {/* ── Footer with Enhanced Record Information ────────────────── */}
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-5 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40">
                     <div className="flex items-center gap-2">
+                        {/* 10% orange accent */}
                         <span className="w-1.5 h-1.5 rounded-full bg-[#d85e39]" />
                         <p className="text-[11px] font-medium text-gray-600 dark:text-gray-400">
                             {getFooterRecordDisplayText()}
@@ -446,6 +551,14 @@ export const CustomTable = ({
                     </div>
                 </div>
             </div>
+
+            {/* Global keyframes — injected once */}
+            <style>{`
+                @keyframes rowIn {
+                    from { opacity: 0; transform: translateY(6px); }
+                    to   { opacity: 1; transform: translateY(0);   }
+                }
+            `}</style>
         </div>
     );
 };
