@@ -17,7 +17,8 @@ export default ({ children, breadcrumbs, ...props }: AppLayoutProps) => {
                 expand={false}
                 closeButton
             />
-            {showSkeleton ? <SkeletonRouter /> : children}
+            {/* {showSkeleton ? <SkeletonRouter /> : children} */}
+            {children}
             
             <Footer />
         </AppLayoutTemplate>

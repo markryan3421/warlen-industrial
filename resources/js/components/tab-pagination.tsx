@@ -42,7 +42,7 @@ export const TabPagination = ({
     filteredCount,
     resourceName = 'items',
     className = '',
-    baseUrl = '/attendances', 
+    baseUrl = '/attendances',
 }: TabPaginationProps) => {
 
     // Use the current_page directly from server
@@ -72,7 +72,6 @@ export const TabPagination = ({
         return `${baseUrl}?${params.toString()}`;
     };
 
-
     // Handle page navigation
     const navigateToPage = (page: number) => {
         if (page < 1 || page > lastPage) return;
@@ -98,13 +97,13 @@ export const TabPagination = ({
             onPerPageChange(value);
         }
     };
-    
+
     // Get visible page numbers with different window sizes for mobile and desktop
     const getVisiblePages = () => {
         // Use fewer pages on mobile
         const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
         const windowSize = isMobile ? 3 : 3;
-        
+
         let start = Math.max(1, currentPage - Math.floor(windowSize / 2));
         const end = Math.min(lastPage, start + windowSize - 1);
 
@@ -152,14 +151,19 @@ export const TabPagination = ({
     if (lastPage <= 1 && pagination.total <= parseInt(perPage)) {
         return (
             <div className={`px-4 py-3 mx-5 ${className}`}>
-                <div className="flex flex-col items-center gap-3">
+                <div className="flex flex-col items-center gap-3 lg:flex-row lg:justify-between">
                     {infoText}
-                    <PerPageSelect
-                        value={perPage}
-                        onChange={handlePerPageChange}
-                        activeTab={activeTab}
-                        searchTerm={searchTerm}
-                    />
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs text-stone-500 dark:text-stone-400 whitespace-nowrap">
+                            Rows per page
+                        </span>
+                        <PerPageSelect
+                            value={perPage}
+                            onChange={handlePerPageChange}
+                            activeTab={activeTab}
+                            searchTerm={searchTerm}
+                        />
+                    </div>
                 </div>
             </div>
         );
@@ -167,8 +171,8 @@ export const TabPagination = ({
 
     return (
         <div className={`px-4 py-3 mx-5 font-sans ${className}`}>
-            {/* Unified Layout - Stacked for all devices */}
-            <div className="flex flex-col items-center gap-3">
+            {/* Mobile/Tablet Layout - Stacked with visible Rows per page label */}
+            <div className="flex flex-col items-center gap-3 lg:hidden">
                 {/* Page Navigation */}
                 <div className="flex items-center gap-1">
                     <FirstButton
@@ -221,15 +225,95 @@ export const TabPagination = ({
                     />
                 </div>
 
-                {/* Info and Per Page */}
+                {/* Info and Per Page with label */}
                 <div className="flex flex-row items-center justify-between w-full gap-3">
                     {infoText}
-                    <PerPageSelect
-                        value={perPage}
-                        onChange={handlePerPageChange}
-                        activeTab={activeTab}
-                        searchTerm={searchTerm}
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs text-stone-500 dark:text-stone-400 whitespace-nowrap">
+                            Rows per page
+                        </span>
+                        <PerPageSelect
+                            value={perPage}
+                            onChange={handlePerPageChange}
+                            activeTab={activeTab}
+                            searchTerm={searchTerm}
+                        />
+                    </div>
+                </div>
+            </div>
+
+            {/* Desktop/Large Screen Layout - Single row (lg and above) */}
+            <div className="hidden lg:flex lg:flex-row lg:items-center lg:justify-between lg:gap-4">
+                {/* Left: Info text */}
+                <div className="flex-1 min-w-0">
+                    {infoText}
+                </div>
+
+                {/* Center: Page Navigation */}
+                <div className="flex items-center gap-1">
+                    <FirstButton
+                        onClick={() => navigateToPage(1)}
+                        disabled={currentPage === 1}
                     />
+                    <PrevButton
+                        onClick={() => navigateToPage(currentPage - 1)}
+                        disabled={currentPage === 1}
+                    />
+
+                    {showFirstEllipsis && (
+                        <>
+                            <PageButton
+                                page={1}
+                                currentPage={currentPage}
+                                onClick={() => navigateToPage(1)}
+                            />
+                            <Ellipsis />
+                        </>
+                    )}
+
+                    {visiblePages.map(page => (
+                        <PageButton
+                            key={page}
+                            page={page}
+                            currentPage={currentPage}
+                            onClick={() => navigateToPage(page)}
+                        />
+                    ))}
+
+                    {showLastEllipsis && (
+                        <>
+                            <Ellipsis />
+                            <PageButton
+                                page={lastPage}
+                                currentPage={currentPage}
+                                onClick={() => navigateToPage(lastPage)}
+                            />
+                        </>
+                    )}
+
+                    <NextButton
+                        onClick={() => navigateToPage(currentPage + 1)}
+                        disabled={currentPage === lastPage}
+                    />
+                    <LastButton
+                        onClick={() => navigateToPage(lastPage)}
+                        disabled={currentPage === lastPage}
+                    />
+                </div>
+
+                {/* Right: Per Page Select */}
+                <div className="flex-1 flex justify-end">
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs text-stone-500 dark:text-stone-400 whitespace-nowrap">
+                            Rows per page
+                        </span>
+                        <PerPageSelect
+                            value={perPage}
+                            onChange={handlePerPageChange}
+                            activeTab={activeTab}
+                            searchTerm={searchTerm}
+                        />
+                    </div>
                 </div>
             </div>
         </div>
