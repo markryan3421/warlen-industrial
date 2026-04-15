@@ -1,43 +1,8 @@
-/**
- * employees/index.tsx
- *
- * Architecture: ALL filtering is server-side via query params.
- *
- * Why this matters:
- *   The controller paginates the full employee list before sending it to the
- *   browser. `employees.data` only contains the current page (e.g. 10 rows).
- *   Client-side filtering against that slice is meaningless — searching for
- *   "John" would only find Johns on page 1, not across all 500 employees.
- *
- * How it works now:
- *   Every filter change calls applyFilters(), which builds a single query-string
- *   object containing ALL active params (search, positions, branch, site, status,
- *   date_from, date_to, perPage, show_archived) and fires ONE router.get(). The controller
- *   receives these params, filters + paginates the full dataset, and returns
- *   the correct page. Inertia re-renders with the fresh data.
- *
- * Pagination fix:
- *   Previously a useEffect on dateFrom/dateTo was calling router.get() with
- *   ONLY the date params, which silently dropped the `page` param from any
- *   URL set by clicking a pagination link. Every navigation was immediately
- *   overwritten back to page 1. That useEffect is gone. Every navigation —
- *   including date picker changes — goes through applyFilters(), which always
- *   resets to page 1 (correct: filters should restart from the beginning).
- *
- * Local state that stays client-side:
- *   - searchTerm (debounced via the 300ms timer below — avoids a server round
- *     trip on every keystroke)
- *   - UI state only (no derived filteredEmployees memo)
- *
- * FilterProps now includes all filter keys so they survive perPage changes.
- */
-
 import { Head, Link, useForm, router } from '@inertiajs/react';
 import { format } from 'date-fns';
-import { Users, Search, UserPlus, Archive, UsersRound } from 'lucide-react';
-import { useState, useRef } from 'react';
+import { Users, Search, UserPlus, Archive, UsersRound, Trash2 } from 'lucide-react';
+import { useState, useRef, useMemo } from 'react';
 import { toast } from 'sonner';
-import EmmployeeController from '@/actions/App/Http/Controllers/EmployeeController';
 import EmployeeController from '@/actions/App/Http/Controllers/EmployeeController';
 import { CustomHeader } from '@/components/custom-header';
 import { CustomPagination } from '@/components/custom-pagination';
@@ -72,7 +37,7 @@ interface Employee {
     employee_status: string;
     hire_date?: string;
     created_at?: string;
-    deleted_at?: string | null; // Added for archived employees
+    deleted_at?: string | null;
 }
 
 interface LinkProps {
@@ -81,21 +46,16 @@ interface LinkProps {
     url: string | null;
 }
 
-/**
- * All filter keys the controller understands.
- * Keeping them in one interface ensures nothing is silently dropped when
- * building the query string.
- */
 interface FilterProps {
     search?: string;
-    positions?: string;    // comma-separated list
+    positions?: string;
     branch?: string;
     site?: string;
-    status?: string;    // '' (all) | 'active' | 'inactive'
+    status?: string;
     date_from?: string;
     date_to?: string;
     perPage?: string;
-    show_archived?: string; // 'true' | 'false'
+    show_archived?: string;
 }
 
 interface PageProps {
@@ -109,10 +69,8 @@ interface PageProps {
         to: number;
         links: LinkProps[];
     };
-    archivedEmployees: Employee[]; // Added archived employees
+    archivedEmployees: Employee[];
     branchesData: BranchData[];
-    /** All distinct position names from the full (unfiltered) employee list.
-     *  Sent by the controller so the Position popover works across all pages. */
     allPositions: string[];
     filters?: FilterProps;
     totalCount: number;
@@ -130,23 +88,19 @@ export default function Index({
     filteredCount,
 }: PageProps) {
     const { delete: destroy } = useForm();
-    
-    // Tab state - 'active' for current employees, 'archived' for deleted employees
+
+    // Tab state
     const [activeTab, setActiveTab] = useState<'active' | 'archived'>(
         filters.show_archived === 'true' ? 'archived' : 'active'
     );
 
-    // ── Filter state — initialised from URL params so the UI reflects the
-    //    current server-side filter on first render / browser back-forward.
+    // ── Filter state
     const [searchTerm, setSearchTerm] = useState(filters.search ?? '');
     const [selectedPositions, setSelectedPositions] = useState<string[]>(
         filters.positions ? filters.positions.split(',').filter(Boolean) : [],
     );
     const [selectedBranch, setSelectedBranch] = useState(filters.branch ?? '');
     const [selectedSite, setSelectedSite] = useState(filters.site ?? '');
-    // '' = All (default, renders everyone)
-    // 'active' = Active only
-    // 'inactive' = Inactive only
     const [status, setStatus] = useState<string>(filters.status ?? '');
     const [dateFrom, setDateFrom] = useState<Date | undefined>(
         filters.date_from ? new Date(filters.date_from) : undefined,
@@ -155,16 +109,76 @@ export default function Index({
         filters.date_to ? new Date(filters.date_to) : undefined,
     );
 
+    // ── Bulk selection state ─────────────────────────────────────────────────
+    const [selectedIds, setSelectedIds] = useState<(string | number)[]>([]);
+    const [bulkLoading, setBulkLoading] = useState(false);
+
+    // ── Archived pagination state (client-side) ──────────────────────────────
+    // ── Archived pagination state (client-side) ──────────────────────────────
+    const [archivedPage, setArchivedPage] = useState(1);
+    const [archivedPerPage, setArchivedPerPage] = useState(10);
+
+    // Paginate archived employees
+    const paginatedArchived = useMemo(() => {
+        const start = (archivedPage - 1) * archivedPerPage;
+        const end = start + archivedPerPage;
+        return archivedEmployees.slice(start, end);
+    }, [archivedEmployees, archivedPage, archivedPerPage]);
+
+    const archivedTotal = archivedEmployees.length;
+    const archivedLastPage = Math.ceil(archivedTotal / archivedPerPage);
+    const archivedFrom = archivedTotal === 0 ? 0 : (archivedPage - 1) * archivedPerPage + 1;
+    const archivedTo = Math.min(archivedPage * archivedPerPage, archivedTotal);
+
+    // Generate page links (same format as Laravel's paginator)
+    const archivedLinks = useMemo(() => {
+        const links = [];
+        const maxVisible = 5; // show at most 5 page numbers
+        let startPage = Math.max(1, archivedPage - Math.floor(maxVisible / 2));
+        let endPage = Math.min(archivedLastPage, startPage + maxVisible - 1);
+
+        if (endPage - startPage + 1 < maxVisible) {
+            startPage = Math.max(1, endPage - maxVisible + 1);
+        }
+
+        // Previous button
+        links.push({
+            url: archivedPage > 1 ? '#' : null,
+            label: '&laquo; Previous',
+            active: false,
+        });
+
+        // Page numbers
+        for (let i = startPage; i <= endPage; i++) {
+            links.push({
+                url: '#',
+                label: String(i),
+                active: i === archivedPage,
+            });
+        }
+
+        // Next button
+        links.push({
+            url: archivedPage < archivedLastPage ? '#' : null,
+            label: 'Next &raquo;',
+            active: false,
+        });
+
+        return links;
+    }, [archivedPage, archivedLastPage]);
+
+    const archivedPagination = {
+        data: paginatedArchived,
+        total: archivedTotal,
+        perPage: archivedPerPage,
+        current_page: archivedPage,
+        last_page: archivedLastPage,
+        from: archivedFrom,
+        to: archivedTo,
+        links: archivedLinks,   // ✅ now contains numbered page buttons
+    };
+
     // ── Central navigation function ───────────────────────────────────────────
-    /**
-     * Builds the complete query-string from ALL active filters and fires a
-     * single router.get(). Always resets to page 1 (any filter change
-     * invalidates the current page position).
-     *
-     * This is the ONLY place that calls router.get() for filters.
-     * Keeping it central avoids the race condition where two separate effects
-     * were each calling router.get() and overwriting each other.
-     */
     function applyFilters(overrides: Partial<{
         search: string;
         positions: string[];
@@ -191,10 +205,10 @@ export default function Index({
         if (pos.length) params.positions = pos.join(',');
         if (br) params.branch = br;
         if (si) params.site = si;
-        if (st) params.status = st;      // omit when '' (all — server default)
+        if (st) params.status = st;
         if (from) params.date_from = format(from, 'yyyy-MM-dd');
         if (to) params.date_to = format(to, 'yyyy-MM-dd');
-        if (pp && pp !== '10') params.perPage = pp;     // omit when default
+        if (pp && pp !== '10') params.perPage = pp;
         if (showArchived) params.show_archived = 'true';
 
         router.get('/employees', params, {
@@ -204,11 +218,12 @@ export default function Index({
         });
     }
 
-    // ── Tab change handler ────────────────────────────────────────────────────
+
+
+    // ── Tab change handler (reset filters, selection, archived pagination) ───
     const handleTabChange = (value: string) => {
         const newTab = value as 'active' | 'archived';
         setActiveTab(newTab);
-        // Clear filters when switching tabs to avoid confusion
         setSearchTerm('');
         setSelectedPositions([]);
         setSelectedBranch('');
@@ -216,7 +231,13 @@ export default function Index({
         setStatus('');
         setDateFrom(undefined);
         setDateTo(undefined);
-        applyFilters({ 
+        setSelectedIds([]);
+        // Reset archived pagination when switching to archived tab
+        if (newTab === 'archived') {
+            setArchivedPage(1);
+            setArchivedPerPage(10);
+        }
+        applyFilters({
             showArchived: newTab === 'archived',
             search: '',
             positions: [],
@@ -228,7 +249,7 @@ export default function Index({
         });
     };
 
-    // ── Search debounce — 300 ms so we don't hit the server on every keystroke
+    // ── Search debounce ───────────────────────────────────────────────────────
     const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const handleSearchChange = (value: string) => {
         setSearchTerm(value);
@@ -238,14 +259,13 @@ export default function Index({
         }, 300);
     };
 
-    // ── Branch change resets site ────────────────────────────────────────────
+    // ── Filter handlers ───────────────────────────────────────────────────────
     const handleBranchChange = (branch: string) => {
         setSelectedBranch(branch);
         setSelectedSite('');
         applyFilters({ branch, site: '' });
     };
 
-    // ── Individual filter handlers ────────────────────────────────────────────
     const handlePositionsChange = (positions: string[]) => {
         setSelectedPositions(positions);
         applyFilters({ positions });
@@ -271,12 +291,10 @@ export default function Index({
         applyFilters({ to });
     };
 
-    // ── Per-page change ───────────────────────────────────────────────────────
     const handlePerPageChange = (value: string) => {
         applyFilters({ perPage: value });
     };
 
-    // ── Clear all ─────────────────────────────────────────────────────────────
     const clearFilters = () => {
         setSearchTerm('');
         setSelectedPositions([]);
@@ -285,17 +303,72 @@ export default function Index({
         setStatus('');
         setDateFrom(undefined);
         setDateTo(undefined);
-        // Navigate to a clean URL — no filter params at all, preserve current tab
-        router.get('/employees', { show_archived: activeTab === 'archived' ? 'true' : undefined }, { 
-            preserveState: true, 
-            replace: true 
+        router.get('/employees', { show_archived: activeTab === 'archived' ? 'true' : undefined }, {
+            preserveState: true,
+            replace: true
         });
     };
 
-    // Delete confirmation states
+    // ── Bulk action handlers ─────────────────────────────────────────────────
+    const handleBulkArchive = async () => {
+        if (selectedIds.length === 0) return;
+        if (!confirm(`Move ${selectedIds.length} employee(s) to archive?`)) return;
+        setBulkLoading(true);
+        try {
+            await router.post('/employees/bulk-destroy', {
+                ids: selectedIds,
+                _method: 'DELETE'
+            });
+            setSelectedIds([]);
+            toast.success(`${selectedIds.length} employee(s) moved to archive.`);
+        } catch (error) {
+            toast.error('Failed to archive employees.');
+        } finally {
+            setBulkLoading(false);
+        }
+    };
+
+    const handleBulkRestore = async () => {
+        if (selectedIds.length === 0) return;
+        if (!confirm(`Restore ${selectedIds.length} employee(s)?`)) return;
+        setBulkLoading(true);
+        try {
+            await router.post('/employees/bulk-restore', {
+                ids: selectedIds,
+                _method: 'PUT'
+            });
+            setSelectedIds([]);
+            toast.success(`${selectedIds.length} employee(s) restored.`);
+        } catch (error) {
+            toast.error('Failed to restore employees.');
+        } finally {
+            setBulkLoading(false);
+        }
+    };
+
+    const handleRestore = (employee: Employee) => {
+        if (!confirm(`Restore ${employee.user?.name || employee.emp_code}?`)) return;
+
+        router.put(route('employees.restore', employee.slug_emp), {}, {
+            onSuccess: () => {
+                toast.success('Employee restored');
+                setSelectedIds([]);
+            },
+            onError: () => toast.error('Restore failed'),
+        });
+    };
+
+
+    // ── Single delete confirmation ───────────────────────────────────────────
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [itemToDelete, setItemToDelete] = useState<any>(null);
     const [isDeleting, setIsDeleting] = useState(false);
+
+    const archivedActions = [
+        { label: 'View', icon: 'Eye', route: 'employees.show' },
+        { label: 'Restore', icon: 'RotateCcw', route: null },
+    ];
+
 
     const handleDeleteClick = (employee: Employee) => {
         setItemToDelete(employee);
@@ -306,88 +379,66 @@ export default function Index({
         if (!itemToDelete) return;
 
         setIsDeleting(true);
-
-        // Get the destroy URL from the controller
         const destroyUrl = EmployeeController.destroy(itemToDelete.slug_emp).url;
 
         destroy(destroyUrl, {
             onSuccess: (page) => {
-                // Check for both flash success and error messages
                 const flash = (page.props as any).flash;
-
                 if (flash?.error) {
-                    // If there's an error message from the controller
                     toast.error(flash.error);
-                    setDeleteDialogOpen(false);
-                    setItemToDelete(null);
                 } else if (flash?.success) {
-                    // Success message
                     toast.success(flash.success);
-                    setDeleteDialogOpen(false);
-                    setItemToDelete(null);
                 } else {
-                    // Fallback success message
                     toast.success('Employee deleted successfully');
-                    setDeleteDialogOpen(false);
-                    setItemToDelete(null);
                 }
+                setDeleteDialogOpen(false);
+                setItemToDelete(null);
             },
             onError: (errors) => {
-                // Handle validation/other errors from Laravel
                 let errorMessage = 'Failed to delete employee';
-
                 if (typeof errors === 'object') {
-                    // If errors is an object with field-specific errors
                     const firstError = Object.values(errors)[0];
-                    if (typeof firstError === 'string') {
-                        errorMessage = firstError;
-                    } else if (Array.isArray(firstError) && firstError.length > 0) {
-                        errorMessage = firstError[0];
-                    }
-                } else if (typeof errors === 'string') {
-                    errorMessage = errors;
-                }
-
+                    if (typeof firstError === 'string') errorMessage = firstError;
+                    else if (Array.isArray(firstError) && firstError.length > 0) errorMessage = firstError[0];
+                } else if (typeof errors === 'string') errorMessage = errors;
                 toast.error(errorMessage);
             },
             onFinish: () => {
                 setIsDeleting(false);
             },
         });
-    }
+    };
 
-    // ── Active filter count (for the Clear button badge) ─────────────────────
+    const handleView = (employee: Employee) => {
+        router.get(EmployeeController.show(employee.slug_emp).url);
+    };
+
+    const handleEdit = (employee: Employee) => {
+        router.get(EmployeeController.edit(employee.slug_emp).url);
+    };
+
+    // ── Helper: current data based on tab ────────────────────────────────────
+    const currentData = activeTab === 'active'
+        ? employees
+        : { ...employees, data: paginatedArchived, total: archivedTotal };
+    const currentTotalCount = activeTab === 'active' ? totalCount : archivedTotal;
+    const currentFilteredCount = activeTab === 'active' ? filteredCount : archivedTotal;
+
     const activeFiltersCount = [
         searchTerm.trim(),
         ...selectedPositions,
         selectedBranch,
         selectedSite,
-        status !== '',   // any non-default status selection counts as a filter
+        status !== '',
         dateFrom,
         dateTo,
     ].filter(Boolean).length;
-
-    const handleView = (employee: Employee) => {
-        // Use your existing helper or router - allow viewing archived employees
-        router.get(EmmployeeController.show(employee.slug_emp).url);
-    };
-
-    const handleEdit = (employee: Employee) => {
-        // Allow editing archived employees
-        router.get(EmmployeeController.edit(employee.slug_emp).url);
-    };
-
-    // Determine which data to display based on active tab
-    const currentData = activeTab === 'active' ? employees : { ...employees, data: archivedEmployees, total: archivedEmployees.length };
-    const currentTotalCount = activeTab === 'active' ? totalCount : archivedEmployees.length;
-    const currentFilteredCount = activeTab === 'active' ? filteredCount : archivedEmployees.length;
 
     // ─── Render ───────────────────────────────────────────────────────────────
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Employees" />
 
-            {/* style animations */}
             <style>{`
                 @keyframes fadeUp {
                     from { opacity: 0; transform: translateY(16px); }
@@ -400,7 +451,6 @@ export default function Index({
                 }
                 .pp-header { animation: headerReveal 0.35s cubic-bezier(0.22,1,0.36,1) both; }
             `}</style>
-
 
             {/* Page header */}
             <div className="grid grid-rows-1 justify-center mx-8 md:grid-cols-2 md:mx-8 mt-3 lg:flex lg:justify-between items-center lg:mx-8 lg:mt-4 lg:-mb-2 pp-header">
@@ -420,7 +470,6 @@ export default function Index({
             </div>
 
             <div className="flex flex-1 flex-col gap-4 p-4 pp-row">
-                {/* Tabs for Active/Archived employees */}
                 <div className="mx-4">
                     <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
                         <TabsList className="grid w-full max-w-md grid-cols-2">
@@ -435,13 +484,13 @@ export default function Index({
                                 <Archive className="h-4 w-4" />
                                 Archived Employees
                                 <Badge variant="secondary" className="ml-2">
-                                    {archivedEmployees.length}
+                                    {archivedTotal}
                                 </Badge>
                             </TabsTrigger>
                         </TabsList>
-                        
+
+                        {/* Active Tab Content */}
                         <TabsContent value="active" className="mt-6">
-                            {/* Empty dataset (no employees exist at all) */}
                             {employees.total === 0 && activeFiltersCount === 0 ? (
                                 <div className="flex flex-col items-center justify-center py-16 text-center">
                                     <div className="rounded-full bg-gray-100 p-6 mb-4">
@@ -466,9 +515,12 @@ export default function Index({
                                         onDelete={handleDeleteClick}
                                         onView={handleView}
                                         onEdit={handleEdit}
+                                        selectable={true}
+                                        selectedIds={selectedIds}
+                                        onSelectChange={setSelectedIds}
+                                        selectAll={selectedIds.length === employees.data.length && employees.data.length > 0}
                                         toolbar={
                                             <EmployeeFilterBar
-                                                // Configuration - show all filters for employees
                                                 filters={{
                                                     search: true,
                                                     position: true,
@@ -477,10 +529,8 @@ export default function Index({
                                                     date: true,
                                                     status: true,
                                                 }}
-                                                // Data
                                                 allPositions={allPositions}
                                                 branchesData={branchesData}
-                                                // Filter values
                                                 searchTerm={searchTerm}
                                                 selectedPositions={selectedPositions}
                                                 selectedBranch={selectedBranch}
@@ -488,7 +538,6 @@ export default function Index({
                                                 status={status}
                                                 dateFrom={dateFrom}
                                                 dateTo={dateTo}
-                                                // Handlers
                                                 onSearchChange={handleSearchChange}
                                                 onPositionsChange={handlePositionsChange}
                                                 onBranchChange={handleBranchChange}
@@ -497,7 +546,6 @@ export default function Index({
                                                 onDateFromChange={handleDateFromChange}
                                                 onDateToChange={handleDateToChange}
                                                 onClearAll={clearFilters}
-                                                // Customizations
                                                 searchPlaceholder="Search by ID or name..."
                                                 dateLabel="Hire Date"
                                             />
@@ -529,7 +577,6 @@ export default function Index({
                                             </div>
                                         }
                                     />
-
                                     <CustomPagination
                                         pagination={employees}
                                         perPage={String(employees.perPage ?? 10)}
@@ -542,9 +589,10 @@ export default function Index({
                                 </>
                             )}
                         </TabsContent>
-                        
+
+                        {/* Archived Tab Content */}
                         <TabsContent value="archived" className="mt-6">
-                            {archivedEmployees.length === 0 ? (
+                            {archivedTotal === 0 ? (
                                 <div className="flex flex-col items-center justify-center py-16 text-center">
                                     <div className="rounded-full bg-gray-100 p-6 mb-4">
                                         <Archive className="h-12 w-12 text-gray-400" />
@@ -559,27 +607,30 @@ export default function Index({
                                     <CustomTable
                                         title="Archived Employee Lists"
                                         columns={EmployeesTableConfig.columns}
-                                        actions={EmployeesTableConfig.actions}
-                                        data={archivedEmployees}
-                                        from={1}
+                                        // actions={EmployeesTableConfig.actions}
+                                        data={paginatedArchived}
+                                        from={archivedFrom}
                                         onDelete={handleDeleteClick}
                                         onView={handleView}
                                         onEdit={handleEdit}
+                                        actions={archivedActions}                // ← second one (overwrites? Actually duplicate prop)
+                                        onRestore={handleRestore}
+                                        selectable={true}
+                                        selectedIds={selectedIds}
+                                        onSelectChange={setSelectedIds}
+                                        selectAll={selectedIds.length === paginatedArchived.length && paginatedArchived.length > 0}
                                         toolbar={
                                             <EmployeeFilterBar
-                                                // Configuration - show limited filters for archived employees
                                                 filters={{
                                                     search: true,
                                                     position: true,
                                                     branch: true,
                                                     site: true,
-                                                    status: false, // Status doesn't matter for archived
-                                                    date: false,    // Date filter removed for archived
+                                                    status: false,
+                                                    date: false,
                                                 }}
-                                                // Data
                                                 allPositions={allPositions}
                                                 branchesData={branchesData}
-                                                // Filter values
                                                 searchTerm={searchTerm}
                                                 selectedPositions={selectedPositions}
                                                 selectedBranch={selectedBranch}
@@ -587,7 +638,6 @@ export default function Index({
                                                 status={status}
                                                 dateFrom={dateFrom}
                                                 dateTo={dateTo}
-                                                // Handlers
                                                 onSearchChange={handleSearchChange}
                                                 onPositionsChange={handlePositionsChange}
                                                 onBranchChange={handleBranchChange}
@@ -596,9 +646,8 @@ export default function Index({
                                                 onDateFromChange={handleDateFromChange}
                                                 onDateToChange={handleDateToChange}
                                                 onClearAll={clearFilters}
-                                                // Customizations
                                                 searchPlaceholder="Search archived employees..."
-                                                dateLabel="Deletion Date" // This won't show since date is false
+                                                dateLabel="Deletion Date"
                                             />
                                         }
                                         filterEmptyState={
@@ -618,11 +667,55 @@ export default function Index({
                                             </div>
                                         }
                                     />
+                                    <CustomPagination
+                                        pagination={archivedPagination}
+                                        perPage={String(archivedPerPage)}
+                                        onPerPageChange={(value) => {
+                                            setArchivedPerPage(parseInt(value, 10));
+                                            setArchivedPage(1);
+                                        }}
+                                        onPageChange={(page) => setArchivedPage(page)}
+                                        totalCount={archivedTotal}
+                                        filteredCount={archivedTotal}
+                                        search={searchTerm}
+                                        resourceName="archived employee"
+                                    />
                                 </>
                             )}
                         </TabsContent>
                     </Tabs>
                 </div>
+
+                {/* Floating Bulk Action Bar */}
+                {selectedIds.length > 0 && (
+                    <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 px-4 py-2 flex items-center gap-3 animate-fadeUp">
+                        <span className="text-sm font-medium">{selectedIds.length} selected</span>
+                        {activeTab === 'active' ? (
+                            <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={handleBulkArchive}
+                                disabled={bulkLoading}
+                            >
+                                Move to Archive
+                            </Button>
+                        ) : (
+                            <>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={handleBulkRestore}
+                                    disabled={bulkLoading}
+                                >
+                                    Restore
+                                </Button>
+                            </>
+                        )}
+                        <Button variant="ghost" size="sm" onClick={() => setSelectedIds([])}>
+                            Cancel
+                        </Button>
+                    </div>
+                )}
 
                 <DeleteConfirmationDialog
                     isOpen={deleteDialogOpen}

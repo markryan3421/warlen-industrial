@@ -4,7 +4,7 @@ use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Foundation\Application;
-use Illuminate\Console\Scheduling\Schedule;
+// use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
@@ -24,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 'admin' => AdminMiddleware::class,
                 'hr' => \App\Http\Middleware\HrMiddleware::class,
                 'employee' => \App\Http\Middleware\EmployeeMiddleware::class,
+                'adminhr' => \App\Http\Middleware\AdminHrMiddleware::class,
         ]);
         $middleware->web(append: [
             HandleAppearance::class,

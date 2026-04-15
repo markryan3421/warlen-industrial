@@ -63,4 +63,19 @@ class EmployeePolicy
     {
         return $user->hasAnyRole(['admin', 'hr_head']);
     }
+
+    public function bulkDelete(User $user): bool
+{
+    return $user->hasAnyRole('admin', 'hr_head'); // or your logic
+}
+
+public function bulkRestore(User $user): bool
+{
+    return $user->hasAnyRole('admin', 'hr_head');
+}
+
+// public function bulkForceDelete(User $user): bool
+// {
+//     return $user->hasRole('admin');
+// }
 }

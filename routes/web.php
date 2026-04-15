@@ -44,11 +44,18 @@ Route::get('/', function () {
 })->name('home');
 
 
-Route::middleware(['auth', 'admin', 'auth.session'])->group(function () {
+Route::middleware(['auth', 'admin', 'auth.session', 'throttle:limit-actions'])->group(function () {
 
     Route::get('payroll', function () {
         return Inertia::render('payroll/index');
     });
+
+    Route::delete('/employees/bulk-destroy', [EmployeeController::class, 'bulkDestroy']);
+    Route::put('/employees/bulk-restore', [EmployeeController::class, 'bulkRestore']);
+    Route::delete('/employees/bulk-force-delete', [EmployeeController::class, 'bulkForceDelete']);
+    Route::put('/employees/{employee:slug_emp}/restore', [EmployeeController::class, 'restore'])->name('employees.restore')->withTrashed();
+    Route::get('/payrolls/{id}/print-data', [PayrollController::class, 'getPrintData'])->name('payrolls.print-data');
+
     //admin dashboard
     Route::get('dashboard', AdminDashboardController::class)->name('dashboard');
 
@@ -86,7 +93,7 @@ Route::middleware(['auth', 'admin', 'auth.session'])->group(function () {
 });
 
 //Intended for employee
-Route::middleware(['auth', 'employee', 'auth.session'])->group(function () {
+Route::middleware(['auth', 'employee', 'auth.session', 'throttle:limit-actions'])->group(function () {
 
     // Route::get('employee/dashboard', function () {
     //     return Inertia::render('employee-role/dashboard');
@@ -105,7 +112,7 @@ Route::middleware(['auth', 'employee', 'auth.session'])->group(function () {
 });
 
 //intended for HR
-Route::middleware(['auth', 'hr', 'auth.session'])->group(function () {
+Route::middleware(['auth', 'hr', 'auth.session', 'throttle:limit-actions'])->group(function () {
 
     Route::get('hr/dashboard', HRDashboardController::class)->name('hr.dashboard');
 

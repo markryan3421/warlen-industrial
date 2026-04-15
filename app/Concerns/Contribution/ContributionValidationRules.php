@@ -6,7 +6,7 @@ use Illuminate\Validation\Rule;
 
 trait ContributionValidationRules
 {
-        protected function contributionRules(): array
+    protected function contributionRules(): array
     {
         $isSSS = request()->input('type') === 'sss';
         
@@ -15,8 +15,8 @@ trait ContributionValidationRules
             'salary_ranges' => $isSSS ? 'required|array|min:1' : 'nullable|array',
             'salary_ranges.*.salary_from' => $isSSS ? 'required|numeric|min:0' : 'nullable|numeric|min:0',
             'salary_ranges.*.salary_to' => $isSSS ? 'required|numeric|min:0|gt:salary_ranges.*.salary_from' : 'nullable|numeric|min:0',
-            'salary_ranges.*.employee_share' => $isSSS ? 'required|numeric|min:0|max:100' : 'nullable|numeric|min:0|max:100',
-            'salary_ranges.*.employer_share' => $isSSS ? 'required|numeric|min:0|max:100' : 'nullable|numeric|min:0|max:100',
+            'salary_ranges.*.employee_share' => $isSSS ? 'required|numeric|min:0' : 'nullable|numeric|min:0|max:100',
+            'salary_ranges.*.employer_share' => $isSSS ? 'required|numeric|min:0' : 'nullable|numeric|min:0|max:100',
         ];
     }
 

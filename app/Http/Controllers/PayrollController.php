@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Payroll;
+use App\Models\Branch;
+use App\Models\Site;
 use App\Services\PayrollService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -14,6 +16,7 @@ class PayrollController extends Controller
 
     use HasPaginatedIndex;
     public function __construct(protected PayrollService $payrollService) {}
+
     /**
      * Display a listing of the resource.
      */
@@ -21,18 +24,26 @@ class PayrollController extends Controller
     {
         Gate::authorize('viewAny', Payroll::class);
 
-        // Build query with relationships
+        // Build query with relationships - ADD SITE RELATIONSHIP
         $query = Payroll::query()
-            ->with(['payrollPeriod', 'employee.user', 'employee.position', 'payrollItems'])
+            ->with([
+                'payrollPeriod',
+                'employee.user',
+                'employee.position',
+                'employee.branch',
+                'employee.branch.sites', // Load sites through branch
+                'employee.site', // Load direct site relationship
+                'payrollItems'
+            ])
             ->latest();
 
         // Apply search filter
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->whereHas('employee.user', function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('employee.user', function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%");
-                })->orWhereHas('employee', function($q) use ($search) {
+                })->orWhereHas('employee', function ($q) use ($search) {
                     $q->where('emp_code', 'like', "%{$search}%");
                 });
             });
@@ -41,29 +52,42 @@ class PayrollController extends Controller
         // Apply position filter
         if ($request->filled('positions')) {
             $positions = explode(',', $request->positions);
-            $query->whereHas('employee.position', function($q) use ($positions) {
+            $query->whereHas('employee.position', function ($q) use ($positions) {
                 $q->whereIn('pos_name', $positions);
             });
         }
 
-if ($request->filled('date_from') || $request->filled('date_to')) {
-    $query->whereHas('payrollPeriod', function($q) use ($request) {
-        if ($request->filled('date_from') && $request->filled('date_to')) {
-            // Full range: period must overlap the selected range
-            $q->whereDate('start_date', '<=', $request->date_to)
-              ->whereDate('end_date', '>=', $request->date_from);
-        } elseif ($request->filled('date_from')) {
-            // Only from date: period must contain this exact date
-            // (started on or before it AND ends on or after it)
-            $q->whereDate('start_date', '<=', $request->date_from)
-              ->whereDate('end_date', '>=', $request->date_from);
-        } elseif ($request->filled('date_to')) {
-            // Only to date: period must contain this exact date
-            $q->whereDate('start_date', '<=', $request->date_to)
-              ->whereDate('end_date', '>=', $request->date_to);
+        // Apply branch filter
+        if ($request->filled('branches')) {
+            $branches = explode(',', $request->branches);
+            $query->whereHas('employee.branch', function ($q) use ($branches) {
+                $q->whereIn('branch_name', $branches);
+            });
         }
-    });
-}
+
+        // Apply site filter
+        if ($request->filled('sites')) {
+            $sites = explode(',', $request->sites);
+            $query->whereHas('employee.site', function ($q) use ($sites) {
+                $q->whereIn('site_name', $sites);
+            });
+        }
+
+        // Apply date range filter
+        if ($request->filled('date_from') || $request->filled('date_to')) {
+            $query->whereHas('payrollPeriod', function ($q) use ($request) {
+                if ($request->filled('date_from') && $request->filled('date_to')) {
+                    $q->whereDate('start_date', '<=', $request->date_to)
+                        ->whereDate('end_date', '>=', $request->date_from);
+                } elseif ($request->filled('date_from')) {
+                    $q->whereDate('start_date', '<=', $request->date_from)
+                        ->whereDate('end_date', '>=', $request->date_from);
+                } elseif ($request->filled('date_to')) {
+                    $q->whereDate('start_date', '<=', $request->date_to)
+                        ->whereDate('end_date', '>=', $request->date_to);
+                }
+            });
+        }
 
         // Get total count before pagination
         $totalCount = $query->count();
@@ -71,7 +95,7 @@ if ($request->filled('date_from') || $request->filled('date_to')) {
         // Apply pagination
         $perPage = $request->input('perPage', 10);
         $payrolls = $query->paginate($perPage);
-        
+
         // Get filtered count
         $filteredCount = $payrolls->total();
 
@@ -86,9 +110,68 @@ if ($request->filled('date_from') || $request->filled('date_to')) {
             ->values()
             ->toArray();
 
+        // Get all unique branches for filter dropdown as simple array
+        $allBranches = Branch::query()
+            ->orderBy('branch_name')
+            ->pluck('branch_name')
+            ->toArray();
+
+        // If no branches in branches table, get from employees that have branches
+        if (empty($allBranches)) {
+            $allBranches = Payroll::query()
+                ->with('employee.branch')
+                ->get()
+                ->pluck('employee.branch.branch_name')
+                ->filter()
+                ->unique()
+                ->sort()
+                ->values()
+                ->toArray();
+        }
+
+        // Get all unique sites for filter dropdown
+        $allSites = Site::query()
+            ->orderBy('site_name')
+            ->pluck('site_name')
+            ->toArray();
+
+        // If no sites in sites table, get from employees that have sites
+        if (empty($allSites)) {
+            $allSites = Payroll::query()
+                ->with('employee.site')
+                ->get()
+                ->pluck('employee.site.site_name')
+                ->filter()
+                ->unique()
+                ->sort()
+                ->values()
+                ->toArray();
+        }
+
+        // Get branches data for the filter bar (with sites)
+        $branchesData = Branch::query()
+            ->with('sites')
+            ->select('id', 'branch_name', 'branch_address')
+            ->orderBy('branch_name')
+            ->get()
+            ->map(function($branch) {
+                return [
+                    'id' => $branch->id,
+                    'branch_name' => $branch->branch_name,
+                    'branch_address' => $branch->branch_address ?? '',
+                    'sites' => $branch->sites->map(function($site) {
+                        return [
+                            'id' => $site->id,
+                            'site_name' => $site->site_name
+                        ];
+                    })->toArray()
+                ];
+            })
+            ->toArray();
+
         // Calculate totals for the filtered payrolls
         $payrollsCollection = $payrolls->getCollection();
-        
+
         return Inertia::render('payrolls/index', [
             'payrolls' => $payrolls->items(),
             'pagination' => [
@@ -103,6 +186,8 @@ if ($request->filled('date_from') || $request->filled('date_to')) {
             'filters' => [
                 'search' => $request->search,
                 'positions' => $request->positions,
+                'branches' => $request->branches,
+                'sites' => $request->sites,
                 'date_from' => $request->date_from,
                 'date_to' => $request->date_to,
                 'perPage' => $request->perPage,
@@ -116,16 +201,41 @@ if ($request->filled('date_from') || $request->filled('date_to')) {
             'totalGrossPay' => $this->payrollService->calculateTotalGrossPay($payrollsCollection),
             'activeEmployee' => $this->payrollService->getActiveEmployeesInPayroll($payrollsCollection),
             'allPositions' => $allPositions,
-            'branchesData' => [],
+            'allBranches' => $allBranches,
+            'allSites' => $allSites,
+            'branchesData' => $branchesData,
         ]);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+    public function getPrintData($id)
     {
-        //
+        $payroll = Payroll::with(['employee.user', 'employee.position', 'employee.branch', 'employee.site', 'payrollPeriod', 'payrollItems'])
+            ->findOrFail($id);
+
+        return response()->json([
+            'id' => $payroll->id,
+            'employee_name' => $payroll->employee->user->name,
+            'employee_code' => $payroll->employee->emp_code,
+            'position' => $payroll->employee->position->pos_name ?? 'N/A',
+            'branch_name' => $payroll->employee->branch->branch_name ?? 'N/A',
+            'site_name' => $payroll->employee->site->site_name ?? 'N/A',
+            'payroll_period' => $payroll->payrollPeriod->period_name ?? 'N/A',
+            'start_date' => $payroll->payrollPeriod->start_date ?? '',
+            'end_date' => $payroll->payrollPeriod->end_date ?? '',
+            'pay_date' => $payroll->payrollPeriod->pay_date ?? '',
+            'gross_pay' => $payroll->gross_pay,
+            'total_deduction' => $payroll->total_deduction,
+            'net_pay' => $payroll->net_pay,
+            'avatar' => $payroll->employee->avatar,
+            'earnings' => $payroll->payrollItems->where('type', 'earning')->values()->map(fn($item) => [
+                'description' => $item->description ?? $item->code ?? 'Earning',
+                'amount' => $item->amount,
+            ]),
+            'deductions' => $payroll->payrollItems->where('type', 'deduction')->values()->map(fn($item) => [
+                'description' => $item->description ?? $item->code ?? 'Deduction',
+                'amount' => $item->amount,
+            ]),
+        ]);
     }
 
     /**
@@ -141,12 +251,15 @@ if ($request->filled('date_from') || $request->filled('date_to')) {
      */
     public function show(Payroll $payroll)
     {
-        // $payroll->load([
-        //     'payrollPeriod',
-        //     'employee.user',
-        //     'employee.position',
-        //     'payrollItems'
-        // ]);
+        $payroll->load([
+            'payrollPeriod',
+            'employee.user',
+            'employee.position',
+            'employee.branch',
+            'employee.branch.sites',
+            'employee.site',
+            'payrollItems'
+        ]);
 
         return Inertia::render('Payroll/Show', [
             'payroll' => $payroll

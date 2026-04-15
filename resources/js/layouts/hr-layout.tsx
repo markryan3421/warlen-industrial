@@ -3,8 +3,10 @@ import { Head } from '@inertiajs/react';
 import { HrSidebar } from '@/components/hr-sidebar';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { Toaster } from '@/components/ui/sonner';
+import { Breadcrumbs } from '@/components/breadcrumbs';
 import type { BreadcrumbItem } from '@/types';
 import Footer from '@/components/custom-footer';
+
 
 interface HrLayoutProps {
     children: React.ReactNode;
@@ -21,6 +23,12 @@ export default function HrLayout({ children, breadcrumbs = [], title }: HrLayout
                     <HrSidebar />
                     <main className="flex-1 overflow-y-auto bg-gray-50">
                         <div className="container mx-auto p-6">
+                            {/* Breadcrumbs */}
+                            {breadcrumbs && breadcrumbs.length > 0 && (
+                                <div className="mb-4">
+                                    <Breadcrumbs breadcrumbs={breadcrumbs} />
+                                </div>
+                            )}
                             {children}
                             <Footer />
                         </div>

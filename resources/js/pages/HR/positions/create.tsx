@@ -32,7 +32,7 @@ export default function Create() {
         basic_salary: '',
         is_salary_fixed: false,
     })
-    
+
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
         post('/hr/positions', {
@@ -66,7 +66,7 @@ export default function Create() {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Create Position" />
-            
+
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -75,14 +75,14 @@ export default function Create() {
             >
                 {/* Header Section */}
                 <div className="mb-8">
-                    <Link 
-                        href="/positions" 
+                    <Link
+                        href="/positions"
                         className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4 group"
                     >
                         <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
                         Back to Positions
                     </Link>
-                    
+
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div>
                             <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
@@ -111,7 +111,7 @@ export default function Create() {
                     <form onSubmit={submit} className="p-6 sm:p-8 lg:p-10">
                         <div className="space-y-8 max-w-3xl mx-auto">
                             {/* Position Name Field */}
-                            <motion.div 
+                            <motion.div
                                 className="space-y-2"
                                 initial={{ opacity: 0, x: -20 }}
                                 animate={{ opacity: 1, x: 0 }}
@@ -122,10 +122,10 @@ export default function Create() {
                                     Position Name
                                     <span className="text-red-500 text-sm font-normal">*</span>
                                 </Label>
-                                <Input 
-                                    id="name" 
-                                    value={data.pos_name} 
-                                    onChange={e => setData('pos_name', e.target.value)} 
+                                <Input
+                                    id="name"
+                                    value={data.pos_name}
+                                    onChange={e => setData('pos_name', e.target.value)}
                                     className="w-full transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary"
                                     placeholder="e.g., Software Engineer, HR Manager, Accountant"
                                     disabled={processing}
@@ -136,9 +136,9 @@ export default function Create() {
                                     Choose a descriptive name that clearly identifies the role
                                 </p>
                             </motion.div>
-                            
+
                             {/* Fixed Salary Toggle */}
-                            <motion.div 
+                            <motion.div
                                 className="space-y-3 p-4 bg-muted/30 rounded-lg border"
                                 initial={{ opacity: 0, x: -20 }}
                                 animate={{ opacity: 1, x: 0 }}
@@ -154,7 +154,9 @@ export default function Create() {
                                         </p>
                                     </div>
                                     <div className="flex items-center gap-3">
-                                        <span className="text-sm text-muted-foreground">Flexible</span>
+                                        <span className="text-sm text-muted-foreground">
+                                            {data.is_salary_fixed ? 'Fixed' : 'Not Fixed'}
+                                        </span>
                                         <Switch
                                             id="salary-fixed"
                                             checked={data.is_salary_fixed}
@@ -162,13 +164,12 @@ export default function Create() {
                                             disabled={processing}
                                             className="data-[state=checked]:bg-primary"
                                         />
-                                        <span className="text-sm text-muted-foreground">Fixed</span>
                                     </div>
                                 </div>
                             </motion.div>
 
                             {/* Basic Salary Field */}
-                            <motion.div 
+                            <motion.div
                                 className="space-y-2"
                                 initial={{ opacity: 0, x: -20 }}
                                 animate={{ opacity: 1, x: 0 }}
@@ -179,25 +180,25 @@ export default function Create() {
                                     Basic Salary
                                     <span className="text-red-500 text-sm font-normal">*</span>
                                 </Label>
-                                
+
                                 <div className="relative">
                                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                         <span className="text-muted-foreground sm:text-sm">₱</span>
                                     </div>
-                                    <Input 
-                                        type='number' 
-                                        value={data.basic_salary} 
-                                        onChange={e => setData('basic_salary', e.target.value)} 
+                                    <Input
+                                        type='number'
+                                        value={data.basic_salary}
+                                        onChange={e => setData('basic_salary', e.target.value)}
                                         className="w-full pl-7 transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                                        placeholder="Enter basic salary" 
+                                        placeholder="Enter basic salary"
                                         min={1}
                                         step={data.is_salary_fixed ? "1" : "0.01"}
                                         disabled={processing}
                                     />
                                 </div>
-                                
+
                                 <InputError message={errors.basic_salary} />
-                                
+
                                 <AnimatePresence>
                                     {data.is_salary_fixed && data.basic_salary && (
                                         <motion.div
@@ -214,7 +215,7 @@ export default function Create() {
                                         </motion.div>
                                     )}
                                 </AnimatePresence>
-                                
+
                                 {!data.is_salary_fixed && data.basic_salary && (
                                     <motion.div
                                         initial={{ opacity: 0 }}
@@ -224,24 +225,24 @@ export default function Create() {
                                         Base salary set to {formatCurrency(data.basic_salary)} (flexible range)
                                     </motion.div>
                                 )}
-                                
+
                                 {!data.basic_salary && (
                                     <p className="text-xs text-muted-foreground">
                                         Enter the minimum or fixed salary amount for this position
                                     </p>
                                 )}
                             </motion.div>
-                            
+
                             {/* Action Buttons */}
-                            <motion.div 
+                            <motion.div
                                 className="flex flex-col sm:flex-row justify-end gap-3 pt-6 border-t"
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ duration: 0.3, delay: 0.5 }}
                             >
-                                <Link href="/hr/positions" className="w-full sm:w-auto">
-                                    <Button 
-                                        variant="outline" 
+                                <Link href="/positions" className="w-full sm:w-auto">
+                                    <Button
+                                        variant="outline"
                                         className="w-full gap-2 hover:bg-destructive/10 hover:text-destructive hover:border-destructive transition-all duration-200"
                                         disabled={processing}
                                     >
@@ -249,9 +250,9 @@ export default function Create() {
                                         Cancel
                                     </Button>
                                 </Link>
-                                <Button 
-                                    type="submit" 
-                                    disabled={processing} 
+                                <Button
+                                    type="submit"
+                                    disabled={processing}
                                     className="w-full sm:w-auto gap-2 bg-primary hover:bg-primary/90 transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]"
                                 >
                                     {processing ? (
@@ -296,7 +297,7 @@ export default function Create() {
                                     {data.is_salary_fixed ? (
                                         <span className="text-blue-600 dark:text-blue-400">Fixed</span>
                                     ) : (
-                                        <span className="text-green-600 dark:text-green-400">Flexible Range</span>
+                                        <span className="text-green-600 dark:text-green-400">Not Fixed</span>
                                     )}
                                 </p>
                             </div>
@@ -307,12 +308,12 @@ export default function Create() {
                                 </p>
                             </div>
                         </div>
-                        
+
                         {/* Additional Info */}
                         {data.pos_name && data.basic_salary && (
                             <div className="mt-4 p-3 bg-primary/5 rounded-lg border border-primary/20">
                                 <p className="text-sm text-center text-muted-foreground">
-                                    Ready to create <strong className="text-primary">{data.pos_name}</strong> position with 
+                                    Ready to create <strong className="text-primary">{data.pos_name}</strong> position with
                                     {data.is_salary_fixed ? ' fixed salary of ' : ' flexible starting salary of '}
                                     <strong className="text-primary">{formatCurrency(data.basic_salary)}</strong>
                                 </p>
