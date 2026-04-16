@@ -51,7 +51,7 @@ interface CustomTableProps {
     toolbar?: React.ReactNode;
     filterEmptyState?: React.ReactNode;
 
-    // NEW: bulk selection props
+    // bulk selection props
     selectable?: boolean;
     selectedIds?: (string | number)[];
     onSelectChange?: (ids: (string | number)[]) => void;
@@ -59,7 +59,7 @@ interface CustomTableProps {
     onRestore?: (row: TableRow) => void;
 }
 
-// ─── Helpers (unchanged) ────────────────────────────────────────────────
+// ─── Helpers ────────────────────────────────────────────────────────────
 function formatCellValue(col: TableColumn, row: TableRow): string {
     const val = row[col.key];
     if (val === null || val === undefined) return "—";
@@ -195,9 +195,6 @@ function ActionDropdown({
                 console.error('Cannot navigate: row has no id', row);
             }
         }
-        if (action.label === 'Restore') {
-            onRestore?.(row);
-        }
     };
 
     return (
@@ -297,8 +294,63 @@ export const CustomTable = ({
         onSelectChange(newSelected);
     };
 
-    const getHeaderRecordDisplayText = () => { /* same as before */ };
-    const getFooterRecordDisplayText = () => { /* same as before */ };
+    const getHeaderRecordDisplayText = () => {
+        if (searchTerm && filteredCount !== undefined && totalCount !== undefined) {
+            return (
+                <>
+                    Showing <span className="font-black text-white">{data.length}</span> of{' '}
+                    <span className="font-black text-white">{filteredCount.toLocaleString()}</span> filtered records
+                    <span className="text-blue-200/60 ml-1">
+                        (from {totalCount.toLocaleString()} total)
+                    </span>
+                </>
+            );
+        }
+
+        if (total !== undefined && total > 0) {
+            return (
+                <>
+                    Showing <span className="font-black text-white">{to || from + data.length - 1}</span> of{' '}
+                    <span className="font-black text-white">{total.toLocaleString()}</span> records
+                </>
+            );
+        }
+
+        return (
+            <>
+                Showing <span className="font-black text-white">{data.length}</span> records
+            </>
+        );
+    };
+
+    const getFooterRecordDisplayText = () => {
+        if (searchTerm && filteredCount !== undefined && totalCount !== undefined) {
+            return (
+                <>
+                    Showing <span className="font-black text-gray-600 dark:text-gray-300">{data.length}</span> of{' '}
+                    <span className="font-black text-gray-600 dark:text-gray-300">{filteredCount.toLocaleString()}</span> filtered records
+                    <span className="text-gray-400 dark:text-gray-500 ml-1">
+                        (from {totalCount.toLocaleString()} total)
+                    </span>
+                </>
+            );
+        }
+
+        if (total !== undefined && total > 0) {
+            return (
+                <>
+                    Showing <span className="font-black text-gray-600 dark:text-gray-300">{to || from + data.length - 1}</span> of{' '}
+                    <span className="font-black text-gray-600 dark:text-gray-300">{total.toLocaleString()}</span> records
+                </>
+            );
+        }
+
+        return (
+            <>
+                Showing <span className="font-black text-gray-600 dark:text-gray-300">{data.length}</span> records
+            </>
+        );
+    };
 
     if (!data || data.length === 0) {
         return (
@@ -353,14 +405,19 @@ export const CustomTable = ({
                     </div>
                 )}
 
-                {/* MOBILE (<768px) - no selection for simplicity, can be added later */}
+                {/* MOBILE (<768px) - simplified card view (add your own) */}
                 <div className="block md:hidden">
-                    {/* ... same as before, no checkboxes ... */}
+                    {/* You can implement a card-based mobile view here */}
+                    <div className="p-4 text-center text-sm text-slate-500">
+                        Mobile view not implemented in this example
+                    </div>
                 </div>
 
-                {/* TABLET (768px–1023px) - also no checkboxes to keep cards clean */}
+                {/* TABLET (768px–1023px) - simplified card view */}
                 <div className="hidden md:block lg:hidden">
-                    {/* ... same as before ... */}
+                    <div className="p-4 text-center text-sm text-slate-500">
+                        Tablet view not implemented in this example
+                    </div>
                 </div>
 
                 {/* DESKTOP (≥1024px) - full table with selection */}
