@@ -196,7 +196,7 @@ class EmployeeController extends Controller
 
         try {
             $validatedData = $request->validated();
-
+            
             $action->update($validatedData, $employee);
 
             if (isset($validatedData['password']) && !empty($validatedData['password'])) {
@@ -226,7 +226,7 @@ class EmployeeController extends Controller
         }
 
         $this->invalidateUserSessions($employee->user_id);
-       // $employee->update(['employee_status' => 'inactive']);
+        // $employee->update(['employee_status' => 'inactive']);
         $employee->delete();
 
         $this->cacheForget('employees');
@@ -234,49 +234,48 @@ class EmployeeController extends Controller
         return to_route('employees.index')->with('success', 'Employee deleted successfully.');
     }
     public function bulkDestroy(Request $request)
-{
-    Gate::authorize('bulkDelete', Employee::class);
-    $ids = $request->input('ids') ?? $request->json('ids');
-    if (empty($ids)) {
-        return back()->with('error', 'No employees selected.');
-    }
+    {
+        Gate::authorize('bulkDelete', Employee::class);
+        $ids = $request->input('ids') ?? $request->json('ids');
+        if (empty($ids)) {
+            return back()->with('error', 'No employees selected.');
+        }
 
-    DB::transaction(function () use ($ids) {
-        Employee::whereIn('id', $ids)->each(function ($employee) {
-            $this->invalidateUserSessions($employee->user_id);
-            $employee->delete(); // soft delete
+        DB::transaction(function () use ($ids) {
+            Employee::whereIn('id', $ids)->each(function ($employee) {
+                $this->invalidateUserSessions($employee->user_id);
+                $employee->delete(); // soft delete
+            });
         });
-    });
 
-    $this->cacheForget('employees');
-    return to_route('employees.index')->with('success', count($ids) . ' employees moved to archive.');
-}
-
-public function bulkRestore(Request $request)
-{
-    Gate::authorize('bulkRestore', Employee::class);
-    $ids = $request->input('ids') ?? $request->json('ids');
-    if (empty($ids)) {
-        return back()->with('error', 'No archived employees selected.');
+        $this->cacheForget('employees');
+        return to_route('employees.index')->with('success', count($ids) . ' employees moved to archive.');
     }
 
-    Employee::withTrashed()->whereIn('id', $ids)->each(function ($employee) {
+    public function bulkRestore(Request $request)
+    {
+        Gate::authorize('bulkRestore', Employee::class);
+        $ids = $request->input('ids') ?? $request->json('ids');
+        if (empty($ids)) {
+            return back()->with('error', 'No archived employees selected.');
+        }
+
+        Employee::withTrashed()->whereIn('id', $ids)->each(function ($employee) {
+            $employee->restore();
+        });
+
+        $this->cacheForget('employees');
+        return to_route('employees.index')->with('success', count($ids) . ' employees restored.');
+    }
+
+    public function restore(Employee $employee)   // $employee is resolved by slug_emp automatically if route binding is set up
+    {
+        Gate::authorize('restore', $employee);
+
         $employee->restore();
-    });
 
-    $this->cacheForget('employees');
-    return to_route('employees.index')->with('success', count($ids) . ' employees restored.');
-}
+        $this->cacheForget('employees');
 
-public function restore(Employee $employee)   // $employee is resolved by slug_emp automatically if route binding is set up
-{
-    Gate::authorize('restore', $employee);
-
-    $employee->restore();
-
-    $this->cacheForget('employees');
-
-    return to_route('employees.index')->with('success', 'Employee restored.');
-}
-
+        return to_route('employees.index')->with('success', 'Employee restored.');
+    }
 }
