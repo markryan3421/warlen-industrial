@@ -6,11 +6,14 @@ use App\Models\Employee;
 use App\Models\EmployeeContributionSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 
 class EmployeeContributionSettingsController extends Controller
 {
     public function getSettingsByVersion(Request $request)
     {
+        Gate::authorize('viewAny', EmployeeContributionSetting::class);
+
         $contributionVersionId = $request->get('contribution_version_id');
 
         $settings = EmployeeContributionSetting::where('contribution_version_id', $contributionVersionId)
@@ -21,6 +24,8 @@ class EmployeeContributionSettingsController extends Controller
 
     public function bulkStore(Request $request)
     {
+        Gate::authorize('bulkStore', EmployeeContributionSetting::class);
+
         $validated = $request->validate([
             'contribution_version_id' => 'required|exists:contribution_versions,id',
             'settings' => 'required|array',
@@ -76,6 +81,8 @@ class EmployeeContributionSettingsController extends Controller
     }
     public function getEmployees()
     {
+        Gate::authorize('viewAny', EmployeeContributionSetting::class);
+
         $employees = Employee::query()
             ->with('user:id,name')
             ->where('employee_status', 'active')->get();

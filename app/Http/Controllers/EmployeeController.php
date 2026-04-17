@@ -198,7 +198,7 @@ class EmployeeController extends Controller
 
         try {
             $validatedData = $request->validated();
-
+            
             $action->update($validatedData, $employee);
 
             if (isset($validatedData['password']) && !empty($validatedData['password'])) {
@@ -228,7 +228,7 @@ class EmployeeController extends Controller
         }
 
         $this->invalidateUserSessions($employee->user_id);
-       // $employee->update(['employee_status' => 'inactive']);
+        // $employee->update(['employee_status' => 'inactive']);
         $employee->delete();
 
         $this->cacheForget('employees');
@@ -324,5 +324,4 @@ class EmployeeController extends Controller
 
         return back()->with('success', 'Branch and site assigned successfully.');
     }
-
 }
