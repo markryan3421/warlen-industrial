@@ -43,13 +43,13 @@ Route::get('/', function () {
     return Inertia::render('auth/login');
 })->name('home');
 
-
 Route::middleware(['auth', 'admin', 'auth.session', 'throttle:limit-actions'])->group(function () {
 
     Route::get('payroll', function () {
         return Inertia::render('payroll/index');
     });
-
+    Route::post('/employees/bulk-assign-position', [EmployeeController::class, 'bulkAssignPosition'])->name('employees.bulk-assign-position');
+    Route::post('/employees/bulk-assign-branch-site', [EmployeeController::class, 'bulkAssignBranchSite'])->name('employees.bulk-assign-branch-site');  
     Route::delete('/employees/bulk-destroy', [EmployeeController::class, 'bulkDestroy']);
     Route::put('/employees/bulk-restore', [EmployeeController::class, 'bulkRestore']);
     Route::delete('/employees/bulk-force-delete', [EmployeeController::class, 'bulkForceDelete']);
@@ -59,7 +59,7 @@ Route::middleware(['auth', 'admin', 'auth.session', 'throttle:limit-actions'])->
     //admin dashboard
     Route::get('dashboard', AdminDashboardController::class)->name('dashboard');
 
-      Route::get('/employee-contribution-settings', [EmployeeContributionSettingsController::class, 'getSettingsByVersion']);   
+    Route::get('/employee-contribution-settings', [EmployeeContributionSettingsController::class, 'getSettingsByVersion']);   
     Route::get('/employees/list', [EmployeeContributionSettingsController::class, 'getEmployees']);
     // Bulk save settings
     Route::post('/employee-contribution-settings/bulk', [EmployeeContributionSettingsController::class, 'bulkStore']);
