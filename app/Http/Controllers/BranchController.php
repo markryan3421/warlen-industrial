@@ -7,6 +7,7 @@ use App\Actions\Branch\UpdateBranch;
 use App\Http\Requests\Branch\StoreBranchRequest;
 use App\Http\Requests\Branch\UpdateBranchRequest;
 use App\Models\Branch;
+use App\Models\Site;
 use App\Repository\BranchRepository;
 use App\Traits\HasPaginatedIndex;
 use Illuminate\Http\Request;
@@ -18,152 +19,217 @@ use Inertia\Inertia;
 
 class BranchController extends Controller
 {
-    use HasPaginatedIndex;
+	use HasPaginatedIndex;
 
-    public function __construct(private BranchRepository $branchRepository) {}
-    /**
-     * Display a listing of the resource.
-     */
-    public function index(Request $request)
-    {
-        Gate::authorize('viewAny', Branch::class);
+	public function __construct(private BranchRepository $branchRepository) {}
+	/**
+	 * Display a listing of the resource.
+	 */
+	public function index(Request $request)
+	{
+		Gate::authorize('viewAny', Branch::class);
 
-        $branches = $this->cacheRemember('branches', 60, function () {
-            return $this->branchRepository->getBranches();
-        });
+		$branches = $this->cacheRemember('branches', 60, function () {
+			return $this->branchRepository->getBranchesWithSitesAndEmployees();
+		});
 
-        // $branches = Branch::withCount('sites')->get();
+		// $branches = Branch::withCount('sites')->get();
 
-        $result = $this->paginateCollection(
-            items: collect($branches), // wrap in Collection if not already
-            request: $request,
-            searchColumns: ['branch_name', 'branch_address'], // adjust to Branch columns
-        );
+		$result = $this->paginateCollection(
+			items: collect($branches), // wrap in Collection if not already
+			request: $request,
+			searchColumns: ['branch_name', 'branch_address'], // adjust to Branch columns
+		);
 
-        return Inertia::render('Branch/index', [
-            'branches'      => [
-                'data' => $result['data'],
-                'links' => $result['pagination']['links'] ?? [],
-                'from' => $result['pagination']['from'] ?? 0,
-                'to' => $result['pagination']['to'] ?? 0,
-                'total' => $result['totalCount'],
-            ],
-            'filters'       => $result['filters'],
-            'totalCount'    => $result['totalCount'],
-            'filteredCount' => $result['filteredCount'],
-        ]);
-    }
+		$transformedData = $result['data']->map(function ($branch) {
+			if ($branch->sites) {
+				$branch->sites->each(function ($site) {
+					// Count total employees
+					$site->employees_count = $site->employees?->count() ?? 0;
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        Gate::authorize('create', Branch::class);
+					// Preview: first 5 employees with minimal user data
+					$site->employees_preview = $site->employees?->take(5)->map(function ($emp) {
+						return [
+							'id' => $emp->id,
+							'employee_number' => $emp->employee_number,
+							'user' => [
+								'id' => $emp->user?->id,
+								'name' => $emp->user?->name,
+								'email' => $emp->user?->email,
+								'avatar' => $emp->user?->avatar,
+							],
+						];
+					})->values() ?? collect();
+				});
+			}
+			return $branch;
+		});
 
-        return Inertia::render('Branch/create');
-    }
+		return Inertia::render('Branch/index', [
+			'branches'      => [
+				'data' => $transformedData,
+				'links' => $result['pagination']['links'] ?? [],
+				'from' => $result['pagination']['from'] ?? 0,
+				'to' => $result['pagination']['to'] ?? 0,
+				'total' => $result['totalCount'],
+			],
+			'filters'       => $result['filters'],
+			'totalCount'    => $result['totalCount'],
+			'filteredCount' => $result['filteredCount'],
+		]);
+	}
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(StoreBranchRequest $request, CreateNewBranch $action)
-    {
-        Gate::authorize('create', Branch::class);
+	/**
+	 * Show the form for creating a new resource.
+	 */
+	public function create()
+	{
+		Gate::authorize('create', Branch::class);
 
-        if ($this->limit('create-branch:' . auth()->id(), 60, 15)) {
-            return back()->with('error', 'Too many attempts. Please try again later.');
-        }
-        try {
-            DB::beginTransaction();
+		return Inertia::render('Branch/create');
+	}
 
-            $action->create($request->validated());
+	/**
+	 * Store a newly created resource in storage.
+	 */
+	public function store(StoreBranchRequest $request, CreateNewBranch $action)
+	{
+		Gate::authorize('create', Branch::class);
 
-             $this->cacheForget(['branches', 'employees']);
+		if ($this->limit('create-branch:' . auth()->id(), 60, 15)) {
+			return back()->with('error', 'Too many attempts. Please try again later.');
+		}
+		try {
+			DB::beginTransaction();
 
-            DB::commit();
+			$action->create($request->validated());
 
-            return to_route('branches.index')->with('success', 'Branch and site created successfully.');
-        } catch (\Exception $e) {
-            DB::rollBack();
+			$this->cacheForget(['branches', 'employees']);
 
-            return back()
-                ->with('error', 'Failed to create branch or site. Please try again.' . $e->getMessage());
-        }
-    }
+			DB::commit();
+
+			return to_route('branches.index')->with('success', 'Branch and site created successfully.');
+		} catch (\Exception $e) {
+			DB::rollBack();
+
+			return back()
+				->with('error', 'Failed to create branch or site. Please try again.' . $e->getMessage());
+		}
+	}
 
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Branch $branch)
-    {
-        //
-    }
+	/**
+	 * Display the specified resource.
+	 */
+	/**
+	 * Display the specified resource.
+	 */
+	public function show($branch_slug)
+	{
+		$branch = Branch::where('branch_slug', $branch_slug)->firstOrFail();
+		Gate::authorize('view', $branch);
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Branch $branch)
-    {
-        Gate::authorize('update', $branch);
+		// Get all sites for this branch with employee counts
+		$sites = Site::where('branch_id', $branch->id)
+			->withCount('employees')
+			->get();
 
-        $branch->load(['sites' => fn($query) => $query->getSiteName()]);
-        return Inertia::render('Branch/edit', compact('branch'));
-    }
+		// Load employees for each site
+		$transformed = $sites->map(function ($site) {
+			$previewEmployees = $site->employees()
+				->select('id', 'employee_number', 'user_id', 'avatar', 'slug_emp')
+				->with('user:id,name,email')
+				->get();
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateBranchRequest $request, Branch $branch, UpdateBranch $action)
-    {
-        Gate::authorize('update', $branch);
+			return [
+				'id' => $site->id,
+				'site_name' => $site->site_name,
+				'employees_count' => $site->employees_count,
+				'employees_preview' => $previewEmployees->map(fn($e) => [
+					'id' => $e->id,
+					'employee_number' => $e->employee_number,
+					'avatar' => $e->avatar,
+					'user' => $e->user,
+					'slug_emp' => $e->slug_emp,
+				])->values(),
+			];
+		});
 
-        if ($this->limit('update-branch:' . auth()->id(), 60, 15)) {
-            return back()->with('error', 'Too many attempts. Please try again later.');
-        }
+		return Inertia::render('Branch/show', [
+			'branch' => [
+				'id' => $branch->id,
+				'branch_name' => $branch->branch_name,
+				'branch_slug' => $branch->branch_slug,
+				'branch_address' => $branch->branch_address,
+				'sites_count' => $sites->count(),
+			],
+			'sites' => $transformed,
+		]);
+	}
 
-        try {
-            DB::beginTransaction();
+	/**
+	 * Show the form for editing the specified resource.
+	 */
+	public function edit(Branch $branch)
+	{
+		Gate::authorize('update', $branch);
 
-            // Get all site IDs from the request that have IDs (existing sites)
-            $keepSiteIds = collect($request->sites)
-                ->filter(fn($site) => isset($site['id']))
-                ->pluck('id')
-                ->toArray();
+		$branch->load(['sites' => fn($query) => $query->getSiteName()]);
+		return Inertia::render('Branch/edit', compact('branch'));
+	}
 
-            // Delete sites that are not in the request
-            $branch->sites()->whereNotIn('id', $keepSiteIds)->delete();
+	/**
+	 * Update the specified resource in storage.
+	 */
+	public function update(UpdateBranchRequest $request, Branch $branch, UpdateBranch $action)
+	{
+		Gate::authorize('update', $branch);
 
-            // Update or create sites
-            $action->update($request->validated(), $branch);
+		if ($this->limit('update-branch:' . auth()->id(), 60, 15)) {
+			return back()->with('error', 'Too many attempts. Please try again later.');
+		}
 
-              $this->cacheForget(['branches', 'employees']);
+		try {
+			DB::beginTransaction();
 
-            DB::commit();
+			// Get all site IDs from the request that have IDs (existing sites)
+			$keepSiteIds = collect($request->sites)
+				->filter(fn($site) => isset($site['id']))
+				->pluck('id')
+				->toArray();
 
-            return to_route('branches.index')->with('success', 'Branch and sites updated successfully.');
-        } catch (\Exception $e) {
-            DB::rollBack();
+			// Delete sites that are not in the request
+			$branch->sites()->whereNotIn('id', $keepSiteIds)->delete();
 
-            return back()->with('error', 'Failed to update branch or site. Please try again.');
-        }
-    }
+			// Update or create sites
+			$action->update($request->validated(), $branch);
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Branch $branch)
-    {
-        Gate::authorize('delete', $branch);
+			$this->cacheForget(['branches', 'employees']);
 
-        if ($this->limit('delete-branch:' . Auth::id(), 60, 10)) {
-            return back()->with('error', 'Too many attempts. Please try again later.');
-        }
-        $branch->delete();
+			DB::commit();
 
-        $this->cacheForget(['branches', 'employees']);
+			return to_route('branches.index')->with('success', 'Branch and sites updated successfully.');
+		} catch (\Exception $e) {
+			DB::rollBack();
 
-        return to_route('branches.index')->with('success', 'Branch and site deleted successfully.');
-    }
+			return back()->with('error', 'Failed to update branch or site. Please try again.');
+		}
+	}
+
+	/**
+	 * Remove the specified resource from storage.
+	 */
+	public function destroy(Branch $branch)
+	{
+		Gate::authorize('delete', $branch);
+
+		if ($this->limit('delete-branch:' . Auth::id(), 60, 10)) {
+			return back()->with('error', 'Too many attempts. Please try again later.');
+		}
+		$branch->delete();
+
+		$this->cacheForget(['branches', 'employees']);
+
+		return to_route('branches.index')->with('success', 'Branch and site deleted successfully.');
+	}
 }

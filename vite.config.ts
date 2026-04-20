@@ -18,6 +18,15 @@ export default defineConfig({
     //         usePolling: true,
     //     },
     // },
+    // vite.config.js
+    // server: {
+    //     host: '0.0.0.0',  // Allows network access
+    //     port: 5173,
+    //     https: false,
+    //     hmr: {
+    //         host: 'localhost',  // HMR only works locally
+    //     }
+    // },
     plugins: [
         laravel({
             input: ['resources/css/app.css', 'resources/js/app.tsx'],
@@ -42,7 +51,7 @@ export default defineConfig({
         outDir: 'public/build',
         manifest: true,
         rollupOptions: {
-            input: 'resources/js/app.jsx'
+            input: 'resources/js/app.tsx'
         }
     }
 });

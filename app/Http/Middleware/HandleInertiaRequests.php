@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Illuminate\Http\Request;
 use Inertia\Middleware;
+use Illuminate\Support\Facades\Storage;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -35,11 +36,40 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $user = $request->user();
+        $userData = null;
+        
+        if ($user) {
+            $employee = $user->employee;
+            $avatar = null;
+            
+            // Get avatar from employee if exists
+            if ($employee && $employee->avatar) {
+                if (filter_var($employee->avatar, FILTER_VALIDATE_URL)) {
+                    $avatar = $employee->avatar;
+                } else {
+                    $avatar = Storage::url($employee->avatar);
+                }
+            }
+            
+            // Fallback to UI Avatars if no avatar
+            if (!$avatar) {
+                $avatar = 'https://ui-avatars.com/api/?background=1d4791&color=fff&name=' . urlencode($user->name);
+            }
+            
+            $userData = [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'avatar' => $avatar,
+            ];
+        }
+        
         return [
             ...parent::share($request),
             'name' => config('app.name'),
             'auth' => [
-                'user' => $request->user(),
+                'user' => $userData,
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'flash' => [
