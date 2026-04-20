@@ -79,7 +79,7 @@ class BranchController extends Controller
 
             $action->create($request->validated());
 
-            $this->cacheForget('branches');
+             $this->cacheForget(['branches', 'employees']);
 
             DB::commit();
 
@@ -138,7 +138,7 @@ class BranchController extends Controller
             // Update or create sites
             $action->update($request->validated(), $branch);
 
-            $this->cacheForget('branches');
+              $this->cacheForget(['branches', 'employees']);
 
             DB::commit();
 
@@ -162,7 +162,7 @@ class BranchController extends Controller
         }
         $branch->delete();
 
-        $this->cacheForget('branches');
+        $this->cacheForget(['branches', 'employees']);
 
         return to_route('branches.index')->with('success', 'Branch and site deleted successfully.');
     }

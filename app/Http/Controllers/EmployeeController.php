@@ -65,6 +65,7 @@ class EmployeeController extends Controller
         $branchesWithSites = $this->cacheRemember('branchesWithSites', 60, function () {
             return $this->employeeRepository->getBranchesWithSites();
         });
+        $positionsList = Position::select('id', 'pos_name')->get();
 
         return Inertia::render('employees/index', [
             'archivedEmployees' => $archivedEmployees,
@@ -81,6 +82,7 @@ class EmployeeController extends Controller
             'filters'       => $result['filters'],     // now includes branch/site/status/positions/dates
             'totalCount'    => $result['totalCount'],
             'filteredCount' => $result['filteredCount'],
+            'positionsList' => $positionsList, 
         ]);
     }
 
@@ -277,5 +279,49 @@ class EmployeeController extends Controller
         $this->cacheForget('employees');
 
         return to_route('employees.index')->with('success', 'Employee restored.');
+    }
+
+    public function bulkAssignPosition(Request $request)
+    {
+        Gate::authorize('bulkAssign', Employee::class);
+
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:employees,id',
+            'position_id' => 'required|exists:positions,id',
+        ]);
+
+        $position = Position::findOrFail($request->position_id);
+        Employee::whereIn('id', $request->ids)->update(['position_id' => $position->id]);
+
+        $this->cacheForget('employees');
+
+        return back()->with('success', 'Positions assigned successfully.');
+    }
+
+    public function bulkAssignBranchSite(Request $request)
+    {
+        Gate::authorize('bulkAssign', Employee::class);
+
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:employees,id',
+            'branch_id' => 'required|exists:branches,id',
+            'site_id' => 'required|exists:sites,id',
+        ]);
+
+        // Ensure site belongs to branch
+        $site = Site::where('id', $request->site_id)
+            ->where('branch_id', $request->branch_id)
+            ->firstOrFail();
+
+        Employee::whereIn('id', $request->ids)->update([
+            'branch_id' => $request->branch_id,
+            'site_id' => $request->site_id,
+        ]);
+
+        $this->cacheForget('employees');
+
+        return back()->with('success', 'Branch and site assigned successfully.');
     }
 }
