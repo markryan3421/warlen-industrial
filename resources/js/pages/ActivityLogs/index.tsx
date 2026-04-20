@@ -5,15 +5,14 @@ import { CustomPagination } from '@/components/custom-pagination';
 import { CustomHeader } from '@/components/custom-header';
 import { CustomTable } from '@/components/custom-table';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { cn } from '@/lib/utils';
 
 import { ActivityLogsFilterBar } from '@/components/activity-logs/activity-logs-filter-bar';
-import { 
-    ActivityLogsTableActions, 
+import {
+    ActivityLogsTableActions,
     ActivityLogsTableColumns,
     FormatChanges
 } from '@/config/tables/activity-logs';
@@ -45,96 +44,99 @@ interface ActivityLogsProps {
     };
 }
 
-const StatsCard = React.memo(({ 
-    title, 
-    value, 
-    color = '', 
-    icon: Icon, 
-    iconColor = '', 
-    isActive = false,
-    onClick 
-}: any) => (
-    <Card 
-        onClick={onClick}
-        className={cn(
-            "overflow-hidden border-stone-300 hover:shadow-md hover:cursor-pointer transition-all duration-200 border-2 py-3",
-            isActive 
-                ? "border-blue-500 bg-blue-50 shadow-md scale-[1.02]" 
-                : "hover:border-blue-600 hover:bg-blue-50 hover:shadow-md/50"
-        )}
-    >
-        <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-            <CardTitle className={cn(
-                "text-sm lg:text-[15px] font-sm uppercase",
-                isActive ? "text-blue-700" : "text-stone-700"
-            )}>
-                {title}
-            </CardTitle>
-            {Icon && (
-                <div className={cn(
-                    "p-1 rounded-lg",
-                    isActive ? "bg-blue-100" : iconColor || color.replace('text-', 'bg-').replace('-600', '-100')
-                )}>
-                    <Icon className={cn(
-                        "h-4 h-4 lg:h-6 lg:w-6",
-                        isActive ? "text-blue-600" : color
-                    )} />
-                </div>
-            )}
-        </CardHeader>
-        <CardContent>
-            <div className={cn(
-                "text-2xl font-bold mb-2 -mt-2",
-                isActive ? "text-blue-600" : color
-            )}>
-                {value}
-            </div>
-        </CardContent>
-    </Card>
-));
+// Stats Card component
+const StatsCard = React.memo(({
+    label,
+    count,
+    active,
+    onClick,
+    type,
+    icon: Icon
+}: {
+    label: string;
+    count: number;
+    active: boolean;
+    onClick: () => void;
+    type: 'total' | 'created' | 'updated' | 'deleted';
+    icon?: React.ElementType;
+}) => {
+    const getColorScheme = (type: string, isActive: boolean) => {
+        if (isActive) {
+            switch (type) {
+                case 'created':
+                    return { bg: 'bg-green-600', text: 'text-white', ring: 'ring-green-600', iconColor: 'text-white', labelColor: 'text-white/70', countColor: 'text-white' };
+                case 'updated':
+                    return { bg: 'bg-blue-600', text: 'text-white', ring: 'ring-blue-600', iconColor: 'text-white', labelColor: 'text-white/70', countColor: 'text-white' };
+                case 'deleted':
+                    return { bg: 'bg-red-600', text: 'text-white', ring: 'ring-red-600', iconColor: 'text-white', labelColor: 'text-white/70', countColor: 'text-white' };
+                default:
+                    return { bg: 'bg-primary', text: 'text-primary-foreground', ring: 'ring-primary', iconColor: 'text-primary-foreground', labelColor: 'text-primary-foreground/70', countColor: 'text-primary-foreground' };
+            }
+        }
 
-const EmptyState = ({ message, description, icon: Icon, hasFilters }: any) => (
-    <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-        <div className={cn(
-            "rounded-full p-4 mb-4",
-            hasFilters ? "bg-blue-50" : "bg-gray-50"
-        )}>
-            {Icon ? (
-                <Icon className={cn(
-                    "h-12 w-12",
-                    hasFilters ? "text-blue-500" : "text-gray-400"
-                )} />
-            ) : (
-                <Database className={cn(
-                    "h-12 w-12",
-                    hasFilters ? "text-blue-500" : "text-gray-400"
-                )} />
+        switch (type) {
+            case 'total':
+                return { bg: 'bg-card', text: 'text-foreground', ring: 'ring-border hover:ring-primary/40', iconColor: 'text-muted-foreground', labelColor: 'text-muted-foreground', countColor: 'text-foreground' };
+            case 'created':
+                return { bg: 'bg-card', text: 'text-foreground', ring: 'ring-border hover:ring-green-500/40', iconColor: 'text-green-600', labelColor: 'text-green-700', countColor: 'text-green-600' };
+            case 'updated':
+                return { bg: 'bg-card', text: 'text-foreground', ring: 'ring-border hover:ring-blue-500/40', iconColor: 'text-blue-600', labelColor: 'text-blue-700', countColor: 'text-blue-600' };
+            case 'deleted':
+                return { bg: 'bg-card', text: 'text-foreground', ring: 'ring-border hover:ring-red-500/40', iconColor: 'text-red-600', labelColor: 'text-red-700', countColor: 'text-red-600' };
+            default:
+                return { bg: 'bg-card', text: 'text-foreground', ring: 'ring-border', iconColor: 'text-muted-foreground', labelColor: 'text-muted-foreground', countColor: 'text-foreground' };
+        }
+    };
+
+    const scheme = getColorScheme(type, active);
+
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            className={`flex flex-col gap-1 rounded-2xl p-5 text-left shadow-sm transition-all duration-200 ring-2
+                ${active ? `${scheme.bg} ${scheme.text} ${scheme.ring} shadow-md scale-[1.02]` : `${scheme.bg} text-foreground ${scheme.ring} hover:shadow-md`}`}
+        >
+            <div className="flex items-center justify-between">
+                <p className={`text-[10px] font-black uppercase tracking-widest ${scheme.labelColor}`}>
+                    {label}
+                </p>
+                {Icon && <Icon className={`h-4 w-4 ${scheme.iconColor}`} />}
+            </div>
+            <p className={`text-3xl font-extrabold ${scheme.countColor}`}>
+                {count.toLocaleString()}
+            </p>
+        </button>
+    );
+});
+
+// Empty State Component
+const TableEmptyState = ({ hasFilters, searchTerm, onClearFilters }: { hasFilters: boolean; searchTerm: string; onClearFilters: () => void }) => {
+    const Icon = hasFilters ? Search : Database;
+
+    return (
+        <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+            <div className={cn("rounded-full p-4 mb-4", hasFilters ? "bg-blue-50" : "bg-gray-50")}>
+                <Icon className={cn("h-12 w-12", hasFilters ? "text-blue-500" : "text-gray-400")} />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                {hasFilters ? "No matching activity logs found" : "No activity logs available"}
+            </h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm">
+                {hasFilters && searchTerm
+                    ? `No activity logs matching "${searchTerm}". Try adjusting your search or filters.`
+                    : hasFilters
+                        ? "No activity logs match your current filters. Try adjusting your search criteria."
+                        : "There are no activity logs to display at the moment."}
+            </p>
+            {hasFilters && (
+                <Button variant="outline" className="mt-4" onClick={onClearFilters}>
+                    Clear all filters
+                </Button>
             )}
         </div>
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
-            {message}
-        </h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm">
-            {description}
-        </p>
-        {hasFilters && (
-            <Button 
-                variant="outline" 
-                className="mt-4"
-                onClick={() => {
-                    const params: Record<string, string> = { page: '1' };
-                    router.get('/activity-logs', params, { 
-                        preserveState: true, 
-                        preserveScroll: true, 
-                        replace: true 
-                    });
-                }}
-            >
-                Clear all filters
-            </Button>
-        )}
-    </div>
-);
+    );
+};
 
 export default function Index({
     activityLogs,
@@ -167,8 +169,28 @@ export default function Index({
     const [open, setOpen] = useState(false);
     const [notify, setNotify] = useState<{ msg: string; time: string } | null>(null);
     const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const isFirstRender = useRef(true);
 
-    // Update local state when filters prop changes (URL navigation)
+    // Store initial global stats
+    const [globalStats, setGlobalStats] = useState({
+        total: 0,
+        created: 0,
+        updated: 0,
+        deleted: 0,
+    });
+
+    useEffect(() => {
+        if (isFirstRender.current) {
+            setGlobalStats({
+                total: totalCount,
+                created: initialStats.created,
+                updated: initialStats.updated,
+                deleted: initialStats.deleted,
+            });
+            isFirstRender.current = false;
+        }
+    }, []);
+
     useEffect(() => {
         setSearchTerm(filters.search ?? '');
         setActionFilter(filters.action ?? '');
@@ -185,20 +207,20 @@ export default function Index({
         const model = overrides.model !== undefined ? overrides.model : modelFilter;
         const user = overrides.user !== undefined ? overrides.user : userFilter;
         const pp = overrides.perPage !== undefined ? overrides.perPage : perPage;
-        
+
         const params: Record<string, string> = {};
         if (s && s.trim()) params.search = s.trim();
         if (action && action !== '') params.action = action;
         if (model && model !== '') params.model = model;
         if (user && user !== '') params.user = user;
         if (pp && pp !== '10') params.perPage = pp;
-        
+
         params.page = '1';
-        
-        router.get('/activity-logs', params, { 
-            preserveState: true, 
-            preserveScroll: true, 
-            replace: true 
+
+        router.get('/activity-logs', params, {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true
         });
     }, [searchTerm, actionFilter, modelFilter, userFilter, perPage]);
 
@@ -208,68 +230,84 @@ export default function Index({
         searchTimer.current = setTimeout(() => applyFilters({ search: value }), 500);
     };
 
-    const handleActionChange = (value: string) => { 
-        setActionFilter(value); 
-        applyFilters({ action: value }); 
+    const handleActionChange = (value: string) => {
+        setActionFilter(value);
+        applyFilters({ action: value });
     };
-    
-    const handleModelChange = (value: string) => { 
-        setModelFilter(value); 
-        applyFilters({ model: value }); 
+
+    const handleModelChange = (value: string) => {
+        setModelFilter(value);
+        applyFilters({ model: value });
     };
-    
-    const handleUserChange = (value: string) => { 
-        setUserFilter(value); 
-        applyFilters({ user: value }); 
+
+    const handleUserChange = (value: string) => {
+        setUserFilter(value);
+        applyFilters({ user: value });
     };
-    
-    const handlePerPageChange = (value: string) => { 
-        setPerPage(value); 
-        applyFilters({ perPage: value }); 
+
+    const handlePerPageChange = (value: string) => {
+        setPerPage(value);
+        applyFilters({ perPage: value });
     };
-    
-    const handlePageChange = (url: string | null) => { 
-        if (url) {
-            router.get(url, {}, { preserveState: true, preserveScroll: true });
+
+    // Change this - from accepting URL to accepting page number
+    const handlePageChange = useCallback((page: number) => {
+        console.log('Page change triggered with page:', page);
+
+        const params: Record<string, string> = {
+            page: page.toString(),
+            perPage: perPage,
+        };
+
+        if (searchTerm && searchTerm.trim()) {
+            params.search = searchTerm.trim();
         }
-    };
-    
+        if (actionFilter && actionFilter !== '') {
+            params.action = actionFilter;
+        }
+        if (modelFilter && modelFilter !== '') {
+            params.model = modelFilter;
+        }
+        if (userFilter && userFilter !== '') {
+            params.user = userFilter;
+        }
+
+        router.get('/activity-logs', params, {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true
+        });
+    }, [searchTerm, actionFilter, modelFilter, userFilter, perPage]);
+
     const clearFilters = () => {
-        setSearchTerm(''); 
-        setActionFilter(''); 
-        setModelFilter(''); 
+        setSearchTerm('');
+        setActionFilter('');
+        setModelFilter('');
         setUserFilter('');
         if (searchTimer.current) clearTimeout(searchTimer.current);
-        
+
         const params: Record<string, string> = {};
         if (perPage && perPage !== '10') params.perPage = perPage;
         params.page = '1';
-        
-        router.get('/activity-logs', params, { 
-            preserveState: true, 
-            preserveScroll: true, 
-            replace: true 
+
+        router.get('/activity-logs', params, {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true
         });
     };
 
     const handleStatsClick = (actionType: string) => {
         if (actionType === 'all') {
-            if (actionFilter !== '') {
-                handleActionChange('');
-            }
+            if (actionFilter !== '') handleActionChange('');
         } else {
-            if (actionFilter === actionType) {
-                handleActionChange('');
-            } else {
-                handleActionChange(actionType);
-            }
+            if (actionFilter === actionType) handleActionChange('');
+            else handleActionChange(actionType);
         }
     };
 
-    const isTotalActive = actionFilter === '';
-
     const activeFiltersCount = [
-        searchTerm && searchTerm.trim() ? 1 : 0,
+        searchTerm?.trim() ? 1 : 0,
         actionFilter ? 1 : 0,
         modelFilter ? 1 : 0,
         userFilter ? 1 : 0
@@ -283,63 +321,28 @@ export default function Index({
         };
     }, []);
 
-    const viewDetails = (log: any) => { 
-        setSelected(log); 
-        setOpen(true); 
+    const viewDetails = (log: any) => {
+        setSelected(log);
+        setOpen(true);
     };
-    
+
     const handleView = (row: any) => viewDetails(row);
 
-    const getEmptyStateMessage = () => {
-        if (hasActiveFilters) {
-            return "No matching activity logs found";
-        }
-        return "No activity logs available";
-    };
-
-    const getEmptyStateDescription = () => {
-        if (hasActiveFilters) {
-            return "Try adjusting your filters or search criteria to see more results.";
-        }
-        return "There are no activity logs to display at the moment.";
-    };
-
-    const getEmptyStateIcon = () => {
-        if (hasActiveFilters) {
-            return Search;
-        }
-        return Database;
-    };
-
-    // Debug logging to verify stats
-    useEffect(() => {
-        console.log('Initial Stats from server:', initialStats);
-        console.log('Current action filter:', actionFilter);
-        console.log('Filtered count:', filteredCount);
-        console.log('Total count:', totalCount);
-    }, [initialStats, actionFilter, filteredCount, totalCount]);
+    const statItems = [
+        { label: 'All', key: 'all', count: globalStats.total, type: 'total' as const, icon: Activity },
+        { label: 'Created', key: 'created', count: globalStats.created, type: 'created' as const, icon: PlusCircle },
+        { label: 'Updated', key: 'updated', count: globalStats.updated, type: 'updated' as const, icon: Pencil },
+        { label: 'Deleted', key: 'deleted', count: globalStats.deleted, type: 'deleted' as const, icon: Trash2 },
+    ];
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Activity Logs" />
 
-            <style>{`
-                @keyframes fadeUp {
-                    from { opacity: 0; transform: translateY(16px); }
-                    to   { opacity: 1; transform: translateY(0); }
-                }
-                .pp-row { animation: fadeUp 0.3s cubic-bezier(0.22,1,0.36,1) both; }
-                @keyframes headerReveal {
-                    from { opacity: 0; transform: translateY(-10px); }
-                    to   { opacity: 1; transform: translateY(0); }
-                }
-                .pp-header { animation: headerReveal 0.35s cubic-bezier(0.22,1,0.36,1) both; }
-            `}</style>
-
-            <div className='mx-8 -mb-6 my-4 pp-header'>
+            <div className='mx-8 -mb-6 my-4'>
                 <CustomHeader icon={<History className="text-white h-6 w-6" />} title="Activity Logs" description="View and manage activity logs" />
             </div>
-            <div className="flex flex-1 flex-col gap-2 p-4 pp-row">
+            <div className="flex flex-1 flex-col gap-2 p-4">
                 {notify && (
                     <div className="fixed top-4 right-4 z-50 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 max-w-md">
                         <Bell className="h-5 w-5 flex-shrink-0" />
@@ -352,113 +355,86 @@ export default function Index({
                         </Button>
                     </div>
                 )}
-                
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 my-5 mx-4">
-                    <StatsCard 
-                        title="Total Activities" 
-                        icon={Activity} 
-                        iconColor="text-gray-600" 
-                        value={initialStats.total}
-                        isActive={isTotalActive}
-                        onClick={() => handleStatsClick('all')}
-                    />
-                    <StatsCard 
-                        title="Created" 
-                        icon={PlusCircle} 
-                        iconColor="text-green-600" 
-                        value={initialStats.created} 
-                        color="text-green-600"
-                        isActive={actionFilter === 'created'}
-                        onClick={() => handleStatsClick('created')}
-                    />
-                    <StatsCard 
-                        title="Updated" 
-                        icon={Pencil} 
-                        iconColor="text-blue-600" 
-                        value={initialStats.updated} 
-                        color="text-blue-600"
-                        isActive={actionFilter === 'updated'}
-                        onClick={() => handleStatsClick('updated')}
-                    />
-                    <StatsCard 
-                        title="Deleted" 
-                        icon={Trash2} 
-                        iconColor="text-red-600" 
-                        value={initialStats.deleted} 
-                        color="text-red-600"
-                        isActive={actionFilter === 'deleted'}
-                        onClick={() => handleStatsClick('deleted')}
-                    />
-                </div>
-                
-                <div className='mx-4'>
-                    {logs.length === 0 ? (
-                        <div className="border rounded-lg bg-white dark:bg-gray-900">
-                            <div className="p-4 border-b">
-                                <h2 className="text-lg font-semibold">Activity Log Lists</h2>
-                            </div>
-                            <EmptyState 
-                                message={getEmptyStateMessage()}
-                                description={getEmptyStateDescription()}
-                                icon={getEmptyStateIcon()}
-                                hasFilters={hasActiveFilters}
-                            />
-                        </div>
-                    ) : (
-                        <CustomTable
-                            columns={ActivityLogsTableColumns}
-                            actions={ActivityLogsTableActions}
-                            data={logs}
-                            from={pagination.from}
-                            to={pagination.to}
-                            total={pagination.total}
-                            filteredCount={filteredCount}
-                            totalCount={totalCount}
-                            searchTerm={searchTerm}
-                            title="Activity Log Lists"
-                            toolbar={
-                                <ActivityLogsFilterBar
-                                    searchTerm={searchTerm}
-                                    actionFilter={actionFilter}
-                                    modelFilter={modelFilter}
-                                    userFilter={userFilter}
-                                    availableActions={allActions}
-                                    availableModels={allModels}
-                                    availableUsers={allUsers}
-                                    onSearchChange={handleSearchChange}
-                                    onActionChange={handleActionChange}
-                                    onModelChange={handleModelChange}
-                                    onUserChange={handleUserChange}
-                                    onClearAll={clearFilters}
-                                    activeFiltersCount={activeFiltersCount}
-                                />
-                            }
-                            onView={handleView}
-                            onDelete={() => {}}
-                            onEdit={() => {}}
+
+                {/* Stats Cards */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 lg:gap-4 my-5 mx-4">
+                    {statItems.map((item) => (
+                        <StatsCard
+                            key={item.key}
+                            label={item.label}
+                            count={item.count}
+                            active={actionFilter === item.key || (item.key === 'all' && actionFilter === '')}
+                            onClick={() => handleStatsClick(item.key)}
+                            type={item.type}
+                            icon={item.icon}
                         />
-                    )}
+                    ))}
                 </div>
-                
-                {logs.length > 0 && pagination.total > 0 && (
-                    <CustomPagination
-                        pagination={{ 
-                            links: pagination.links, 
-                            from: pagination.from, 
-                            to: pagination.to, 
-                            total: pagination.total 
-                        }}
-                        perPage={perPage}
-                        onPerPageChange={handlePerPageChange}
-                        onPageChange={handlePageChange}
-                        totalCount={totalCount || pagination.total}
-                        filteredCount={filteredCount || pagination.total}
-                        search={searchTerm}
-                        resourceName="log"
+
+                <div className='mx-4'>
+                    <CustomTable
+                        columns={ActivityLogsTableColumns}
+                        actions={ActivityLogsTableActions}
+                        data={logs}
+                        from={pagination.from}
+                        to={pagination.to}
+                        total={pagination.total}
+                        filteredCount={filteredCount}
+                        totalCount={totalCount}
+                        searchTerm={searchTerm}
+                        title="Activity Log Lists"
+                        toolbar={
+                            <ActivityLogsFilterBar
+                                searchTerm={searchTerm}
+                                actionFilter={actionFilter}
+                                modelFilter={modelFilter}
+                                userFilter={userFilter}
+                                availableActions={allActions}
+                                availableModels={allModels}
+                                availableUsers={allUsers}
+                                onSearchChange={handleSearchChange}
+                                onActionChange={handleActionChange}
+                                onModelChange={handleModelChange}
+                                onUserChange={handleUserChange}
+                                onClearAll={clearFilters}
+                                activeFiltersCount={activeFiltersCount}
+                            />
+                        }
+                        onView={handleView}
+                        onDelete={() => { }}
+                        onEdit={() => { }}
+                        filterEmptyState={
+                            <TableEmptyState
+                                hasFilters={hasActiveFilters}
+                                searchTerm={searchTerm}
+                                onClearFilters={clearFilters}
+                            />
+                        }
                     />
+                </div>
+
+                {/* Pagination */}
+                {logs.length > 0 && pagination.total > 0 && (
+                    <div className="mt-4">
+                        <CustomPagination
+                            pagination={{
+                                links: pagination.links,
+                                from: pagination.from,
+                                to: pagination.to,
+                                total: pagination.total
+                            }}
+                            perPage={perPage}
+                            onPerPageChange={handlePerPageChange}
+                            onPageChange={handlePageChange}  // Now it expects (page: number) => void
+                            totalCount={totalCount || pagination.total}
+                            filteredCount={filteredCount || pagination.total}
+                            search={searchTerm}
+                            resourceName="log"
+                        />
+                    </div>
                 )}
             </div>
-            
+
             <Dialog open={open} onOpenChange={setOpen}>
                 <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
                     <DialogHeader>

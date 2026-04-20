@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Spatie\Activitylog\Models\Activity;
@@ -14,12 +13,12 @@ class ActivityLogController extends Controller
     public function index(Request $request)
     {
         // Get search and pagination parameters
-        $search = $request->get('search', '');
-        $actionFilter = $request->get('action', '');
-        $modelFilter = $request->get('model', '');
-        $userFilter = $request->get('user', '');
-        $perPage = (int) $request->get('perPage', 10);
-        $currentPage = (int) $request->get('page', 1);
+        $search = $request->input('search', '');
+        $actionFilter = $request->input('action', '');
+        $modelFilter = $request->input('model', '');
+        $userFilter = $request->input('user', '');
+        $perPage = (int) $request->input('perPage', 10);
+        $currentPage = (int) $request->input('page', 1);
 
         // Build the base query for filtering (used for both stats and pagination)
         $baseQuery = Activity::with('causer', 'subject')->latest();
@@ -54,38 +53,23 @@ class ActivityLogController extends Controller
             });
         }
         
-        // ========== CALCULATE STATS (GLOBAL, NOT PAGINATED) ==========
-        // Clone the query for stats to avoid modifying the original
-        $statsQuery = clone $baseQuery;
+        // ========== CALCULATE STATS BASED ON CURRENT FILTERS ==========
+        $totalFilteredCount = $baseQuery->count();
+        $createdCount = (clone $baseQuery)->where('description', 'created')->count();
+        $updatedCount = (clone $baseQuery)->where('description', 'updated')->count();
+        $deletedCount = (clone $baseQuery)->where('description', 'deleted')->count();
+        $otherCount = $totalFilteredCount - ($createdCount + $updatedCount + $deletedCount);
         
-        // Get total count for stats (ALL filtered records)
-        $totalStatsCount = $statsQuery->count();
-        
-        // Get created count
-        $createdStatsQuery = clone $baseQuery;
-        $createdCount = $createdStatsQuery->where('description', 'created')->count();
-        
-        // Get updated count
-        $updatedStatsQuery = clone $baseQuery;
-        $updatedCount = $updatedStatsQuery->where('description', 'updated')->count();
-        
-        // Get deleted count
-        $deletedStatsQuery = clone $baseQuery;
-        $deletedCount = $deletedStatsQuery->where('description', 'deleted')->count();
-        
-        // Build stats array
         $stats = [
-            'total' => $totalStatsCount,
+            'total' => $totalFilteredCount,
             'created' => $createdCount,
             'updated' => $updatedCount,
             'deleted' => $deletedCount,
+            'other' => $otherCount,
         ];
         
         // ========== GET PAGINATED RESULTS FOR DISPLAY ==========
-        // Get total filtered count for pagination
         $filteredCount = $baseQuery->count();
-        
-        // Get total count of ALL records in database (without any filters)
         $allTotal = Activity::count();
         
         // Get paginated results
@@ -112,11 +96,9 @@ class ActivityLogController extends Controller
             ]);
         }
         
-        // ========== GET FILTER OPTIONS (FROM ALL DATA) ==========
-        // Get all unique actions
+        // ========== GET FILTER OPTIONS ==========
         $allActions = Activity::distinct()->pluck('description')->filter()->values()->toArray();
         
-        // Get all unique models (from subject_type)
         $allModels = Activity::distinct()
             ->whereNotNull('subject_type')
             ->pluck('subject_type')
@@ -127,7 +109,6 @@ class ActivityLogController extends Controller
             ->values()
             ->toArray();
         
-        // Get all unique users who have performed actions
         $allUsers = Activity::whereHas('causer')
             ->with('causer')
             ->get()
@@ -145,7 +126,7 @@ class ActivityLogController extends Controller
             ->values()
             ->toArray();
         
-        // Create paginator
+        // Create paginator with correct path and query parameters
         $paginator = new LengthAwarePaginator(
             $paginatedTransformed,
             $filteredCount,
@@ -181,32 +162,24 @@ class ActivityLogController extends Controller
         ]);
     }
     
-    /**
-     * Get readable model name from activity
-     */
     protected function getModelName($activity): string
     {
         $modelName = '';
         
-        // Try subject_type first
         if ($activity->subject_type) {
             $modelName = class_basename($activity->subject_type);
         }
-        // Try loaded subject relationship
         elseif ($activity->subject) {
             $modelName = class_basename($activity->subject);
         }
-        // Try to infer from properties
         elseif ($activity->properties) {
             if (isset($activity->properties['subject_type'])) {
                 $modelName = class_basename($activity->properties['subject_type']);
             }
-            // For CRUD operations without explicit type
             elseif (in_array($activity->description, ['created', 'updated', 'deleted'])) {
                 $modelName = 'Record';
             }
         }
-        // Fallback to log name
         elseif ($activity->log_name) {
             $name = strtolower($activity->log_name);
             $models = ['user', 'branch', 'site', 'role', 'permission'];
@@ -223,12 +196,10 @@ class ActivityLogController extends Controller
             }
         }
         
-        // Default fallback
         if (empty($modelName)) {
             $modelName = 'Activity';
         }
         
-        // Remove special characters and apply title case
         return preg_replace('/[^a-zA-Z0-9\s]/', ' ', Str::title($modelName));
     }
 }

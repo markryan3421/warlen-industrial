@@ -24,7 +24,7 @@ export const ApplicationLeavesTableConfig = {
     {
       label: 'Status',
       key: 'app_status',
-      isBadge: true,
+      isBadge: false,
       render: (row: any) => {
         const status = row.app_status || 'pending';
         const statusLower = status.toLowerCase();

@@ -7,6 +7,7 @@ use App\Models\Payroll;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 class EmployeeDashboardController extends Controller
@@ -20,6 +21,11 @@ class EmployeeDashboardController extends Controller
             abort(403, 'No employee record found for this user.');
         }
 
+        // Get user avatar from the user model
+        $userAvatar = $user->avatar 
+            ? (filter_var($user->avatar, FILTER_VALIDATE_URL) ? $user->avatar : Storage::url($user->avatar))
+            : null;
+
         // 1. Attendance stats (from biometric system)
         $attendanceIdentifiers = collect([
             (string) $employee->emp_code,
@@ -32,10 +38,10 @@ class EmployeeDashboardController extends Controller
 
         // 2. Payroll data (real monetary values)
         $payrolls = Payroll::where('employee_id', $employee->id)
-            ->with('payrollPeriod') // assumes PayrollPeriod model exists with start_date
+            ->with('payrollPeriod')
             ->get();
 
-        // Map each payroll to its period start date (e.g., '2025-09-01')
+        // Map each payroll to its period start date
         $payrollMap = [];
         foreach ($payrolls as $payroll) {
             if ($payroll->payrollPeriod) {
@@ -44,14 +50,14 @@ class EmployeeDashboardController extends Controller
             }
         }
 
-        // 3. Enrich attendance stats with net_pay from payrolls (fallback to real_pay if missing)
+        // 3. Enrich attendance stats with net_pay from payrolls
         $enrichedStats = $periodStats->map(function ($stat) use ($payrollMap) {
             $key = Carbon::parse($stat->period_start)->format('Y-m-d');
-            $stat->net_pay = $payrollMap[$key] ?? $stat->real_pay; // use real_pay if payroll not found
+            $stat->net_pay = $payrollMap[$key] ?? $stat->real_pay;
             return $stat;
         });
 
-        // 4. Lifetime totals (using net_pay)
+        // 4. Lifetime totals
         $lifetime = [
             'total_pay' => $enrichedStats->sum('net_pay'),
             'total_late_minutes' => $enrichedStats->sum('late_minutes'),
@@ -61,14 +67,14 @@ class EmployeeDashboardController extends Controller
             }),
         ];
 
-        // 5. Build month list from contract dates (or fallback to earliest/latest period)
+        // 5. Build month list
         $availableMonths = $this->buildAvailableMonths(
             $enrichedStats,
             $employee->contract_start_date,
             $employee->contract_end_date
         );
 
-        // 6. Default month: most recent with data, or last month in range
+        // 6. Default month
         $defaultMonth = null;
         if ($enrichedStats->isNotEmpty()) {
             $latestStat = $enrichedStats->first();
@@ -81,6 +87,16 @@ class EmployeeDashboardController extends Controller
         }
 
         return Inertia::render('employee-role/dashboard', [
+            'auth' => [
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'avatar' => $employee->avatar 
+                        ? (filter_var($employee->avatar, FILTER_VALIDATE_URL) ? $employee->avatar : Storage::url($employee->avatar))
+                        : $userAvatar, // fallback to user avatar if employee avatar is not set
+                ]
+            ],
             'periodStats' => $enrichedStats,
             'lifetime' => $lifetime,
             'availableMonths' => $availableMonths,
@@ -90,7 +106,6 @@ class EmployeeDashboardController extends Controller
 
     private function buildAvailableMonths($periodStats, $contractStartDate, $contractEndDate = null)
     {
-        // Fallback to earliest/latest period if contract dates are missing
         if (!$contractStartDate && $periodStats->isNotEmpty()) {
             $contractStartDate = $periodStats->min('period_start');
         }
@@ -119,7 +134,6 @@ class EmployeeDashboardController extends Controller
             $start->addMonth();
         }
 
-        // Mark months that have actual data
         foreach ($periodStats as $stat) {
             $key = Carbon::parse($stat->period_start)->format('Y-m');
             foreach ($months as &$month) {

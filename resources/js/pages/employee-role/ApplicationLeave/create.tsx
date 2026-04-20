@@ -324,7 +324,7 @@ export default function Create() {
                                                     Submitting…
                                                 </span>
                                             ) : (
-                                                <span className="flex items-center gap-2">
+                                                <span className="flex justify-center items-center gap-2">
                                                     <CheckCircle2 className="h-3.5 w-3.5" />
                                                     Submit Leave Application
                                                 </span>
