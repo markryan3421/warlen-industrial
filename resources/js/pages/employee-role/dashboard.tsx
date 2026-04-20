@@ -7,7 +7,7 @@ export default function Dashboard() {
         <EmpLayout breadcrumbs={[{ title: 'Dashboard', href: '/employee/dashboard' }]}>
             <Head title="Dashboard" />
             <div className="p-6">
-                <EmployeeStats/>
+                <EmployeeStats />
             </div>
         </EmpLayout>
     );

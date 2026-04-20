@@ -182,7 +182,7 @@ export default function EmployeeStats() {
 						)}
 					</div>
 					<div className="flex-1 text-center sm:text-left">
-						<h1 className="text-xl font-semibold text-slate-400">
+						<h1 className="text-xl font-semibold text-slate-100">
 							Welcome back, <span className="font-bold gochi-hand-regular">{user?.name || 'Employee'}!</span>
 						</h1>
 						<p className="text-sm text-slate-500 mt-0.5">
