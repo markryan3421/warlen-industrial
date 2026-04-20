@@ -392,6 +392,9 @@ interface DashboardProps {
     pendingApplicationLeave?: number;
     payrollTrend?: Array<{ month: string; desktop: number; mobile: number }>;
     employee_pay_frequency?: Array<{ name: string; value: number }>;
+    newRegEmployees?: number;
+    scheduleDeviation?: number;
+    payrollActivityMessage?: string | null;
 }
 
 export default function Dashboard({
@@ -400,7 +403,10 @@ export default function Dashboard({
     openPayrollPeriod = 0,
     pendingApplicationLeave = 0,
     payrollTrend = [],
-    employee_pay_frequency = []
+    employee_pay_frequency = [],
+    newRegEmployees = 0,
+    scheduleDeviation = 0,
+    payrollActivityMessage = null
 }: DashboardProps) {
     // Prepare pie chart data with colors
     const pieData = useMemo(() => {
@@ -455,7 +461,12 @@ export default function Dashboard({
                             {/* Column 1: System Alert */}
                             <div className="col-span-1 md:col-span-1 lg:col-span-3">
                                 <div className="h-full">
-                                    <SystemAlert />
+                                    <SystemAlert
+                                        newlyRegistered={newRegEmployees}
+                                        scheduleDeviation={scheduleDeviation}
+                                        pendingRequests={pendingApplicationLeave}
+                                        payrollActivityMessage={payrollActivityMessage}
+                                    />
                                 </div>
                             </div>
 
@@ -483,7 +494,7 @@ export default function Dashboard({
 
                                         {/* View Full Analysis Link */}
                                         <Link
-                                            href="/reports/analysis"
+                                            href="/ai/dashboard"
                                             className="inline-flex items-center text-xs text-blue-600 hover:text-blue-800 hover:underline font-medium transition-colors duration-200 group"
                                         >
                                             <span>View Full Analysis</span>

@@ -49,27 +49,33 @@ class PayrollController extends Controller
             });
         }
 
-        // Apply position filter
+        // Position filter
         if ($request->filled('positions')) {
             $positions = explode(',', $request->positions);
-            $query->whereHas('employee.position', function ($q) use ($positions) {
-                $q->whereIn('pos_name', $positions);
+            $lowerPositions = array_map('strtolower', $positions);
+            $placeholders = implode(',', array_fill(0, count($lowerPositions), '?'));
+            $query->whereHas('employee.position', function ($q) use ($lowerPositions, $placeholders) {
+                $q->whereRaw("LOWER(pos_name) IN ($placeholders)", $lowerPositions);
             });
         }
 
-        // Apply branch filter
+        // Branch filter
         if ($request->filled('branches')) {
             $branches = explode(',', $request->branches);
-            $query->whereHas('employee.branch', function ($q) use ($branches) {
-                $q->whereIn('branch_name', $branches);
+            $lowerBranches = array_map('strtolower', $branches);
+            $placeholders = implode(',', array_fill(0, count($lowerBranches), '?'));
+            $query->whereHas('employee.branch', function ($q) use ($lowerBranches, $placeholders) {
+                $q->whereRaw("LOWER(branch_name) IN ($placeholders)", $lowerBranches);
             });
         }
 
-        // Apply site filter
+        // Site filter
         if ($request->filled('sites')) {
             $sites = explode(',', $request->sites);
-            $query->whereHas('employee.site', function ($q) use ($sites) {
-                $q->whereIn('site_name', $sites);
+            $lowerSites = array_map('strtolower', $sites);
+            $placeholders = implode(',', array_fill(0, count($lowerSites), '?'));
+            $query->whereHas('employee.site', function ($q) use ($lowerSites, $placeholders) {
+                $q->whereRaw("LOWER(site_name) IN ($placeholders)", $lowerSites);
             });
         }
 
@@ -77,14 +83,14 @@ class PayrollController extends Controller
         if ($request->filled('date_from') || $request->filled('date_to')) {
             $query->whereHas('payrollPeriod', function ($q) use ($request) {
                 if ($request->filled('date_from') && $request->filled('date_to')) {
-                    $q->whereDate('start_date', '<=', $request->date_to)
-                        ->whereDate('end_date', '>=', $request->date_from);
+                    $q->whereRaw('DATE(start_date) <= ?', [$request->date_to])
+                        ->whereRaw('DATE(end_date) >= ?', [$request->date_from]);
                 } elseif ($request->filled('date_from')) {
-                    $q->whereDate('start_date', '<=', $request->date_from)
-                        ->whereDate('end_date', '>=', $request->date_from);
+                    $q->whereRaw('DATE(start_date) <= ?', [$request->date_from])
+                        ->whereRaw('DATE(end_date) >= ?', [$request->date_from]);
                 } elseif ($request->filled('date_to')) {
-                    $q->whereDate('start_date', '<=', $request->date_to)
-                        ->whereDate('end_date', '>=', $request->date_to);
+                    $q->whereRaw('DATE(start_date) <= ?', [$request->date_to])
+                        ->whereRaw('DATE(end_date) >= ?', [$request->date_to]);
                 }
             });
         }
@@ -154,12 +160,12 @@ class PayrollController extends Controller
             ->select('id', 'branch_name', 'branch_address')
             ->orderBy('branch_name')
             ->get()
-            ->map(function($branch) {
+            ->map(function ($branch) {
                 return [
                     'id' => $branch->id,
                     'branch_name' => $branch->branch_name,
                     'branch_address' => $branch->branch_address ?? '',
-                    'sites' => $branch->sites->map(function($site) {
+                    'sites' => $branch->sites->map(function ($site) {
                         return [
                             'id' => $site->id,
                             'site_name' => $site->site_name
