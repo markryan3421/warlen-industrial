@@ -23,7 +23,7 @@ class AdminDashboardController extends Controller
         $newRegEmployees = $this->service->getNewRegEmployeesCount();
         $scheduleDeviation = $this->service->getScheduleDevCount();
         $pendingRequests = $this->service->getPendingApplicationLeave();
-        $payrollActivityMessage = $this->service->getOpenPayrollPeriod();
+        $payrollActivityMessage = $this->service->getPayrollActivityMessage();
 
         return Inertia::render('dashboard', compact(
             'totalNetPay',

@@ -48,10 +48,30 @@ class AdminDashboardService
         $startOfMonth = $now->startOfMonth()->format('Y-m-d');
         $endOfMonth = $now->endOfMonth()->format('Y-m-d');
 
-       //return $this->countOpenPayrollPeriod($startOfMonth, $endOfMonth);
+        //return $this->countOpenPayrollPeriod($startOfMonth, $endOfMonth);
 
-       return PayrollPeriod::query()->where('payroll_per_status', PayrollPeriodStatusEnum::OPEN->value)->count();
+        return PayrollPeriod::query()->where('payroll_per_status', PayrollPeriodStatusEnum::OPEN->value)->count();
+    }
 
+
+    public function getPayrollActivityMessage(): string
+    {
+        $openPeriods = $this->getOpenPayrollPeriod();
+        if ($openPeriods > 0) {
+            return "Open payroll period exists";
+        }
+
+        $lastPayroll = Payroll::latest('created_at')->first();
+        if (!$lastPayroll) {
+            return "No payroll has been run yet";
+        }
+
+        $daysSince = $lastPayroll->created_at->diffInDays(now());
+        if ($daysSince > 30) {
+            return "Payroll not run for {$daysSince} days";
+        }
+
+        return "Payroll is up to date";
     }
 
     protected function countOpenPayrollPeriod($startOfMonth, $endOfMonth): int

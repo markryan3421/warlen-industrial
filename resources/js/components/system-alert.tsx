@@ -1,7 +1,7 @@
 import { Button } from "@headlessui/react";
 import { Link } from "@inertiajs/react";
 import { ScrollText, CalendarDays, UserRoundPlus, CalendarClock, ArrowRight, Info } from 'lucide-react'
-import { memo, useMemo } from "react";
+import { memo } from "react";
 import {
     Card,
     CardDescription,
@@ -51,50 +51,39 @@ export default memo(function SystemAlert({
     pendingRequests = 0, 
     payrollActivityMessage = null 
 }: SystemAlertProps) {
-    // Build alerts array dynamically based on props
-    const alerts = useMemo(() => {
-        const items = [];
-
-        if (newlyRegistered > 0) {
-            items.push({
-                icon: UserRoundPlus,
-                title: "Newly Registered",
-                subtitle: `${newlyRegistered} employee${newlyRegistered !== 1 ? 's' : ''} added`,
-                link: "/employees" // adjust to your actual route
-            });
+    // Build all four cards always, with dynamic subtitles including fallback messages
+    const alerts = [
+        {
+            icon: UserRoundPlus,
+            title: "Newly Registered",
+            subtitle: newlyRegistered > 0 
+                ? `${newlyRegistered} employee${newlyRegistered !== 1 ? 's' : ''} added` 
+                : "No new employees registered",
+            link: "/employees"
+        },
+        {
+            icon: CalendarDays,
+            title: "Schedule Deviation",
+            subtitle: scheduleDeviation > 0 
+                ? `${scheduleDeviation} early timeout${scheduleDeviation !== 1 ? 's' : ''}` 
+                : "No early timeouts",
+            link: "/attendances"
+        },
+        {
+            icon: CalendarClock,
+            title: "Pending Requests",
+            subtitle: pendingRequests > 0 
+                ? `${pendingRequests} leave request${pendingRequests !== 1 ? 's' : ''} pending` 
+                : "No pending leave requests",
+            link: "/application-leave"
+        },
+        {
+            icon: ScrollText,
+            title: "Payroll Activity",
+            subtitle: payrollActivityMessage || "No active payroll period",
+            link: "/payroll-periods"
         }
-
-        if (scheduleDeviation > 0) {
-            items.push({
-                icon: CalendarDays,
-                title: "Schedule Deviation",
-                subtitle: `${scheduleDeviation} early timeout${scheduleDeviation !== 1 ? 's' : ''}`,
-                link: "/attendances" // adjust
-            });
-        }
-
-        if (pendingRequests > 0) {
-            items.push({
-                icon: CalendarClock,
-                title: "Pending Requests",
-                subtitle: `${pendingRequests} leave request${pendingRequests !== 1 ? 's' : ''} pending`,
-                link: "/application-leave" // adjust
-            });
-        }
-
-        if (payrollActivityMessage) {
-            items.push({
-                icon: ScrollText,
-                title: "Payroll Activity",
-                subtitle: payrollActivityMessage,
-                link: "/payroll-periods"
-            });
-        }
-
-        return items;
-    }, [newlyRegistered, scheduleDeviation, pendingRequests, payrollActivityMessage]);
-
-    if (alerts.length === 0) return null;
+    ];
 
     return (
         <div className='rounded-lg px-4 sm:px-0 lg:px-0'>
