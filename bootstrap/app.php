@@ -20,12 +20,15 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->trustProxies(at: '*');  
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
+
+       // $middleware->trustProxies(at:'*');
+
         $middleware->alias([
                 'roleBase' => \App\Http\Middleware\RolaBaseMiddleware::class,
                 'admin' => AdminMiddleware::class,
                 'hr' => \App\Http\Middleware\HrMiddleware::class,
                 'employee' => \App\Http\Middleware\EmployeeMiddleware::class,
-                'adminhr' => \App\Http\Middleware\AdminHrMiddleware::class,
+                // 'adminhr' => \App\Http\Middleware\AdminHrMiddleware::class,
         ]);
         $middleware->web(append: [
             HandleAppearance::class,

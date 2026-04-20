@@ -65,17 +65,22 @@ class EmployeePolicy
     }
 
     public function bulkDelete(User $user): bool
-{
-    return $user->hasAnyRole('admin', 'hr_head'); // or your logic
-}
+    {
+        return $user->hasAnyRole('admin', 'hr_head'); // or your logic
+    }
 
-public function bulkRestore(User $user): bool
-{
-    return $user->hasAnyRole('admin', 'hr_head');
-}
+    public function bulkRestore(User $user): bool
+    {
+        return $user->hasAnyRole('admin', 'hr_head');
+    }
 
-// public function bulkForceDelete(User $user): bool
-// {
-//     return $user->hasRole('admin');
-// }
+    // public function bulkForceDelete(User $user): bool
+    // {
+    //     return $user->hasRole('admin');
+    // }
+
+    public function bulkAssign(User $user)
+    {
+        return $user->hasAnyRole('admin', 'hr_head'); // or your logic
+    }
 }

@@ -19,13 +19,23 @@ class AdminDashboardController extends Controller
         $payrollTrend = $this->service->getMonthlyPayrollTrend();
         $employee_pay_frequency = $this->service->getEmployeePayFrequency();
 
+        // system alerts
+        $newRegEmployees = $this->service->getNewRegEmployeesCount();
+        $scheduleDeviation = $this->service->getScheduleDevCount();
+        $pendingRequests = $this->service->getPendingApplicationLeave();
+        $payrollActivityMessage = $this->service->getPayrollActivityMessage();
+
         return Inertia::render('dashboard', compact(
             'totalNetPay',
             'totalActiveEmployee',
             'openPayrollPeriod',
             'pendingApplicationLeave',
             'payrollTrend',
-            'employee_pay_frequency'
+            'employee_pay_frequency',
+            'newRegEmployees',
+            'scheduleDeviation',
+            'pendingRequests',
+            'payrollActivityMessage',
         ));
     }
 }

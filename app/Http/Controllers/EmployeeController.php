@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Actions\Employee\CreateNewEmployee;
 use App\Actions\Employee\UpdateEmployee;
 use App\Concerns\ManageSession;
+use App\Http\Requests\Employee\BulkAssignBranchSiteRequest;
+use App\Http\Requests\Employee\BulkAssignPositionRequest;
 use App\Http\Requests\Employee\StoreEmployeeRequest;
 use App\Http\Requests\Employee\UpdateEmployeeRequest;
 use App\Models\Branch;
@@ -37,9 +39,6 @@ class EmployeeController extends Controller
 
         $archivedEmployees = $this->employeeRepository->getDeletedEmployees();
 
-        // ── Derive allPositions from the FULL collection (before filtering) ──────
-        // This gives the Position popover the complete list of options regardless
-        // of what filters are currently active or what page the user is on.
         $allPositions = $employees
             ->map(fn($e) => optional($e->position)->pos_name)
             ->filter()           // remove nulls
@@ -65,6 +64,7 @@ class EmployeeController extends Controller
         $branchesWithSites = $this->cacheRemember('branchesWithSites', 60, function () {
             return $this->employeeRepository->getBranchesWithSites();
         });
+        $positionsList = Position::select('id', 'pos_name')->get();
 
         return Inertia::render('employees/index', [
             'archivedEmployees' => $archivedEmployees,
@@ -81,6 +81,7 @@ class EmployeeController extends Controller
             'filters'       => $result['filters'],     // now includes branch/site/status/positions/dates
             'totalCount'    => $result['totalCount'],
             'filteredCount' => $result['filteredCount'],
+            'positionsList' => $positionsList, 
         ]);
     }
 
@@ -196,7 +197,7 @@ class EmployeeController extends Controller
 
         try {
             $validatedData = $request->validated();
-
+            
             $action->update($validatedData, $employee);
 
             if (isset($validatedData['password']) && !empty($validatedData['password'])) {
@@ -226,7 +227,7 @@ class EmployeeController extends Controller
         }
 
         $this->invalidateUserSessions($employee->user_id);
-       // $employee->update(['employee_status' => 'inactive']);
+        // $employee->update(['employee_status' => 'inactive']);
         $employee->delete();
 
         $this->cacheForget('employees');
@@ -234,49 +235,78 @@ class EmployeeController extends Controller
         return to_route('employees.index')->with('success', 'Employee deleted successfully.');
     }
     public function bulkDestroy(Request $request)
-{
-    Gate::authorize('bulkDelete', Employee::class);
-    $ids = $request->input('ids') ?? $request->json('ids');
-    if (empty($ids)) {
-        return back()->with('error', 'No employees selected.');
-    }
+    {
+        Gate::authorize('bulkDelete', Employee::class);
+        $ids = $request->input('ids') ?? $request->json('ids');
+        if (empty($ids)) {
+            return back()->with('error', 'No employees selected.');
+        }
 
-    DB::transaction(function () use ($ids) {
-        Employee::whereIn('id', $ids)->each(function ($employee) {
-            $this->invalidateUserSessions($employee->user_id);
-            $employee->delete(); // soft delete
+        DB::transaction(function () use ($ids) {
+            Employee::whereIn('id', $ids)->each(function ($employee) {
+                $this->invalidateUserSessions($employee->user_id);
+                $employee->delete(); // soft delete
+            });
         });
-    });
 
-    $this->cacheForget('employees');
-    return to_route('employees.index')->with('success', count($ids) . ' employees moved to archive.');
-}
-
-public function bulkRestore(Request $request)
-{
-    Gate::authorize('bulkRestore', Employee::class);
-    $ids = $request->input('ids') ?? $request->json('ids');
-    if (empty($ids)) {
-        return back()->with('error', 'No archived employees selected.');
+        $this->cacheForget('employees');
+        return to_route('employees.index')->with('success', count($ids) . ' employees moved to archive.');
     }
 
-    Employee::withTrashed()->whereIn('id', $ids)->each(function ($employee) {
+    public function bulkRestore(Request $request)
+    {
+        Gate::authorize('bulkRestore', Employee::class);
+        $ids = $request->input('ids') ?? $request->json('ids');
+        if (empty($ids)) {
+            return back()->with('error', 'No archived employees selected.');
+        }
+
+        Employee::withTrashed()->whereIn('id', $ids)->each(function ($employee) {
+            $employee->restore();
+        });
+
+        $this->cacheForget('employees');
+        return to_route('employees.index')->with('success', count($ids) . ' employees restored.');
+    }
+
+    public function restore(Employee $employee)   // $employee is resolved by slug_emp automatically if route binding is set up
+    {
+        Gate::authorize('restore', $employee);
+
         $employee->restore();
-    });
 
-    $this->cacheForget('employees');
-    return to_route('employees.index')->with('success', count($ids) . ' employees restored.');
-}
+        $this->cacheForget('employees');
 
-public function restore(Employee $employee)   // $employee is resolved by slug_emp automatically if route binding is set up
-{
-    Gate::authorize('restore', $employee);
+        return to_route('employees.index')->with('success', 'Employee restored.');
+    }
 
-    $employee->restore();
+    public function bulkAssignPosition(BulkAssignPositionRequest $request)
+    {
+        Gate::authorize('bulkAssign', Employee::class);
 
-    $this->cacheForget('employees');
+        $position = Position::findOrFail($request->position_id);
+        Employee::whereIn('id', $request->ids)->update(['position_id' => $position->id]);
 
-    return to_route('employees.index')->with('success', 'Employee restored.');
-}
+        $this->cacheForget('employees');
 
+        return back()->with('success', 'Positions assigned successfully.');
+    }
+
+    public function bulkAssignBranchSite(BulkAssignBranchSiteRequest $request)
+    {
+        Gate::authorize('bulkAssign', Employee::class);
+
+        $site = Site::where('id', $request->site_id)
+            ->where('branch_id', $request->branch_id)
+            ->firstOrFail();
+
+        Employee::whereIn('id', $request->ids)->update([
+            'branch_id' => $request->branch_id,
+            'site_id' => $request->site_id,
+        ]);
+
+        $this->cacheForget('employees');
+
+        return back()->with('success', 'Branch and site assigned successfully.');
+    }
 }

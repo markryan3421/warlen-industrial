@@ -1,6 +1,16 @@
 import { Head, Link, useForm, router } from '@inertiajs/react';
 import { format } from 'date-fns';
-import { Users, Search, UserPlus, Archive, UsersRound, Trash2, RotateCcw } from 'lucide-react';
+import {
+    Users,
+    Search,
+    UserPlus,
+    Archive,
+    UsersRound,
+    Trash2,
+    RotateCcw,
+    Briefcase,
+    Building2,
+} from 'lucide-react';
 import { useState, useRef, useMemo } from 'react';
 import { toast } from 'sonner';
 import EmployeeController from '@/actions/App/Http/Controllers/EmployeeController';
@@ -17,6 +27,20 @@ import { EmployeesTableConfig } from '@/config/tables/employees-table';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-modal';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+} from '@/components/ui/dialog';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Employees', href: '/employees' },
@@ -72,6 +96,7 @@ interface PageProps {
     archivedEmployees: Employee[];
     branchesData: BranchData[];
     allPositions: string[];
+    positionsList: { id: number; pos_name: string }[]; // for assignment dropdown
     filters?: FilterProps;
     totalCount: number;
     filteredCount: number;
@@ -83,6 +108,7 @@ export default function Index({
     archivedEmployees = [],
     branchesData = [],
     allPositions = [],
+    positionsList = [],
     filters = {},
     totalCount,
     filteredCount,
@@ -97,16 +123,16 @@ export default function Index({
     // ── Filter state
     const [searchTerm, setSearchTerm] = useState(filters.search ?? '');
     const [selectedPositions, setSelectedPositions] = useState<string[]>(
-        filters.positions ? filters.positions.split(',').filter(Boolean) : [],
+        filters.positions ? filters.positions.split(',').filter(Boolean) : []
     );
     const [selectedBranch, setSelectedBranch] = useState(filters.branch ?? '');
     const [selectedSite, setSelectedSite] = useState(filters.site ?? '');
     const [status, setStatus] = useState<string>(filters.status ?? '');
     const [dateFrom, setDateFrom] = useState<Date | undefined>(
-        filters.date_from ? new Date(filters.date_from) : undefined,
+        filters.date_from ? new Date(filters.date_from) : undefined
     );
     const [dateTo, setDateTo] = useState<Date | undefined>(
-        filters.date_to ? new Date(filters.date_to) : undefined,
+        filters.date_to ? new Date(filters.date_to) : undefined
     );
 
     // ── Bulk selection state ─────────────────────────────────────────────────
@@ -114,15 +140,15 @@ export default function Index({
     const [bulkLoading, setBulkLoading] = useState(false);
     const [bulkArchiveConfirmOpen, setBulkArchiveConfirmOpen] = useState(false);
 
-    // ── Archived pagination state (client-side) ──────────────────────────────
-    // ── Archived pagination state (client-side) ──────────────────────────────
-    // Single restore confirmation
-    const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
-    const [itemToRestore, setItemToRestore] = useState<Employee | null>(null);
-    const [isRestoring, setIsRestoring] = useState(false);
+    // ── Bulk assign states ───────────────────────────────────────────────────
+    const [assignPositionOpen, setAssignPositionOpen] = useState(false);
+    const [assignBranchOpen, setAssignBranchOpen] = useState(false);
+    const [selectedPositionId, setSelectedPositionId] = useState<string>('');
+    const [selectedBranchId, setSelectedBranchId] = useState<string>('');
+    const [selectedSiteId, setSelectedSiteId] = useState<string>('');
+    const [assignLoading, setAssignLoading] = useState(false);
 
-    // Bulk restore confirmation
-    const [bulkRestoreConfirmOpen, setBulkRestoreConfirmOpen] = useState(false);
+    // ── Archived pagination state (client-side) ──────────────────────────────
     const [archivedPage, setArchivedPage] = useState(1);
     const [archivedPerPage, setArchivedPerPage] = useState(10);
 
@@ -138,25 +164,20 @@ export default function Index({
     const archivedFrom = archivedTotal === 0 ? 0 : (archivedPage - 1) * archivedPerPage + 1;
     const archivedTo = Math.min(archivedPage * archivedPerPage, archivedTotal);
 
-    // Generate page links (same format as Laravel's paginator)
+    // Generate page links for archived (same format as Laravel's paginator)
     const archivedLinks = useMemo(() => {
         const links = [];
-        const maxVisible = 5; // show at most 5 page numbers
+        const maxVisible = 5;
         let startPage = Math.max(1, archivedPage - Math.floor(maxVisible / 2));
         let endPage = Math.min(archivedLastPage, startPage + maxVisible - 1);
-
         if (endPage - startPage + 1 < maxVisible) {
             startPage = Math.max(1, endPage - maxVisible + 1);
         }
-
-        // Previous button
         links.push({
             url: archivedPage > 1 ? '#' : null,
             label: '&laquo; Previous',
             active: false,
         });
-
-        // Page numbers
         for (let i = startPage; i <= endPage; i++) {
             links.push({
                 url: '#',
@@ -164,14 +185,11 @@ export default function Index({
                 active: i === archivedPage,
             });
         }
-
-        // Next button
         links.push({
             url: archivedPage < archivedLastPage ? '#' : null,
             label: 'Next &raquo;',
             active: false,
         });
-
         return links;
     }, [archivedPage, archivedLastPage]);
 
@@ -183,21 +201,40 @@ export default function Index({
         last_page: archivedLastPage,
         from: archivedFrom,
         to: archivedTo,
-        links: archivedLinks,   // ✅ now contains numbered page buttons
+        links: archivedLinks,
     };
 
-    // ── Central navigation function ───────────────────────────────────────────
-    function applyFilters(overrides: Partial<{
-        search: string;
-        positions: string[];
-        branch: string;
-        site: string;
-        status: string;
-        from: Date | undefined;
-        to: Date | undefined;
-        perPage: string;
-        showArchived: boolean;
-    }> = {}) {
+    // ── Compute button visibility (active tab only) ─────────────────────────
+    const currentPageEmployees = employees.data;
+
+    const hasAnyMissingPosition = useMemo(() => {
+        return selectedIds.some(id => {
+            const emp = currentPageEmployees.find(e => e.id === id);
+            return emp && !emp.position;
+        });
+    }, [selectedIds, currentPageEmployees]);
+
+    const hasAnyMissingBranchOrSite = useMemo(() => {
+        return selectedIds.some(id => {
+            const emp = currentPageEmployees.find(e => e.id === id);
+            return emp && (!emp.branch || !emp.site);
+        });
+    }, [selectedIds, currentPageEmployees]);
+
+    // ── Central navigation function ─────────────────────────────────────────
+    function applyFilters(
+        overrides: Partial<{
+            search: string;
+            positions: string[];
+            branch: string;
+            site: string;
+            status: string;
+            from: Date | undefined;
+            to: Date | undefined;
+            perPage: string;
+            showArchived: boolean;
+        }> = {}
+    ) {
         const s = overrides.search ?? searchTerm;
         const pos = overrides.positions ?? selectedPositions;
         const br = overrides.branch ?? selectedBranch;
@@ -206,7 +243,7 @@ export default function Index({
         const from = overrides.from !== undefined ? overrides.from : dateFrom;
         const to = overrides.to !== undefined ? overrides.to : dateTo;
         const pp = overrides.perPage ?? String(employees.perPage ?? 10);
-        const showArchived = overrides.showArchived !== undefined ? overrides.showArchived : (activeTab === 'archived');
+        const showArchived = overrides.showArchived !== undefined ? overrides.showArchived : activeTab === 'archived';
 
         const params: Record<string, string> = {};
         if (s.trim()) params.search = s.trim();
@@ -226,8 +263,6 @@ export default function Index({
         });
     }
 
-
-
     // ── Tab change handler (reset filters, selection, archived pagination) ───
     const handleTabChange = (value: string) => {
         const newTab = value as 'active' | 'archived';
@@ -240,7 +275,6 @@ export default function Index({
         setDateFrom(undefined);
         setDateTo(undefined);
         setSelectedIds([]);
-        // Reset archived pagination when switching to archived tab
         if (newTab === 'archived') {
             setArchivedPage(1);
             setArchivedPerPage(10);
@@ -257,7 +291,7 @@ export default function Index({
         });
     };
 
-    // ── Search debounce ───────────────────────────────────────────────────────
+    // ── Search debounce ─────────────────────────────────────────────────────
     const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const handleSearchChange = (value: string) => {
         setSearchTerm(value);
@@ -267,7 +301,7 @@ export default function Index({
         }, 300);
     };
 
-    // ── Filter handlers ───────────────────────────────────────────────────────
+    // ── Filter handlers ─────────────────────────────────────────────────────
     const handleBranchChange = (branch: string) => {
         setSelectedBranch(branch);
         setSelectedSite('');
@@ -311,11 +345,17 @@ export default function Index({
         setStatus('');
         setDateFrom(undefined);
         setDateTo(undefined);
-        router.get('/employees', { show_archived: activeTab === 'archived' ? 'true' : undefined }, {
-            preserveState: true,
-            replace: true
-        });
+        router.get(
+            '/employees',
+            { show_archived: activeTab === 'archived' ? 'true' : undefined },
+            {
+                preserveState: true,
+                replace: true,
+            }
+        );
     };
+
+    // ── Bulk archive ────────────────────────────────────────────────────────
     const handleBulkArchive = () => {
         if (selectedIds.length === 0) return;
         setBulkArchiveConfirmOpen(true);
@@ -326,7 +366,7 @@ export default function Index({
         try {
             await router.post('/employees/bulk-destroy', {
                 ids: selectedIds,
-                _method: 'DELETE'
+                _method: 'DELETE',
             });
             setSelectedIds([]);
             toast.success(`${selectedIds.length} employee(s) moved to archive.`);
@@ -338,7 +378,75 @@ export default function Index({
         }
     };
 
-    // ── Restore handlers with confirmation modal ────────────────────────────────
+    // ── Bulk assign handlers ────────────────────────────────────────────────
+    const handleAssignPosition = () => {
+        setSelectedPositionId('');
+        setAssignPositionOpen(true);
+    };
+
+    const confirmAssignPosition = async () => {
+        if (!selectedPositionId) {
+            toast.error('Please select a position');
+            return;
+        }
+        setAssignLoading(true);
+        try {
+            await router.post('/employees/bulk-assign-position', {
+                ids: selectedIds,
+                position_id: selectedPositionId,
+            });
+            toast.success(`Position assigned to ${selectedIds.length} employee(s).`);
+            setAssignPositionOpen(false);
+            setSelectedIds([]);
+            router.reload({ only: ['employees', 'archivedEmployees'] });
+        } catch (error) {
+            toast.error('Failed to assign position.');
+        } finally {
+            setAssignLoading(false);
+        }
+    };
+
+    const handleAssignBranchSite = () => {
+        setSelectedBranchId('');
+        setSelectedSiteId('');
+        setAssignBranchOpen(true);
+    };
+
+    const availableSites = useMemo(() => {
+        if (!selectedBranchId) return [];
+        const branch = branchesData.find(b => b.id === Number(selectedBranchId));
+        return branch?.sites ?? [];
+    }, [selectedBranchId, branchesData]);
+
+    const confirmAssignBranchSite = async () => {
+        if (!selectedBranchId || !selectedSiteId) {
+            toast.error('Please select both branch and site');
+            return;
+        }
+        setAssignLoading(true);
+        try {
+            await router.post('/employees/bulk-assign-branch-site', {
+                ids: selectedIds,
+                branch_id: selectedBranchId,
+                site_id: selectedSiteId,
+            });
+            toast.success(`Branch & site assigned to ${selectedIds.length} employee(s).`);
+            setAssignBranchOpen(false);
+            setSelectedIds([]);
+            router.reload({ only: ['employees', 'archivedEmployees'] });
+        } catch (error) {
+            toast.error('Failed to assign branch and site.');
+        } finally {
+            setAssignLoading(false);
+        }
+    };
+
+    // ── Restore handlers ────────────────────────────────────────────────────
+    const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
+    const [itemToRestore, setItemToRestore] = useState<Employee | null>(null);
+    const [isRestoring, setIsRestoring] = useState(false);
+    const [bulkRestoreConfirmOpen, setBulkRestoreConfirmOpen] = useState(false);
+
     const handleRestoreClick = (employee: Employee) => {
         setItemToRestore(employee);
         setRestoreDialogOpen(true);
@@ -347,16 +455,20 @@ export default function Index({
     const confirmSingleRestore = () => {
         if (!itemToRestore) return;
         setIsRestoring(true);
-        router.put(route('employees.restore', itemToRestore.slug_emp), {}, {
-            onSuccess: () => {
-                toast.success('Employee restored');
-                setSelectedIds([]);
-                setRestoreDialogOpen(false);
-                setItemToRestore(null);
-            },
-            onError: () => toast.error('Restore failed'),
-            onFinish: () => setIsRestoring(false),
-        });
+        router.put(
+            route('employees.restore', itemToRestore.slug_emp),
+            {},
+            {
+                onSuccess: () => {
+                    toast.success('Employee restored');
+                    setSelectedIds([]);
+                    setRestoreDialogOpen(false);
+                    setItemToRestore(null);
+                },
+                onError: () => toast.error('Restore failed'),
+                onFinish: () => setIsRestoring(false),
+            }
+        );
     };
 
     const handleBulkRestoreClick = () => {
@@ -369,7 +481,7 @@ export default function Index({
         try {
             await router.post('/employees/bulk-restore', {
                 ids: selectedIds,
-                _method: 'PUT'
+                _method: 'PUT',
             });
             setSelectedIds([]);
             toast.success(`${selectedIds.length} employee(s) restored.`);
@@ -381,8 +493,7 @@ export default function Index({
         }
     };
 
-
-    // ── Single delete confirmation ───────────────────────────────────────────
+    // ── Single delete confirmation ──────────────────────────────────────────
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [itemToDelete, setItemToDelete] = useState<any>(null);
     const [isDeleting, setIsDeleting] = useState(false);
@@ -392,7 +503,6 @@ export default function Index({
         { label: 'Restore', icon: 'RotateCcw', route: null },
     ];
 
-
     const handleDeleteClick = (employee: Employee) => {
         setItemToDelete(employee);
         setDeleteDialogOpen(true);
@@ -400,35 +510,28 @@ export default function Index({
 
     const confirmDelete = () => {
         if (!itemToDelete) return;
-
         setIsDeleting(true);
         const destroyUrl = EmployeeController.destroy(itemToDelete.slug_emp).url;
-
         destroy(destroyUrl, {
-            onSuccess: (page) => {
+            onSuccess: page => {
                 const flash = (page.props as any).flash;
-                if (flash?.error) {
-                    toast.error(flash.error);
-                } else if (flash?.success) {
-                    toast.success(flash.success);
-                } else {
-                    toast.success('Employee deleted successfully');
-                }
+                if (flash?.error) toast.error(flash.error);
+                else if (flash?.success) toast.success(flash.success);
+                else toast.success('Employee deleted successfully');
                 setDeleteDialogOpen(false);
                 setItemToDelete(null);
             },
-            onError: (errors) => {
+            onError: errors => {
                 let errorMessage = 'Failed to delete employee';
                 if (typeof errors === 'object') {
                     const firstError = Object.values(errors)[0];
                     if (typeof firstError === 'string') errorMessage = firstError;
-                    else if (Array.isArray(firstError) && firstError.length > 0) errorMessage = firstError[0];
+                    else if (Array.isArray(firstError) && firstError.length > 0)
+                        errorMessage = firstError[0];
                 } else if (typeof errors === 'string') errorMessage = errors;
                 toast.error(errorMessage);
             },
-            onFinish: () => {
-                setIsDeleting(false);
-            },
+            onFinish: () => setIsDeleting(false),
         });
     };
 
@@ -440,10 +543,11 @@ export default function Index({
         router.get(EmployeeController.edit(employee.slug_emp).url);
     };
 
-    // ── Helper: current data based on tab ────────────────────────────────────
-    const currentData = activeTab === 'active'
-        ? employees
-        : { ...employees, data: paginatedArchived, total: archivedTotal };
+    // ── Helper: current data based on tab ───────────────────────────────────
+    const currentData =
+        activeTab === 'active'
+            ? employees
+            : { ...employees, data: paginatedArchived, total: archivedTotal };
     const currentTotalCount = activeTab === 'active' ? totalCount : archivedTotal;
     const currentFilteredCount = activeTab === 'active' ? filteredCount : archivedTotal;
 
@@ -530,8 +634,8 @@ export default function Index({
                             ) : (
                                 <>
                                     {/* Bulk action bar for active tab */}
-                                    {selectedIds.length > 0 && (
-                                        <div className="mb-4 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 px-4 py-3 flex items-center justify-between">
+                                    {selectedIds.length > 0 && activeTab === 'active' && (
+                                        <div className="mb-4 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 px-4 py-3 flex items-center justify-between flex-wrap gap-2">
                                             <div className="flex items-center gap-2">
                                                 <div className="h-8 w-8 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
                                                     <Archive className="h-4 w-4 text-red-600 dark:text-red-400" />
@@ -540,7 +644,29 @@ export default function Index({
                                                     {selectedIds.length} employee{selectedIds.length !== 1 ? 's' : ''} selected
                                                 </span>
                                             </div>
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                {hasAnyMissingPosition && (
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={handleAssignPosition}
+                                                        className="border-blue-300 text-blue-700 hover:bg-blue-50 dark:border-blue-700 dark:text-blue-300 dark:hover:bg-blue-900/30"
+                                                    >
+                                                        <Briefcase className="h-4 w-4 mr-1" />
+                                                        Assign Position
+                                                    </Button>
+                                                )}
+                                                {hasAnyMissingBranchOrSite && (
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={handleAssignBranchSite}
+                                                        className="border-green-300 text-green-700 hover:bg-green-50 dark:border-green-700 dark:text-green-300 dark:hover:bg-green-900/30"
+                                                    >
+                                                        <Building2 className="h-4 w-4 mr-1" />
+                                                        Assign Branch & Site
+                                                    </Button>
+                                                )}
                                                 <Button
                                                     variant="destructive"
                                                     size="sm"
@@ -613,14 +739,14 @@ export default function Index({
                                                     {searchTerm && selectedPositions.length > 0
                                                         ? `No employees matching "${searchTerm}" in selected positions.`
                                                         : searchTerm
-                                                            ? `No employees matching "${searchTerm}".`
-                                                            : selectedBranch && selectedSite
-                                                                ? `No employees in ${selectedBranch} / ${selectedSite}.`
-                                                                : selectedBranch
-                                                                    ? `No employees in ${selectedBranch}.`
-                                                                    : dateFrom || dateTo
-                                                                        ? 'No employees in the selected date range.'
-                                                                        : 'No employees match your current filters.'}
+                                                        ? `No employees matching "${searchTerm}".`
+                                                        : selectedBranch && selectedSite
+                                                        ? `No employees in ${selectedBranch} / ${selectedSite}.`
+                                                        : selectedBranch
+                                                        ? `No employees in ${selectedBranch}.`
+                                                        : dateFrom || dateTo
+                                                        ? 'No employees in the selected date range.'
+                                                        : 'No employees match your current filters.'}
                                                 </p>
                                                 <Button variant="outline" size="sm" onClick={clearFilters}>
                                                     Clear filters
@@ -684,13 +810,12 @@ export default function Index({
                                     <CustomTable
                                         title="Archived Employee Lists"
                                         columns={EmployeesTableConfig.columns}
-                                        // actions={EmployeesTableConfig.actions}
                                         data={paginatedArchived}
                                         from={archivedFrom}
                                         onDelete={handleDeleteClick}
                                         onView={handleView}
                                         onEdit={handleEdit}
-                                        actions={archivedActions}                // ← second one (overwrites? Actually duplicate prop)
+                                        actions={archivedActions}
                                         onRestore={handleRestoreClick}
                                         selectable={true}
                                         selectedIds={selectedIds}
@@ -747,11 +872,11 @@ export default function Index({
                                     <CustomPagination
                                         pagination={archivedPagination}
                                         perPage={String(archivedPerPage)}
-                                        onPerPageChange={(value) => {
+                                        onPerPageChange={value => {
                                             setArchivedPerPage(parseInt(value, 10));
                                             setArchivedPage(1);
                                         }}
-                                        onPageChange={(page) => setArchivedPage(page)}
+                                        onPageChange={page => setArchivedPage(page)}
                                         totalCount={archivedTotal}
                                         filteredCount={archivedTotal}
                                         search={searchTerm}
@@ -762,6 +887,8 @@ export default function Index({
                         </TabsContent>
                     </Tabs>
                 </div>
+
+                {/* Dialogs */}
                 <DeleteConfirmationDialog
                     isOpen={deleteDialogOpen}
                     onClose={() => {
@@ -769,10 +896,10 @@ export default function Index({
                         setItemToDelete(null);
                     }}
                     onConfirm={confirmDelete}
-                    title='Archive Employee'
+                    title="Archive Employee"
                     itemName={itemToDelete?.user?.name || itemToDelete?.emp_code || 'this employee'}
                     isLoading={isDeleting}
-                    confirmText='Archive'
+                    confirmText="Archive"
                 />
 
                 <DeleteConfirmationDialog
@@ -781,11 +908,10 @@ export default function Index({
                     onConfirm={confirmBulkArchive}
                     title="Archive Employees"
                     description={`Move ${selectedIds.length} selected employee(s) to archive? They can be restored later.`}
-                    confirmText="Archive"
+                    confirmText="Archive All"
                     isLoading={bulkLoading}
                 />
 
-                {/* Single Restore Confirmation Dialog */}
                 <RestoreConfirmationDialog
                     isOpen={restoreDialogOpen}
                     onClose={() => {
@@ -793,11 +919,10 @@ export default function Index({
                         setItemToRestore(null);
                     }}
                     onConfirm={confirmSingleRestore}
-                    itemName={itemToRestore?.user?.name || itemToRestore?.emp_code}
+                    itemName={itemToRestore?.user?.name || itemToRestore?.emp_code || 'this employee'}
                     isLoading={isRestoring}
                 />
 
-                {/* Bulk Restore Confirmation Dialog */}
                 <RestoreConfirmationDialog
                     isOpen={bulkRestoreConfirmOpen}
                     onClose={() => setBulkRestoreConfirmOpen(false)}
@@ -807,6 +932,92 @@ export default function Index({
                     confirmText="Restore All"
                     isLoading={bulkLoading}
                 />
+
+                {/* Assign Position Modal */}
+                <Dialog open={assignPositionOpen} onOpenChange={setAssignPositionOpen}>
+                    <DialogContent className="sm:max-w-md">
+                        <DialogHeader>
+                            <DialogTitle>Assign Position</DialogTitle>
+                        </DialogHeader>
+                        <div className="py-4">
+                            <Select value={selectedPositionId} onValueChange={setSelectedPositionId}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select a position" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {positionsList.map(pos => (
+                                        <SelectItem key={pos.id} value={String(pos.id)}>
+                                            {pos.pos_name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <p className="text-xs text-muted-foreground mt-2">
+                                This will assign the selected position to all {selectedIds.length} employee(s).
+                                Existing positions will be overwritten.
+                            </p>
+                        </div>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setAssignPositionOpen(false)}>
+                                Cancel
+                            </Button>
+                            <Button onClick={confirmAssignPosition} disabled={assignLoading}>
+                                {assignLoading ? 'Assigning...' : 'Assign'}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Assign Branch & Site Modal */}
+                <Dialog open={assignBranchOpen} onOpenChange={setAssignBranchOpen}>
+                    <DialogContent className="sm:max-w-md">
+                        <DialogHeader>
+                            <DialogTitle>Assign Branch & Site</DialogTitle>
+                        </DialogHeader>
+                        <div className="py-4 space-y-4">
+                            <Select value={selectedBranchId} onValueChange={setSelectedBranchId}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select branch" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {branchesData.map(branch => (
+                                        <SelectItem key={branch.id} value={String(branch.id)}>
+                                            {branch.branch_name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <Select
+                                value={selectedSiteId}
+                                onValueChange={setSelectedSiteId}
+                                disabled={!selectedBranchId}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select site" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {availableSites.map(site => (
+                                        <SelectItem key={site.id} value={String(site.id)}>
+                                            {site.site_name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <p className="text-xs text-muted-foreground">
+                                This will assign the selected branch and site to all {selectedIds.length} employee(s).
+                                Existing values will be overwritten.
+                            </p>
+                        </div>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setAssignBranchOpen(false)}>
+                                Cancel
+                            </Button>
+                            <Button onClick={confirmAssignBranchSite} disabled={assignLoading}>
+                                {assignLoading ? 'Assigning...' : 'Assign'}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             </div>
         </AppLayout>
     );
