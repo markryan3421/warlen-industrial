@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\ApplicationLeaveEnum;
 use App\Enums\PayrollPeriodStatusEnum;
 use App\Models\ApplicationLeave;
+use App\Models\AttendancePeriodStat;
 use App\Models\Employee;
 use App\Models\Payroll;
 use App\Models\PayrollPeriod;
@@ -24,7 +25,7 @@ class AdminDashboardService
     {
         // $sumNetPay = Payroll::query()->sum('net_pay');
 
-         $payrollPeriods = PayrollPeriod::query()
+        $payrollPeriods = PayrollPeriod::query()
             ->where('payroll_per_status', PayrollPeriodStatusEnum::COMPLETED->value)
             ->pluck('id');
 
@@ -47,7 +48,10 @@ class AdminDashboardService
         $startOfMonth = $now->startOfMonth()->format('Y-m-d');
         $endOfMonth = $now->endOfMonth()->format('Y-m-d');
 
-        return $this->countOpenPayrollPeriod($startOfMonth, $endOfMonth);
+       //return $this->countOpenPayrollPeriod($startOfMonth, $endOfMonth);
+
+       return PayrollPeriod::query()->where('payroll_per_status', PayrollPeriodStatusEnum::OPEN->value)->count();
+
     }
 
     protected function countOpenPayrollPeriod($startOfMonth, $endOfMonth): int
@@ -64,6 +68,7 @@ class AdminDashboardService
             })
             ->count();
     }
+
     public function getPendingApplicationLeave(): int
     {
         return ApplicationLeave::query()->where('app_status', ApplicationLeaveEnum::PENDING->value)->count();
@@ -93,6 +98,28 @@ class AdminDashboardService
         }
 
         return $formattedData;
+    }
+
+    public function getNewRegEmployeesCount(): int
+    {
+        return Employee::query()
+            ->where('created_at', '>=', Carbon::now()->subDays(7))
+            ->count();
+    }
+
+    public function getScheduleDevCount(): int
+    {
+        $openPeriod = PayrollPeriod::where('payroll_per_status', 'open')->first();
+        if ($openPeriod) {
+            return AttendancePeriodStat::whereBetween('period_start', [$openPeriod->start_date, $openPeriod->end_date])
+                ->sum('leave_early_times');
+        }
+
+        // Option 2: For today (if no open period)
+        $today = Carbon::today();
+        return AttendancePeriodStat::where('period_start', '<=', $today)
+            ->where('period_end', '>=', $today)
+            ->sum('leave_early_times');
     }
 
     public function getEmployeePayFrequency(): array
