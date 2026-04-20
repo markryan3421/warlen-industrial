@@ -12,17 +12,17 @@ use Inertia\Inertia;
 
 class EmployeeDashboardController extends Controller
 {
-	public function index()
-	{
-		$user = Auth::user();
-		$employee = $user->employee;
+    public function index()
+    {
+        $user = Auth::user();
+        $employee = $user->employee;
 
-		if (!$employee) {
-			abort(403, 'No employee record found for this user.');
-		}
+        if (!$employee) {
+            abort(403, 'No employee record found for this user.');
+        }
 
         // Get user avatar from the user model
-        $userAvatar = $user->avatar 
+        $userAvatar = $user->avatar
             ? (filter_var($user->avatar, FILTER_VALIDATE_URL) ? $user->avatar : Storage::url($user->avatar))
             : null;
 
@@ -32,9 +32,9 @@ class EmployeeDashboardController extends Controller
             $employee->employee_number,
         ])->filter()->unique();
 
-		$periodStats = AttendancePeriodStat::whereIn('employee_id', $attendanceIdentifiers)
-			->orderBy('period_start', 'desc')
-			->get();
+        $periodStats = AttendancePeriodStat::whereIn('employee_id', $attendanceIdentifiers)
+            ->orderBy('period_start', 'desc')
+            ->get();
 
         // 2. Payroll data (real monetary values)
         $payrolls = Payroll::where('employee_id', $employee->id)
@@ -92,9 +92,18 @@ class EmployeeDashboardController extends Controller
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
-                    'avatar' => $employee->avatar 
+                    'avatar' => $employee->avatar
                         ? (filter_var($employee->avatar, FILTER_VALIDATE_URL) ? $employee->avatar : Storage::url($employee->avatar))
-                        : $userAvatar, // fallback to user avatar if employee avatar is not set
+                        : ($user->avatar ? Storage::url($user->avatar) : null),
+                ]
+            ],
+            'user' => [ 
+                'name' => $user->name,
+                'email' => $user->email,
+                'employee' => [  // ← Nest employee data inside user
+                    'employee_number' => $employee->employee_number,
+                    'avatar' => $employee->avatar,
+                    'position' => ['name' => $employee->position?->pos_name],
                 ]
             ],
             'periodStats' => $enrichedStats,
