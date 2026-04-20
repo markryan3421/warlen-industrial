@@ -237,7 +237,7 @@ export function IncentiveFormModal({
                                 {/* Incentive Amount */}
                                 <div className="space-y-2">
                                     <Label htmlFor="incentive_amount">Incentive Amount <span className="text-red-500">*</span></Label>
-                                    <div className="relative">
+                                    <div className="relative w-65">
                                         <PhilippinePeso className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
                                         <Input
                                             type='number'

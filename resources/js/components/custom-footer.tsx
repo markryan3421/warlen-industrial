@@ -27,15 +27,15 @@ const Footer = () => {
           {/* Left: Logo + wordmark */}
           <div className="flex items-center gap-3">
             <div className="relative flex-shrink-0 w-9 h-9">
-              <div className="absolute inset-0 rounded-lg shadow-md shadow-[#1d4791]/20" />
+              <div className="absolute inset-0 rounded-lg" />
               <AppLogoIcon />
             </div>
             <div className="leading-none">
-              <p className="text-[13px] font-bold tracking-tight text-slate-800">
-                Warlen Industrial
+              <p className="text-[13px] font-bold text-[#05469D] tracking-tight text-slate-800">
+                Warlen Industrial Sales Corporation
               </p>
               <p className="text-[10px] tracking-[0.12em] uppercase text-slate-400 font-medium mt-0.5">
-                Sales Corporation
+                DEKA Sales
               </p>
             </div>
           </div>

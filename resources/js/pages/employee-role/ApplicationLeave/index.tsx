@@ -21,17 +21,18 @@ import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
 import ApplicationLeaveController from '@/actions/App/Http/Controllers/EmployeeRole/ApplicationLeaveController';
 import { useState, useEffect, useMemo } from 'react';
-import { CalendarDays, PlusCircle, Bell, X, Search, Filter, BriefcaseMedical } from 'lucide-react';
+import { CalendarClock, PlusCircle, Bell, X, Search, Filter, Clipboard } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { CustomTable } from '@/components/custom-table';
 import { EmployeeApplicationLeaveTableConfig } from '@/config/tables/employee-application-leave';
 import { CustomToast } from '@/components/custom-toast';
 import { CustomHeader } from '@/components/custom-header';
+import EmpLayout from '@/layouts/emp-layout';
 
 // ... (Echo initialization remains same) ...
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Application Leaves', href: '/application-leaves' },
+    { title: 'Application Leave', href: '/application-leaves' },
 ];
 
 interface ApplicationLeave {
@@ -119,7 +120,7 @@ export default function Index({ applicationLeaves, approvedCount = 0 }: Applicat
         };
     }, [applicationLeaves, recentlyUpdatedId]);
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <EmpLayout breadcrumbs={breadcrumbs}>
             <Head title="Application Leaves" />
             <div className="@container/main flex flex-1 flex-col gap-4 p-4 md:p-6">
                 <CustomToast />
@@ -127,17 +128,19 @@ export default function Index({ applicationLeaves, approvedCount = 0 }: Applicat
                 {/* Header */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <CustomHeader
-                        icon={<BriefcaseMedical />}
-                        title={'Application Leaves'}
-                        description={'Manage your application leaves here.'}
+                        icon={<CalendarClock />}
+                        title={'Application Leave'}
+                        description={'Request a Leave'}
                     />
                     {!hasReachedLimit && (
-                        <Link href={ApplicationLeaveController.create()}>
-                            <Button className="gap-2">
-                                <PlusCircle className="h-4 w-4" />
-                                Request a Leave
-                            </Button>
-                        </Link>
+                        <div className = "ml-auto -mt-2 xl:mt-0 xl:ml-0">
+                            <Link href={ApplicationLeaveController.create()}>
+                                <Button className="gap-2 cursor-pointer">
+                                    <PlusCircle className="h-4 w-4" />
+                                    Request a Leave
+                                </Button>
+                            </Link>
+                        </div>
                     )}
                 </div>
 
@@ -163,11 +166,12 @@ export default function Index({ applicationLeaves, approvedCount = 0 }: Applicat
                             actions={() => { }}
                             data={applicationLeaves}
                             from={1}
+                            title='Application Leave Requests'
                         />
                     )}
                 </div>
             </div>
-        </AppLayout>
+        </EmpLayout>
     );
 }
 
@@ -175,7 +179,7 @@ function EmptyState({ hasReachedLimit }: { hasReachedLimit: boolean }) {
     return (
         <div className="flex flex-col items-center justify-center py-16 px-4 text-center animate-in fade-in duration-500">
             <div className="rounded-full bg-muted p-6 mb-4">
-                <CalendarDays className="h-12 w-12 text-muted-foreground" />
+                <CalendarClock className="h-12 w-12 text-muted-foreground" />
             </div>
             <h3 className="text-lg font-semibold mb-2">No application leaves yet</h3>
             <p className="text-muted-foreground mb-6 max-w-sm">
@@ -183,9 +187,9 @@ function EmptyState({ hasReachedLimit }: { hasReachedLimit: boolean }) {
             </p>
             {!hasReachedLimit ? (
                 <Link href={ApplicationLeaveController.create()}>
-                    <Button className="gap-2">
+                    <Button className="gap-2 cursor-pointer">
                         <PlusCircle className="h-4 w-4" />
-                        Create Your First Leave Application
+                        Click to create a request leave application
                     </Button>
                 </Link>
             ) : (
