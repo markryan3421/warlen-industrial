@@ -5,12 +5,15 @@ namespace App\Models;
 use App\Concerns\LogsActivityTrait;
 use App\Models\ContributionVersion;
 use App\Models\Employee;
+use App\Policies\EmployeeContributionSettingPolicy;
+use Illuminate\Database\Eloquent\Attributes\UsePolicy;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
-use Illuminate\Database\Eloquent\Casts\Attribute;
 
+#[UsePolicy(EmployeeContributionSettingPolicy::class)]
 class EmployeeContributionSetting extends Model
 {
     use LogsActivityTrait;

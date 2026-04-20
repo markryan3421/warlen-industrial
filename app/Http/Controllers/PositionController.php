@@ -66,6 +66,8 @@ class PositionController extends Controller
         Gate::authorize('create', Position::class);
         $position->create($request->validated());
 
+        $this->cacheForget(['employees']);
+
        // DB::commit();
         return redirect()->route('positions.index');
 
@@ -98,6 +100,7 @@ class PositionController extends Controller
         $updateposition->update($request->validated(), $position);
 
         //DB::commit();
+        $this->cacheForget(['employees']);
 
         return redirect()->route('positions.index');
     }
@@ -109,6 +112,8 @@ class PositionController extends Controller
     {
         Gate::authorize('delete', $position);
         $position->delete();
+
+        $this->cacheForget(['employees']);
 
        // DB::commit();
         return redirect()->route('positions.index');

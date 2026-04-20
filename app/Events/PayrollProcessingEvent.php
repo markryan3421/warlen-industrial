@@ -12,6 +12,7 @@ class PayrollProcessingEvent
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
+    public $tries = 3;
     public $payrollPeriod;
 
     /**
