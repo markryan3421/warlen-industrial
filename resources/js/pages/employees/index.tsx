@@ -96,7 +96,7 @@ interface PageProps {
     archivedEmployees: Employee[];
     branchesData: BranchData[];
     allPositions: string[];
-    positionsList: { id: number; pos_name: string }[]; // for assignment dropdown
+    positionsList: { id: number; pos_name: string }[];
     filters?: FilterProps;
     totalCount: number;
     filteredCount: number;
@@ -120,7 +120,7 @@ export default function Index({
         filters.show_archived === 'true' ? 'archived' : 'active'
     );
 
-    // ── Filter state
+    // ── Active tab filter state (server‑side) ────────────────────────────────
     const [searchTerm, setSearchTerm] = useState(filters.search ?? '');
     const [selectedPositions, setSelectedPositions] = useState<string[]>(
         filters.positions ? filters.positions.split(',').filter(Boolean) : []
@@ -135,6 +135,12 @@ export default function Index({
         filters.date_to ? new Date(filters.date_to) : undefined
     );
 
+    // ── Archived tab filter state (client‑side, independent) ─────────────────
+    const [archivedSearchTerm, setArchivedSearchTerm] = useState('');
+    const [archivedSelectedPositions, setArchivedSelectedPositions] = useState<string[]>([]);
+    const [archivedSelectedBranch, setArchivedSelectedBranch] = useState('');
+    const [archivedSelectedSite, setArchivedSelectedSite] = useState('');
+
     // ── Bulk selection state ─────────────────────────────────────────────────
     const [selectedIds, setSelectedIds] = useState<(string | number)[]>([]);
     const [bulkLoading, setBulkLoading] = useState(false);
@@ -148,23 +154,60 @@ export default function Index({
     const [selectedSiteId, setSelectedSiteId] = useState<string>('');
     const [assignLoading, setAssignLoading] = useState(false);
 
-    // ── Archived pagination state (client-side) ──────────────────────────────
+    // ── Archived pagination state (client‑side) ──────────────────────────────
     const [archivedPage, setArchivedPage] = useState(1);
     const [archivedPerPage, setArchivedPerPage] = useState(10);
 
-    // Paginate archived employees
+    // ── Client‑side filtering of archived employees ─────────────────────────
+    const filteredArchivedEmployees = useMemo(() => {
+        let filtered = [...archivedEmployees];
+
+        // Search (emp_code or user name)
+        if (archivedSearchTerm.trim()) {
+            const term = archivedSearchTerm.trim().toLowerCase();
+            filtered = filtered.filter(emp =>
+                String(emp.emp_code).toLowerCase().includes(term) ||
+                emp.user?.name?.toLowerCase().includes(term)
+            );
+        }
+
+        // Position filter
+        if (archivedSelectedPositions.length > 0) {
+            filtered = filtered.filter(emp =>
+                emp.position && archivedSelectedPositions.includes(emp.position.pos_name)
+            );
+        }
+
+        // Branch filter
+        if (archivedSelectedBranch) {
+            filtered = filtered.filter(emp =>
+                emp.branch?.branch_name === archivedSelectedBranch
+            );
+        }
+
+        // Site filter
+        if (archivedSelectedSite) {
+            filtered = filtered.filter(emp =>
+                emp.site?.site_name === archivedSelectedSite
+            );
+        }
+
+        return filtered;
+    }, [archivedEmployees, archivedSearchTerm, archivedSelectedPositions, archivedSelectedBranch, archivedSelectedSite]);
+
+    // Paginate the filtered archived list
     const paginatedArchived = useMemo(() => {
         const start = (archivedPage - 1) * archivedPerPage;
         const end = start + archivedPerPage;
-        return archivedEmployees.slice(start, end);
-    }, [archivedEmployees, archivedPage, archivedPerPage]);
+        return filteredArchivedEmployees.slice(start, end);
+    }, [filteredArchivedEmployees, archivedPage, archivedPerPage]);
 
-    const archivedTotal = archivedEmployees.length;
+    const archivedTotal = filteredArchivedEmployees.length;
     const archivedLastPage = Math.ceil(archivedTotal / archivedPerPage);
     const archivedFrom = archivedTotal === 0 ? 0 : (archivedPage - 1) * archivedPerPage + 1;
     const archivedTo = Math.min(archivedPage * archivedPerPage, archivedTotal);
 
-    // Generate page links for archived (same format as Laravel's paginator)
+    // Generate pagination links for archived (client‑side)
     const archivedLinks = useMemo(() => {
         const links = [];
         const maxVisible = 5;
@@ -221,7 +264,7 @@ export default function Index({
         });
     }, [selectedIds, currentPageEmployees]);
 
-    // ── Central navigation function ─────────────────────────────────────────
+    // ── Central navigation function for active tab ──────────────────────────
     function applyFilters(
         overrides: Partial<{
             search: string;
@@ -263,35 +306,22 @@ export default function Index({
         });
     }
 
-    // ── Tab change handler (reset filters, selection, archived pagination) ───
+    // ── Tab change handler (reset selection, preserve each tab’s filters) ───
     const handleTabChange = (value: string) => {
         const newTab = value as 'active' | 'archived';
         setActiveTab(newTab);
-        setSearchTerm('');
-        setSelectedPositions([]);
-        setSelectedBranch('');
-        setSelectedSite('');
-        setStatus('');
-        setDateFrom(undefined);
-        setDateTo(undefined);
-        setSelectedIds([]);
-        if (newTab === 'archived') {
+        setSelectedIds([]); // clear selection when switching tabs
+
+        if (newTab === 'active') {
+            // Refresh active tab data (preserve its filters)
+            applyFilters({ showArchived: false });
+        } else {
+            // Reset archive pagination (filters are kept)
             setArchivedPage(1);
-            setArchivedPerPage(10);
         }
-        applyFilters({
-            showArchived: newTab === 'archived',
-            search: '',
-            positions: [],
-            branch: '',
-            site: '',
-            status: '',
-            from: undefined,
-            to: undefined,
-        });
     };
 
-    // ── Search debounce ─────────────────────────────────────────────────────
+    // ── Active tab filter handlers (server‑side) ────────────────────────────
     const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const handleSearchChange = (value: string) => {
         setSearchTerm(value);
@@ -301,7 +331,6 @@ export default function Index({
         }, 300);
     };
 
-    // ── Filter handlers ─────────────────────────────────────────────────────
     const handleBranchChange = (branch: string) => {
         setSelectedBranch(branch);
         setSelectedSite('');
@@ -337,7 +366,7 @@ export default function Index({
         applyFilters({ perPage: value });
     };
 
-    const clearFilters = () => {
+    const clearActiveFilters = () => {
         setSearchTerm('');
         setSelectedPositions([]);
         setSelectedBranch('');
@@ -353,6 +382,97 @@ export default function Index({
                 replace: true,
             }
         );
+    };
+
+    // Archive-specific position options (from archived employees only)
+    const archivePositions = useMemo(() => {
+        const positions = new Set<string>();
+        archivedEmployees.forEach(emp => {
+            if (emp.position?.pos_name) {
+                positions.add(emp.position.pos_name);
+            }
+        });
+        return Array.from(positions).sort();
+    }, [archivedEmployees]);
+
+    const archiveBranchesWithSites = useMemo(() => {
+        const branchMap = new Map<number, { id: number; branch_name: string; sites: Map<string, number> }>();
+        archivedEmployees.forEach(emp => {
+            if (emp.branch?.id && emp.branch?.branch_name) {
+                if (!branchMap.has(emp.branch.id)) {
+                    branchMap.set(emp.branch.id, {
+                        id: emp.branch.id,
+                        branch_name: emp.branch.branch_name,
+                        sites: new Map(),
+                    });
+                }
+                if (emp.site?.id && emp.site?.site_name) {
+                    branchMap.get(emp.branch.id)!.sites.set(emp.site.site_name, emp.site.id);
+                }
+            }
+        });
+        return Array.from(branchMap.values()).map(branch => ({
+            id: branch.id,
+            branch_name: branch.branch_name,
+            sites: Array.from(branch.sites.entries()).map(([siteName, siteId]) => ({
+                id: siteId,
+                site_name: siteName,
+            })),
+        }));
+    }, [archivedEmployees]);
+
+    const activeBranchesData = useMemo(() => {
+        const branchMap = new Map();
+        employees.data.forEach(emp => {
+            if (emp.branch?.id && emp.site?.id) {
+                if (!branchMap.has(emp.branch.id)) {
+                    branchMap.set(emp.branch.id, {
+                        id: emp.branch.id,
+                        branch_name: emp.branch.branch_name,
+                        sites: new Map()
+                    });
+                }
+                const branch = branchMap.get(emp.branch.id);
+                if (!branch.sites.has(emp.site.id)) {
+                    branch.sites.set(emp.site.id, emp.site.site_name);
+                }
+            }
+        });
+        return Array.from(branchMap.values()).map(branch => ({
+            id: branch.id,
+            branch_name: branch.branch_name,
+            sites: Array.from(branch.sites.entries()).map(([id, name]) => ({ id, site_name: name }))
+        }));
+    }, [employees.data]);
+
+    // ── Archived tab filter handlers (client‑side, reset page to 1) ─────────
+    const handleArchivedSearchChange = (value: string) => {
+        setArchivedSearchTerm(value);
+        setArchivedPage(1);
+    };
+
+    const handleArchivedPositionsChange = (positions: string[]) => {
+        setArchivedSelectedPositions(positions);
+        setArchivedPage(1);
+    };
+
+    const handleArchivedBranchChange = (branch: string) => {
+        setArchivedSelectedBranch(branch);
+        setArchivedSelectedSite(''); // reset site when branch changes
+        setArchivedPage(1);
+    };
+
+    const handleArchivedSiteChange = (site: string) => {
+        setArchivedSelectedSite(site);
+        setArchivedPage(1);
+    };
+
+    const clearArchivedFilters = () => {
+        setArchivedSearchTerm('');
+        setArchivedSelectedPositions([]);
+        setArchivedSelectedBranch('');
+        setArchivedSelectedSite('');
+        setArchivedPage(1);
     };
 
     // ── Bulk archive ────────────────────────────────────────────────────────
@@ -384,26 +504,27 @@ export default function Index({
         setAssignPositionOpen(true);
     };
 
-    const confirmAssignPosition = async () => {
+    const confirmAssignPosition = () => {
         if (!selectedPositionId) {
             toast.error('Please select a position');
             return;
         }
         setAssignLoading(true);
-        try {
-            await router.post('/employees/bulk-assign-position', {
-                ids: selectedIds,
-                position_id: selectedPositionId,
-            });
-            toast.success(`Position assigned to ${selectedIds.length} employee(s).`);
-            setAssignPositionOpen(false);
-            setSelectedIds([]);
-            router.reload({ only: ['employees', 'archivedEmployees'] });
-        } catch (error) {
-            toast.error('Failed to assign position.');
-        } finally {
-            setAssignLoading(false);
-        }
+        router.post('/employees/bulk-assign-position', {
+            ids: selectedIds,
+            position_id: selectedPositionId,
+        }, {
+            onSuccess: (page) => {
+                const flash = (page.props as any).flash;
+                if (flash?.success) toast.success(flash.success);
+                else toast.success(`Position assigned to ${selectedIds.length} employee(s).`);
+                setAssignPositionOpen(false);
+                setSelectedIds([]);
+                router.reload({ only: ['employees', 'archivedEmployees'] });
+            },
+            onError: () => toast.error('Failed to assign position.'),
+            onFinish: () => setAssignLoading(false),
+        });
     };
 
     const handleAssignBranchSite = () => {
@@ -418,27 +539,28 @@ export default function Index({
         return branch?.sites ?? [];
     }, [selectedBranchId, branchesData]);
 
-    const confirmAssignBranchSite = async () => {
+    const confirmAssignBranchSite = () => {
         if (!selectedBranchId || !selectedSiteId) {
             toast.error('Please select both branch and site');
             return;
         }
         setAssignLoading(true);
-        try {
-            await router.post('/employees/bulk-assign-branch-site', {
-                ids: selectedIds,
-                branch_id: selectedBranchId,
-                site_id: selectedSiteId,
-            });
-            toast.success(`Branch & site assigned to ${selectedIds.length} employee(s).`);
-            setAssignBranchOpen(false);
-            setSelectedIds([]);
-            router.reload({ only: ['employees', 'archivedEmployees'] });
-        } catch (error) {
-            toast.error('Failed to assign branch and site.');
-        } finally {
-            setAssignLoading(false);
-        }
+        router.post('/employees/bulk-assign-branch-site', {
+            ids: selectedIds,
+            branch_id: selectedBranchId,
+            site_id: selectedSiteId,
+        }, {
+            onSuccess: (page) => {
+                const flash = (page.props as any).flash;
+                if (flash?.success) toast.success(flash.success);
+                else toast.success(`Branch & site assigned to ${selectedIds.length} employee(s).`);
+                setAssignBranchOpen(false);
+                setSelectedIds([]);
+                router.reload({ only: ['employees', 'archivedEmployees'] });
+            },
+            onError: () => toast.error('Failed to assign branch and site.'),
+            onFinish: () => setAssignLoading(false),
+        });
     };
 
     // ── Restore handlers ────────────────────────────────────────────────────
@@ -543,14 +665,7 @@ export default function Index({
         router.get(EmployeeController.edit(employee.slug_emp).url);
     };
 
-    // ── Helper: current data based on tab ───────────────────────────────────
-    const currentData =
-        activeTab === 'active'
-            ? employees
-            : { ...employees, data: paginatedArchived, total: archivedTotal };
-    const currentTotalCount = activeTab === 'active' ? totalCount : archivedTotal;
-    const currentFilteredCount = activeTab === 'active' ? filteredCount : archivedTotal;
-
+    // ── Helper: active filters count for active tab ─────────────────────────
     const activeFiltersCount = [
         searchTerm.trim(),
         ...selectedPositions,
@@ -565,19 +680,6 @@ export default function Index({
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Employees" />
-
-            <style>{`
-                @keyframes fadeUp {
-                    from { opacity: 0; transform: translateY(16px); }
-                    to   { opacity: 1; transform: translateY(0); }
-                }
-                .pp-row { animation: fadeUp 0.3s cubic-bezier(0.22,1,0.36,1) both; }
-                @keyframes headerReveal {
-                    from { opacity: 0; transform: translateY(-10px); }
-                    to   { opacity: 1; transform: translateY(0); }
-                }
-                .pp-header { animation: headerReveal 0.35s cubic-bezier(0.22,1,0.36,1) both; }
-            `}</style>
 
             {/* Page header */}
             <div className="grid grid-rows-1 justify-center mx-8 md:grid-cols-2 md:mx-8 mt-3 lg:flex lg:justify-between items-center lg:mx-8 lg:mt-4 lg:-mb-2 pp-header">
@@ -611,7 +713,7 @@ export default function Index({
                                 <Archive className="h-4 w-4" />
                                 Archived Employees
                                 <Badge variant="secondary" className="ml-2">
-                                    {archivedTotal}
+                                    {archivedEmployees.length}
                                 </Badge>
                             </TabsTrigger>
                         </TabsList>
@@ -707,7 +809,7 @@ export default function Index({
                                                     status: true,
                                                 }}
                                                 allPositions={allPositions}
-                                                branchesData={branchesData}
+                                                branchesData={activeBranchesData} 
                                                 searchTerm={searchTerm}
                                                 selectedPositions={selectedPositions}
                                                 selectedBranch={selectedBranch}
@@ -722,7 +824,7 @@ export default function Index({
                                                 onStatusChange={handleStatusChange}
                                                 onDateFromChange={handleDateFromChange}
                                                 onDateToChange={handleDateToChange}
-                                                onClearAll={clearFilters}
+                                                onClearAll={clearActiveFilters}
                                                 searchPlaceholder="Search by ID or name..."
                                                 dateLabel="Hire Date"
                                             />
@@ -739,16 +841,16 @@ export default function Index({
                                                     {searchTerm && selectedPositions.length > 0
                                                         ? `No employees matching "${searchTerm}" in selected positions.`
                                                         : searchTerm
-                                                        ? `No employees matching "${searchTerm}".`
-                                                        : selectedBranch && selectedSite
-                                                        ? `No employees in ${selectedBranch} / ${selectedSite}.`
-                                                        : selectedBranch
-                                                        ? `No employees in ${selectedBranch}.`
-                                                        : dateFrom || dateTo
-                                                        ? 'No employees in the selected date range.'
-                                                        : 'No employees match your current filters.'}
+                                                            ? `No employees matching "${searchTerm}".`
+                                                            : selectedBranch && selectedSite
+                                                                ? `No employees in ${selectedBranch} / ${selectedSite}.`
+                                                                : selectedBranch
+                                                                    ? `No employees in ${selectedBranch}.`
+                                                                    : dateFrom || dateTo
+                                                                        ? 'No employees in the selected date range.'
+                                                                        : 'No employees match your current filters.'}
                                                 </p>
-                                                <Button variant="outline" size="sm" onClick={clearFilters}>
+                                                <Button variant="outline" size="sm" onClick={clearActiveFilters}>
                                                     Clear filters
                                                 </Button>
                                             </div>
@@ -758,8 +860,8 @@ export default function Index({
                                         pagination={employees}
                                         perPage={String(employees.perPage ?? 10)}
                                         onPerPageChange={handlePerPageChange}
-                                        totalCount={currentTotalCount}
-                                        filteredCount={currentFilteredCount}
+                                        totalCount={totalCount}
+                                        filteredCount={filteredCount}
                                         search={searchTerm}
                                         resourceName="employee"
                                     />
@@ -767,9 +869,9 @@ export default function Index({
                             )}
                         </TabsContent>
 
-                        {/* Archived Tab Content */}
+                        {/* Archived Tab Content (independent filters & client-side pagination) */}
                         <TabsContent value="archived" className="mt-6">
-                            {archivedTotal === 0 ? (
+                            {archivedEmployees.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center py-16 text-center">
                                     <div className="rounded-full bg-gray-100 p-6 mb-4">
                                         <Archive className="h-12 w-12 text-gray-400" />
@@ -781,6 +883,7 @@ export default function Index({
                                 </div>
                             ) : (
                                 <>
+                                    {/* Bulk restore bar for archived tab */}
                                     {selectedIds.length > 0 && (
                                         <div className="mb-4 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 px-4 py-3 flex items-center justify-between">
                                             <div className="flex items-center gap-2">
@@ -831,23 +934,20 @@ export default function Index({
                                                     status: false,
                                                     date: false,
                                                 }}
-                                                allPositions={allPositions}
-                                                branchesData={branchesData}
-                                                searchTerm={searchTerm}
-                                                selectedPositions={selectedPositions}
-                                                selectedBranch={selectedBranch}
-                                                selectedSite={selectedSite}
-                                                status={status}
-                                                dateFrom={dateFrom}
-                                                dateTo={dateTo}
-                                                onSearchChange={handleSearchChange}
-                                                onPositionsChange={handlePositionsChange}
-                                                onBranchChange={handleBranchChange}
-                                                onSiteChange={handleSiteChange}
-                                                onStatusChange={handleStatusChange}
-                                                onDateFromChange={handleDateFromChange}
-                                                onDateToChange={handleDateToChange}
-                                                onClearAll={clearFilters}
+                                                allPositions={archivePositions}                     // ← changed
+                                                branchesData={archiveBranchesWithSites}
+                                                searchTerm={archivedSearchTerm}
+                                                selectedPositions={archivedSelectedPositions}
+                                                selectedBranch={archivedSelectedBranch}
+                                                selectedSite={archivedSelectedSite}
+                                                status=""
+                                                dateFrom={undefined}
+                                                dateTo={undefined}
+                                                onSearchChange={handleArchivedSearchChange}
+                                                onPositionsChange={handleArchivedPositionsChange}
+                                                onBranchChange={handleArchivedBranchChange}
+                                                onSiteChange={handleArchivedSiteChange}
+                                                onClearAll={clearArchivedFilters}
                                                 searchPlaceholder="Search archived employees..."
                                                 dateLabel="Deletion Date"
                                             />
@@ -861,9 +961,17 @@ export default function Index({
                                                     No archived employees found
                                                 </h3>
                                                 <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 max-w-xs">
-                                                    No archived employees match your current filters.
+                                                    {archivedSearchTerm && archivedSelectedPositions.length > 0
+                                                        ? `No archived employees matching "${archivedSearchTerm}" in selected positions.`
+                                                        : archivedSearchTerm
+                                                            ? `No archived employees matching "${archivedSearchTerm}".`
+                                                            : archivedSelectedBranch && archivedSelectedSite
+                                                                ? `No archived employees in ${archivedSelectedBranch} / ${archivedSelectedSite}.`
+                                                                : archivedSelectedBranch
+                                                                    ? `No archived employees in ${archivedSelectedBranch}.`
+                                                                    : 'No archived employees match your current filters.'}
                                                 </p>
-                                                <Button variant="outline" size="sm" onClick={clearFilters}>
+                                                <Button variant="outline" size="sm" onClick={clearArchivedFilters}>
                                                     Clear filters
                                                 </Button>
                                             </div>
@@ -879,7 +987,7 @@ export default function Index({
                                         onPageChange={page => setArchivedPage(page)}
                                         totalCount={archivedTotal}
                                         filteredCount={archivedTotal}
-                                        search={searchTerm}
+                                        search={archivedSearchTerm}
                                         resourceName="archived employee"
                                     />
                                 </>
@@ -888,7 +996,7 @@ export default function Index({
                     </Tabs>
                 </div>
 
-                {/* Dialogs */}
+                {/* Dialogs (unchanged) */}
                 <DeleteConfirmationDialog
                     isOpen={deleteDialogOpen}
                     onClose={() => {
@@ -954,7 +1062,7 @@ export default function Index({
                             </Select>
                             <p className="text-xs text-muted-foreground mt-2">
                                 This will assign the selected position to all {selectedIds.length} employee(s).
-                                Existing positions will be overwritten.
+                                Employees with an existing position will be skipped.
                             </p>
                         </div>
                         <DialogFooter>
@@ -1005,7 +1113,7 @@ export default function Index({
                             </Select>
                             <p className="text-xs text-muted-foreground">
                                 This will assign the selected branch and site to all {selectedIds.length} employee(s).
-                                Existing values will be overwritten.
+                                Employees already having both will be skipped.
                             </p>
                         </div>
                         <DialogFooter>
