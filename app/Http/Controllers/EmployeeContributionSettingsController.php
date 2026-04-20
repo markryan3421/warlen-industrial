@@ -17,6 +17,13 @@ class EmployeeContributionSettingsController extends Controller
         $contributionVersionId = $request->get('contribution_version_id');
 
         $settings = EmployeeContributionSetting::where('contribution_version_id', $contributionVersionId)
+            ->select([
+                'employee_id',
+                'contribution_version_id',
+                'is_exempted',
+                'fixed_amount',
+                'monthly_cap',
+            ])
             ->get();
 
         return response()->json($settings);
@@ -85,8 +92,14 @@ class EmployeeContributionSettingsController extends Controller
 
         $employees = Employee::query()
             ->with('user:id,name')
-            ->where('employee_status', 'active')->get();
-
+            ->where('employee_status', 'active')
+            ->select([
+                'id',
+                'user_id',
+                'employee_status',
+            ])
+            ->get();
+            
         return response()->json([
             'data' => $employees
         ]);
