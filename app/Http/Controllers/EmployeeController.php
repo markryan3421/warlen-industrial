@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Actions\Employee\CreateNewEmployee;
 use App\Actions\Employee\UpdateEmployee;
 use App\Concerns\ManageSession;
+use App\Http\Requests\Employee\BulkAssignBranchSiteRequest;
+use App\Http\Requests\Employee\BulkAssignPositionRequest;
 use App\Http\Requests\Employee\StoreEmployeeRequest;
 use App\Http\Requests\Employee\UpdateEmployeeRequest;
 use App\Models\Branch;
@@ -37,9 +39,6 @@ class EmployeeController extends Controller
 
         $archivedEmployees = $this->employeeRepository->getDeletedEmployees();
 
-        // ── Derive allPositions from the FULL collection (before filtering) ──────
-        // This gives the Position popover the complete list of options regardless
-        // of what filters are currently active or what page the user is on.
         $allPositions = $employees
             ->map(fn($e) => optional($e->position)->pos_name)
             ->filter()           // remove nulls
@@ -281,15 +280,9 @@ class EmployeeController extends Controller
         return to_route('employees.index')->with('success', 'Employee restored.');
     }
 
-    public function bulkAssignPosition(Request $request)
+    public function bulkAssignPosition(BulkAssignPositionRequest $request)
     {
         Gate::authorize('bulkAssign', Employee::class);
-
-        $request->validate([
-            'ids' => 'required|array',
-            'ids.*' => 'exists:employees,id',
-            'position_id' => 'required|exists:positions,id',
-        ]);
 
         $position = Position::findOrFail($request->position_id);
         Employee::whereIn('id', $request->ids)->update(['position_id' => $position->id]);
@@ -299,18 +292,10 @@ class EmployeeController extends Controller
         return back()->with('success', 'Positions assigned successfully.');
     }
 
-    public function bulkAssignBranchSite(Request $request)
+    public function bulkAssignBranchSite(BulkAssignBranchSiteRequest $request)
     {
         Gate::authorize('bulkAssign', Employee::class);
 
-        $request->validate([
-            'ids' => 'required|array',
-            'ids.*' => 'exists:employees,id',
-            'branch_id' => 'required|exists:branches,id',
-            'site_id' => 'required|exists:sites,id',
-        ]);
-
-        // Ensure site belongs to branch
         $site = Site::where('id', $request->site_id)
             ->where('branch_id', $request->branch_id)
             ->firstOrFail();
