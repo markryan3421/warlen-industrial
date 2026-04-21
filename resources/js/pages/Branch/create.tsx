@@ -1,5 +1,6 @@
-import { Head, useForm } from '@inertiajs/react';
+import { Head, useForm, usePage } from '@inertiajs/react';
 import { Building2, MapPin, PlusCircle } from 'lucide-react';
+import { useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 
 import { store } from '@/actions/App/Http/Controllers/BranchController';
@@ -28,12 +29,15 @@ interface FormData {
 	sites: Array<{ site_name: string }>;
 }
 
-// interface FlashProps {
-//     flash?: {
-//         success?: string;
-//         error?: string;
-//     };
-// }
+// Custom toast style helper (same as index)
+const toastStyle = (color: string) => ({
+	style: {
+		backgroundColor: 'white',
+		color: color,
+		border: '1px solid #e2e8f0',
+		boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+	},
+});
 
 export default function Create() {
 	const { data, setData, errors, processing, post } = useForm<FormData>({
@@ -42,30 +46,27 @@ export default function Create() {
 		sites: [],
 	});
 
+	const { props } = usePage<{ flash?: { success?: string; error?: string; warning?: string; info?: string } }>();
+	const lastFlashRef = useRef<string>('');
+
+	// Global flash message listener with custom styling
+	useEffect(() => {
+		const flash = props.flash;
+		if (!flash) return;
+
+		const flashKey = JSON.stringify(flash);
+		if (lastFlashRef.current === flashKey) return;
+		lastFlashRef.current = flashKey;
+
+		if (flash.success) toast.success(flash.success, toastStyle('#16a34a')); // green text
+		if (flash.error) toast.error(flash.error, toastStyle('#dc2626')); // red text (danger)
+		if (flash.warning) toast.warning(flash.warning, toastStyle('#f97316')); // orange text (warning)
+		if (flash.info) toast.info(flash.info, toastStyle('#3b82f6')); // blue text (info)
+	}, [props.flash]);
+
 	function submitBranch(e: React.FormEvent) {
 		e.preventDefault();
-		post(store().url, {
-			onSuccess: (page) => {
-				const successMessage = (page.props as any).flash?.success || 'Branch created successfully.'
-				toast.success(successMessage, {
-					style: {
-						backgroundColor: 'white',
-						color: '#00ca00',
-						border: '1px solid #d5d8d5'
-					}
-				});
-			},
-			onError: (errors) => {
-				const errorMessage = Object.values(errors).flat()[0] || 'Failed to create branch.';
-				toast.error(errorMessage, {
-					style: {
-						backgroundColor: 'white',
-						color: '#ff0000',
-						border: '1px solid #d5d8d5'
-					}
-				});
-			}
-		});
+		post(store().url);
 	}
 
 	const setSites = (sites: Array<{ site_name: string }>) => {

@@ -81,7 +81,7 @@ class EmployeeController extends Controller
             'filters'       => $result['filters'],     // now includes branch/site/status/positions/dates
             'totalCount'    => $result['totalCount'],
             'filteredCount' => $result['filteredCount'],
-            'positionsList' => $positionsList, 
+            'positionsList' => $positionsList,
         ]);
     }
 
@@ -197,7 +197,7 @@ class EmployeeController extends Controller
 
         try {
             $validatedData = $request->validated();
-            
+
             $action->update($validatedData, $employee);
 
             if (isset($validatedData['password']) && !empty($validatedData['password'])) {
@@ -237,6 +237,11 @@ class EmployeeController extends Controller
     public function bulkDestroy(Request $request)
     {
         Gate::authorize('bulkDelete', Employee::class);
+
+        if ($this->limit('bulk-destroy:' . auth()->id(), 60, 10)) {
+            return back()->with('error', 'Too many attempts. Please try again later.');
+        }
+
         $ids = $request->input('ids') ?? $request->json('ids');
         if (empty($ids)) {
             return back()->with('error', 'No employees selected.');
@@ -256,6 +261,11 @@ class EmployeeController extends Controller
     public function bulkRestore(Request $request)
     {
         Gate::authorize('bulkRestore', Employee::class);
+
+        if ($this->limit('restore-employee:' . auth()->id(), 60, 10)) {
+            return back()->with('error', 'Too many attempts. Please try again later.');
+        }
+
         $ids = $request->input('ids') ?? $request->json('ids');
         if (empty($ids)) {
             return back()->with('error', 'No archived employees selected.');
@@ -273,6 +283,10 @@ class EmployeeController extends Controller
     {
         Gate::authorize('restore', $employee);
 
+        if ($this->limit('restore-employee-single:' . auth()->id(), 60, 10)) {
+            return back()->with('error', 'Too many attempts. Please try again later.');
+        }
+
         $employee->restore();
 
         $this->cacheForget('employees');
@@ -283,6 +297,10 @@ class EmployeeController extends Controller
     public function bulkAssignPosition(BulkAssignPositionRequest $request)
     {
         Gate::authorize('bulkAssign', Employee::class);
+
+        if ($this->limit('bulk-assign-position:' . auth()->id(), 60, 10)) {
+            return back()->with('error', 'Too many attempts. Please try again later.');
+        }
 
         $position = Position::findOrFail($request->position_id);
 
@@ -302,6 +320,10 @@ class EmployeeController extends Controller
     public function bulkAssignBranchSite(BulkAssignBranchSiteRequest $request)
     {
         Gate::authorize('bulkAssign', Employee::class);
+
+        if ($this->limit('bulk-assign-branch:' . auth()->id(), 60, 10)) {
+            return back()->with('error', 'Too many attempts. Please try again later.');
+        }
 
         $site = Site::where('id', $request->site_id)
             ->where('branch_id', $request->branch_id)

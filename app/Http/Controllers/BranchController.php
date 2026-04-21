@@ -230,6 +230,6 @@ class BranchController extends Controller
 
 		$this->cacheForget(['branches', 'employees']);
 
-		return to_route('branches.index')->with('success', 'Branch and site deleted successfully.');
+		return to_route('branches.index')->with('error', 'Branch and site deleted successfully.');
 	}
 }

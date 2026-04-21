@@ -1,7 +1,7 @@
 // pages/branches/index.tsx
-import { Head, Link, router, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import { Building2, Search } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import BranchController from "@/actions/App/Http/Controllers/BranchController";
 import { CustomHeader } from '@/components/custom-header';
 import { CustomTable } from '@/components/custom-table';
@@ -11,10 +11,8 @@ import { Button } from '@/components/ui/button';
 import { CustomPagination } from '@/components/custom-pagination';
 import { BranchesTableConfig } from '@/config/tables/branch-table';
 import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem, type BranchWithSites } from '@/types';
+import { type BreadcrumbItem } from '@/types';
 import { DeleteConfirmationDialog } from "@/components/delete-confirmation-modal";
-import ModernFooter from '@/components/custom-footer';
-import Footer from '@/components/custom-footer';
 
 const breadcrumbs: BreadcrumbItem[] = [
 	{
@@ -60,9 +58,19 @@ interface IndexProps {
 	filteredCount: number;
 }
 
+// Custom toast style helper
+const toastStyle = (color: string) => ({
+	style: {
+		backgroundColor: 'white',
+		color: color,
+		border: '1px solid #e2e8f0',
+		boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+	},
+});
+
 export default function Index({ branches, filters, totalCount, filteredCount }: IndexProps) {
 	const { delete: destroy } = useForm();
-	const [isModalOpen, setIsModalOpen] = useState(false);
+	const { props } = usePage<{ flash?: { success?: string; error?: string; warning?: string; info?: string } }>();
 
 	// Delete confirmation dialog state
 	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -73,6 +81,40 @@ export default function Index({ branches, filters, totalCount, filteredCount }: 
 		search: filters.search || '',
 		perPage: filters.perPage || '10',
 	});
+
+	// Track last shown flash to prevent duplicates within a short time window
+	const lastFlashRef = useRef<{ key: string; time: number }>({ key: '', time: 0 });
+
+	// Flash message listener – prevents duplicate toasts within 500ms
+	useEffect(() => {
+		const flash = props.flash;
+		if (!flash) return;
+
+		const flashKey = JSON.stringify(flash);
+		const now = Date.now();
+		const last = lastFlashRef.current;
+
+		// If same flash key appeared within last 500ms, skip (prevents double toast)
+		if (last.key === flashKey && (now - last.time) < 500) {
+			return;
+		}
+
+		// Update ref
+		lastFlashRef.current = { key: flashKey, time: now };
+
+		if (flash.success) {
+			toast.success(flash.success, toastStyle('#16a34a')); // green text
+		}
+		if (flash.error) {
+			toast.error(flash.error, toastStyle('#dc2626')); // red text (danger)
+		}
+		if (flash.warning) {
+			toast.warning(flash.warning, toastStyle('#f97316')); // orange text (warning)
+		}
+		if (flash.info) {
+			toast.info(flash.info, toastStyle('#3b82f6')); // blue text (info)
+		}
+	}, [props.flash]);
 
 	const handleSearchChange = (value: string) => {
 		setData('search', value);
@@ -112,27 +154,24 @@ export default function Index({ branches, filters, totalCount, filteredCount }: 
 		});
 	};
 
-	// Updated delete handler to open confirmation dialog
 	const handleDeleteClick = (branch: Branches) => {
 		setBranchToDelete(branch);
 		setDeleteDialogOpen(true);
 	};
 
-	// Actual delete execution
 	const confirmDelete = () => {
 		if (!branchToDelete) return;
 
 		setIsDeleting(true);
 		destroy(BranchController.destroy(branchToDelete.branch_slug).url, {
-			onSuccess: (page) => {
-				const successMessage = (page.props as any).flash?.success || 'Branch deleted successfully.';
-				toast.success(successMessage);
+			onSuccess: () => {
+				// Flash message will be shown by global useEffect
 				setDeleteDialogOpen(false);
 				setBranchToDelete(null);
 			},
 			onError: (errors) => {
 				const errorMessage = Object.values(errors).flat()[0] || 'Failed to delete branch.';
-				toast.error(errorMessage);
+				toast.error(errorMessage, toastStyle('#dc2626')); // red text, white background
 			},
 			onFinish: () => {
 				setIsDeleting(false);
@@ -165,9 +204,8 @@ export default function Index({ branches, filters, totalCount, filteredCount }: 
                     from { opacity: 0; transform: translateY(-10px); }
                     to   { opacity: 1; transform: translateY(0); }
                 }
-                .pp-header { animation: headerReveal 0.35s cubic-bezier(0.22,1,0.36,1) both; 
-                `}
-			</style>
+                .pp-header { animation: headerReveal 0.35s cubic-bezier(0.22,1,0.36,1) both; }
+            `}</style>
 
 			<div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4 mx-4">
 				<div className="flex pp-header justify-between">
@@ -193,7 +231,7 @@ export default function Index({ branches, filters, totalCount, filteredCount }: 
 						actions={BranchesTableConfig.actions}
 						data={branches.data}
 						from={branches.from}
-						onDelete={handleDeleteClick} // Changed to handleDeleteClick
+						onDelete={handleDeleteClick}
 						onView={handleShowSites}
 						onEdit={editBranch}
 						title="Branches"
@@ -243,7 +281,6 @@ export default function Index({ branches, filters, totalCount, filteredCount }: 
 						resourceName='branches'
 					/>
 
-					{/* Delete Confirmation Dialog */}
 					<DeleteConfirmationDialog
 						isOpen={deleteDialogOpen}
 						onClose={() => {
