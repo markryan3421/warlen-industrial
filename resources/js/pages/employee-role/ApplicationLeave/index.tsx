@@ -163,7 +163,7 @@ export default function Index({ applicationLeaves, approvedCount = 0 }: Applicat
                     ) : (
                         <CustomTable
                             columns={EmployeeApplicationLeaveTableConfig.columns}
-                            actions={() => { }}
+                            actions={[]}
                             data={applicationLeaves}
                             from={1}
                             title='Application Leave Requests'

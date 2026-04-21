@@ -115,22 +115,16 @@ class PayrollPeriodController extends Controller
         DB::beginTransaction();
 
         try {
-            $oldStatus = $payrollPeriod->payroll_per_status;
 
-            
-            $payroll_updated = $action->update($request->validated(), $payrollPeriod);
-
-           
-            $newStatus = $payroll_updated->payroll_per_status;
+            $action->update($request->validated(), $payrollPeriod);
 
             DB::commit();
 
-            // Dispatch event ONLY if status changed to processing
             if (
-                $newStatus === PayrollPeriodStatusEnum::PROCESSING->value &&
-                $oldStatus !== PayrollPeriodStatusEnum::PROCESSING->value
+                $payrollPeriod->wasChanged('payroll_per_status') &&
+                $payrollPeriod->payroll_per_status === PayrollPeriodStatusEnum::PROCESSING->value
             ) {
-                PayrollProcessingEvent::dispatch($payroll_updated);
+                PayrollProcessingEvent::dispatch($payrollPeriod);
             }
 
             return redirect()->route('payroll-periods.index')->with('success', 'Payroll period updated successfully.');

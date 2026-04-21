@@ -1,4 +1,3 @@
-// components/custom-table.tsx
 import * as LucidIcons from "lucide-react";
 import { useRoute } from "ziggy-js";
 import {

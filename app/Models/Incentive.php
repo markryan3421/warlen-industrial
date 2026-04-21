@@ -21,7 +21,12 @@ class Incentive extends Model
     protected $fillable = [
         'payroll_period_id',
         'incentive_name',
-        'incentive_amount'
+        'incentive_amount',
+        'is_daily',
+    ];
+
+    protected $casts = [
+        'is_daily' => 'boolean',
     ];
 
 
@@ -32,7 +37,8 @@ class Incentive extends Model
                 'payroll_period.start_date',
                 'payroll_period.end_date',
                 'incentive_name',
-                'incentive_amount'
+                'incentive_amount',
+                'is_daily',
             ])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();

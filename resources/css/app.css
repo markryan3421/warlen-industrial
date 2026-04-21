@@ -51,7 +51,7 @@
 	font-style: medium;
 }
 
-.gochi-hand-regular {
+/* .gochi-hand-regular {
 	font-family: "Gochi Hand", cursive;
 	font-weight: 400;
 	font-style: normal;
@@ -61,7 +61,7 @@
 	font-family: "Cousine", monospace;
 	font-weight: 400;
 	font-style: normal;
-}
+} */
 
 @source '../views';
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';

@@ -38,13 +38,14 @@ export const EmployeeApplicationLeaveTableConfig = {
                 };
                 
                 const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
+                const Icon = config.icon;
                 
                 return (
                     <span className={`
                         inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium
                         ${config.bgColor} ${config.textColor} border ${config.borderColor}
                     `}>
-                        <span className="text-xs">{config.icon}</span>
+                        <Icon className="h-3 w-3" />
                         {config.label}
                     </span>
                 );

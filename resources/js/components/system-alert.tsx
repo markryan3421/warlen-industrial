@@ -26,7 +26,7 @@ const AlertCard = memo(({ item, index }: { item: any, index: number }) => {
                     <CardHeader className='flex justify-between items-center'>
                         <div className="relative flex-1">
                             <Icon className='absolute -ml-3 md:h-5 md:w-5 md:mt-1 lg:ml-1 lg:h-6 lg:w-6 lg:mt-1'/>
-                            <CardTitle className='pl-6 md:pl-4 text-xs lg:pl-10 lg:text-base text-left min-w-[150px]'>
+                            <CardTitle className='pl-6 md:pl-4 text-xs lg:pl-10 lg:text-base text-left min-w-[150px] pt-4'>
                                 {item.title}
                             </CardTitle>
                             <CardDescription className='pl-6 -ml-px md:w-[130px] lg:w-full md:pl-4 text-[10px] md:text-[10px] lg:pl-10 lg:text-xs pb-4 text-left '>
