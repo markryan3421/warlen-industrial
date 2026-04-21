@@ -244,7 +244,7 @@ export default function PayrollProcessingCards({
                         <div className="flex justify-between">
                             <CardDescription className="font-extrabold text-base">Total Deductions</CardDescription>
                             <CardDescription>
-                                <Banknote className="w-10 h-15 -mt-3 -mb-10 text-blue-800" />
+                                <Banknote className="w-10 h-15 -mt-3 -mb-10 text-blue-900" />
                             </CardDescription>
                         </div>
                         <CardTitle className="text-xl font-semibold tabular-nums @[250px]/card:text-xl -mb-4 flex mt-6">

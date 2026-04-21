@@ -682,12 +682,13 @@ export default function Index({
             <Head title="Employees" />
 
             {/* Page header */}
-            <div className="grid grid-rows-1 justify-center mx-8 md:grid-cols-2 md:mx-8 mt-3 lg:flex lg:justify-between items-center lg:mx-8 lg:mt-4 lg:-mb-2 pp-header">
+            <div className="grid grid-rows-1 justify-center mx-8 md:mx-8 mt-3 lg:flex lg:justify-between items-center lg:mx-8 lg:mt-4 lg:-mb-2 pp-header">
                 <CustomHeader
                     icon={<Users />}
                     title="Employees"
                     description="Manage your workforce: add, edit, and organize employee records with ease."
                 />
+
                 <Link href="/employees/create">
                     <Button className="hover:cursor-pointer flex ml-auto">
                         <UserPlus className="h-5 w-5" />
@@ -701,22 +702,97 @@ export default function Index({
             <div className="flex flex-1 flex-col gap-4 p-4 pp-row">
                 <div className="mx-4">
                     <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-                        <TabsList className="grid w-full max-w-md grid-cols-2">
-                            <TabsTrigger value="active" className="flex items-center gap-2">
-                                <UsersRound className="h-4 w-4" />
-                                Active Employees
-                                <Badge variant="secondary" className="ml-2">
-                                    {totalCount}
-                                </Badge>
-                            </TabsTrigger>
-                            <TabsTrigger value="archived" className="flex items-center gap-2">
-                                <Archive className="h-4 w-4" />
-                                Archived Employees
-                                <Badge variant="secondary" className="ml-2">
-                                    {archivedEmployees.length}
-                                </Badge>
-                            </TabsTrigger>
-                        </TabsList>
+                        {/* Mobile View (below 640px) */}
+                        <div className="block sm:hidden">
+                            <TabsList className="grid w-full grid-cols-2 gap-2 bg-transparent p-0">
+                                <TabsTrigger
+                                    value="active"
+                                    className="flex flex-col items-center gap-1 py-3 px-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg transition-all"
+                                >
+                                    <UsersRound className="h-5 w-5" />
+                                    <div className="flex items-center gap-1">
+                                        <span className="text-xs font-medium">Active</span>
+                                        <Badge
+                                            variant="secondary"
+                                            className="text-[10px] px-1.5 py-0 data-[state=active]:bg-white/20 data-[state=active]:text-white"
+                                        >
+                                            {totalCount}
+                                        </Badge>
+                                    </div>
+                                </TabsTrigger>
+                                <TabsTrigger
+                                    value="archived"
+                                    className="flex flex-col items-center gap-1 py-3 px-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg transition-all"
+                                >
+                                    <Archive className="h-5 w-5" />
+                                    <div className="flex items-center gap-1">
+                                        <span className="text-xs font-medium">Archived</span>
+                                        <Badge
+                                            variant="secondary"
+                                            className="text-[10px] px-1.5 py-0 data-[state=active]:bg-white/20 data-[state=active]:text-white"
+                                        >
+                                            {archivedEmployees.length}
+                                        </Badge>
+                                    </div>
+                                </TabsTrigger>
+                            </TabsList>
+                        </div>
+
+                        {/* Tablet View (640px to 1024px) */}
+                        <div className="hidden sm:block lg:hidden">
+                            <TabsList className="grid w-full grid-cols-2 gap-2 bg-transparent p-0">
+                                <TabsTrigger
+                                    value="active"
+                                    className="flex flex-col items-center gap-1 py-3 px-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg transition-all"
+                                >
+                                    <UsersRound className="h-5 w-5" />
+                                    <div className="flex items-center gap-1">
+                                        <span className="text-xs font-medium">Active</span>
+                                        <Badge
+                                            variant="secondary"
+                                            className="text-[10px] px-1.5 py-0 data-[state=active]:bg-white/20 data-[state=active]:text-white"
+                                        >
+                                            {totalCount}
+                                        </Badge>
+                                    </div>
+                                </TabsTrigger>
+                                <TabsTrigger
+                                    value="archived"
+                                    className="flex flex-col items-center gap-1 py-3 px-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg transition-all"
+                                >
+                                    <Archive className="h-5 w-5" />
+                                    <div className="flex items-center gap-1">
+                                        <span className="text-xs font-medium">Archived</span>
+                                        <Badge
+                                            variant="secondary"
+                                            className="text-[10px] px-1.5 py-0 data-[state=active]:bg-white/20 data-[state=active]:text-white"
+                                        >
+                                            {archivedEmployees.length}
+                                        </Badge>
+                                    </div>
+                                </TabsTrigger>
+                            </TabsList>
+                        </div>
+
+                        {/* Desktop View (above 1024px) - Your original */}
+                        <div className="hidden lg:block">
+                            <TabsList className="flex w-full max-w-md grid-cols-2 border-1">
+                                <TabsTrigger value="active" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:cursor-default data-[state=active]:text-primary-foreground rounded-lg transition-all cursor-pointer">
+                                    <UsersRound className="h-4 w-4" />
+                                    Active Employees
+                                    <Badge variant="secondary" className="ml-2 data-[state=active]:bg-white/20 data-[state=active]:text-white">
+                                        {totalCount}
+                                    </Badge>
+                                </TabsTrigger>
+                                <TabsTrigger value="archived" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:cursor-default data-[state=active]:text-primary-foreground rounded-lg transition-all cursor-pointer">
+                                    <Archive className="h-4 w-4" />
+                                    Archived Employees
+                                    <Badge variant="secondary" className="ml-2 data-[state=active]:bg-white/20 data-[state=active]:text-white">
+                                        {archivedEmployees.length}
+                                    </Badge>
+                                </TabsTrigger>
+                            </TabsList>
+                        </div>
 
                         {/* Active Tab Content */}
                         <TabsContent value="active" className="mt-6">
@@ -809,7 +885,7 @@ export default function Index({
                                                     status: true,
                                                 }}
                                                 allPositions={allPositions}
-                                                branchesData={activeBranchesData} 
+                                                branchesData={activeBranchesData}
                                                 searchTerm={searchTerm}
                                                 selectedPositions={selectedPositions}
                                                 selectedBranch={selectedBranch}
@@ -999,15 +1075,11 @@ export default function Index({
                 {/* Dialogs (unchanged) */}
                 <DeleteConfirmationDialog
                     isOpen={deleteDialogOpen}
-                    onClose={() => {
-                        setDeleteDialogOpen(false);
-                        setItemToDelete(null);
-                    }}
+                    onClose={() => setDeleteDialogOpen(false)}
                     onConfirm={confirmDelete}
-                    title="Archive Employee"
-                    itemName={itemToDelete?.user?.name || itemToDelete?.emp_code || 'this employee'}
+                    title="Delete Employee"
+                    itemName={itemToDelete?.user?.name}
                     isLoading={isDeleting}
-                    confirmText="Archive"
                 />
 
                 <DeleteConfirmationDialog
@@ -1016,8 +1088,22 @@ export default function Index({
                     onConfirm={confirmBulkArchive}
                     title="Archive Employees"
                     description={`Move ${selectedIds.length} selected employee(s) to archive? They can be restored later.`}
-                    confirmText="Archive All"
+                    confirmText="Yes, move to archive"
                     isLoading={bulkLoading}
+                    icon={<Archive className="h-5 w-5" />}
+                    variant="warning"
+                />
+
+                <DeleteConfirmationDialog
+                    isOpen={bulkRestoreConfirmOpen}
+                    onClose={() => setBulkRestoreConfirmOpen(false)}
+                    onConfirm={confirmBulkRestore}
+                    title="Restore Employees"
+                    description={`Restore ${selectedIds.length} selected employee(s)? They will become active again.`}
+                    confirmText="Restore All"
+                    isLoading={bulkLoading}
+                    icon={<RotateCcw className="h-5 w-5" />}
+                    variant="info"
                 />
 
                 <RestoreConfirmationDialog

@@ -92,8 +92,8 @@ export default function Edit({ payrollPeriod }: EditProps) {
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Payroll Periods', href: '/payroll-periods' },
-        { title: `Period #${payrollPeriod.id}`, href: '#' },
         { title: 'Edit', href: '#' },
+        { title: `Period #${payrollPeriod.id}`, href: '#' },
     ];
 
     const { data, setData, errors, processing, put } = useForm<FormData>({
@@ -149,7 +149,7 @@ export default function Edit({ payrollPeriod }: EditProps) {
 
     // Check if status is completed to show/hide is_paid requirement
     const isStatusCompleted = data.payroll_per_status === 'completed';
-    
+
     // Get first 5 employees to display
     const displayedEmployees = payrollPeriod.payrolls?.slice(0, 5) || [];
     const hasMoreEmployees = payrollPeriod.payrolls?.length > 5;
@@ -159,8 +159,8 @@ export default function Edit({ payrollPeriod }: EditProps) {
         if (!searchTerm.trim()) {
             return payrollPeriod.payrolls || [];
         }
-        
-        return (payrollPeriod.payrolls || []).filter(payroll => 
+
+        return (payrollPeriod.payrolls || []).filter(payroll =>
             payroll.employee?.user?.name?.toLowerCase().includes(searchTerm.toLowerCase())
         );
     }, [payrollPeriod.payrolls, searchTerm]);
@@ -410,7 +410,7 @@ export default function Edit({ payrollPeriod }: EditProps) {
                                                 </tbody>
                                             </table>
                                         </div>
-                                        
+
                                         {hasMoreEmployees && (
                                             <Button
                                                 type="button"
@@ -422,7 +422,7 @@ export default function Edit({ payrollPeriod }: EditProps) {
                                                 View All {payrollPeriod.payrolls.length} Employees
                                             </Button>
                                         )}
-                                        
+
                                         <p className="text-xs text-muted-foreground text-center">
                                             Showing {displayedEmployees.length} of {payrollPeriod.payrolls.length} employees
                                         </p>
@@ -477,7 +477,7 @@ export default function Edit({ payrollPeriod }: EditProps) {
                             Total of {payrollPeriod.payrolls?.length || 0} employee(s) in this payroll period
                         </DialogDescription>
                     </DialogHeader>
-                    
+
                     {/* Search Bar */}
                     <div className="relative mt-2">
                         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -490,7 +490,7 @@ export default function Edit({ payrollPeriod }: EditProps) {
                             autoFocus={false}
                         />
                     </div>
-                    
+
                     <div className="overflow-y-auto flex-1 -mx-6 px-6 mt-4">
                         <div className="rounded-lg border border-border overflow-hidden">
                             <table className="w-full">
@@ -529,7 +529,7 @@ export default function Edit({ payrollPeriod }: EditProps) {
                             </table>
                         </div>
                     </div>
-                    
+
                     <div className="flex justify-between items-center mt-4 pt-4 border-t">
                         <p className="text-xs text-muted-foreground">
                             Showing {filteredEmployees.length} of {payrollPeriod.payrolls?.length || 0} employees

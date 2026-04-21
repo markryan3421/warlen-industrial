@@ -13,24 +13,72 @@ use App\Models\ApplicationLeave;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
+use Illuminate\Http\Request;
 
 class ApplicationLeaveController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         Gate::authorize('viewAny', ApplicationLeave::class);
-        $applicationLeaves = ApplicationLeave::with(['employee.user'])->latest()->get();
+
+        // Get pagination parameters
+        $perPage = (int) $request->input('perPage', 10);
+        $currentPage = (int) $request->input('page', 1);
+        $search = $request->input('search', '');
+        $statusFilter = $request->input('status', '');
+
+        // Build query
+        $query = ApplicationLeave::with(['employee.user'])->latest();
+
+        // Apply search filter
+        if (!empty($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('employee.user', function ($userQuery) use ($search) {
+                    $userQuery->where('name', 'like', "%{$search}%");
+                })->orWhereHas('employee', function ($empQuery) use ($search) {
+                    $empQuery->where('emp_code', 'like', "%{$search}%");
+                });
+            });
+        }
+
+        // Apply status filter
+        if (!empty($statusFilter) && $statusFilter !== 'all') {
+            $query->where('app_status', $statusFilter);
+        }
+
+        // Get total count for pagination
+        $totalCount = $query->count();
+
+        // Get paginated results
+        $applicationLeaves = $query->paginate($perPage, ['*'], 'page', $currentPage);
 
         $applicationLeaveEnum = ApplicationLeaveEnum::options();
 
         return inertia('ApplicationLeave/index', [
-            'applicationLeaves' => $applicationLeaves,
-            'applicationLeaveEnum' => $applicationLeaveEnum
+            'applicationLeaves' => [
+                'data' => $applicationLeaves->items(),
+                'links' => $applicationLeaves->linkCollection()->toArray(),
+                'from' => $applicationLeaves->firstItem(),
+                'to' => $applicationLeaves->lastItem(),
+                'total' => $applicationLeaves->total(),
+                'current_page' => $applicationLeaves->currentPage(),
+                'last_page' => $applicationLeaves->lastPage(),
+                'per_page' => $applicationLeaves->perPage(),
+            ],
+            'applicationLeaveEnum' => $applicationLeaveEnum,
+            'filters' => [
+                'search' => $search,
+                'status' => $statusFilter,
+                'perPage' => (string) $perPage,
+            ],
+            'totalCount' => $totalCount,
+            'filteredCount' => $applicationLeaves->total(),
         ]);
     }
+
 
     /**
      * Show the form for creating a new resource.

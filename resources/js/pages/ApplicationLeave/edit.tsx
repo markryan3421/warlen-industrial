@@ -99,7 +99,7 @@ export default function Edit({ applicationLeave }: EditProps) {
     const { applicationLeaveEnum } = usePage<PageProps>().props;
 
     const breadcrumbs: BreadcrumbItem[] = [
-        { title: 'Leave Applications', href: '/application-leave' },
+        { title: 'Application Leave', href: '/application-leave' },
         { title: applicationLeave.employee?.user?.name ?? 'Leave Application', href: '#' },
         { title: 'Review', href: '#' },
     ];

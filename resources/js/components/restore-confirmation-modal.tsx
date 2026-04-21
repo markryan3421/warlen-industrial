@@ -25,11 +25,11 @@ export function RestoreConfirmationDialog({
   isOpen,
   onClose,
   onConfirm,
-  title = "Restore Item",
-  description = "Are you sure you want to restore this item?",
+  title = "Restore Employee",
+  description = "Are you sure you want to restore this employee?",
   itemName,
   isLoading = false,
-  confirmText = "Restore",
+  confirmText = "Yes, restore employee",
   cancelText = "Cancel",
 }: RestoreConfirmationDialogProps) {
   const displayDescription = itemName
