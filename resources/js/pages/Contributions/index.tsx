@@ -1,6 +1,6 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import { format, isToday } from 'date-fns';
-import { Calculator, Percent, Plus, Trash2, LoaderCircle, Filter, Handshake, Users, Settings, Save, Shield, Heart } from 'lucide-react';
+import { Calculator, Percent, Plus, Trash2, LoaderCircle, Filter, Handshake, Users, Settings, Save, Shield, Heart, Search } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 
 import { CustomHeader } from '@/components/custom-header';
@@ -33,6 +33,7 @@ import { ContributionTableConfig } from '@/config/tables/contribution-table';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-modal';
+import { EmployeeFilterBar, type BranchData } from '@/components/employee/employee-filter-bar';
 
 // Helper function to generate route URLs
 const route = (name: string, params?: any) => {
@@ -171,7 +172,7 @@ export default function Index({
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingVersion, setEditingVersion] = useState<ContributionVersion | null>(null);
 
-    // Filter states
+    // Filter states for contribution versions (type filter)
     const [typeFilter, setTypeFilter] = useState<string>("");
     const [hasActiveFilters, setHasActiveFilters] = useState(false);
 
@@ -189,6 +190,52 @@ export default function Index({
     const [originalEmployeeSettings, setOriginalEmployeeSettings] = useState<Record<number, Record<number, EmployeeContributionSettingData>>>({});
     const [loadingEmployees, setLoadingEmployees] = useState(false);
     const [savingSettings, setSavingSettings] = useState<Record<number, boolean>>({});
+
+    // Per‑version pagination state for employee tables
+    const [employeePagination, setEmployeePagination] = useState<Record<number, { page: number; perPage: number }>>({});
+
+    // Employee settings sub-tab
+    const [employeeSettingsTab, setEmployeeSettingsTab] = useState<'sss' | 'philhealth' | 'pagibig'>('sss');
+
+    // Search terms for each contribution type (only filter)
+    const [sssSearchTerm, setSssSearchTerm] = useState('');
+    const [philhealthSearchTerm, setPhilhealthSearchTerm] = useState('');
+    const [pagibigSearchTerm, setPagibigSearchTerm] = useState('');
+
+    // Helper to get or initialize pagination for a version
+    const getVersionPagination = (versionId: number) => {
+        return employeePagination[versionId] ?? { page: 1, perPage: 10 };
+    };
+
+    const updateVersionPagination = (versionId: number, updates: Partial<{ page: number; perPage: number }>) => {
+        setEmployeePagination(prev => ({
+            ...prev,
+            [versionId]: { ...getVersionPagination(versionId), ...updates }
+        }));
+    };
+
+    // Helper to generate client-side pagination links for CustomPagination
+    const generateClientLinks = (currentPage: number, lastPage: number) => {
+        const links = [];
+        links.push({
+            active: false,
+            label: 'Previous',
+            url: currentPage > 1 ? '#' : null
+        });
+        for (let i = 1; i <= lastPage; i++) {
+            links.push({
+                active: i === currentPage,
+                label: String(i),
+                url: '#'
+            });
+        }
+        links.push({
+            active: false,
+            label: 'Next',
+            url: currentPage < lastPage ? '#' : null
+        });
+        return links;
+    };
 
     const handleDeleteClick = (contributionVersion: ContributionVersion) => {
         setItemToDelete(contributionVersion);
@@ -225,7 +272,7 @@ export default function Index({
         return Array.from(uniqueMap.values());
     }, [contributionVersions]);
 
-    // Filtered data based on type filter
+    // Filtered contribution versions based on type filter
     const displayData = useMemo(() => {
         if (!typeFilter || typeFilter === 'all') {
             return versions;
@@ -233,23 +280,13 @@ export default function Index({
         return versions.filter(version => version.type === typeFilter);
     }, [versions, typeFilter]);
 
-    // Update hasActiveFilters when filters change
     useEffect(() => {
         setHasActiveFilters(!!typeFilter && typeFilter !== 'all');
     }, [typeFilter]);
 
-    // Get existing contribution types
     const existingTypes = useMemo(() => {
         return versions.map(version => version.type);
     }, [versions]);
-
-    const handleTypeFilterChange = (value: string) => {
-        setTypeFilter(value);
-    };
-
-    const handleClearAllFilters = () => {
-        setTypeFilter("");
-    };
 
     const viewBrackets = (version: ContributionVersion) => {
         setSelectedVersion(version);
@@ -283,11 +320,10 @@ export default function Index({
 
         setLoadingEmployees(true);
         try {
-            // Fetch employees
             const employeesResponse = await fetch('/employees/list');
             const employeesData = await employeesResponse.json();
 
-            let employeesList = [];
+            let employeesList: Employee[] = [];
             if (employeesData.data && Array.isArray(employeesData.data)) {
                 employeesList = employeesData.data;
             } else if (Array.isArray(employeesData)) {
@@ -297,7 +333,6 @@ export default function Index({
             }
             setEmployees(employeesList);
 
-            // Fetch settings for all contribution versions
             const settingsPromises = versions.map(version =>
                 fetch(`/employee-contribution-settings?contribution_version_id=${version.id}`)
                     .then(res => {
@@ -319,7 +354,6 @@ export default function Index({
             });
 
             setEmployeeSettings(settingsMap);
-            // Store original settings for comparison
             setOriginalEmployeeSettings(JSON.parse(JSON.stringify(settingsMap)));
         } catch (error) {
             console.error('Failed to fetch employees:', error);
@@ -329,7 +363,6 @@ export default function Index({
         }
     };
 
-    // Fetch employees when versions load and tab is active
     useEffect(() => {
         if (hasRecords && activeTab === 'employee-settings') {
             fetchEmployeesAndSettings();
@@ -360,7 +393,6 @@ export default function Index({
         const currentSettings = employeeSettings[contributionVersionId] || {};
         const originalSettings = originalEmployeeSettings[contributionVersionId] || {};
 
-        // Find only changed settings
         const changedSettings = [];
         const allEmployeeIds = new Set([...Object.keys(currentSettings), ...Object.keys(originalSettings)]);
 
@@ -368,7 +400,6 @@ export default function Index({
             const current = currentSettings[Number(employeeId)];
             const original = originalSettings[Number(employeeId)];
 
-            // Compare if setting has changed
             const hasChanged = JSON.stringify({
                 is_exempted: current?.is_exempted || false,
                 fixed_amount: current?.fixed_amount || null,
@@ -389,7 +420,6 @@ export default function Index({
             }
         }
 
-        // If no changes, show message and return
         if (changedSettings.length === 0) {
             toast.info('No changes to save');
             return;
@@ -397,7 +427,6 @@ export default function Index({
 
         setSavingSettings(prev => ({ ...prev, [contributionVersionId]: true }));
 
-        // Get CSRF token
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 
         fetch('/employee-contribution-settings/bulk', {
@@ -417,7 +446,6 @@ export default function Index({
                 const data = await response.json();
                 if (response.ok) {
                     toast.success(`${data.message || 'Settings saved successfully!'} (${changedSettings.length} employee${changedSettings.length > 1 ? 's' : ''} updated)`);
-                    // Update original settings after successful save
                     const updatedOriginalSettings = { ...originalEmployeeSettings };
                     for (const setting of changedSettings) {
                         if (!updatedOriginalSettings[contributionVersionId]) {
@@ -443,6 +471,396 @@ export default function Index({
             .finally(() => {
                 setSavingSettings(prev => ({ ...prev, [contributionVersionId]: false }));
             });
+    };
+
+    // Helper: get version by type
+    const versionByType = useMemo(() => {
+        const map: Record<string, ContributionVersion | undefined> = {};
+        versions.forEach(v => { map[v.type] = v; });
+        return map;
+    }, [versions]);
+
+    // Helper: filter employees by search term (name or ID)
+    const filterEmployeesBySearch = (employeesList: Employee[], searchTerm: string) => {
+        if (!searchTerm.trim()) return employeesList;
+        const term = searchTerm.toLowerCase();
+        return employeesList.filter(emp =>
+            emp.user?.name?.toLowerCase().includes(term) ||
+            emp.id.toString().includes(term)
+        );
+    };
+
+    // Reset pagination for a specific version
+    const resetPaginationForVersion = (versionId: number) => {
+        updateVersionPagination(versionId, { page: 1 });
+    };
+
+    // Render a single contribution card (SSS / PhilHealth / Pag-IBIG)
+    const renderContributionCard = (
+        type: 'sss' | 'philhealth' | 'pagibig',
+        searchTerm: string,
+        setSearchTerm: (value: string) => void
+    ) => {
+        const version = versionByType[type];
+        if (!version) {
+            return (
+                <Card>
+                    <CardContent className="py-12 text-center">
+                        <div className="rounded-full bg-muted p-4 w-12 h-12 mx-auto mb-4 flex items-center justify-center">
+                            <Percent className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                        <p className="text-muted-foreground font-medium">No {getContributionTypeLabel(type)} version configured</p>
+                        <p className="text-sm text-muted-foreground mt-1">Please create a {getContributionTypeLabel(type)} contribution version first.</p>
+                    </CardContent>
+                </Card>
+            );
+        }
+
+        const versionId = version.id;
+        const settingsForVersion = employeeSettings[versionId] || {};
+        const isSaving = savingSettings[versionId] || false;
+        const isPhilHealth = type === 'philhealth';
+        const isSSS = type === 'sss';
+
+        // Apply search filter
+        const filteredEmployeesList = filterEmployeesBySearch(employees, searchTerm);
+        const totalEmployees = filteredEmployeesList.length;
+        const exemptedCount = Object.values(settingsForVersion).filter(
+            s => s.is_exempted && filteredEmployeesList.some(emp => emp.id === s.employee_id)
+        ).length;
+        const allExempted = totalEmployees > 0 && exemptedCount === totalEmployees;
+
+        // Pagination (only relevant when there are results)
+        const { page: currentPage, perPage: currentPerPage } = getVersionPagination(versionId);
+        const startIndex = (currentPage - 1) * currentPerPage;
+        const paginatedEmployees = filteredEmployeesList.slice(startIndex, startIndex + currentPerPage);
+        const lastPage = Math.ceil(totalEmployees / currentPerPage);
+        const clientPagination = {
+            links: generateClientLinks(currentPage, lastPage),
+            from: totalEmployees === 0 ? 0 : startIndex + 1,
+            to: Math.min(startIndex + currentPerPage, totalEmployees),
+            total: totalEmployees,
+            current_page: currentPage,
+            last_page: lastPage,
+            per_page: currentPerPage,
+        };
+
+        // Bulk actions (apply to ALL employees, unfiltered)
+        const setAllExempted = (exempted: boolean) => {
+            employees.forEach((employee) => {
+                updateEmployeeSetting(versionId, employee.id, 'is_exempted', exempted);
+            });
+            toast.success(`All employees ${exempted ? 'exempted from' : 'enabled for'} ${getContributionTypeLabel(type)}`);
+        };
+
+        const setAllFixedAmount = (amount: string) => {
+            if (!allExempted) {
+                employees.forEach((employee) => {
+                    const currentSetting = settingsForVersion[employee.id] || {};
+                    if (!currentSetting.is_exempted) {
+                        updateEmployeeSetting(versionId, employee.id, 'fixed_amount', amount);
+                    }
+                });
+                toast.success(`Fixed amount set to ${isPhilHealth ? amount + '%' : '₱' + amount} for all non-exempted employees`);
+            }
+        };
+
+        return (
+            <Card key={versionId} className="overflow-hidden shadow-sm hover:shadow-md transition-all duration-200">
+                {/* Card Header */}
+                <div className={`${getContributionTypeBgColor(type)} border-b`}>
+                    <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between flex-wrap gap-4">
+                            <div className="flex items-center gap-3">
+                                <div className={`p-2.5 rounded-xl ${getContributionTypeColor(type)} bg-white shadow-sm`}>
+                                    {isSSS ? <Shield className="h-5 w-5" /> : <Heart className="h-5 w-5" />}
+                                </div>
+                                <div>
+                                    <CardTitle className="text-xl flex items-center gap-2">
+                                        {getContributionTypeLabel(type)}
+                                        <Badge variant="outline" className="text-xs font-normal">
+                                            {isSSS ? 'Manual Input per Payroll' : (isPhilHealth ? 'Percentage Based (5% default)' : 'Fixed Amount')}
+                                        </Badge>
+                                    </CardTitle>
+                                    <CardDescription className="mt-1">
+                                        {isSSS
+                                            ? 'Set custom SSS contribution amount per employee.'
+                                            : isPhilHealth
+                                                ? 'Configure exemption and percentage rate (default 5%).'
+                                                : `Configure exemption and fixed amount per payroll for ${getContributionTypeLabel(type)}.`}
+                                    </CardDescription>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <div className="text-right">
+                                    <div className="text-sm text-muted-foreground">
+                                        {exemptedCount} of {totalEmployees} employees exempted
+                                    </div>
+                                    <div className="w-32 h-1.5 bg-gray-200 rounded-full mt-1 overflow-hidden">
+                                        <div
+                                            className="h-full bg-green-500 rounded-full transition-all duration-300"
+                                            style={{ width: `${totalEmployees > 0 ? (exemptedCount / totalEmployees) * 100 : 0}%` }}
+                                        />
+                                    </div>
+                                </div>
+                                <Button
+                                    size="sm"
+                                    onClick={() => saveContributionSettings(versionId)}
+                                    disabled={isSaving}
+                                    className="gap-2 shadow-sm"
+                                >
+                                    {isSaving && <LoaderCircle className="h-4 w-4 animate-spin" />}
+                                    <Save className="h-4 w-4" />
+                                    Save Settings
+                                </Button>
+                            </div>
+                        </div>
+                    </CardHeader>
+                </div>
+
+                <CardContent className="p-0">
+                    {/* Single line toolbar: search + bulk actions + set amount */}
+                    <div className="p-3 border-b bg-muted/20 flex flex-wrap items-center gap-3">
+                        {/* Search - using EmployeeFilterBar with only search enabled, inline style */}
+                        <div className="flex-1 min-w-[200px]">
+                            <EmployeeFilterBar
+                                filters={{
+                                    search: true,
+                                    position: false,
+                                    branch: false,
+                                    site: false,
+                                    date: false,
+                                    status: false,
+                                }}
+                                allPositions={[]}
+                                branchesData={[]}
+                                searchTerm={searchTerm}
+                                selectedPositions={[]}
+                                selectedBranch=""
+                                selectedSite=""
+                                status=""
+                                dateFrom={undefined}
+                                dateTo={undefined}
+                                onSearchChange={(val) => {
+                                    setSearchTerm(val);
+                                    resetPaginationForVersion(versionId);
+                                }}
+                                onPositionsChange={() => {}}
+                                onBranchChange={() => {}}
+                                onSiteChange={() => {}}
+                                onStatusChange={() => {}}
+                                onDateFromChange={() => {}}
+                                onDateToChange={() => {}}
+                                onClearAll={() => {
+                                    setSearchTerm('');
+                                    resetPaginationForVersion(versionId);
+                                }}
+                                searchPlaceholder="Search by name or ID..."
+                                dateLabel="Hire Date"
+                            />
+                        </div>
+
+                        {/* Divider */}
+                        <div className="w-px h-6 bg-border" />
+
+                        {/* Exempt All / Enable All button */}
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setAllExempted(!allExempted)}
+                            className="gap-1 shrink-0"
+                        >
+                            {allExempted ? 'Enable All' : 'Exempt All'}
+                        </Button>
+
+                        {/* Set Amount input group */}
+                        <div className="flex items-center gap-1 shrink-0">
+                            <span className="text-sm text-muted-foreground">Set Amount:</span>
+                            <div className="relative w-28">
+                                {!isPhilHealth && (
+                                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">₱</span>
+                                )}
+                                <Input
+                                    type="number"
+                                    step="0.01"
+                                    placeholder={isPhilHealth ? "5.00" : "0.00"}
+                                    className={`${!isPhilHealth ? 'pl-6' : 'pl-3'} h-8 text-sm ${allExempted ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    disabled={allExempted}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && !allExempted) {
+                                            const target = e.target as HTMLInputElement;
+                                            setAllFixedAmount(target.value);
+                                            target.value = '';
+                                        }
+                                    }}
+                                />
+                                {isPhilHealth && (
+                                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">%</span>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Table or Empty State */}
+                    {totalEmployees === 0 ? (
+                        <div className="py-12 text-center">
+                            <div className="flex flex-col items-center gap-2">
+                                <Search className="h-10 w-10 text-muted-foreground" />
+                                <p className="text-muted-foreground font-medium">No employees found</p>
+                                {searchTerm && (
+                                    <p className="text-sm text-muted-foreground">
+                                        No employees match "{searchTerm}"
+                                    </p>
+                                )}
+                                {searchTerm && (
+                                    <Button variant="outline" size="sm" onClick={() => setSearchTerm('')} className="mt-2">
+                                        Clear search
+                                    </Button>
+                                )}
+                            </div>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="overflow-x-auto">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow className="bg-muted/30">
+                                            <TableHead className="font-semibold">Employee Name</TableHead>
+                                            <TableHead className="w-24 text-center font-semibold">Exempted</TableHead>
+                                            {!isSSS && (
+                                                <TableHead className="w-44 font-semibold">
+                                                    {isPhilHealth ? 'Rate (%)' : 'Fixed Amount (per payroll)'}
+                                                </TableHead>
+                                            )}
+                                            {isSSS && (
+                                                <TableHead className="w-56 font-semibold">Fixed Amount (per payroll)</TableHead>
+                                            )}
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {paginatedEmployees.map((employee) => {
+                                            const setting = settingsForVersion[employee.id] || {
+                                                employee_id: employee.id,
+                                                contribution_version_id: versionId,
+                                                is_exempted: false,
+                                                fixed_amount: null,
+                                                monthly_cap: null,
+                                            };
+
+                                            return (
+                                                <TableRow key={employee.id} className="hover:bg-muted/30 transition-colors duration-150">
+                                                    <TableCell className="font-medium">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                                                                <span className="text-xs font-semibold text-primary">
+                                                                    {employee.user?.name?.charAt(0).toUpperCase() || 'E'}
+                                                                </span>
+                                                            </div>
+                                                            <span>{employee.user?.name || `Employee #${employee.id}`}</span>
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="text-center">
+                                                        <Switch
+                                                            checked={setting.is_exempted || false}
+                                                            onCheckedChange={(checked) =>
+                                                                updateEmployeeSetting(versionId, employee.id, 'is_exempted', checked)
+                                                            }
+                                                            className="data-[state=checked]:bg-green-500"
+                                                        />
+                                                    </TableCell>
+                                                    {!isSSS && (
+                                                        <TableCell>
+                                                            <div className="relative">
+                                                                {isPhilHealth ? (
+                                                                    <>
+                                                                        <Input
+                                                                            type="number"
+                                                                            step="0.01"
+                                                                            placeholder="5.00"
+                                                                            value={setting.fixed_amount || ''}
+                                                                            onChange={(e) =>
+                                                                                updateEmployeeSetting(versionId, employee.id, 'fixed_amount', e.target.value)
+                                                                            }
+                                                                            disabled={setting.is_exempted}
+                                                                            className={`pl-3 pr-8 ${setting.is_exempted ? 'bg-muted/50' : ''}`}
+                                                                        />
+                                                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">%</span>
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">₱</span>
+                                                                        <Input
+                                                                            type="number"
+                                                                            step="0.01"
+                                                                            placeholder="0.00"
+                                                                            value={setting.fixed_amount || ''}
+                                                                            onChange={(e) =>
+                                                                                updateEmployeeSetting(versionId, employee.id, 'fixed_amount', e.target.value)
+                                                                            }
+                                                                            disabled={setting.is_exempted}
+                                                                            className={`pl-7 ${setting.is_exempted ? 'bg-muted/50' : ''}`}
+                                                                        />
+                                                                    </>
+                                                                )}
+                                                            </div>
+                                                            {isPhilHealth && (
+                                                                <p className="text-xs text-muted-foreground mt-1">
+                                                                    Default: 5% (2.5% employee, 2.5% employer)
+                                                                </p>
+                                                            )}
+                                                        </TableCell>
+                                                    )}
+                                                    {isSSS && (
+                                                        <TableCell>
+                                                            {setting.is_exempted ? (
+                                                                <div className="text-muted-foreground text-sm italic">Exempted</div>
+                                                            ) : (
+                                                                <div className="relative">
+                                                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">₱</span>
+                                                                    <Input
+                                                                        type="number"
+                                                                        step="0.01"
+                                                                        placeholder="Enter amount"
+                                                                        value={setting.fixed_amount || ''}
+                                                                        onChange={(e) => {
+                                                                            updateEmployeeSetting(versionId, employee.id, 'fixed_amount', e.target.value);
+                                                                        }}
+                                                                        disabled={setting.is_exempted}
+                                                                        className={`pl-7 ${setting.is_exempted ? 'bg-muted/50' : ''}`}
+                                                                    />
+                                                                </div>
+                                                            )}
+                                                        </TableCell>
+                                                    )}
+                                                </TableRow>
+                                            );
+                                        })}
+                                    </TableBody>
+                                </Table>
+                            </div>
+
+                            {/* Pagination - only when there are results */}
+                            {totalEmployees > 0 && (
+                                <div className="border-t bg-muted/10 px-4 py-3">
+                                    <CustomPagination
+                                        pagination={clientPagination}
+                                        perPage={String(currentPerPage)}
+                                        onPerPageChange={(value) => {
+                                            updateVersionPagination(versionId, { perPage: parseInt(value, 10), page: 1 });
+                                        }}
+                                        onPageChange={(page) => updateVersionPagination(versionId, { page })}
+                                        totalCount={totalEmployees}
+                                        filteredCount={totalEmployees}
+                                        search=""
+                                        resourceName="employee"
+                                    />
+                                </div>
+                            )}
+                        </>
+                    )}
+                </CardContent>
+            </Card>
+        );
     };
 
     return (
@@ -528,7 +946,7 @@ export default function Index({
                                                 No contribution versions match your filter criteria.
                                             </p>
                                             {hasActiveFilters && (
-                                                <Button variant="outline" onClick={handleClearAllFilters}>
+                                                <Button variant="outline" onClick={() => setTypeFilter("")}>
                                                     Clear Filters
                                                 </Button>
                                             )}
@@ -550,7 +968,8 @@ export default function Index({
                                 )}
 
                                 {displayData.length > 0 && contributionVersions && (
-                                    <CustomPagination className="pp-row"
+                                    <CustomPagination
+                                        className="pp-row"
                                         pagination={{
                                             data: displayData,
                                             from: contributionVersions.from,
@@ -579,343 +998,47 @@ export default function Index({
                         )}
                     </TabsContent>
 
-{/* Tab 2: Employee Contribution Settings - With SSS Manual Input */}
-<TabsContent value="employee-settings">
-    <div className="space-y-6">
-        {loadingEmployees ? (
-            <Card>
-                <CardContent className="flex items-center justify-center py-16">
-                    <LoaderCircle className="h-8 w-8 animate-spin text-muted-foreground" />
-                    <span className="ml-2 text-muted-foreground">Loading employees...</span>
-                </CardContent>
-            </Card>
-        ) : employees.length === 0 ? (
-            <Card>
-                <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-                    <div className="rounded-full bg-muted p-4 mb-4">
-                        <Users className="h-8 w-8 text-muted-foreground" />
-                    </div>
-                    <p className="text-muted-foreground font-medium">No active employees found</p>
-                    <p className="text-sm text-muted-foreground mt-1">Please add active employees first to configure contribution settings.</p>
-                </CardContent>
-            </Card>
-        ) : (
-            versions.map((version) => {
-                const settingsForVersion = employeeSettings[version.id] || {};
-                const isSaving = savingSettings[version.id] || false;
-                const totalEmployees = employees.length;
-                const exemptedCount = Object.values(settingsForVersion).filter(s => s.is_exempted).length;
-                const allExempted = exemptedCount === totalEmployees && totalEmployees > 0;
-
-                // Determine contribution type
-                const isPhilHealth = version.type === 'philhealth';
-                const isPagIbig = version.type === 'pagibig';
-                const isSSS = version.type === 'sss';
-
-                // Bulk action handlers
-                const setAllExempted = (exempted: boolean) => {
-                    employees.forEach((employee) => {
-                        updateEmployeeSetting(version.id, employee.id, 'is_exempted', exempted);
-                    });
-                    toast.success(`All employees ${exempted ? 'exempted from' : 'enabled for'} ${getContributionTypeLabel(version.type)}`);
-                };
-
-                const setAllFixedAmount = (amount: string) => {
-                    if (!allExempted) {
-                        employees.forEach((employee) => {
-                            const currentSetting = settingsForVersion[employee.id] || {};
-                            if (!currentSetting.is_exempted) {
-                                updateEmployeeSetting(version.id, employee.id, 'fixed_amount', amount);
-                            }
-                        });
-                        toast.success(`Fixed amount set to ${isPhilHealth ? amount + '%' : '₱' + amount} for all non-exempted employees`);
-                    }
-                };
-
-                const setAllMonthlyCap = (cap: string) => {
-                    if (!isSSS && !allExempted) {
-                        employees.forEach((employee) => {
-                            const currentSetting = settingsForVersion[employee.id] || {};
-                            if (!currentSetting.is_exempted) {
-                                updateEmployeeSetting(version.id, employee.id, 'monthly_cap', cap);
-                            }
-                        });
-                        toast.success(`Monthly cap set to ₱${cap} for all non-exempted employees`);
-                    }
-                };
-
-                return (
-                    <Card key={version.id} className="overflow-hidden shadow-sm hover:shadow-md transition-all duration-200">
-                        {/* Card Header with Gradient */}
-                        <div className={`${getContributionTypeBgColor(version.type)} border-b`}>
-                            <CardHeader className="pb-3">
-                                <div className="flex items-center justify-between flex-wrap gap-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className={`p-2.5 rounded-xl ${getContributionTypeColor(version.type)} bg-white shadow-sm`}>
-                                            {isSSS ? (
-                                                <Shield className="h-5 w-5" />
-                                            ) : (
-                                                <Heart className="h-5 w-5" />
-                                            )}
+                    {/* Tab 2: Employee Settings - with inner tabs for SSS / PhilHealth / Pag-IBIG */}
+                    <TabsContent value="employee-settings">
+                        <div className="space-y-6">
+                            {loadingEmployees ? (
+                                <Card>
+                                    <CardContent className="flex items-center justify-center py-16">
+                                        <LoaderCircle className="h-8 w-8 animate-spin text-muted-foreground" />
+                                        <span className="ml-2 text-muted-foreground">Loading employees...</span>
+                                    </CardContent>
+                                </Card>
+                            ) : employees.length === 0 ? (
+                                <Card>
+                                    <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+                                        <div className="rounded-full bg-muted p-4 mb-4">
+                                            <Users className="h-8 w-8 text-muted-foreground" />
                                         </div>
-                                        <div>
-                                            <CardTitle className="text-xl flex items-center gap-2">
-                                                {getContributionTypeLabel(version.type)}
-                                                <Badge variant="outline" className="text-xs font-normal">
-                                                    {isSSS ? 'Manual Input per Payroll' : (isPhilHealth ? 'Percentage Based (5% default)' : 'Fixed Amount')}
-                                                </Badge>
-                                            </CardTitle>
-                                            <CardDescription className="mt-1">
-                                                {isSSS
-                                                    ? 'Set custom SSS contribution amount per employee. This amount will be used during payroll calculation.'
-                                                    : isPhilHealth
-                                                        ? 'Configure exemption, percentage rate (default 5%), and optional monthly cap. Employee share is 50% of the total.'
-                                                        : `Configure exemption, fixed amount per payroll, and optional monthly cap for ${getContributionTypeLabel(version.type)}.`}
-                                            </CardDescription>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <div className="text-right">
-                                            <div className="text-sm text-muted-foreground">
-                                                {exemptedCount} of {totalEmployees} employees exempted
-                                            </div>
-                                            <div className="w-32 h-1.5 bg-gray-200 rounded-full mt-1 overflow-hidden">
-                                                <div
-                                                    className="h-full bg-green-500 rounded-full transition-all duration-300"
-                                                    style={{ width: `${totalEmployees > 0 ? (exemptedCount / totalEmployees) * 100 : 0}%` }}
-                                                />
-                                            </div>
-                                        </div>
-                                        <Button
-                                            size="sm"
-                                            onClick={() => saveContributionSettings(version.id)}
-                                            disabled={isSaving}
-                                            className="gap-2 shadow-sm"
-                                        >
-                                            {isSaving && <LoaderCircle className="h-4 w-4 animate-spin" />}
-                                            <Save className="h-4 w-4" />
-                                            Save Settings
-                                        </Button>
-                                    </div>
-                                </div>
-                            </CardHeader>
+                                        <p className="text-muted-foreground font-medium">No active employees found</p>
+                                        <p className="text-sm text-muted-foreground mt-1">Please add active employees first to configure contribution settings.</p>
+                                    </CardContent>
+                                </Card>
+                            ) : (
+                                <Tabs value={employeeSettingsTab} onValueChange={(v) => setEmployeeSettingsTab(v as any)} className="space-y-4">
+                                    <TabsList className="grid w-full max-w-md grid-cols-3">
+                                        <TabsTrigger value="sss">SSS</TabsTrigger>
+                                        <TabsTrigger value="philhealth">PhilHealth</TabsTrigger>
+                                        <TabsTrigger value="pagibig">Pag-IBIG</TabsTrigger>
+                                    </TabsList>
+                                    <TabsContent value="sss">
+                                        {renderContributionCard('sss', sssSearchTerm, setSssSearchTerm)}
+                                    </TabsContent>
+                                    <TabsContent value="philhealth">
+                                        {renderContributionCard('philhealth', philhealthSearchTerm, setPhilhealthSearchTerm)}
+                                    </TabsContent>
+                                    <TabsContent value="pagibig">
+                                        {renderContributionCard('pagibig', pagibigSearchTerm, setPagibigSearchTerm)}
+                                    </TabsContent>
+                                </Tabs>
+                            )}
                         </div>
-
-                        <CardContent className="p-0">
-                            {/* Bulk Actions Bar */}
-                            <div className="p-3 border-b bg-muted/20 flex flex-wrap items-center gap-3">
-                                <span className="text-sm font-medium text-muted-foreground">Bulk Actions:</span>
-
-                                {/* Bulk Exempt Toggle */}
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setAllExempted(!allExempted)}
-                                    className="gap-1"
-                                >
-                                    {allExempted ? 'Enable All' : 'Exempt All'}
-                                </Button>
-
-                                {/* Bulk Fixed Amount - Available for ALL types including SSS */}
-                                <div className="flex items-center gap-1">
-                                    <span className="text-sm text-muted-foreground">Set Amount:</span>
-                                    <div className="relative w-28">
-                                        {!isPhilHealth && (
-                                            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">₱</span>
-                                        )}
-                                        <Input
-                                            type="number"
-                                            step="0.01"
-                                            placeholder={isPhilHealth ? "5.00" : "0.00"}
-                                            className={`${!isPhilHealth ? 'pl-6' : 'pl-3'} h-8 text-sm ${allExempted ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                            disabled={allExempted}
-                                            onKeyDown={(e) => {
-                                                if (e.key === 'Enter' && !allExempted) {
-                                                    const target = e.target as HTMLInputElement;
-                                                    setAllFixedAmount(target.value);
-                                                    target.value = '';
-                                                }
-                                            }}
-                                        />
-                                        {isPhilHealth && (
-                                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">%</span>
-                                        )}
-                                    </div>
-                                    <span className="text-xs text-muted-foreground">press Enter</span>
-                                </div>
-
-                                {/* Bulk Monthly Cap - Only for PhilHealth and Pag-IBIG, NOT for SSS */}
-                                {!isSSS && (
-                                    <div className="flex items-center gap-1">
-                                        <span className="text-sm text-muted-foreground">Set Cap:</span>
-                                        <div className="relative w-28">
-                                            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">₱</span>
-                                            <Input
-                                                type="number"
-                                                step="0.01"
-                                                placeholder="No cap"
-                                                className={`pl-6 h-8 text-sm ${allExempted ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                                disabled={allExempted}
-                                                onKeyDown={(e) => {
-                                                    if (e.key === 'Enter' && !allExempted) {
-                                                        const target = e.target as HTMLInputElement;
-                                                        setAllMonthlyCap(target.value);
-                                                        target.value = '';
-                                                    }
-                                                }}
-                                            />
-                                        </div>
-                                        <span className="text-xs text-muted-foreground">press Enter</span>
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="overflow-x-auto">
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow className="bg-muted/30">
-                                            <TableHead className="font-semibold">Employee Name</TableHead>
-                                            <TableHead className="w-24 text-center font-semibold">Exempted</TableHead>
-                                            {!isSSS && (
-                                                <>
-                                                    <TableHead className="w-44 font-semibold">
-                                                        {isPhilHealth ? 'Rate (%)' : 'Fixed Amount (per payroll)'}
-                                                    </TableHead>
-                                                    <TableHead className="w-44 font-semibold">Monthly Cap</TableHead>
-                                                </>
-                                            )}
-                                            {isSSS && (
-                                                <TableHead className="w-56 font-semibold">Fixed Amount (per payroll)</TableHead>
-                                            )}
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {employees.map((employee) => {
-                                            const setting = settingsForVersion[employee.id] || {
-                                                employee_id: employee.id,
-                                                contribution_version_id: version.id,
-                                                is_exempted: false,
-                                                fixed_amount: null,
-                                                monthly_cap: null,
-                                            };
-
-                                            return (
-                                                <TableRow key={employee.id} className="hover:bg-muted/30 transition-colors duration-150">
-                                                    <TableCell className="font-medium">
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-                                                                <span className="text-xs font-semibold text-primary">
-                                                                    {employee.user?.name?.charAt(0).toUpperCase() || 'E'}
-                                                                </span>
-                                                            </div>
-                                                            <span>{employee.user?.name || `Employee #${employee.id}`}</span>
-                                                        </div>
-                                                    </TableCell>
-                                                    <TableCell className="text-center">
-                                                        <Switch
-                                                            checked={setting.is_exempted || false}
-                                                            onCheckedChange={(checked) =>
-                                                                updateEmployeeSetting(version.id, employee.id, 'is_exempted', checked)
-                                                            }
-                                                            className="data-[state=checked]:bg-green-500"
-                                                        />
-                                                    </TableCell>
-                                                    {!isSSS && (
-                                                        <>
-                                                            <TableCell>
-                                                                <div className="relative">
-                                                                    {isPhilHealth ? (
-                                                                        <>
-                                                                            <Input
-                                                                                type="number"
-                                                                                step="0.01"
-                                                                                placeholder="5.00"
-                                                                                value={setting.fixed_amount || ''}
-                                                                                onChange={(e) =>
-                                                                                    updateEmployeeSetting(version.id, employee.id, 'fixed_amount', e.target.value)
-                                                                                }
-                                                                                disabled={setting.is_exempted}
-                                                                                className={`pl-3 pr-8 ${setting.is_exempted ? 'bg-muted/50' : ''}`}
-                                                                            />
-                                                                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">%</span>
-                                                                        </>
-                                                                    ) : (
-                                                                        <>
-                                                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">₱</span>
-                                                                            <Input
-                                                                                type="number"
-                                                                                step="0.01"
-                                                                                placeholder="0.00"
-                                                                                value={setting.fixed_amount || ''}
-                                                                                onChange={(e) =>
-                                                                                    updateEmployeeSetting(version.id, employee.id, 'fixed_amount', e.target.value)
-                                                                                }
-                                                                                disabled={setting.is_exempted}
-                                                                                className={`pl-7 ${setting.is_exempted ? 'bg-muted/50' : ''}`}
-                                                                            />
-                                                                        </>
-                                                                    )}
-                                                                </div>
-                                                                {isPhilHealth && (
-                                                                    <p className="text-xs text-muted-foreground mt-1">
-                                                                        Default: 5% (2.5% employee, 2.5% employer)
-                                                                    </p>
-                                                                )}
-                                                            </TableCell>
-                                                            <TableCell>
-                                                                <div className="relative">
-                                                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">₱</span>
-                                                                    <Input
-                                                                        type="number"
-                                                                        step="0.01"
-                                                                        placeholder="No cap"
-                                                                        value={setting.monthly_cap || ''}
-                                                                        onChange={(e) =>
-                                                                            updateEmployeeSetting(version.id, employee.id, 'monthly_cap', e.target.value)
-                                                                        }
-                                                                        disabled={setting.is_exempted}
-                                                                        className={`pl-7 ${setting.is_exempted ? 'bg-muted/50' : ''}`}
-                                                                    />
-                                                                </div>
-                                                            </TableCell>
-                                                        </>
-                                                    )}
-                                                    {isSSS && (
-                                                        <TableCell>
-                                                            {setting.is_exempted ? (
-                                                                <div className="text-muted-foreground text-sm italic">Exempted</div>
-                                                            ) : (
-                                                                <div className="relative">
-                                                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">₱</span>
-                                                                    <Input
-                                                                        type="number"
-                                                                        step="0.01"
-                                                                        placeholder="Enter amount"
-                                                                        value={setting.fixed_amount || ''}
-                                                                        onChange={(e) => {
-                                                                            updateEmployeeSetting(version.id, employee.id, 'fixed_amount', e.target.value);
-                                                                        }}
-                                                                        disabled={setting.is_exempted}
-                                                                        className={`pl-7 ${setting.is_exempted ? 'bg-muted/50' : ''}`}
-                                                                    />
-                                                                </div>
-                                                            )}
-                                                        </TableCell>
-                                                    )}
-                                                </TableRow>
-                                            );
-                                        })}
-                                    </TableBody>
-                                </Table>
-                            </div>
-                        </CardContent>
-                    </Card>
-                );
-            })
-        )}
-    </div>
-</TabsContent>
-</Tabs>
+                    </TabsContent>
+                </Tabs>
 
                 <DeleteConfirmationDialog
                     isOpen={deleteDialogOpen}
@@ -1035,7 +1158,7 @@ export default function Index({
 }
 
 // =============================================================================
-// CREATE MODAL COMPONENT
+// CREATE MODAL COMPONENT (unchanged)
 // =============================================================================
 
 interface CreateContributionModalProps {
@@ -1296,7 +1419,7 @@ function CreateContributionModal({ isOpen, onClose, existingTypes }: CreateContr
 }
 
 // =============================================================================
-// EDIT MODAL COMPONENT
+// EDIT MODAL COMPONENT (unchanged)
 // =============================================================================
 
 interface EditContributionModalProps {

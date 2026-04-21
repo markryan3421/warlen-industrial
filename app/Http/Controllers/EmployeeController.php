@@ -13,12 +13,13 @@ use App\Models\Branch;
 use App\Models\Employee;
 use App\Models\Position;
 use App\Models\Site;
-use Illuminate\Http\Request;
 use App\Repository\EmployeeRepository;
+use App\Traits\HasPaginatedIndex;
+use Illuminate\Http\Request;
+// use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
-use App\Traits\HasPaginatedIndex;
 
 class EmployeeController extends Controller
 {
@@ -28,46 +29,39 @@ class EmployeeController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request)
-    {
+     public function index(Request $request)
+    { 
         Gate::authorize('viewAny', Employee::class);
 
-        // Full unfiltered collection — cached
-        $employees = $this->cacheRemember('employees', 60, function () {
-            return $this->employeeRepository->getEmployees();
-        });
+        $employees = $this->cacheRemember('employees', 60, fn() => $this->employeeRepository->getEmployees());
+        $archived = $this->employeeRepository->getDeletedEmployees();
 
-        $archivedEmployees = $this->employeeRepository->getDeletedEmployees();
+        $allPositions = $employees->pluck('position.pos_name')->filter()->unique()->sort()->values()->all();
 
-        $allPositions = $employees
-            ->map(fn($e) => optional($e->position)->pos_name)
-            ->filter()           // remove nulls
-            ->unique()
-            ->sort()
-            ->values()
-            ->all();
-
-        // ── Paginate + filter — the trait now handles all filter params ──────────
         $result = $this->paginateCollection(
             items: collect($employees),
             request: $request,
-            searchColumns: [
-                'emp_code',
-                'user.name',
-                'position.pos_name',
-                'branch.branch_name',
-                'site.site_name',
-                'employee_status',
-            ],
+            searchColumns: ['emp_code', 'user.name', 'position.pos_name', 'branch.branch_name', 'site.site_name', 'employee_status'],
         );
 
-        $branchesWithSites = $this->cacheRemember('branchesWithSites', 60, function () {
-            return $this->employeeRepository->getBranchesWithSites();
-        });
-        $positionsList = Position::select('id', 'pos_name')->get();
+        $buildBranchData = fn($collection) => $collection
+            ->groupBy(fn($e) => $e->branch?->id)
+            ->filter()
+            ->map(fn($group, $branchId) => [
+                'id' => $branchId,
+                'branch_name' => $group->first()->branch->branch_name,
+                'sites' => $group
+                    ->filter(fn($e) => $e->site?->id)
+                    ->unique('site.id')
+                    ->map(fn($e) => ['id' => $e->site->id, 'site_name' => $e->site->site_name])
+                    ->values()
+                    ->all(),
+            ])
+            ->values()
+            ->all();
 
         return Inertia::render('employees/index', [
-            'archivedEmployees' => $archivedEmployees,
+            'archivedEmployees' => $archived,
             'employees' => [
                 'data'    => $result['data'],
                 'links'   => $result['pagination']['links'] ?? [],
@@ -76,15 +70,16 @@ class EmployeeController extends Controller
                 'total'   => $result['pagination']['total'] ?? 0,
                 'perPage' => (int) ($request->perPage ?? 10),
             ],
-            'branchesData'  => $branchesWithSites,
-            'allPositions'  => $allPositions,          // ← NEW
-            'filters'       => $result['filters'],     // now includes branch/site/status/positions/dates
-            'totalCount'    => $result['totalCount'],
-            'filteredCount' => $result['filteredCount'],
-            'positionsList' => $positionsList, 
+            'activeBranchesData'   => $buildBranchData($employees),
+            'archivedBranchesData' => $buildBranchData($archived),
+            'allPositions'         => $allPositions,
+            'filters'              => $result['filters'],
+            'totalCount'           => $result['totalCount'],
+            'filteredCount'        => $result['filteredCount'],
+            'positionsList'        => Position::select('id', 'pos_name')->get(),
+            'allBranchesForAssign' => Branch::select('id', 'branch_name')->get(),
         ]);
     }
-
     /**
      * Show the form for creating a new resource.
      */
@@ -197,7 +192,7 @@ class EmployeeController extends Controller
 
         try {
             $validatedData = $request->validated();
-            
+
             $action->update($validatedData, $employee);
 
             if (isset($validatedData['password']) && !empty($validatedData['password'])) {
@@ -237,6 +232,11 @@ class EmployeeController extends Controller
     public function bulkDestroy(Request $request)
     {
         Gate::authorize('bulkDelete', Employee::class);
+
+        if ($this->limit('bulk-destroy:' . auth()->id(), 60, 10)) {
+            return back()->with('error', 'Too many attempts. Please try again later.');
+        }
+
         $ids = $request->input('ids') ?? $request->json('ids');
         if (empty($ids)) {
             return back()->with('error', 'No employees selected.');
@@ -256,6 +256,11 @@ class EmployeeController extends Controller
     public function bulkRestore(Request $request)
     {
         Gate::authorize('bulkRestore', Employee::class);
+
+        if ($this->limit('restore-employee:' . auth()->id(), 60, 10)) {
+            return back()->with('error', 'Too many attempts. Please try again later.');
+        }
+
         $ids = $request->input('ids') ?? $request->json('ids');
         if (empty($ids)) {
             return back()->with('error', 'No archived employees selected.');
@@ -273,6 +278,10 @@ class EmployeeController extends Controller
     {
         Gate::authorize('restore', $employee);
 
+        if ($this->limit('restore-employee-single:' . auth()->id(), 60, 10)) {
+            return back()->with('error', 'Too many attempts. Please try again later.');
+        }
+
         $employee->restore();
 
         $this->cacheForget('employees');
@@ -283,6 +292,10 @@ class EmployeeController extends Controller
     public function bulkAssignPosition(BulkAssignPositionRequest $request)
     {
         Gate::authorize('bulkAssign', Employee::class);
+
+        if ($this->limit('bulk-assign-position:' . auth()->id(), 60, 10)) {
+            return back()->with('error', 'Too many attempts. Please try again later.');
+        }
 
         $position = Position::findOrFail($request->position_id);
 
@@ -302,6 +315,10 @@ class EmployeeController extends Controller
     public function bulkAssignBranchSite(BulkAssignBranchSiteRequest $request)
     {
         Gate::authorize('bulkAssign', Employee::class);
+
+        if ($this->limit('bulk-assign-branch:' . auth()->id(), 60, 10)) {
+            return back()->with('error', 'Too many attempts. Please try again later.');
+        }
 
         $site = Site::where('id', $request->site_id)
             ->where('branch_id', $request->branch_id)

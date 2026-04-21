@@ -1,6 +1,7 @@
 // resources/js/pages/branches/edit.tsx
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { Building2, MapPin, Pencil, Save, ArrowLeft, PlusCircle } from 'lucide-react';
+import { useEffect, useRef } from 'react';
 import { toast } from '@/components/custom-toast';
 import InputError from '@/components/input-error';
 import SiteRepeater from '@/components/site-repeater';
@@ -27,6 +28,16 @@ interface Props {
 	};
 }
 
+// Custom toast style helper (same as index)
+const toastStyle = (color: string) => ({
+	style: {
+		backgroundColor: 'white',
+		color: color,
+		border: '1px solid #e2e8f0',
+		boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+	},
+});
+
 // ─── Main Component ─────────────────────────────────────────────────────────
 export default function Edit({ branch }: Props) {
 	const { data, setData, errors, processing, put } = useForm<FormData>({
@@ -35,17 +46,27 @@ export default function Edit({ branch }: Props) {
 		sites: branch.sites || [],
 	});
 
+	const { props } = usePage<{ flash?: { success?: string; error?: string; warning?: string; info?: string } }>();
+	const lastFlashRef = useRef<string>('');
+
+	// Global flash message listener with custom styling
+	useEffect(() => {
+		const flash = props.flash;
+		if (!flash) return;
+
+		const flashKey = JSON.stringify(flash);
+		if (lastFlashRef.current === flashKey) return;
+		lastFlashRef.current = flashKey;
+
+		if (flash.success) toast.success(flash.success, toastStyle('#16a34a')); // green text
+		if (flash.error) toast.error(flash.error, toastStyle('#dc2626')); // red text (danger)
+		if (flash.warning) toast.warning(flash.warning, toastStyle('#f97316')); // orange text (warning)
+		if (flash.info) toast.info(flash.info, toastStyle('#3b82f6')); // blue text (info)
+	}, [props.flash]);
+
 	function submitBranch(e: React.FormEvent) {
 		e.preventDefault();
-		put(`/branches/${branch.branch_slug}`, {
-			onSuccess: (page) => {
-				toast.success((page.props as any).flash?.success || 'Branch updated successfully.');
-			},
-			onError: (errors) => {
-				const msg = Object.values(errors).flat()[0] || 'Failed to update branch.';
-				toast.error(msg);
-			},
-		});
+		put(`/branches/${branch.branch_slug}`);
 	}
 
 	const setSites = (sites: Array<{ id?: number; site_name: string }>) => {
