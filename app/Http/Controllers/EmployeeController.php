@@ -285,11 +285,18 @@ class EmployeeController extends Controller
         Gate::authorize('bulkAssign', Employee::class);
 
         $position = Position::findOrFail($request->position_id);
-        Employee::whereIn('id', $request->ids)->update(['position_id' => $position->id]);
+
+        $updatedCount = Employee::whereIn('id', $request->ids)
+            ->whereNull('position_id')
+            ->update(['position_id' => $position->id]);
 
         $this->cacheForget('employees');
 
-        return back()->with('success', 'Positions assigned successfully.');
+        $message = $updatedCount > 0
+            ? "Position assigned to {$updatedCount} employee(s). Employees with an existing position were skipped."
+            : "No employees needed a position assignment.";
+
+        return back()->with('success', $message);
     }
 
     public function bulkAssignBranchSite(BulkAssignBranchSiteRequest $request)
@@ -300,13 +307,22 @@ class EmployeeController extends Controller
             ->where('branch_id', $request->branch_id)
             ->firstOrFail();
 
-        Employee::whereIn('id', $request->ids)->update([
-            'branch_id' => $request->branch_id,
-            'site_id' => $request->site_id,
-        ]);
+        $updatedCount = Employee::whereIn('id', $request->ids)
+            ->where(function ($query) {
+                $query->whereNull('branch_id')
+                    ->orWhereNull('site_id');
+            })
+            ->update([
+                'branch_id' => $request->branch_id,
+                'site_id' => $request->site_id,
+            ]);
 
         $this->cacheForget('employees');
 
-        return back()->with('success', 'Branch and site assigned successfully.');
+        $message = $updatedCount > 0
+            ? "Branch and site assigned to {$updatedCount} employee(s). Employees already having both were skipped."
+            : "No employees needed branch/site assignment.";
+
+        return back()->with('success', $message);
     }
 }
