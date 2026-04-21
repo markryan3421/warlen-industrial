@@ -31,6 +31,7 @@ import { toast } from 'sonner';
 import { ApplicationLeavesTableConfig } from '@/config/tables/application-leave';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type BranchWithSites } from '@/types';
+import { DeleteConfirmationDialog } from '@/components/delete-confirmation-modal';
 
 // Declare global window interface for Echo
 declare global {
@@ -254,7 +255,7 @@ export default function Index({ applicationLeaves }: ApplicationLeaveProps) {
 	const FilterToolbar = () => (
 		<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 			{/* Search */}
-			<div className="flex flex-col gap-2">
+			{/* <div className="flex flex-col gap-2">
 				<Label htmlFor="search">Search</Label>
 				<Input
 					id="search"
@@ -263,7 +264,7 @@ export default function Index({ applicationLeaves }: ApplicationLeaveProps) {
 					onChange={(e) => setSearchTerm(e.target.value)}
 					className="w-full h-10"
 				/>
-			</div>
+			</div> */}
 
 			{/* Status Filter */}
 			<div className="flex flex-col gap-2">
@@ -375,6 +376,42 @@ export default function Index({ applicationLeaves }: ApplicationLeaveProps) {
 		}
 	}, [isDialogOpen, selectedLeave]);
 
+	// Delete confirmation states
+	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+	const [itemToDelete, setItemToDelete] = useState<any>(null);
+	const [isDeleting, setIsDeleting] = useState(false);
+
+	const handleDeleteClick = (applicationLeave: any) => {
+		setItemToDelete(applicationLeave);
+		setDeleteDialogOpen(true);
+	};
+
+	const confirmDelete = () => {
+		if (!itemToDelete) return;
+
+
+		setIsDeleting(true);
+		destroy(ApplicationLeaveController.destroy(itemToDelete.slug_app).url, {
+			onSuccess: (page) => {
+				const successMessage = (page.props as any).flash?.success || 'Payroll Period deleted successfully';
+				toast.success(successMessage);
+				setDeleteDialogOpen(false);
+				setItemToDelete(null);
+				setLeaves(prevLeaves =>
+					prevLeaves.filter(leave => leave.slug_app !== itemToDelete.slug_app)
+				);
+			},
+			onError: (errors) => {
+				const errorMessage = Object.values(errors).flat()[0] || 'Failed to delete payroll period';
+				toast.error(errorMessage);
+				setIsDeleting(false);
+			},
+			onFinish: () => {
+				setIsDeleting(false);
+			},
+		});
+	}
+
 	return (
 		<AppLayout breadcrumbs={breadcrumbs}>
 			<Head title="Application Leaves" />
@@ -434,7 +471,7 @@ export default function Index({ applicationLeaves }: ApplicationLeaveProps) {
 						actions={ApplicationLeavesTableConfig.actions}
 						data={filteredLeaves}
 						from={1}
-						onDelete={(id) => handleDelete(id)}
+						onDelete={handleDeleteClick}
 						onView={handleView}
 						onEdit={handleEdit}
 						toolbar={<FilterToolbar />}
@@ -458,6 +495,19 @@ export default function Index({ applicationLeaves }: ApplicationLeaveProps) {
 								</Link>
 							</div>
 						}
+					/>
+
+					<DeleteConfirmationDialog
+						isOpen={deleteDialogOpen}
+						onClose={() => {
+							setDeleteDialogOpen(false);
+							setItemToDelete(null);
+						}}
+						onConfirm={confirmDelete}
+						title='Delete application leave'
+						itemName={itemToDelete?.name || 'this leave'}
+						isLoading={isDeleting}
+						confirmText='Delete application leave'
 					/>
 				</div>
 			</div>
