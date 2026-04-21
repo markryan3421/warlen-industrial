@@ -257,38 +257,33 @@ export default function Index({
     }, [applyFilters]);
 
     // ── Page change ───────────────────────────────────────────────────────────
-    const handlePageChange = useCallback((url: string | null) => {
-        if (!url) return;
-        const match = url.match(/[?&]page=(\d+)/);
-        const page = match ? parseInt(match[1]) : 1;
-        const {
-            searchTerm: s,
-            selectedPositions: pos,
-            selectedBranches: br,
-            selectedSites: st,
-            dateFrom: from,
-            dateTo: to,
-            perPage: pp
-        } = filtersRef.current;
+    const handlePageChange = useCallback((page: number) => {
+        console.log('Page change triggered with page:', page);
 
-        const params: Record<string, string | number> = { page };
-        if (s?.trim()) params.search = s.trim();
-        if (pos?.length) params.positions = pos.join(',');
-        if (br?.length) params.branches = br.join(',');
-        if (st?.length) params.sites = st.join(',');
-        if (from && isValid(from)) params.date_from = format(from, 'yyyy-MM-dd');
-        if (to && isValid(to)) params.date_to = format(to, 'yyyy-MM-dd');
-        if (pp && pp !== '10') params.perPage = pp;
+        // Build params with current filters
+        const params: Record<string, string | number> = {
+            page: page,
+            perPage: perPage,
+        };
+
+        if (searchTerm?.trim()) params.search = searchTerm.trim();
+        if (selectedPositions.length) params.positions = selectedPositions.join(',');
+        if (selectedBranches.length) params.branches = selectedBranches.join(',');
+        if (selectedSites.length) params.sites = selectedSites.join(',');
+        if (dateFrom && isValid(dateFrom)) params.date_from = format(dateFrom, 'yyyy-MM-dd');
+        if (dateTo && isValid(dateTo)) params.date_to = format(dateTo, 'yyyy-MM-dd');
 
         setIsFiltering(true);
         router.get('/payrolls', params, {
-            preserveState: true, preserveScroll: true, replace: true,
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
             only: ['payrolls', 'pagination', 'filters', 'totalCount', 'filteredCount',
                 'totalOvertimePay', 'totalOvertimeHours', 'totalDeductions',
                 'totalNetPay', 'totalGrossPay', 'activeEmployee'],
             onFinish: () => setIsFiltering(false),
         });
-    }, []);
+    }, [searchTerm, selectedPositions, selectedBranches, selectedSites, dateFrom, dateTo, perPage]);
 
     const clearFilters = useCallback(() => {
         setSearchTerm('');

@@ -1,4 +1,3 @@
-// components/custom-table.tsx
 import * as LucidIcons from "lucide-react";
 import { useRoute } from "ziggy-js";
 import {
@@ -9,6 +8,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "./ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 
 // ─── Types ──────────────────────────────────────────────────────────────
 interface TableColumn {
@@ -57,6 +57,11 @@ interface CustomTableProps {
     onSelectChange?: (ids: (string | number)[]) => void;
     selectAll?: boolean;
     onRestore?: (row: TableRow) => void;
+    bulkActions?: {
+        label: string;
+        icon: keyof typeof LucidIcons;
+        onClick: (selectedRows: TableRow[]) => void;
+    }[];
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────
@@ -172,8 +177,9 @@ function ActionDropdown({
     onRestore?: (r: TableRow) => void;
     route: ReturnType<typeof useRoute>;
 }) {
-    const nonDestructive = actions.filter(a => a.label !== "Delete");
+    const nonDestructive = actions.filter(a => a.label !== "Delete" && a.label !== "Restore");
     const destructive = actions.filter(a => a.label === "Delete");
+    const restore = actions.filter(a => a.label === "Restore");
 
     const handleAction = (action: ActionConfig) => {
         if (action.label === "Delete") {
@@ -211,6 +217,26 @@ function ActionDropdown({
                     align="end"
                     className="min-w-[160px] rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl shadow-slate-900/10 dark:shadow-slate-950/40 p-1"
                 >
+                    {/* Restore actions */}
+                    {restore.map((action, i) => {
+                        const Icon = LucidIcons[action.icon] as React.ElementType;
+                        return (
+                            <DropdownMenuItem
+                                key={i}
+                                onClick={() => handleAction(action)}
+                                className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-950/20 cursor-pointer transition-colors"
+                            >
+                                <Icon className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.75} />
+                                {action.label}
+                            </DropdownMenuItem>
+                        );
+                    })}
+
+                    {restore.length > 0 && nonDestructive.length > 0 && (
+                        <DropdownMenuSeparator className="my-1 border-slate-100 dark:border-slate-800" />
+                    )}
+
+                    {/* Non-destructive actions */}
                     {nonDestructive.map((action, i) => {
                         const Icon = LucidIcons[action.icon] as React.ElementType;
                         return (
@@ -225,7 +251,8 @@ function ActionDropdown({
                         );
                     })}
 
-                    {destructive.length > 0 && nonDestructive.length > 0 && (
+                    {/* Separator + destructive */}
+                    {destructive.length > 0 && (nonDestructive.length > 0 || restore.length > 0) && (
                         <DropdownMenuSeparator className="my-1 border-slate-100 dark:border-slate-800" />
                     )}
                     {destructive.map((action, i) => {
@@ -269,6 +296,7 @@ export const CustomTable = ({
     onSelectChange,
     selectAll = false,
     onRestore,
+    bulkActions = [],
 }: CustomTableProps) => {
     const route = useRoute();
     const dataColumns = columns.filter(col => !col.isAction);
@@ -352,6 +380,9 @@ export const CustomTable = ({
         );
     };
 
+    const selectedRows = data.filter(row => selectedIds.includes(row.id));
+    const hasSelected = selectedRows.length > 0;
+
     if (!data || data.length === 0) {
         return (
             <div className="w-full font-sans">
@@ -380,7 +411,221 @@ export const CustomTable = ({
         );
     }
 
-    // ── DESKTOP VIEW (≥1024px) with selection column ────────────────────
+    // ── MOBILE VIEW (<768px) ────────────────────────────────────────────
+    const MobileView = () => (
+        <div className="block md:hidden">
+            {hasSelected && (
+                <div className="sticky top-0 z-10 bg-[#1d4791] text-white p-3 flex items-center justify-between shadow-lg">
+                    <div className="flex items-center gap-2">
+                        <Checkbox
+                            checked={selectAll}
+                            onCheckedChange={handleSelectAll}
+                            className="border-white/50 data-[state=checked]:bg-white data-[state=checked]:text-[#1d4791]"
+                        />
+                        <span className="text-sm font-medium">{selectedRows.length} selected</span>
+                    </div>
+                    <div className="flex gap-2">
+                        {bulkActions.map((action, idx) => {
+                            const Icon = LucidIcons[action.icon] as React.ElementType;
+                            return (
+                                <button
+                                    key={idx}
+                                    onClick={() => action.onClick(selectedRows)}
+                                    className="px-3 py-1.5 bg-white/20 rounded-lg text-sm font-medium hover:bg-white/30 transition-colors"
+                                >
+                                    <Icon className="h-4 w-4" />
+                                    <span className="ml-1">{action.label}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+            <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                {data.map((row, index) => (
+                    <div
+                        key={row.id || index}
+                        className={`px-4 py-4 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors duration-150 ${
+                            selectedIds.includes(row.id) ? 'bg-blue-50 dark:bg-blue-950/30' : ''
+                        }`}
+                    >
+                        {/* Card header with selection and actions */}
+                        <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-3">
+                                {selectable && (
+                                    <Checkbox
+                                        checked={selectedIds.includes(row.id)}
+                                        onCheckedChange={(checked) => handleSelectRow(row, checked === true)}
+                                    />
+                                )}
+                                <IndexBadge value={from + index} />
+                            </div>
+                            {hasActions && (
+                                <ActionDropdown
+                                    {...actionProps}
+                                    row={row}
+                                />
+                            )}
+                        </div>
+
+                        {/* Field grid */}
+                        <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
+                            {dataColumns.map(col => (
+                                <div key={col.key} className="flex flex-col min-w-0">
+                                    <dt className="text-[10px] font-bold tracking-widest uppercase text-slate-400 dark:text-slate-500 mb-0.5 truncate">
+                                        {col.label}
+                                    </dt>
+                                    <dd className="text-[13px] text-slate-700 dark:text-slate-300 overflow-hidden">
+                                        <CellValue col={col} row={row} />
+                                    </dd>
+                                </div>
+                            ))}
+                        </dl>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+
+    // ── TABLET VIEW (768px–1023px) ──────────────────────────────────────
+    const TabletView = () => (
+        <div className="hidden md:block lg:hidden">
+            {hasSelected && (
+                <div className="sticky top-0 z-10 bg-[#1d4791] text-white p-3 flex items-center justify-between shadow-lg">
+                    <div className="flex items-center gap-2">
+                        <Checkbox
+                            checked={selectAll}
+                            onCheckedChange={handleSelectAll}
+                            className="border-white/50 data-[state=checked]:bg-white data-[state=checked]:text-[#1d4791]"
+                        />
+                        <span className="text-sm font-medium">{selectedRows.length} selected</span>
+                    </div>
+                    <div className="flex gap-2">
+                        {bulkActions.map((action, idx) => {
+                            const Icon = LucidIcons[action.icon] as React.ElementType;
+                            return (
+                                <button
+                                    key={idx}
+                                    onClick={() => action.onClick(selectedRows)}
+                                    className="px-3 py-1.5 bg-white/20 rounded-lg text-sm font-medium hover:bg-white/30 transition-colors"
+                                >
+                                    <Icon className="h-4 w-4" />
+                                    <span className="ml-1">{action.label}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+            <div className="p-4 grid grid-cols-2 gap-3">
+                {data.map((row, index) => (
+                    <div
+                        key={row.id || index}
+                        className={`rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/60 p-4 hover:border-[#1d4791]/40 dark:hover:border-[#1d4791]/50 hover:shadow-md transition-all duration-200 group ${
+                            selectedIds.includes(row.id) ? 'border-blue-400 bg-blue-50/50 dark:bg-blue-950/30' : ''
+                        }`}
+                    >
+                        {/* Card header */}
+                        <div className="flex items-center justify-between mb-3 pb-3 border-b border-slate-100 dark:border-slate-700/60">
+                            <div className="flex items-center gap-3">
+                                {selectable && (
+                                    <Checkbox
+                                        checked={selectedIds.includes(row.id)}
+                                        onCheckedChange={(checked) => handleSelectRow(row, checked === true)}
+                                    />
+                                )}
+                                <IndexBadge value={from + index} />
+                            </div>
+                            {hasActions && (
+                                <ActionDropdown
+                                    {...actionProps}
+                                    row={row}
+                                />
+                            )}
+                        </div>
+
+                        {/* Field list */}
+                        <dl className="space-y-2">
+                            {dataColumns.map(col => (
+                                <div key={col.key} className="flex items-start justify-between gap-3 min-w-0">
+                                    <dt className="text-[10px] font-bold tracking-widest uppercase text-slate-400 dark:text-slate-500 shrink-0 pt-0.5">
+                                        {col.label}
+                                    </dt>
+                                    <dd className="text-[12.5px] font-medium text-slate-700 dark:text-slate-300 text-right overflow-hidden max-w-[55%]">
+                                        <CellValue col={col} row={row} />
+                                    </dd>
+                                </div>
+                            ))}
+                        </dl>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+
+    // ── DESKTOP VIEW (≥1024px) ─────────────────────────────────────────
+    const DesktopView = () => (
+        <div className="hidden lg:block overflow-x-auto">
+            <table className="w-full border-collapse text-[13px] text-slate-700 dark:text-slate-300">
+                <thead>
+                    <tr className="border-b border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-800/80 border">
+                        {selectable && (
+                            <th className="w-10 px-2 py-3 text-center border">
+                                <Checkbox
+                                    checked={selectAll}
+                                    onCheckedChange={handleSelectAll}
+                                />
+                            </th>
+                        )}
+                        <th className="w-14 px-5 py-3 text-center text-[10px] font-black tracking-widest uppercase text-[#1d4791] dark:text-blue-400 whitespace-nowrap">
+                            #
+                        </th>
+                        {columns.map(col => (
+                            <th
+                                key={col.key}
+                                className={`px-4 py-3 text-left text-[10px] font-black tracking-widest uppercase whitespace-nowrap text-slate-500 dark:text-slate-400 ${col.className ?? ""}`}
+                            >
+                                {col.label}
+                            </th>
+                        ))}
+                    </tr>
+                </thead>
+                <tbody>
+                    {data.map((row, index) => (
+                        <tr
+                            key={index}
+                            className={`group border-b border-slate-100 dark:border-slate-800 last:border-0 bg-white dark:bg-slate-900 hover:bg-[#1d4791]/[0.03] dark:hover:bg-[#1d4791]/10 transition-colors duration-150 `}
+                        >
+                            {selectable && (
+                                <td className="px-2 py-3.5 text-center border">
+                                    <Checkbox
+                                        checked={selectedIds.includes(row.id)}
+                                        onCheckedChange={(checked) => handleSelectRow(row, checked === true)}
+                                    />
+                                </td>
+                            )}
+                            <td className="px-5 py-3.5 text-center align-middle border-b">
+                                <IndexBadge value={from + index} />
+                            </td>
+                            {columns.map(col => (
+                                <td
+                                    key={col.key}
+                                    className={`px-4 py-3.5 align-middle text-left text-slate-700 dark:text-slate-300 overflow-hidden border-b ${col.className ?? ""}`}
+                                >
+                                    {col.isAction ? (
+                                        <ActionDropdown {...actionProps} row={row} />
+                                    ) : (
+                                        <CellValue col={col} row={row} />
+                                    )}
+                                </td>
+                            ))}
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
+    );
+
     return (
         <div className="w-full font-sans">
             <div className="rounded-2xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
@@ -399,91 +644,49 @@ export const CustomTable = ({
                     </div>
                 </div>
 
+                {/* Toolbar */}
                 {toolbar && (
                     <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40">
                         {toolbar}
                     </div>
                 )}
 
-                {/* MOBILE (<768px) - simplified card view (add your own) */}
-                <div className="block md:hidden">
-                    {/* You can implement a card-based mobile view here */}
-                    <div className="p-4 text-center text-sm text-slate-500">
-                        Mobile view not implemented in this example
-                    </div>
-                </div>
-
-                {/* TABLET (768px–1023px) - simplified card view */}
-                <div className="hidden md:block lg:hidden">
-                    <div className="p-4 text-center text-sm text-slate-500">
-                        Tablet view not implemented in this example
-                    </div>
-                </div>
-
-                {/* DESKTOP (≥1024px) - full table with selection */}
-                <div className="hidden lg:block overflow-x-auto">
-                    <table className="w-full border-collapse text-[13px] text-slate-700 dark:text-slate-300">
-                        <thead>
-                            <tr className="border-b border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-800/80">
-                                {selectable && (
-                                    <th className="w-10 px-2 py-3 text-center">
-                                        <input
-                                            type="checkbox"
-                                            checked={selectAll}
-                                            onChange={(e) => handleSelectAll(e.target.checked)}
-                                            className="rounded border-slate-300 dark:border-slate-600"
-                                        />
-                                    </th>
-                                )}
-                                <th className="w-14 px-5 py-3 text-center text-[10px] font-black tracking-widest uppercase text-[#1d4791] dark:text-blue-400 whitespace-nowrap">
-                                    #
-                                </th>
-                                {columns.map(col => (
-                                    <th
-                                        key={col.key}
-                                        className={`px-4 py-3 text-left text-[10px] font-black tracking-widest uppercase whitespace-nowrap text-slate-500 dark:text-slate-400 ${col.className ?? ""}`}
+                {/* Bulk Action Bar (Desktop) */}
+                {selectable && hasSelected && (
+                    <div className="hidden lg:flex items-center justify-between px-5 py-3 bg-[#1d4791]/5 dark:bg-[#1d4791]/10 border-b border-slate-100 dark:border-slate-800">
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                {selectedRows.length} item{selectedRows.length !== 1 ? 's' : ''} selected
+                            </span>
+                        </div>
+                        <div className="flex gap-2">
+                            {bulkActions.map((action, idx) => {
+                                const Icon = LucidIcons[action.icon] as React.ElementType;
+                                return (
+                                    <Button
+                                        key={idx}
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => action.onClick(selectedRows)}
+                                        className="text-sm"
                                     >
-                                        {col.label}
-                                    </th>
-                                ))}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {data.map((row, index) => (
-                                <tr
-                                    key={row.id || index}
-                                    className="group border-b border-slate-100 dark:border-slate-800 last:border-0 bg-white dark:bg-slate-900 hover:bg-[#1d4791]/[0.03] dark:hover:bg-[#1d4791]/10 transition-colors duration-150"
-                                >
-                                    {selectable && (
-                                        <td className="px-2 py-3.5 text-center">
-                                            <input
-                                                type="checkbox"
-                                                checked={selectedIds.includes(row.id)}
-                                                onChange={(e) => handleSelectRow(row, e.target.checked)}
-                                                className="rounded border-slate-300 dark:border-slate-600"
-                                            />
-                                        </td>
-                                    )}
-                                    <td className="px-5 py-3.5 text-center align-middle">
-                                        <IndexBadge value={from + index} />
-                                    </td>
-                                    {columns.map(col => (
-                                        <td
-                                            key={col.key}
-                                            className={`px-4 py-3.5 align-middle text-left text-slate-700 dark:text-slate-300 overflow-hidden ${col.className ?? ""}`}
-                                        >
-                                            {col.isAction ? (
-                                                <ActionDropdown {...actionProps} row={row} />
-                                            ) : (
-                                                <CellValue col={col} row={row} />
-                                            )}
-                                        </td>
-                                    ))}
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                                        <Icon className="h-4 w-4 mr-1" />
+                                        {action.label}
+                                    </Button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+
+                {/* Mobile View */}
+                <MobileView />
+
+                {/* Tablet View */}
+                <TabletView />
+
+                {/* Desktop View */}
+                <DesktopView />
 
                 {/* Footer */}
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-5 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40">

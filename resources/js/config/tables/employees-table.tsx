@@ -3,18 +3,18 @@ export const EmployeesTableConfig = {
     {
       label: 'Code',
       key: 'emp_code',
-      className: 'border px-4 py-3 tracking-wider'
+      className: ' px-4 py-3 tracking-wider'
     },
     {
       label: 'Name',
       key: 'user.name',  // if your table supports dot notation; otherwise use render
-      className: 'border p-4',
+      className: ' p-4',
       render: (row: any) => row.user?.name || 'N/A'  // fallback if dot notation not supported
     },
     {
       label: 'Position',
       key: 'position.pos_name',
-      className: 'border p-4',
+      className: ' p-4',
       render: (row: any) => row.position?.pos_name && !row.position.deleted_at
         ? row.position.pos_name
         : <span className="text-gray-500 italic">Not assigned</span>
@@ -22,25 +22,25 @@ export const EmployeesTableConfig = {
     {
       label: 'Pay Frequency',
       key: 'pay_frequency',
-      className: 'border p-4 capitalize',
+      className: ' p-4 capitalize',
       render: (row: any) => row.pay_frequency?.replace('_', ' ') || 'N/A'
     },
     {
       label: 'Branch',
       key: 'branch.branch_name',
-      className: 'border p-4',
+      className: ' p-4',
       render: (row: any) => row.branch?.branch_name || 'N/A'
     },
     {
       label: 'Site',
       key: 'site.site_name',
-      className: 'border p-4',
+      className: ' p-4',
       render: (row: any) => row.site?.site_name || 'N/A'
     },
     {
       label: 'Contract Period',
       key: 'contract_period',
-      className: 'border p-4',
+      className: ' p-4',
       render: (row: any) => {
         if (row.contract_start_date && row.contract_end_date) {
           return `${formatDate(row.contract_start_date)} - ${formatDate(row.contract_end_date)}`;
@@ -51,7 +51,7 @@ export const EmployeesTableConfig = {
     {
       label: 'Status',
       key: 'employee_status',
-      className: 'border p-4',
+      className: ' p-4',
       render: (row: any) => {
         const isActive = ['active', 'Active', 'ACTIVE'].includes(row.employee_status);
         return (
@@ -66,7 +66,7 @@ export const EmployeesTableConfig = {
       label: '',
       key: 'actions',
       isAction: true,
-      className: 'border p-4 text-center'
+      className: 'p-4 text-center'
     },
   ],
   actions: [

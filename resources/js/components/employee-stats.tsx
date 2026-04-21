@@ -291,7 +291,7 @@ export default function EmployeeStats() {
 					</div>
 					<div className="bg-white px-5 py-5">
 						<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-							<LifetimeCard title="Total Earnings" value={formatCurrency(lifetime.total_pay)} icon={DollarSign} delay={0} />
+							<LifetimeCard title="Total Earnings" value={formatCurrency(lifetime.total_pay)} icon={PhilippinePeso} delay={0} />
 							<LifetimeCard title="Total Work Hours" value={`${lifetime.total_work_hours} hrs`} icon={Briefcase} delay={60} />
 							<LifetimeCard title="Total Late Minutes" value={`${lifetime.total_late_minutes} min`} icon={Clock} delay={120} />
 							<LifetimeCard title="Total Overtime" value={`${lifetime.total_overtime_hours} hrs`} icon={TrendingUp} delay={180} />
