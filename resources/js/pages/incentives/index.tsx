@@ -39,6 +39,7 @@ interface Incentive {
     incentive_amount: string | number;
     payroll_period_id?: number;
     payroll_period?: PayrollPeriod;
+    is_daily?: boolean; // added
     employees?: Array<{
         id: number;
         user?: { name: string };
@@ -125,6 +126,7 @@ export default function Index({
         incentive_amount: '',
         payroll_period_id: '',
         employee_ids: [] as number[],
+        is_daily: false, // added
     });
 
     // Navigate with filters
@@ -211,6 +213,7 @@ export default function Index({
                 incentive_amount: String(editingIncentive.incentive_amount),
                 payroll_period_id: String(editingIncentive.payroll_period_id || ''),
                 employee_ids: editingIncentive.employees?.map(emp => emp.id) || [],
+                is_daily: editingIncentive.is_daily ?? false, // added
             });
         }
     }, [editingIncentive, isEditing]);
@@ -277,15 +280,16 @@ export default function Index({
             incentive_amount: String(incentive.incentive_amount),
             payroll_period_id: String(incentive.payroll_period_id || ''),
             employee_ids: incentive.employees?.map(emp => emp.id) || [],
+            is_daily: incentive.is_daily ?? false, // added – previously missing
         });
-        setIsEditModalOpen(true);  // ← This should be true
-        setIsCreateModalOpen(false); // ← Make sure create modal is false
+        setIsEditModalOpen(true);
+        setIsCreateModalOpen(false);
     };
 
     const handleCreate = () => {
         reset();
-        setIsCreateModalOpen(true);  // ← This should be true
-        setIsEditModalOpen(false);   // ← Make sure edit modal is false
+        setIsCreateModalOpen(true);
+        setIsEditModalOpen(false);
     };
 
     const handleCloseModal = () => {
@@ -293,7 +297,7 @@ export default function Index({
         setIsEditModalOpen(false);
         setSelectedIncentive(null);
         setShowEmployeeModal(false);
-        reset(); // This resets the form
+        reset();
     };
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -553,7 +557,7 @@ export default function Index({
             <IncentiveFormModal
                 isOpen={isCreateModalOpen || isEditModalOpen}
                 onClose={handleCloseModal}
-                isEditing={isEditModalOpen}  // ← This is key - make sure it's false when creating
+                isEditing={isEditModalOpen}
                 incentive={selectedIncentive}
                 payroll_periods={payroll_periods}
                 employees={employees}

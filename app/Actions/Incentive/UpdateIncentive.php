@@ -19,7 +19,8 @@ class UpdateIncentive
         $incentive->update([
             'payroll_period_id' => $data['payroll_period_id'],
             'incentive_name' => $data['incentive_name'],
-            'incentive_amount' => $data['incentive_amount']
+            'incentive_amount' => $data['incentive_amount'],
+            'is_daily' => $data['is_daily'] ?? false,
         ]);
         
         // Attach employees if provided

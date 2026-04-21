@@ -18,6 +18,7 @@ return new class extends Migration
             $table->foreignIdFor(PayrollPeriod::class,'payroll_period_id')->constrained('payroll_periods')->cascadeOnDelete();
             $table->string('incentive_name');
             $table->string('incentive_amount');
+            $table->boolean('is_daily')->default(false);
             $table->timestamps();
         });
     }

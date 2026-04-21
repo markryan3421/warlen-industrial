@@ -11,7 +11,8 @@ class IncentiveService
 {
     /**
      * Get incentives for an employee in a specific payroll period
-     * Calculates incentive amount based on attended days
+     * Calculates incentive amount based on attended days if is_daily = true,
+     * otherwise uses the fixed amount.
      */
     public function getEmployeeIncentives(int $payrollPeriodId, int $employeeId, ?AttendancePeriodStat $attendanceStats = null): array
     {
@@ -51,26 +52,45 @@ class IncentiveService
             Log::info("Found " . $incentiveRecords->count() . " incentive records for employee {$employeeId}");
             
             foreach ($incentiveRecords as $incentive) {
-                // Calculate based on attended days
-                $attendedDays = (int) $attendanceStats->attended_days;
-                $dailyIncentiveAmount = (float) $incentive->incentive_amount;
-                $calculatedAmount = $dailyIncentiveAmount * $attendedDays;
-                
-                Log::info("Incentive calculation for {$employeeId}:", [
-                    'incentive_name' => $incentive->incentive_name,
-                    'daily_amount' => $dailyIncentiveAmount,
-                    'attended_days' => $attendedDays,
-                    'calculated_amount' => $calculatedAmount,
-                    'formula' => "{$dailyIncentiveAmount} x {$attendedDays} = {$calculatedAmount}"
-                ]);
-                
-                $incentives[] = [
-                    'id' => $incentive->id,
-                    'name' => $incentive->incentive_name,
-                    'amount' => $calculatedAmount,
-                    'attended_days' => $attendedDays,
-                    'daily_rate' => $dailyIncentiveAmount,
-                ];
+                // Determine if incentive is daily or one-time
+                if ($incentive->is_daily == true) {
+                    // Daily incentive: multiply by attended days
+                    $attendedDays = (int) $attendanceStats->attended_days;
+                    $dailyRate = (float) $incentive->incentive_amount;
+                    $calculatedAmount = $dailyRate * $attendedDays;
+                    
+                    Log::info("Daily incentive calculation for {$employeeId}:", [
+                        'incentive_name' => $incentive->incentive_name,
+                        'daily_amount' => $dailyRate,
+                        'attended_days' => $attendedDays,
+                        'calculated_amount' => $calculatedAmount,
+                        'formula' => "{$dailyRate} x {$attendedDays} = {$calculatedAmount}"
+                    ]);
+                    
+                    $incentives[] = [
+                        'id' => $incentive->id,
+                        'name' => $incentive->incentive_name,
+                        'amount' => $calculatedAmount,
+                        'attended_days' => $attendedDays,
+                        'daily_rate' => $dailyRate,
+                    ];
+                }
+                if($incentive->is_daily == false) {
+                    $fixedAmount = (float) $incentive->incentive_amount;
+                    
+                    Log::info("One-time incentive calculation for {$employeeId}:", [
+                        'incentive_name' => $incentive->incentive_name,
+                        'fixed_amount' => $fixedAmount,
+                    ]);
+                    
+                    $incentives[] = [
+                        'id' => $incentive->id,
+                        'name' => $incentive->incentive_name,
+                        'amount' => $fixedAmount,
+                        // No attended_days or daily_rate for one-time incentives
+                    ];
+                }
+               
             }
             
         } catch (\Exception $e) {
