@@ -3,6 +3,7 @@ import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { Building2, MapPin, Pencil, Save, ArrowLeft, PlusCircle } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { toast } from '@/components/custom-toast';
+import { CustomToast } from '@/components/custom-toast';   // ← added
 import InputError from '@/components/input-error';
 import SiteRepeater from '@/components/site-repeater';
 import { Button } from '@/components/ui/button';
@@ -28,7 +29,7 @@ interface Props {
 	};
 }
 
-// Custom toast style helper (same as index)
+// Custom toast style helper (same as index & create)
 const toastStyle = (color: string) => ({
 	style: {
 		backgroundColor: 'white',
@@ -47,21 +48,27 @@ export default function Edit({ branch }: Props) {
 	});
 
 	const { props } = usePage<{ flash?: { success?: string; error?: string; warning?: string; info?: string } }>();
-	const lastFlashRef = useRef<string>('');
 
-	// Global flash message listener with custom styling
+	// Time‑based duplicate prevention (500ms) – matches index & create
+	const lastFlashRef = useRef<{ key: string; time: number }>({ key: '', time: 0 });
+
 	useEffect(() => {
 		const flash = props.flash;
 		if (!flash) return;
 
 		const flashKey = JSON.stringify(flash);
-		if (lastFlashRef.current === flashKey) return;
-		lastFlashRef.current = flashKey;
+		const now = Date.now();
+		const last = lastFlashRef.current;
 
-		if (flash.success) toast.success(flash.success, toastStyle('#16a34a')); // green text
-		if (flash.error) toast.error(flash.error, toastStyle('#dc2626')); // red text (danger)
-		if (flash.warning) toast.warning(flash.warning, toastStyle('#f97316')); // orange text (warning)
-		if (flash.info) toast.info(flash.info, toastStyle('#3b82f6')); // blue text (info)
+		if (last.key === flashKey && (now - last.time) < 500) {
+			return;
+		}
+		lastFlashRef.current = { key: flashKey, time: now };
+
+		if (flash.success) toast.success(flash.success, toastStyle('#16a34a'));
+		if (flash.error) toast.error(flash.error, toastStyle('#dc2626'));
+		if (flash.warning) toast.warning(flash.warning, toastStyle('#f97316'));
+		if (flash.info) toast.info(flash.info, toastStyle('#3b82f6'));
 	}, [props.flash]);
 
 	function submitBranch(e: React.FormEvent) {
@@ -81,6 +88,7 @@ export default function Edit({ branch }: Props) {
 	return (
 		<AppLayout breadcrumbs={breadcrumbs}>
 			<Head title={`Edit Branch: ${branch.branch_name}`} />
+			<CustomToast />   {/* ← added */}
 
 			<style>{`
                 @keyframes fadeUp {
