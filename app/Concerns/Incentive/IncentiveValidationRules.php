@@ -18,6 +18,10 @@ trait IncentiveValidationRules
                 'max:255',
                 'regex:/^[a-zA-Z0-9\s\-_\.&,()@]+$/',
             ],
+            'is_daily' => [
+                'required',
+                'boolean',
+            ],
             'incentive_amount' => [
                 'required',
                 'numeric',
@@ -42,6 +46,7 @@ trait IncentiveValidationRules
             'payroll_period_id' => 'Payroll Period',
             'incentive_name' => 'Incentive Name',
             'incentive_amount' => 'Incentive Amount',
+            'is_daily' => 'Is Daily',
         ];
     }
 
@@ -50,6 +55,7 @@ trait IncentiveValidationRules
         return [
             'employee_ids.required' => 'Please select at least one employee.',
             'employee_ids.min' => 'Please select at least one employee.',
+            'is_daily.required' => 'The is daily field is required.',
         ];
     }
 }
