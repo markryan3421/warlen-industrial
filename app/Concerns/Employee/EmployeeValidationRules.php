@@ -87,9 +87,11 @@ trait EmployeeValidationRules
             'pay_frequency' => ['required'],
 
             'site_id' => [
-                'exists:sites,id',
                 'nullable',
-                'sometimes',
+                'exists:sites,id',
+                Rule::exists('sites', 'id')->where(function ($query) {
+                    $query->where('branch_id', $this->branch_id);
+                }),
             ],
 
             'avatar' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:2048'],
