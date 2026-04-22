@@ -172,14 +172,18 @@ class IncentiveController extends Controller
 	 */
 	public function store(StoreIncentiveRequest $request, CreateNewIncentive $incentive)
 	{
+		Log::info('Store method called', $request->validated());
+
 		Gate::authorize('create', Incentive::class);
 		DB::beginTransaction();
 		try {
-			$incentive->create($request->validated());
+			$result = $incentive->create($request->validated());
+			Log::info('Result of create: ', ['id' => $result->id ?? null]);
 			DB::commit();
 			return redirect()->route('incentives.index')->with('success', 'Incentive created successfully.');
 		} catch (\Exception $e) {
 			DB::rollBack();
+			Log::error('Store exception: ' . $e->getMessage());
 			return redirect()->route('incentives.index')->with('error', 'Failed to create incentive: ' . $e->getMessage());
 		}
 	}
@@ -187,63 +191,19 @@ class IncentiveController extends Controller
 	/**
 	 * Show the form for editing the specified resource.
 	 */
-	public function edit(Request $request, Incentive $incentive)
+	public function edit(Incentive $incentive)
 	{
-		Gate::authorize('update', $incentive);
-		$incentive->load('payroll_period', 'employees');
+		// Load the incentive with its employees relationship
+		$incentive->load('employees');
 
-		// Get filter parameters to preserve state
-		$search = $request->input('search');
-		$dateFrom = $request->input('date_from');
-		$dateTo = $request->input('date_to');
-		$perPage = $request->input('per_page', 10);
-
-		// Build query with same filters for background data
-		$incentivesQuery = Incentive::query()
-			->with([
-				'payroll_period',
-				'employees',
-				'employees.user',
-				'employees.position',
-				'employees.branch'
-			])
-			->orderBy('created_at', 'desc');
-
-		if ($search) {
-			$incentivesQuery->where('incentive_name', 'like', '%' . $search . '%');
-		}
-
-		if ($dateFrom) {
-			$incentivesQuery->whereHas('payroll_period', function ($query) use ($dateFrom) {
-				$query->whereDate('start_date', '>=', $dateFrom);
-			});
-		}
-
-		if ($dateTo) {
-			$incentivesQuery->whereHas('payroll_period', function ($query) use ($dateTo) {
-				$query->whereDate('end_date', '<=', $dateTo);
-			});
-		}
-
-		$incentives = $incentivesQuery->paginate($perPage);
-
-		// Append query parameters
-		if ($search) $incentives->appends('search', $search);
-		if ($dateFrom) $incentives->appends('date_from', $dateFrom);
-		if ($dateTo) $incentives->appends('date_to', $dateTo);
-		$incentives->appends('per_page', $perPage);
-
-		// Get payroll periods (same logic as index)
+		// Get OPEN payroll periods
 		$payroll_periods = PayrollPeriod::query()
 			->where('payroll_per_status', PayrollPeriodStatusEnum::OPEN->value)
 			->get(['id', 'start_date', 'end_date', 'pay_date', 'payroll_per_status']);
 
-		// Fallback if no open periods
-		if ($payroll_periods->count() === 0) {
-			$payroll_periods = PayrollPeriod::query()
-				->get(['id', 'start_date', 'end_date', 'pay_date', 'payroll_per_status']);
-		}
+		Log::info('Open payroll periods count: ' . $payroll_periods->count());
 
+		// Get all employees with user relationship for selection
 		$employees = Employee::with('user')
 			->get(['id', 'emp_code', 'user_id'])
 			->map(function ($employee) {
@@ -256,19 +216,32 @@ class IncentiveController extends Controller
 				];
 			});
 
-		return Inertia::render('incentives/index', [
-			'incentives' => $incentives,
-			'editingIncentive' => $incentive,
-			'employees' => $employees,
+		// If no open periods, try to get all periods (for testing)
+		if ($payroll_periods->count() === 0) {
+			Log::warning('No OPEN payroll periods found. Getting all periods for testing.');
+			$payroll_periods = PayrollPeriod::query()
+				->get(['id', 'start_date', 'end_date', 'pay_date', 'payroll_per_status']);
+			Log::info('All payroll periods count (fallback): ' . $payroll_periods->count());
+		}
+
+		Log::info('Employees count: ' . $employees->count());
+
+		return Inertia::render('incentives/edit', [
+			'incentive' => [
+				'id' => $incentive->id,
+				'incentive_name' => $incentive->incentive_name,
+				'incentive_amount' => $incentive->incentive_amount,
+				'payroll_period_id' => $incentive->payroll_period_id,
+				'is_daily' => $incentive->is_daily,
+				'employees' => $incentive->employees->map(function ($employee) {
+					return [
+						'id' => $employee->id,
+						'name' => $employee->user?->name ?? 'Unknown',
+					];
+				}),
+			],
 			'payroll_periods' => $payroll_periods,
-			'isEditing' => true,
-			'filters' => [
-				'search' => $search,
-				'date_from' => $dateFrom,
-				'date_to' => $dateTo,
-				'page' => $incentives->currentPage(),
-				'per_page' => $perPage,
-			]
+			'employees' => $employees,
 		]);
 	}
 

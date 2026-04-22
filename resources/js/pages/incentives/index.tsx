@@ -17,6 +17,7 @@ import { CustomPagination } from '@/components/custom-pagination';
 import { IncentivesTableConfig } from '@/config/tables/incentives-table';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { formatDateSimple } from '@/utils/formatDateSimple';
+import IncentiveController from '@/actions/App/Http/Controllers/IncentiveController';
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Incentives', href: '/incentives' }];
 
@@ -218,7 +219,7 @@ export default function Index({ incentives, payroll_periods, employees, filters 
 
 	// ✅ Simplified: Direct navigation to edit page
 	const handleEdit = (incentive: Incentive) => {
-		router.visit(`/incentives/${incentive.id}/edit`);
+		router.visit(IncentiveController.edit(incentive.id).url);
 	};
 
 	// ✅ Handle delete
