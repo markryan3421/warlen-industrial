@@ -43,18 +43,6 @@ export function NavMain({ items, label, isCollapsed = false }: NavMainProps) {
                             isActive = isCurrentOrParentUrl(item.href);
                         }
 
-                        // Debug logging (only in development)
-                        if (process.env.NODE_ENV === 'development') {
-                            console.log(`[NavMain] ${item.title}:`, {
-                                href: item.href,
-                                pattern: item.pattern,
-                                fullUrl: currentUrl,
-                                currentPath,
-                                isActive,
-                                checkResult: isCurrentOrParentUrl(item.pattern || item.href)
-                            });
-                        }
-
                         return (
                             <SidebarMenuItem key={item.title}>
                                 <SidebarMenuButton
