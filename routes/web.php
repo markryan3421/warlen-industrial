@@ -31,23 +31,17 @@ use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\PayrollPeriodController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\PositionController;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Inertia\Middleware\EncryptHistory;
 
 // use Laravel\Fortify\Features;
 
-Route::get('/', function (Request $request) {
+Route::get('/', function () {
 	// return Inertia::render('welcome', [
 	//     'canRegister' => Features::enabled(Features::registration()),
 	// ]);
-
-	Auth::logout();
-	$request->session()->regenerateToken();
-	$request->session()->regenerate();
 	//Inertia::clearHistory();
 	return Inertia::render('auth/login');
 })->name('home');

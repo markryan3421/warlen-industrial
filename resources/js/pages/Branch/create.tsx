@@ -1,4 +1,4 @@
-import { Head, useForm, usePage } from '@inertiajs/react';
+import { Head, useForm, usePage, router} from '@inertiajs/react';
 import { Building2, MapPin, PlusCircle } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { toast } from '@/components/custom-toast';          // ← custom toast, same as index
@@ -215,7 +215,7 @@ export default function Create() {
 						<Button
 							type="button"
 							variant="outline"
-							onClick={() => window.history.back()}
+							onClick={() =>  router.get('/branches')}
 							className="min-w-[100px] gap-2 hover:cursor-pointer"
 						>
 							Cancel

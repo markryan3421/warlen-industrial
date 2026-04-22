@@ -1,4 +1,4 @@
-import { Head, useForm, usePage } from '@inertiajs/react';
+import { Head, useForm, usePage, router } from '@inertiajs/react';
 import { Search, ChevronDown, User, Briefcase, MapPin, Calendar, Phone, Mail, Hash, Clock, LoaderCircle, PersonStanding } from 'lucide-react';
 import { useEffect, useState, useRef } from 'react';
 import { toast } from 'sonner';
@@ -323,7 +323,7 @@ export default function Create({ positions, branches, site = [] }: Props) {
                         </div>
                         <Button
                             variant="outline"
-                            onClick={() => window.history.back()}
+                            onClick={() => router.get('/employees')}
                             className="rounded-xl border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
                         >
                             Cancel
