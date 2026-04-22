@@ -8,6 +8,23 @@ export default function Welcome({
 }) {
     const { auth } = usePage().props;
 
+    const getDashboardRoute = () => {
+        if (!auth.user) return dashboard();
+
+        const role = auth.user.role; // Assuming role is available in auth.user
+
+        switch (role) {
+            case 'admin':
+                return '/dashboard';
+            case 'hr_head':
+                return '/hr/dashboard';
+            case 'employee':
+                return '/employee/dashboard';
+            default:
+                return dashboard();
+        }
+    };
+
     return (
         <>
             <Head title="Welcome">
@@ -22,7 +39,7 @@ export default function Welcome({
                     <nav className="flex items-center justify-end gap-4">
                         {auth.user ? (
                             <Link
-                                href={dashboard()}
+                                href={getDashboardRoute()}
                                 className="inline-block rounded-sm border border-[#19140035] px-5 py-1.5 text-sm leading-normal text-[#1b1b18] hover:border-[#1915014a] dark:border-[#3E3E3A] dark:text-[#EDEDEC] dark:hover:border-[#62605b]"
                             >
                                 Dashboard
