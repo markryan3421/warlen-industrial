@@ -200,21 +200,30 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
     }, []);
 
     // Update available sites when branch changes
-    useEffect(() => {
-        if (!data.branch_id) {
-            setAvailableSites([]);
-            setSiteSearch('');
-            return;
-        }
-        const filtered = site.filter(s => s.branch_id === parseInt(data.branch_id));
-        setAvailableSites(filtered);
-        if (data.site_id) {
-            const selectedSite = filtered.find(s => s.id === parseInt(data.site_id));
-            if (selectedSite) setSiteSearch(selectedSite.site_name || selectedSite.name);
+   useEffect(() => {
+        if (data.branch_id) {
+            const filtered = site.filter(s => s.branch_id === parseInt(data.branch_id));
+            setAvailableSites(filtered);
+            
+            // 🔁 Clear site_id if the current value is not valid for the new branch
+            const currentSiteId = data.site_id;
+            if (currentSiteId) {
+                const stillValid = filtered.some(s => s.id === parseInt(currentSiteId));
+                if (!stillValid) {
+                    setData('site_id', '');
+                    setSiteSearch('');
+                }
+            } else {
+                // If branch changes and no site was selected, ensure site_id is cleared
+                setData('site_id', '');
+                setSiteSearch('');
+            }
         } else {
+            setAvailableSites([]);
+            setData('site_id', '');
             setSiteSearch('');
         }
-    }, [data.branch_id, data.site_id]);
+    }, [data.branch_id]);
 
     const handlePhoneChange = (field: 'employee_number' | 'emergency_contact_number', value: string) => {
         const digits = value.replace(/\D/g, '').slice(0, 10);

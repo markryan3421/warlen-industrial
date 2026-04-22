@@ -171,11 +171,17 @@ class PayrollProcessingService
         ?string $customMessage = null
     ): void {
         $message = $customMessage ?? "Processing payroll: {$progress}% complete ({$processedCount} processed, {$skippedCount} skipped)";
-
+try {
         $event = new PayrollEvent($payrollPeriod, $message, $progress);
+        
+        // Try to broadcast, but don't fail if it doesn't work
         broadcast($event);
-
+        
         Log::info("Broadcasting progress: {$progress}% for period {$payrollPeriod->id}");
+    } catch (\Exception $e) {
+        // Log but don't fail the payroll processing
+        Log::warning("Broadcast failed (queue will still work): " . $e->getMessage());
+    }
     }
 
     /**
