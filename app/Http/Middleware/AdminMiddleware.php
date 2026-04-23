@@ -20,10 +20,9 @@ class AdminMiddleware
             return redirect()->route('login');
         }
 
-        if (Auth::check() && Auth::user()->hasRole('admin')) {
+        if (Auth::check() && Auth::user()->hasAnyRole(['admin', 'hr_head'])) {
             return $next($request);
         }
-
         abort(403, 'Unauthorized access. Admin privileges required.');
     }
 }

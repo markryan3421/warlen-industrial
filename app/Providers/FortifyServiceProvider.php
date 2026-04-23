@@ -84,7 +84,7 @@ class FortifyServiceProvider extends ServiceProvider
                 {
                     $user = $request->user();
 
-                    if ($user->hasRole('admin')) {
+                    if ($user->hasAnyRole(['admin'])) {
                         return redirect()->route('dashboard');
                     }
 
