@@ -1,6 +1,35 @@
 export const EmployeesTableConfig = {
   columns: [
     {
+      label: 'Profile',
+      key: 'avatar',
+      className: 'p-4 align-items-center',
+      // Use a custom render instead of isImage to control the URL
+      render: (row: any) => {
+        if (!row.avatar) {
+          // Fallback placeholder
+          return (
+            <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            </div>
+          );
+        }
+        // If avatar is already a full URL, use it; otherwise prepend storage path
+        const avatarUrl = row.avatar.startsWith('http') 
+          ? row.avatar 
+          : `/storage/${row.avatar}`;
+        return (
+          <img
+            src={avatarUrl}
+            alt="Avatar"
+            className="w-10 h-10 rounded-full object-cover border border-slate-200"
+          />
+        );
+      }
+    },
+    {
       label: 'Code',
       key: 'emp_code',
       className: ' px-4 py-3 tracking-wider'

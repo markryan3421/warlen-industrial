@@ -1,7 +1,7 @@
-import { Head, Link, router, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import { format, isToday } from 'date-fns';
 import { Calculator, Percent, Plus, Trash2, LoaderCircle, Filter, Handshake, Users, Settings, Save, Shield, Heart, Search, HeartPulse, HandHeart } from 'lucide-react';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 
 import { CustomHeader } from '@/components/custom-header';
 import { CustomModalView } from '@/components/custom-modal-view';
@@ -118,6 +118,16 @@ interface FormData {
 // UTILITY FUNCTIONS
 // =============================================================================
 
+// Custom toast style helper
+const toastStyle = (color: string) => ({
+    style: {
+        backgroundColor: 'white',
+        color: color,
+        border: '1px solid #e2e8f0',
+        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+    },
+});
+
 const getContributionTypeColor = (type: string) => {
     switch (type) {
         case 'sss':
@@ -165,6 +175,7 @@ export default function Index({
     contributionVersions,
 }: IndexProps) {
     const { delete: destroy } = useForm();
+    const { props } = usePage<{ flash?: { success?: string; error?: string; warning?: string; info?: string } }>();
     const [selectedVersion, setSelectedVersion] = useState<ContributionVersion | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isBracketsModalOpen, setIsBracketsModalOpen] = useState(false);
@@ -201,6 +212,40 @@ export default function Index({
     const [sssSearchTerm, setSssSearchTerm] = useState('');
     const [philhealthSearchTerm, setPhilhealthSearchTerm] = useState('');
     const [pagibigSearchTerm, setPagibigSearchTerm] = useState('');
+
+    // Track last shown flash to prevent duplicates within a short time window
+    const lastFlashRef = useRef<{ key: string; time: number }>({ key: '', time: 0 });
+
+    // Flash message listener – prevents duplicate toasts within 500ms
+    useEffect(() => {
+        const flash = props.flash;
+        if (!flash) return;
+
+        const flashKey = JSON.stringify(flash);
+        const now = Date.now();
+        const last = lastFlashRef.current;
+
+        // If same flash key appeared within last 500ms, skip (prevents double toast)
+        if (last.key === flashKey && (now - last.time) < 500) {
+            return;
+        }
+
+        // Update ref
+        lastFlashRef.current = { key: flashKey, time: now };
+
+        if (flash.success) {
+            toast.success(flash.success, toastStyle('#16a34a')); // green text
+        }
+        if (flash.error) {
+            toast.error(flash.error, toastStyle('#dc2626')); // red text (danger)
+        }
+        if (flash.warning) {
+            toast.warning(flash.warning, toastStyle('#f97316')); // orange text (warning)
+        }
+        if (flash.info) {
+            toast.info(flash.info, toastStyle('#3b82f6')); // blue text (info)
+        }
+    }, [props.flash]);
 
     // Helper to get or initialize pagination for a version
     const getVersionPagination = (versionId: number) => {
@@ -247,15 +292,14 @@ export default function Index({
 
         setIsDeleting(true);
         destroy(route('contribution-versions.destroy', { contribution_version: itemToDelete.id }), {
-            onSuccess: (page) => {
-                const successMessage = (page.props as any).flash?.success || 'Contribution version deleted successfully.';
-                toast.success(successMessage);
+            onSuccess: () => {
+                // Flash message will be shown by global useEffect
                 setDeleteDialogOpen(false);
                 setItemToDelete(null);
             },
             onError: (errors) => {
                 const errorMessage = Object.values(errors).flat()[0] || 'Failed to delete contribution version.';
-                toast.error(errorMessage);
+                toast.error(errorMessage, toastStyle('#dc2626'));
             },
             onFinish: () => {
                 setIsDeleting(false);
@@ -424,7 +468,7 @@ export default function Index({
         }
 
         if (changedSettings.length === 0) {
-            toast.info('No changes to save');
+            toast.info('No changes to save', toastStyle('#3b82f6'));
             return;
         }
 
@@ -448,7 +492,7 @@ export default function Index({
             .then(async response => {
                 const data = await response.json();
                 if (response.ok) {
-                    toast.success(`${data.message || 'Settings saved successfully!'} (${changedSettings.length} employee${changedSettings.length > 1 ? 's' : ''} updated)`);
+                    toast.success(`${data.message || 'Settings saved successfully!'} (${changedSettings.length} employee${changedSettings.length > 1 ? 's' : ''} updated)`, toastStyle('#16a34a'));
                     const updatedOriginalSettings = { ...originalEmployeeSettings };
                     for (const setting of changedSettings) {
                         if (!updatedOriginalSettings[contributionVersionId]) {
@@ -464,12 +508,12 @@ export default function Index({
                     }
                     setOriginalEmployeeSettings(updatedOriginalSettings);
                 } else {
-                    toast.error(data.message || 'Failed to save settings');
+                    toast.error(data.message || 'Failed to save settings', toastStyle('#dc2626'));
                 }
             })
             .catch(error => {
                 console.error('Save error:', error);
-                toast.error('An error occurred while saving');
+                toast.error('An error occurred while saving', toastStyle('#dc2626'));
             })
             .finally(() => {
                 setSavingSettings(prev => ({ ...prev, [contributionVersionId]: false }));
@@ -552,7 +596,7 @@ export default function Index({
             employees.forEach((employee) => {
                 updateEmployeeSetting(versionId, employee.id, 'is_exempted', exempted);
             });
-            toast.success(`All employees ${exempted ? 'exempted from' : 'enabled for'} ${getContributionTypeLabel(type)}`);
+            toast.success(`All employees ${exempted ? 'exempted from' : 'enabled for'} ${getContributionTypeLabel(type)}`, toastStyle('#16a34a'));
         };
 
         const setAllFixedAmount = (amount: string) => {
@@ -563,7 +607,7 @@ export default function Index({
                         updateEmployeeSetting(versionId, employee.id, 'fixed_amount', amount);
                     }
                 });
-                toast.success(`Fixed amount set to ${isPhilHealth ? amount + '%' : '₱' + amount} for all non-exempted employees`);
+                toast.success(`Fixed amount set to ${isPhilHealth ? amount + '%' : '₱' + amount} for all non-exempted employees`, toastStyle('#16a34a'));
             }
         };
 
@@ -1072,7 +1116,7 @@ export default function Index({
 }
 
 // =============================================================================
-// CREATE MODAL COMPONENT (unchanged)
+// CREATE MODAL COMPONENT (fixed - removed duplicate flash listener)
 // =============================================================================
 
 interface CreateContributionModalProps {
@@ -1100,14 +1144,12 @@ function CreateContributionModal({ isOpen, onClose, existingTypes }: CreateContr
     function submitContributionVersion(e: React.FormEvent) {
         e.preventDefault();
         post(route('contribution-versions.store'), {
-            onSuccess: (page) => {
-                const successMessage = page.props.flash?.success || 'Contribution version created successfully.';
-                toast.success(successMessage);
+            onSuccess: () => {
                 handleClose();
             },
             onError: (errors) => {
                 const errorMessage = Object.values(errors).flat()[0] || 'Failed to create contribution version.';
-                toast.error(errorMessage);
+                toast.error(errorMessage, toastStyle('#dc2626'));
             }
         });
     }
@@ -1333,7 +1375,7 @@ function CreateContributionModal({ isOpen, onClose, existingTypes }: CreateContr
 }
 
 // =============================================================================
-// EDIT MODAL COMPONENT (unchanged)
+// EDIT MODAL COMPONENT (fixed - removed duplicate flash listener)
 // =============================================================================
 
 interface EditContributionModalProps {
@@ -1369,14 +1411,12 @@ function EditContributionModal({ isOpen, onClose, contributionVersion, existingT
     function submitContributionVersion(e: React.FormEvent) {
         e.preventDefault();
         put(route('contribution-versions.update', { contribution_version: contributionVersion.id }), {
-            onSuccess: (page) => {
-                const successMessage = page.props.flash?.success || 'Contribution version updated successfully.';
-                toast.success(successMessage);
+            onSuccess: () => {
                 handleClose();
             },
             onError: (errors) => {
                 const errorMessage = Object.values(errors).flat()[0] || 'Failed to update contribution version.';
-                toast.error(errorMessage);
+                toast.error(errorMessage, toastStyle('#dc2626'));
             }
         });
     }

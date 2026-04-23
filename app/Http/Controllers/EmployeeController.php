@@ -29,46 +29,46 @@ class EmployeeController extends Controller
     /**
      * Display a listing of the resource.
      */
-public function index(Request $request)
-{
-    Gate::authorize('viewAny', Employee::class);
+    public function index(Request $request)
+    {
+        Gate::authorize('viewAny', Employee::class);
 
-    $employees = $this->cacheRemember('employees', 60, fn() => $this->employeeRepository->getEmployees());
-    $archived = $this->employeeRepository->getDeletedEmployees();
+        $employees = $this->cacheRemember('employees', 60, fn() => $this->employeeRepository->getEmployees());
+        $archived = $this->employeeRepository->getDeletedEmployees();
 
-    $allPositions = $employees->pluck('position.pos_name')->filter()->unique()->sort()->values()->all();
+        $allPositions = $employees->pluck('position.pos_name')->filter()->unique()->sort()->values()->all();
 
-    $result = $this->paginateCollection(
-        items: collect($employees),
-        request: $request,
-        searchColumns: ['emp_code', 'user.name', 'position.pos_name', 'branch.branch_name', 'site.site_name', 'employee_status'],
-    );
+        $result = $this->paginateCollection(
+            items: collect($employees),
+            request: $request,
+            searchColumns: ['emp_code', 'user.name', 'position.pos_name', 'branch.branch_name', 'site.site_name', 'employee_status'],
+        );
 
-    // Only branches that have active employees (with their sites)
-    $activeBranchesData = Branch::whereIn('id', $employees->pluck('branch.id'))->with('sites')->get();
-    // Only branches that have archived employees
-    $archivedBranchesData = Branch::whereIn('id', $archived->pluck('branch.id'))->with('sites')->get();
+        // Only branches that have active employees (with their sites)
+        $activeBranchesData = Branch::whereIn('id', $employees->pluck('branch.id'))->with('sites')->get();
+        // Only branches that have archived employees
+        $archivedBranchesData = Branch::whereIn('id', $archived->pluck('branch.id'))->with('sites')->get();
 
-    return Inertia::render('employees/index', [
-        'archivedEmployees' => $archived,
-        'employees' => [
-            'data'    => $result['data'],
-            'links'   => $result['pagination']['links'] ?? [],
-            'from'    => $result['pagination']['from']  ?? 0,
-            'to'      => $result['pagination']['to']    ?? 0,
-            'total'   => $result['pagination']['total'] ?? 0,
-            'perPage' => (int) ($request->perPage ?? 10),
-        ],
-        'activeBranchesData'   => $activeBranchesData,
-        'archivedBranchesData' => $archivedBranchesData,
-        'allPositions'         => $allPositions,
-        'filters'              => $result['filters'],
-        'totalCount'           => $result['totalCount'],
-        'filteredCount'        => $result['filteredCount'],
-        'positionsList'        => Position::select('id', 'pos_name')->get(),
-        'allBranchesForAssign' => Branch::select('id', 'branch_name')->get(), // keep all for bulk assign
-    ]);
-}
+        return Inertia::render('employees/index', [
+            'archivedEmployees' => $archived,
+            'employees' => [
+                'data'    => $result['data'],
+                'links'   => $result['pagination']['links'] ?? [],
+                'from'    => $result['pagination']['from']  ?? 0,
+                'to'      => $result['pagination']['to']    ?? 0,
+                'total'   => $result['pagination']['total'] ?? 0,
+                'perPage' => (int) ($request->perPage ?? 10),
+            ],
+            'activeBranchesData'   => $activeBranchesData,
+            'archivedBranchesData' => $archivedBranchesData,
+            'allPositions'         => $allPositions,
+            'filters'              => $result['filters'],
+            'totalCount'           => $result['totalCount'],
+            'filteredCount'        => $result['filteredCount'],
+            'positionsList'        => Position::select('id', 'pos_name')->get(),
+            'allBranchesForAssign' => Branch::select('id', 'branch_name')->get(), // keep all for bulk assign
+        ]);
+    }
     /**
      * Show the form for creating a new resource.
      */
@@ -323,7 +323,7 @@ public function index(Request $request)
                     ->orWhereNull('site_id');
             })
             ->update($data);
-               
+
 
         $this->cacheForget('employees');
 
