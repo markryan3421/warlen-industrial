@@ -1,7 +1,7 @@
 import { Head, Link, useForm, usePage, router } from '@inertiajs/react';
 import {
     CalendarDays, Plus, Clock, CheckCircle2,
-    AlertCircle, Filter, Pencil, Trash2, Eye, Banknote, XCircle, Loader2,
+    AlertCircle, Filter, Pencil, Trash2, Eye, Calendar, XCircle, Loader2,
 } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 import PayrollPeriodController from '@/actions/App/Http/Controllers/PayrollPeriodController';
@@ -456,7 +456,7 @@ export default function Index({ payrollPeriods }: PayrollPeriodProps) {
                     {/* ── Page header ── */}
                     <div className="grid grid-rows-1 justify-center sm:mx-1 md:grid-row-1 md:mx-0 mt-3 lg:flex lg:justify-between items-center lg:mx-0 lg:mt-3 lg:pb-4 lg:-mb-2 pp-header">
                         <CustomHeader
-                            icon={<Banknote className="h-6 w-6" />}
+                            icon={<Calendar className="h-6 w-6" />}
                             title="Payroll Periods"
                             description="Manage and organize payroll periods with ease."
                         />

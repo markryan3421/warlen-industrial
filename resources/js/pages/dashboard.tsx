@@ -33,9 +33,9 @@ const lineChartData = [
 
 // Default colors for pay frequencies
 const defaultColors = {
-    weekender: "#0031d2",    // Blue
-    monthly: "#007bff",      // Light blue
-    semi_monthly: "#00ccff", // Lighter blue
+    weekender: "#05469D",
+    monthly: "#c7891e",
+    semi_monthly: "#FD0C0B",
 };
 
 const chartConfig = {
@@ -157,7 +157,7 @@ const StableLineChart = memo(
                     <YAxis
                         tick={{ fontSize: 10 }}
                         tickFormatter={(value) => value.toLocaleString()}
-                        width={35}
+                        width={50}
                     />
                     <Tooltip
                         content={({ active, payload, label }) => {
@@ -236,7 +236,7 @@ const LineChartComponent = memo(({ data }: { data: typeof lineChartData }) => {
     const scaleY = stableHeight > 0 && liveHeight > 0 ? liveHeight / stableHeight : 1;
 
     return (
-        <div ref={containerRef} className="relative w-full h-full overflow-hidden mt-10">
+        <div ref={containerRef} className="relative w-full h-full overflow-hidden mt-15 md:mt-15 lg:mt-14 xl:mt-13 border-1 rounded-lg">
             {stableWidth > 0 && stableHeight > 0 && (
                 <div
                     style={{
@@ -456,7 +456,7 @@ export default function Dashboard({
                     <div className="relative overflow-hidden rounded-xl border border-sidebar-border/70 bg-white dark:bg-gray-900 shadow-sm">
 
                         {/* Main 3-column grid layout */}
-                        <div className='grid grid-cols-1 lg:grid-cols-9 gap-4 p-3 sm:p-5 lg:p-8'>
+                        <div className='grid grid-cols-1 lg:grid-cols-9 gap-4 p-3 sm:p-5 lg:p-6'>
 
                             {/* Column 1: System Alert */}
                             <div className="col-span-1 md:col-span-1 lg:col-span-3">
@@ -513,15 +513,19 @@ export default function Dashboard({
                                             Employee Distribution by Pay Frequency
                                         </header>
 
-                                        <div className="flex flex-col sm:flex-row items-center gap-4 w-full">
-                                            <div className="w-full sm:w-[50%] md:w-[40%]">
+                                        <div className="flex flex-col items-center gap-4 w-full">
+                                            <div className="w-full sm:w-[50%] md:w-[50%]">
                                                 <div className="w-full h-[140px]">
                                                     <PieChartComponent data={pieData} />
                                                 </div>
                                             </div>
 
-                                            <div className="w-full sm:w-[50%]">
-                                                <div className="grid grid-cols-2 sm:grid-cols-1 gap-2">
+                                            <div>
+                                                <span className="text-sm text-center text-gray-500">Pay Frequency Percentage</span>
+                                            </div>
+
+                                            <div className="w-full">
+                                                <div className="grid grid-cols-2 gap-2">
                                                     {legendItems.map((item) => (
                                                         <div key={item.name} className="flex items-center justify-between gap-2 text-xs">
                                                             <div className="flex items-center gap-2">
@@ -546,10 +550,10 @@ export default function Dashboard({
                                 </div>
 
                                 {/* Desktop Layout */}
-                                <div className="hidden lg:block max-w-[350px] mt-4">
+                                <div className="hidden lg:block xl:max-w-[350px] mt-4">
                                     <div className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50">
-                                        <header className='flex justify-center mb-3 font-semibold text-sm text-gray-700 dark:text-gray-300'>
-                                            Pay Frequency Distribution
+                                        <header className='flex justify-center font-semibold text-xs text-center text-gray-700 dark:text-gray-300'>
+                                             Employee Distribution by Pay Frequency
                                         </header>
 
                                         <div className="flex flex-col items-center">
@@ -557,7 +561,11 @@ export default function Dashboard({
                                                 <DesktopPieChartComponent data={pieData} />
                                             </div>
 
-                                            <div className="grid grid-cols-2 gap-x-9 gap-y-1 mt-4 w-full">
+                                            <div>
+                                                <span className="text-[10px] text-center text-gray-500">Pay Frequency Percentage</span>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 lg:-ml-3 xl:ml-0 gap-x-9 gap-y-0.5 mt-1 w-full">
                                                 {legendItems.map((item) => (
                                                     <div key={item.name} className="flex items-center justify-between gap-1 text-[10px]">
                                                         <div className="flex items-center gap-1.5">

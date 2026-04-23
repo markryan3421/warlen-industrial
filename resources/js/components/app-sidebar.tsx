@@ -1,7 +1,7 @@
 // components/app-sidebar.tsx
 import { Link } from '@inertiajs/react';
 import { LayoutDashboard, History, CircleUser, Building2, Handshake, Coins  , UserCog, CalendarClock, Banknote, LayoutDashboardIcon, HandCoins, ChartSpline } from 'lucide-react';
-import { FileBadge, Calendar, UserRoundCog, Contact, BookUser } from 'lucide-react';
+import { FileBadge, Calendar, UsersRound, Contact, BookUser } from 'lucide-react';
 import { Users } from 'lucide-react';
 import LogsController from "@/actions/App/Http/Controllers/ActivityLogController";
 import ApplicationLeaveController from '@/actions/App/Http/Controllers/ApplicationLeaveController';
@@ -73,7 +73,7 @@ const AccessControlItems: NavItem[] = [
     {
         title: 'Employees',
         href: '/employees',
-        icon: CircleUser,
+        icon: UsersRound,
     },
     {
         title: 'Application Leaves',

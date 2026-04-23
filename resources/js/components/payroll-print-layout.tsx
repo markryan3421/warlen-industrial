@@ -1,7 +1,8 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Printer, X, User, Calendar, Minus, HandCoins, Coins, Landmark } from 'lucide-react';
+import { Printer, X, User, Calendar, Minus, HandCoins, Coins, Landmark, Download } from 'lucide-react';
 import { useEffect, useState, useRef } from 'react';
+import html2pdf from 'html2pdf.js';
 
 interface PayrollPrintLayoutProps {
     isOpen: boolean;
@@ -126,162 +127,230 @@ export default function PayrollPrintLayout({ isOpen, onClose, payrollId }: Payro
         }
     };
 
-    const handlePrint = () => {
-        if (!printAreaRef.current) return;
+    const generateSalarySlipHTML = () => {
+        if (!payrollData) return '';
 
-        const printContent = printAreaRef.current.cloneNode(true) as HTMLElement;
+        const employeeNameValue = payrollData.employee_name || payrollData.employee?.name || 'N/A';
+        const employeeCodeValue = payrollData.employee_code || payrollData.employee?.emp_code || 'N/A';
+        const positionValue = payrollData.position || payrollData.employee?.position?.pos_name || 'N/A';
+
+        const startDateFormatted = payrollData.start_date ? new Date(payrollData.start_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A';
+        const endDateFormatted = payrollData.end_date ? new Date(payrollData.end_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A';
+        const payDateFormatted = payrollData.pay_date ? new Date(payrollData.pay_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }).toUpperCase() : 'N/A';
+
+        const earningsItems = payrollData.earnings && payrollData.earnings.length > 0 ? payrollData.earnings : [];
+        const deductionsItems = payrollData.deductions && payrollData.deductions.length > 0 ? payrollData.deductions : [];
+
+        let totalEarningsAmount = 0;
+        let totalDeductionsAmount = 0;
+
+        earningsItems.forEach(item => {
+            totalEarningsAmount += Number(item.amount) || 0;
+        });
+
+        deductionsItems.forEach(item => {
+            totalDeductionsAmount += Number(item.amount) || 0;
+        });
+
+        let allRowsHtml = '';
+        const maxRows = Math.max(earningsItems.length, deductionsItems.length);
+
+        for (let i = 0; i < maxRows; i++) {
+            const earning = earningsItems[i];
+            const deduction = deductionsItems[i];
+
+            const earningDesc = earning ? earning.description : '';
+            const earningAmount = earning ? Number(earning.amount) || 0 : 0;
+            const deductionDesc = deduction ? deduction.description : '';
+            const deductionAmount = deduction ? Number(deduction.amount) || 0 : 0;
+
+            allRowsHtml += `
+                <tr>
+                    <td style="padding: 5px 5px; border-right: 1px solid #000000; border-left: 1px solid #000000;  font-size: 0.7rem;">
+                        ${earningDesc || ''}
+                    </td>
+                    <td style="padding: 5px 5px; border-right: 1px solid #000000; border-left: 1px solid #000000;  text-align: right;font-size: 0.7rem;">
+                        ${earningAmount > 0 ? formatCurrency(earningAmount) : ''}
+                    </td>
+                    <td style="padding: 5px 5px; border-right: 1px solid #000000; border-left: 1px solid #000000;  font-size: 0.7rem;">
+                        ${deductionDesc ? `
+                            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                                <span style="text-align: left;">${deductionDesc}</span>
+                                <span style="text-align: right;">${deductionAmount > 0 ? formatCurrency(deductionAmount) : ''}</span>
+                            </div>
+                        ` : (deductionAmount > 0 ? `
+                            <div style="display: flex; justify-content: flex-end; width: 100%;">
+                                <span>${formatCurrency(deductionAmount)}</span>
+                            </div>
+                        ` : '')}
+                    </td>
+                </tr>
+            `;
+        }
+
+        return `
+            <div class="salary-slip" style="max-width: 100%; width: 100%; background: white; border: 1.5px solid #2c2c2c; padding: 15px; position: relative; font-family: 'Courier New', 'Lucida Sans Typewriter', monospace; min-height: 100%;">
+                <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-image: url('/images/dekalogo.webp'); background-repeat: no-repeat; background-position: center; background-size: 40%; opacity: 0.1; pointer-events: none; z-index: 0;"></div>
+
+                <div class="company-header" style="text-align: center; border-bottom: 1.5px dashed #333; margin-bottom: 12px; padding-bottom: 10px; position: relative; z-index: 1;">
+                    <div class="company-name" style="font-size: 1.1rem; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;">WARLEN INDUSTRIAL SALES CORPORATION</div>
+                    <div class="deka-sales" style="font-size: 0.75rem; font-weight: 700; margin-top: 3px;">DEKA SALES</div>
+                    <div class="specialty-contractor" style="font-size: 0.55rem; font-weight: 600; text-transform: uppercase; color: #555; margin-top: 2px;">SPECIALTY CONTRACTOR</div>
+                    <div class="period" style="margin-top: 8px; font-weight: 700; font-size: 0.7rem; text-align: right;">Date Period: ${startDateFormatted} – ${endDateFormatted}</div>
+                </div>
+
+                <div class="emp-info" style="margin: 12px 0; border: 1px solid #222; padding: 8px 10px; background: #f9f9f0; position: relative; z-index: 1;">
+                    <div class="emp-row" style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.7rem; font-weight: 600;">
+                        <span><span class="emp-label" style="font-weight: 700; text-transform: uppercase;">EMPLOYEE NAME:</span> ${employeeNameValue}</span>
+                        <span><span class="emp-label" style="font-weight: 700; text-transform: uppercase;">POSITION:</span> ${positionValue}</span>
+                    </div>
+                    <div class="emp-row" style="display: flex; justify-content: space-between; font-size: 0.7rem; font-weight: 600;">
+                        <span><span class="emp-label" style="font-weight: 700; text-transform: uppercase;">EMPLOYEE CODE:</span> EMP-${employeeCodeValue}</span>
+                    </div>
+                </div>
+
+                <table style="width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 0.7rem; position: relative; z-index: 1;">
+                    <thead>
+                        <tr>
+                            <th style="width: 50%; text-align: left; border: 1px solid #222; padding: 6px 5px; text-transform: uppercase; background: #f0ede0; font-size: 0.7rem;">DESCRIPTION</th>
+                            <th style="width: 25%; text-align: right; border: 1px solid #222; padding: 6px 5px; text-transform: uppercase; background: #f0ede0; font-size: 0.7rem;">EARNINGS</th>
+                            <th style="width: 25%; text-align: right; border: 1px solid #222; padding: 6px 5px; text-transform: uppercase; background: #f0ede0; font-size: 0.7rem;">DEDUCTIONS</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${allRowsHtml}
+                        <tr class="total-row">
+                            <td style="border: 1.5px solid #222; font-weight: 800; padding: 6px 5px; background: #faf7ec; font-size: 0.75rem;">TOTAL</td>
+                            <td style="text-align: right; border: 1.5px solid; #222; font-weight: 800; padding: 6px 5px; background: #faf7ec; font-size: 0.75rem;">${formatCurrency(totalEarningsAmount)}</td>
+                            <td style="text-align: right; border: 1.5px solid;  #222; font-weight: 800; padding: 6px 5px; background: #faf7ec; font-size: 0.75rem;">${formatCurrency(totalDeductionsAmount)}</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="summary-section" style="margin: 12px 0; border-top: 1.5px solid #222; padding-top: 10px; position: relative; z-index: 1;">
+                    <div class="summary-row" style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.7rem;">
+                        <span>Gross Pay</span>
+                        <span>${formatCurrency(totalEarningsAmount)}</span>
+                    </div>
+                    <div class="summary-row" style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.7rem;">
+                        <span>Total Deductions</span>
+                        <span>${formatCurrency(totalDeductionsAmount)}</span>
+                    </div>
+                    <div class="net-pay" style="font-size: 0.85rem; font-weight: 800; color: #075985; border-top: 1px solid #aaa; margin-top: 5px; padding-top: 5px; display: flex; justify-content: space-between;">
+                        <span>NET PAY</span>
+                        <span>${formatCurrency(payrollData.net_pay || (totalEarningsAmount - totalDeductionsAmount))} PHP</span>
+                    </div>
+                </div>
+
+                <div class="footer" style="margin-top: 15px; font-size: 0.55rem; border-top: 1px dashed #aaa; padding-top: 8px; display: flex; justify-content: space-between; position: relative; z-index: 1;">
+                    <div>PRINTED DATE: <span id="printedDate">${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span></div>
+                    <div>RELEASE DATE: ${payDateFormatted}</div>
+                    <div>AUTHORIZED SIGNATURE: _________________</div>
+                </div>
+                <div class="note" style="font-size: 0.55rem; margin-top: 8px; text-align: right; position: relative; z-index: 1;">
+                    * This is a system-generated salary slip. For any discrepancy, contact payroll officer.
+                </div>
+            </div>
+        `;
+    };
+
+    const handlePrintWithPDF = async () => {
+        if (!payrollData) return;
+
+        const element = document.createElement('div');
+        element.innerHTML = generateSalarySlipHTML();
+        document.body.appendChild(element);
+
+        const opt = {
+            margin: [0.2, 0.2, 0.2, 0.2],
+            filename: `Salary_Slip_${payrollData.employee_name || payrollData.employee?.name || 'Employee'}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, letterRendering: true, useCORS: true },
+            jsPDF: { unit: 'in', format: 'a5', orientation: 'landscape' }
+        };
+
+        try {
+            await html2pdf().set(opt).from(element).save();
+        } catch (error) {
+            console.error('PDF generation failed:', error);
+            alert('Failed to generate PDF. Please try again.');
+        } finally {
+            document.body.removeChild(element);
+        }
+    };
+
+    const handleDirectPrint = () => {
+        if (!payrollData) return;
+
         const printWindow = window.open('', '_blank');
-
         if (!printWindow) {
             alert('Please allow pop-ups to print');
             return;
         }
 
-        printWindow.document.write(`
+        const htmlContent = `
             <!DOCTYPE html>
-            <html>
+            <html lang="en">
             <head>
-                <title>Payroll Slip - ${payrollData?.employee_name || 'Employee'}</title>
-                <meta charset="utf-8">
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Salary Slip - ${payrollData.employee_name || payrollData.employee?.name || 'Employee'}</title>
                 <style>
-                    * {
-                        margin: 0;
+                    * { margin: 0; padding: 0; box-sizing: border-box; }
+                    body { 
+                        background: white; 
+                        display: flex; 
+                        justify-content: center; 
+                        align-items: center; 
+                        min-height: 100vh; 
                         padding: 0;
-                        box-sizing: border-box;
+                        margin: 0;
+                        font-family: 'Courier New', 'Lucida Sans Typewriter', monospace;
                     }
-                    body {
-                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-                        line-height: 1.5;
-                        color: #1f2937;
-                        background: white;
-                        padding: 20px;
-                    }
-                    .print-container {
-                        max-width: 900px;
-                        margin: 0 auto;
-                        background: white;
-                    }
-                    .border { border: 1px solid #e5e7eb; }
-                    .border-t { border-top: 1px solid #e5e7eb; }
-                    .border-b { border-bottom: 1px solid #e5e7eb; }
-                    .rounded-lg { border-radius: 0.5rem; }
-                    .rounded-full { border-radius: 9999px; }
-                    .bg-gray-50 { background-color: #f9fafb; }
-                    .bg-white { background-color: white; }
-                    .bg-green-100 { background-color: #dcfce7; }
-                    .bg-red-100 { background-color: #fee2e2; }
-                    .bg-amber-100 { background-color: #fef3c7; }
-                    .bg-purple-100 { background-color: #f3e8ff; }
-                    .text-green-600 { color: #16a34a; }
-                    .text-red-600 { color: #dc2626; }
-                    .text-amber-600 { color: #d97706; }
-                    .text-purple-600 { color: #9333ea; }
-                    .text-gray-500 { color: #6b7280; }
-                    .text-gray-600 { color: #4b5563; }
-                    .text-gray-700 { color: #374151; }
-                    .text-gray-800 { color: #1f2937; }
-                    .text-blue-600 { color: #2563eb; }
-                    .text-blue-800 { color: #1e40af; }
-                    .font-semibold { font-weight: 600; }
-                    .font-bold { font-weight: 700; }
-                    .text-xs { font-size: 0.75rem; }
-                    .text-sm { font-size: 0.875rem; }
-                    .text-base { font-size: 1rem; }
-                    .text-lg { font-size: 1.125rem; }
-                    .p-1 { padding: 0.25rem; }
-                    .p-2 { padding: 0.5rem; }
-                    .p-3 { padding: 0.75rem; }
-                    .p-4 { padding: 1rem; }
-                    .p-6 { padding: 1.5rem; }
-                    .px-2 { padding-left: 0.5rem; padding-right: 0.5rem; }
-                    .px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
-                    .px-4 { padding-left: 1rem; padding-right: 1rem; }
-                    .py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
-                    .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
-                    .py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
-                    .py-4 { padding-top: 1rem; padding-bottom: 1rem; }
-                    .mb-2 { margin-bottom: 0.5rem; }
-                    .mb-3 { margin-bottom: 0.75rem; }
-                    .mb-4 { margin-bottom: 1rem; }
-                    .mb-6 { margin-bottom: 1.5rem; }
-                    .mt-2 { margin-top: 0.5rem; }
-                    .mt-3 { margin-top: 0.75rem; }
-                    .mt-4 { margin-top: 1rem; }
-                    .mt-6 { margin-top: 1.5rem; }
-                    .mr-2 { margin-right: 0.5rem; }
-                    .ml-2 { margin-left: 0.5rem; }
-                    .flex { display: flex; }
-                    .flex-shrink-0 { flex-shrink: 0; }
-                    .flex-1 { flex: 1; }
-                    .items-center { align-items: center; }
-                    .items-start { align-items: flex-start; }
-                    .justify-between { justify-content: space-between; }
-                    .justify-center { justify-content: center; }
-                    .gap-2 { gap: 0.5rem; }
-                    .gap-3 { gap: 0.75rem; }
-                    .gap-4 { gap: 1rem; }
-                    .gap-6 { gap: 1.5rem; }
-                    .space-y-1 > * + * { margin-top: 0.25rem; }
-                    .space-y-2 > * + * { margin-top: 0.5rem; }
-                    .grid { display: grid; }
-                    .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-                    .w-18 { width: 4.5rem; }
-                    .h-18 { height: 4.5rem; }
-                    .w-full { width: 100%; }
-                    .object-cover { object-fit: cover; }
-                    .text-left { text-align: left; }
-                    .text-center { text-align: center; }
-                    .text-right { text-align: right; }
-                    .pl-4 { padding-left: 1rem; }
-                    .pt-2 { padding-top: 0.5rem; }
-                    .pt-3 { padding-top: 0.75rem; }
-                    .pb-4 { padding-bottom: 1rem; }
-                    .pb-5 { padding-bottom: 1.25rem; }
-                    .border-t { border-top-width: 1px; }
-                    .border-b { border-bottom-width: 1px; }
-                    .border-gray-200 { border-color: #e5e7eb; }
-                    .border-gray-300 { border-color: #d1d5db; }
-                    .border-gray-800 { border-color: #1f2937; }
-                    @media (max-width: 640px) {
-                        .flex.items-start.gap-6 {
-                            flex-direction: column;
-                            align-items: center;
-                            text-align: center;
-                        }
-                        .grid-cols-2 {
-                            grid-template-columns: 1fr;
-                        }
-                        .pl-4 {
-                            padding-left: 0.5rem;
-                        }
+                    .salary-slip {
+                        max-width: 100%;
+                        width: 100%;
+                        margin: 0;
+                        padding: 15px;
                     }
                     @media print {
-                        body {
-                            padding: 0;
-                            margin: 0;
+                        body { 
+                            padding: 0; 
+                            margin: 0; 
                         }
-                        .print-container {
-                            padding: 0;
+                        .salary-slip { 
+                            border: none; 
+                            padding: 0.2cm;
                             margin: 0;
-                            max-width: 100%;
+                            width: 100%;
+                        }
+                        @page {
+                            size: A5 landscape;
+                            margin: 0.2cm;
+                        }
+                        html, body {
+                            margin: 0;
+                            padding: 0;
+                            height: auto;
                         }
                     }
                 </style>
             </head>
             <body>
-                <div class="print-container">
-                    ${printContent.outerHTML}
-                </div>
+                ${generateSalarySlipHTML()}
                 <script>
-                    window.onload = () => {
+                    window.onload = function() {
                         window.print();
-                        window.onafterprint = () => window.close();
+                        window.onafterprint = function() {
+                            window.close();
+                        };
                     };
                 <\/script>
             </body>
             </html>
-        `);
+        `;
 
+        printWindow.document.write(htmlContent);
         printWindow.document.close();
     };
 
@@ -326,7 +395,6 @@ export default function PayrollPrintLayout({ isOpen, onClose, payrollId }: Payro
     const employeeCode = payrollData.employee_code || payrollData.employee?.emp_code || 'N/A';
     const position = payrollData.position || payrollData.employee?.position?.pos_name || 'N/A';
 
-    // Categorize earnings and deductions
     const { contributions, otherDeductions } = payrollData.deductions
         ? categorizeDeductions(payrollData.deductions)
         : { contributions: [], otherDeductions: [] };
@@ -335,7 +403,6 @@ export default function PayrollPrintLayout({ isOpen, onClose, payrollId }: Payro
         ? categorizeEarnings(payrollData.earnings)
         : { incentives: [], otherEarnings: [] };
 
-    // Calculate totals with safe handling
     const totalContributions = contributions.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
     const totalOtherDeductions = otherDeductions.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
     const totalIncentives = incentives.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
@@ -350,9 +417,13 @@ export default function PayrollPrintLayout({ isOpen, onClose, payrollId }: Payro
                             <span className="px-2 py-1 border rounded-xl text-[15px]">Payroll Slip</span>
                         </DialogTitle>
                         <div className="flex gap-2">
-                            <Button variant="outline" size="sm" onClick={handlePrint} className='cursor-pointer'>
+                            <Button variant="outline" size="sm" onClick={handleDirectPrint} className='cursor-pointer'>
                                 <Printer className="h-4 w-4 mr-2" />
                                 Print
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={handlePrintWithPDF} className='cursor-pointer'>
+                                <Download className="h-4 w-4 mr-2" />
+                                Save as PDF
                             </Button>
                             <Button variant="outline" size="sm" onClick={onClose} className='cursor-pointer'>
                                 <X className="h-4 w-4" />
@@ -361,12 +432,9 @@ export default function PayrollPrintLayout({ isOpen, onClose, payrollId }: Payro
                     </div>
                 </DialogHeader>
 
-                {/* Print Area */}
                 <div ref={printAreaRef} className="border rounded-lg bg-gray-50" id="print-area">
                     <div className="mb-6 p-4">
-                        {/* Personal Info */}
                         <div className="flex items-start gap-6">
-                            {/* Avatar - Shows on screen always, but hides in print if it exists */}
                             <div className={`flex-shrink-0 ${fullAvatarUrl ? 'print:hidden' : ''}`}>
                                 {fullAvatarUrl ? (
                                     <img
@@ -384,8 +452,6 @@ export default function PayrollPrintLayout({ isOpen, onClose, payrollId }: Payro
                                     </div>
                                 )}
                             </div>
-
-                            {/* Employee Details - Always visible on screen and print */}
                             <div className="flex-1 gap-4">
                                 <div>
                                     <p className="font-semibold text-lg">{employeeName}</p>
@@ -394,8 +460,6 @@ export default function PayrollPrintLayout({ isOpen, onClose, payrollId }: Payro
                                 </div>
                             </div>
                         </div>
-
-                        {/* Payroll Period */}
                         <div className='w-full text-left mt-3'>
                             <p className="px-2 py-1 bg-white rounded-lg flex items-center text-gray-700 font-bold border border-gray-300">
                                 <Calendar className='h-4 w-4 mr-2 text-blue-800' />
@@ -405,7 +469,6 @@ export default function PayrollPrintLayout({ isOpen, onClose, payrollId }: Payro
                     </div>
 
                     <div className="border rounded-lg px-4 -mt-5 bg-white">
-                        {/* Regular Earnings (Non-incentive) */}
                         {otherEarnings.length > 0 && (
                             <div className='border-b pb-5'>
                                 <div className="flex items-center gap-2 py-4">
@@ -432,8 +495,6 @@ export default function PayrollPrintLayout({ isOpen, onClose, payrollId }: Payro
                                 </div>
                             </div>
                         )}
-
-                        {/* Incentives (Bonus, Rewards, etc.) */}
                         {incentives.length > 0 && (
                             <div className='border-b pb-5'>
                                 <div className="flex items-center gap-2 py-4">
@@ -460,8 +521,6 @@ export default function PayrollPrintLayout({ isOpen, onClose, payrollId }: Payro
                                 </div>
                             </div>
                         )}
-
-                        {/* Government Contributions */}
                         {contributions.length > 0 && (
                             <div className='border-b pb-5'>
                                 <div className="flex items-center gap-2 py-4">
@@ -488,8 +547,6 @@ export default function PayrollPrintLayout({ isOpen, onClose, payrollId }: Payro
                                 </div>
                             </div>
                         )}
-
-                        {/* Other Deductions - Just showing deduction names without "DEDUCTIONS" in the item description */}
                         {otherDeductions.length > 0 && (
                             <div className='border-b pb-5'>
                                 <div className="flex items-center gap-2 py-4">
@@ -518,8 +575,6 @@ export default function PayrollPrintLayout({ isOpen, onClose, payrollId }: Payro
                                 </div>
                             </div>
                         )}
-
-                        {/* Summary */}
                         <div className="mt-6 pb-4">
                             <h3 className="font-semibold mb-3 text-gray-800">SUMMARY</h3>
                             <div className="space-y-2 text-sm">

@@ -179,6 +179,40 @@ export default function PayrollProcessingCards({
     totalFilteredPayrolls,
     totalOriginalPayrolls
 }: PayrollProcessingCardsProps) {
+    // Calculate total counts from the payrolls array (default view, no filtering)
+    const totalPayrollCount = payrolls.length;
+    const totalEmployeesCount = new Set(payrolls.map(p => p.employee_id)).size;
+    
+    // Calculate totals from the actual payroll data
+    const calculatedTotalNetPay = payrolls.reduce((sum, payroll) => sum + (payroll.net_pay || 0), 0);
+    const calculatedTotalDeductions = payrolls.reduce((sum, payroll) => sum + (payroll.total_deduction || 0), 0);
+    const calculatedTotalGrossPay = payrolls.reduce((sum, payroll) => sum + (payroll.gross_pay || 0), 0);
+    
+    // Calculate overtime totals from payroll items
+    const calculatedTotalOvertimePay = payrolls.reduce((sum, payroll) => {
+        const overtimeItems = payroll.payroll_items?.filter(item => 
+            item.type === 'earning' && 
+            item.description?.toLowerCase().includes('overtime')
+        ) || [];
+        return sum + overtimeItems.reduce((itemSum, item) => itemSum + (item.amount || 0), 0);
+    }, 0);
+    
+    const calculatedTotalOvertimeHours = payrolls.reduce((sum, payroll) => {
+        const overtimeItems = payroll.payroll_items?.filter(item => 
+            item.type === 'earning' && 
+            item.description?.toLowerCase().includes('overtime')
+        ) || [];
+        // Assuming each overtime item represents hours, you may need to adjust this logic
+        return sum + overtimeItems.length;
+    }, 0);
+
+    // Use calculated values for default view, or passed props if they represent totals
+    const displayNetPay = totalNetPay > 0 ? totalNetPay : calculatedTotalNetPay;
+    const displayDeductions = totalDeductions > 0 ? totalDeductions : calculatedTotalDeductions;
+    const displayOvertimePay = totalOvertimePay > 0 ? totalOvertimePay : calculatedTotalOvertimePay;
+    const displayOvertimeHours = totalOvertimeHours > 0 ? totalOvertimeHours : calculatedTotalOvertimeHours;
+    const displayActiveEmployees = activeEmployee > 0 ? activeEmployee : totalEmployeesCount;
+
     return (
         <>
             <style>{`
@@ -209,28 +243,25 @@ export default function PayrollProcessingCards({
                 transition-all ease-out
             ">
                     <CardHeader>
-                        <div className="flex justify-between">
+                        <div className="flex justify-between pt-4">
                             <CardDescription className="font-extrabold text-base">Estimated Net Payroll</CardDescription>
                             <CardDescription>
                                 <Newspaper className="w-9 h-13 -mt-3 -mb-10 text-blue-800" />
                             </CardDescription>
                         </div>
-                        <CardTitle className="text-xl font-semibold tabular-nums @[250px]/card:text-xl -mb-4 flex mt-6">
+                        <CardTitle className="text-xl font-semibold tabular-nums @[250px]/card:text-xl -mb-4 flex mt-10">
                             {/* Show peso sign */}
                             <PhilippinePeso className="h-7 w-5" />
                             <AnimatedValue
-                                value={formatNumber(totalNetPay)}
+                                value={formatNumber(displayNetPay)}
                                 duration={1000}
                             />
                         </CardTitle>
-                        <div className="flex justify-start gap-2 py-3">
-                            {/* Percentage of difference compare to previous month */}
-                            <span className="text-xs">+12.5%</span>
-                            <TrendingUp className="h-4 w-4 text-green-600" />
+                        <div className="flex justify-start gap-2 py-2">
                         </div>
                     </CardHeader>
                     <CardFooter className="-mt-8 pb-3 text">
-                        <span className="text-gray-600 text-sm">Last Month</span>
+                        <span className="text-gray-600 text-sm">Payroll period net pay ({totalPayrollCount} payrolls)</span>
                     </CardFooter>
                 </Card>
 
@@ -241,28 +272,25 @@ export default function PayrollProcessingCards({
                 transition-all ease-out
             ">
                     <CardHeader>
-                        <div className="flex justify-between">
+                        <div className="flex justify-between pt-4">
                             <CardDescription className="font-extrabold text-base">Total Deductions</CardDescription>
                             <CardDescription>
                                 <Banknote className="w-10 h-15 -mt-3 -mb-10 text-blue-900" />
                             </CardDescription>
                         </div>
-                        <CardTitle className="text-xl font-semibold tabular-nums @[250px]/card:text-xl -mb-4 flex mt-6">
+                        <CardTitle className="text-xl font-semibold tabular-nums @[250px]/card:text-xl -mb-4 flex mt-10">
                             {/* Show peso sign */}
                             <PhilippinePeso className="h-7 w-5" />
                             <AnimatedValue
-                                value={formatNumber(totalDeductions)}
+                                value={formatNumber(displayDeductions)}
                                 duration={1000}
                             />
                         </CardTitle>
-                        <div className="flex justify-start gap-2 py-3">
-                            {/* Percentage of difference compare to previous month */}
-                            <span className="text-xs">-12.5%</span>
-                            <TrendingDown className="h-4 w-4 text-red-600" />
+                        <div className="flex justify-start gap-2 py-2">
                         </div>
                     </CardHeader>
                     <CardFooter className="-mt-8 pb-3 text">
-                        <span className="text-gray-600 text-sm">Approvals</span>
+                        <span className="text-gray-600 text-sm">Total deductions this period</span>
                     </CardFooter>
                 </Card>
 
@@ -273,28 +301,25 @@ export default function PayrollProcessingCards({
                 transition-all ease-out
             ">
                     <CardHeader>
-                        <div className="flex justify-between">
+                        <div className="flex justify-between pt-4">
                             <CardDescription className="font-extrabold text-base">Total Overtime Pay</CardDescription>
                             <CardDescription>
                                 <Wallet className="w-9 h-13 -mt-3 -mb-10 text-blue-800" />
                             </CardDescription>
                         </div>
-                        <CardTitle className="text-xl font-semibold tabular-nums @[250px]/card:text-xl -mb-4 flex mt-6">
+                        <CardTitle className="text-xl font-semibold tabular-nums @[250px]/card:text-xl -mb-4 flex mt-10">
                             {/* Show peso sign */}
                             <PhilippinePeso className="h-7 w-5" />
                             <AnimatedValue
-                                value={formatNumber(totalOvertimePay)}
+                                value={formatNumber(displayOvertimePay)}
                                 duration={1000}
                             />
                         </CardTitle>
-                        <div className="flex justify-start gap-2 py-3">
-                            {/* Percentage of difference compare to previous month */}
-                            <span className="text-xs">+12.5%</span>
-                            <TrendingUp className="h-4 w-4 text-green-600" />
+                        <div className="flex justify-start gap-2 py-2">
                         </div>
                     </CardHeader>
                     <CardFooter className="-mt-8 pb-3 text">
-                        <span className="text-gray-600 text-sm">Total Hours: {totalOvertimeHours} hrs</span>
+                        <span className="text-gray-600 text-sm">Overtime pay ({displayOvertimeHours} hrs)</span>
                     </CardFooter>
                 </Card>
 
@@ -305,30 +330,28 @@ export default function PayrollProcessingCards({
                 transition-all ease-out
             ">
                     <CardHeader>
-                        <div className="flex justify-between">
+                        <div className="flex justify-between pt-4">
                             <CardDescription className="font-extrabold text-base">Active Employees</CardDescription>
                             <CardDescription>
                                 <SquareUserRound className="w-9 h-13 -mt-3 -mb-10 text-blue-800" />
                             </CardDescription>
                         </div>
-                        <CardTitle className="text-xl font-semibold tabular-nums @[250px]/card:text-xl -mb-4 flex mt-6">
+                        <CardTitle className="text-xl font-semibold tabular-nums @[250px]/card:text-xl -mb-4 flex mt-10">
                             {/* Don't show peso sign */}
                             <AnimatedValue
-                                value={activeEmployee}
+                                value={displayActiveEmployees}
                                 duration={1000}
                             />
                         </CardTitle>
-                        <div className="flex justify-start gap-2 py-3">
-                            {/* Percentage of difference compare to previous month */}
-                            <span className="text-xs">+12.5%</span>
-                            <TrendingUp className="h-4 w-4 text-green-600" />
+                        <div className="flex justify-start gap-2 py-2">
+                           
                         </div>
                     </CardHeader>
                     <CardFooter className="-mt-8 pb-3 text">
-                        <span className="text-gray-600 text-sm">Active Status</span>
+                        <span className="text-gray-600 text-sm">Currently active employees</span>
                     </CardFooter>
                 </Card>
-            </div>
+            </div>  
             </div>
         </>
     )
