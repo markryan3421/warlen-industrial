@@ -2,7 +2,7 @@ import { Head, router } from '@inertiajs/react';
 import { useForm } from '@inertiajs/react';
 import { Search, ChevronDown, User, Briefcase, MapPin, Calendar, Phone, Mail, Hash, Clock, LoaderCircle, ImagePlus, PersonStanding } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { toast } from 'sonner';
+// import { toast } from 'sonner';
 import { update } from '@/actions/App/Http/Controllers/EmployeeController';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
@@ -236,12 +236,12 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         put(update(employee.slug_emp).url, {
-            onSuccess: (page) => {
-                toast.success((page.props as any).flash?.success || 'Employee updated successfully.');
-            },
-            onError: (errors) => {
-                toast.error(Object.values(errors).flat()[0] || 'Failed to update employee.');
-            },
+            // onSuccess: (page) => {
+            //     toast.success((page.props as any).flash?.success || 'Employee updated successfully.');
+            // },
+            // onError: (errors) => {
+            //     toast.error(Object.values(errors).flat()[0] || 'Failed to update employee.');
+            // },
         });
     };
 

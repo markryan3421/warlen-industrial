@@ -69,7 +69,7 @@ class PositionController extends Controller
         $this->cacheForget(['employees']);
 
        // DB::commit();
-        return redirect()->route('positions.index');
+        return redirect()->route('positions.index')->with('success', 'Position created successfully.');
 
     }
 
@@ -102,7 +102,7 @@ class PositionController extends Controller
         //DB::commit();
         $this->cacheForget(['employees']);
 
-        return redirect()->route('positions.index');
+        return redirect()->route('positions.index')->with('success', 'Position updated successfully.');
     }
 
     /**
@@ -116,7 +116,7 @@ class PositionController extends Controller
         $this->cacheForget(['employees']);
 
        // DB::commit();
-        return redirect()->route('positions.index');
+        return redirect()->route('positions.index')->with('error', 'Position deleted successfully.');
     }
     
 }

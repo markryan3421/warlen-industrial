@@ -7,7 +7,7 @@ import { CustomHeader } from '@/components/custom-header';
 import { CustomModalView } from '@/components/custom-modal-view';
 import { CustomPagination } from '@/components/custom-pagination';
 import { CustomTable } from '@/components/custom-table';
-import { CustomToast, toast } from '@/components/custom-toast';
+// import { CustomToast, toast } from '@/components/custom-toast';
 import InputError from '@/components/input-error';
 import { Badge } from "@/components/ui/badge";
 import { Button } from '@/components/ui/button';
@@ -34,7 +34,7 @@ import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-modal';
 import { EmployeeFilterBar, type BranchData } from '@/components/employee/employee-filter-bar';
-
+import { toast } from 'sonner';
 // Helper function to generate route URLs
 const route = (name: string, params?: any) => {
     if (window.route) {
@@ -845,7 +845,7 @@ export default function Index({
                 .pp-header { animation: headerReveal 0.35s cubic-bezier(0.22,1,0.36,1) both; }
             `}</style>
 
-            <CustomToast />
+            {/* <CustomToast /> */}
             <div className="flex h-full flex flex-col gap-4 rounded-xl p-4 mx-4 -mt-1">
 
                 <div className="flex flex-row justify-between gap-4 mt-2 pp-header">

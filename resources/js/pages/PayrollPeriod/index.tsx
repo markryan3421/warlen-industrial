@@ -3,11 +3,10 @@ import {
     CalendarDays, Plus, Clock, CheckCircle2,
     AlertCircle, Filter, Pencil, Eye, Banknote, XCircle, Loader2,
 } from 'lucide-react';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import PayrollPeriodController from '@/actions/App/Http/Controllers/PayrollPeriodController';
 import { CustomHeader } from '@/components/custom-header';
 import { CustomTable } from '@/components/custom-table';
-import { CustomToast } from '@/components/custom-toast';
 import {
     Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from '@/components/ui/dialog';
@@ -17,6 +16,7 @@ import {
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface PayrollPeriod {
@@ -33,12 +33,23 @@ interface PayrollPeriod {
 interface PayrollPeriodProps { payrollPeriods: PayrollPeriod[]; }
 interface PageProps {
     payroll_period_enums: Array<{ value: string; label: string; }>;
+    flash?: { success?: string; error?: string; warning?: string; info?: string };
     [key: string]: any;
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Payroll Periods', href: '/payroll-periods' },
 ];
+
+// Custom toast style helper for sonner
+const toastStyle = (color: string) => ({
+    style: {
+        backgroundColor: 'white',
+        color: color,
+        border: '1px solid #e2e8f0',
+        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+    },
+});
 
 // ── Status config based on enum values ─────────────────────────────────────────
 const getStatusConfig = (status: string) => {
@@ -119,7 +130,7 @@ function StatCard({ label, count, active, onClick, color }: {
 
 // ── Main component ──────────────────────────────────────────────────────────
 export default function Index({ payrollPeriods }: PayrollPeriodProps) {
-    const { payroll_period_enums } = usePage<PageProps>().props;
+    const { payroll_period_enums, flash } = usePage<PageProps>().props;
 
     const [selectedPeriod, setSelectedPeriod] = useState<PayrollPeriod | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -131,6 +142,39 @@ export default function Index({ payrollPeriods }: PayrollPeriodProps) {
     const [processingPeriodId, setProcessingPeriodId] = useState<number | null>(null);
     const [processingProgress, setProcessingProgress] = useState<number>(0);
     const [processingMessage, setProcessingMessage] = useState<string>('');
+
+    // Track last shown flash to prevent duplicates within a short time window
+    const lastFlashRef = useRef<{ key: string; time: number }>({ key: '', time: 0 });
+
+    // Flash message listener – prevents duplicate toasts within 500ms
+    useEffect(() => {
+        if (!flash) return;
+
+        const flashKey = JSON.stringify(flash);
+        const now = Date.now();
+        const last = lastFlashRef.current;
+
+        // If same flash key appeared within last 500ms, skip (prevents double toast)
+        if (last.key === flashKey && (now - last.time) < 500) {
+            return;
+        }
+
+        // Update ref
+        lastFlashRef.current = { key: flashKey, time: now };
+
+        if (flash.success) {
+            toast.success(flash.success, toastStyle('#16a34a')); // green text
+        }
+        if (flash.error) {
+            toast.error(flash.error, toastStyle('#dc2626')); // red text
+        }
+        if (flash.warning) {
+            toast.warning(flash.warning, toastStyle('#f97316')); // orange text
+        }
+        if (flash.info) {
+            toast.info(flash.info, toastStyle('#3b82f6')); // blue text
+        }
+    }, [flash]);
 
     useEffect(() => {
         localStorage.setItem('payrollPeriods-statusFilter', statusFilter);
@@ -392,7 +436,6 @@ export default function Index({ payrollPeriods }: PayrollPeriodProps) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Payroll Periods" />
-            <CustomToast />
 
             {/* style animations */}
             <style>{`
