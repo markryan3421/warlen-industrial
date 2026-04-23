@@ -138,219 +138,230 @@ export default function PayrollPrintLayout({ isOpen, onClose, payrollId }: Payro
         const endDateFormatted = payrollData.end_date ? new Date(payrollData.end_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A';
         const payDateFormatted = payrollData.pay_date ? new Date(payrollData.pay_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }).toUpperCase() : 'N/A';
 
-        const earningsItems = payrollData.earnings && payrollData.earnings.length > 0 ? payrollData.earnings : [];
-        const deductionsItems = payrollData.deductions && payrollData.deductions.length > 0 ? payrollData.deductions : [];
+        // Categorize earnings and deductions
+        const { contributions, otherDeductions } = categorizeDeductions(payrollData.deductions || []);
+        const { incentives, otherEarnings } = categorizeEarnings(payrollData.earnings || []);
+
+        // Combine all earnings (regular earnings + incentives)
+        const allEarnings = [...otherEarnings, ...incentives];
+        // Combine all deductions (contributions + other deductions)
+        const allDeductions = [...contributions, ...otherDeductions];
 
         let totalEarningsAmount = 0;
         let totalDeductionsAmount = 0;
+        let totalIncentivesAmount = 0;
+        let totalRegularEarningsAmount = 0;
+        let totalContributionsAmount = 0;
+        let totalOtherDeductionsAmount = 0;
 
-        earningsItems.forEach(item => {
-            totalEarningsAmount += Number(item.amount) || 0;
+        otherEarnings.forEach(item => {
+            const amount = Number(item.amount) || 0;
+            totalRegularEarningsAmount += amount;
+            totalEarningsAmount += amount;
         });
 
-        deductionsItems.forEach(item => {
-            totalDeductionsAmount += Number(item.amount) || 0;
+        incentives.forEach(item => {
+            const amount = Number(item.amount) || 0;
+            totalIncentivesAmount += amount;
+            totalEarningsAmount += amount;
         });
+
+        contributions.forEach(item => {
+            const amount = Number(item.amount) || 0;
+            totalContributionsAmount += amount;
+            totalDeductionsAmount += amount;
+        });
+
+        otherDeductions.forEach(item => {
+            const amount = Number(item.amount) || 0;
+            totalOtherDeductionsAmount += amount;
+            totalDeductionsAmount += amount;
+        });
+
+        // Build combined rows - align earnings and deductions side by side
+        const maxRows = Math.max(allEarnings.length, allDeductions.length);
 
         let allRowsHtml = '';
-        const maxRows = Math.max(earningsItems.length, deductionsItems.length);
-
         for (let i = 0; i < maxRows; i++) {
-            const earning = earningsItems[i];
-            const deduction = deductionsItems[i];
+            const earning = allEarnings[i];
+            const deduction = allDeductions[i];
 
-            const earningDesc = earning ? earning.description : '';
-            const earningAmount = earning ? Number(earning.amount) || 0 : 0;
-            const deductionDesc = deduction ? deduction.description : '';
-            const deductionAmount = deduction ? Number(deduction.amount) || 0 : 0;
+            // Process earning
+            let earningDesc = '';
+            let earningAmount = 0;
+            if (earning) {
+                earningDesc = earning.description || '';
+                if (earningDesc.toLowerCase().includes('incentive')) {
+                    earningDesc = earningDesc.replace(/^(INCENTIVE|INCENTIVES)\s*-\s*/i, '').trim();
+                }
+                earningAmount = Number(earning.amount) || 0;
+            }
+
+            // Process deduction
+            let deductionDesc = '';
+            let deductionAmount = 0;
+            if (deduction) {
+                deductionDesc = deduction.description || '';
+                // Remove "DEDUCTIONS - " or "DEDUCTION - " prefix if present
+                deductionDesc = deductionDesc.replace(/^(DEDUCTION|DEDUCTIONS)\s*-\s*/i, '').trim();
+                deductionAmount = Number(deduction.amount) || 0;
+            }
 
             allRowsHtml += `
-                <tr>
-                    <td style="padding: 5px 5px; border-right: 1px solid #000000; border-left: 1px solid #000000;  font-size: 0.7rem;">
-                        ${earningDesc || ''}
-                    </td>
-                    <td style="padding: 5px 5px; border-right: 1px solid #000000; border-left: 1px solid #000000;  text-align: right;font-size: 0.7rem;">
-                        ${earningAmount > 0 ? formatCurrency(earningAmount) : ''}
-                    </td>
-                    <td style="padding: 5px 5px; border-right: 1px solid #000000; border-left: 1px solid #000000;  font-size: 0.7rem;">
-                        ${deductionDesc ? `
-                            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                                <span style="text-align: left;">${deductionDesc}</span>
-                                <span style="text-align: right;">${deductionAmount > 0 ? formatCurrency(deductionAmount) : ''}</span>
-                            </div>
-                        ` : (deductionAmount > 0 ? `
-                            <div style="display: flex; justify-content: flex-end; width: 100%;">
-                                <span>${formatCurrency(deductionAmount)}</span>
-                            </div>
-                        ` : '')}
-                    </td>
-                </tr>
-            `;
+        <tr style="border-bottom: 1px solid #ccc;">
+            <td style="padding: 6px 4px;">${earningDesc || ''}</td>
+            <td style="padding: 6px 4px; text-align: right; border-right: 0.5px solid #000;">${earningAmount > 0 ? formatCurrency(earningAmount) : ''}</td>
+            <td style="padding: 6px 4px;">
+                ${deductionDesc ? `
+                    <div style="display: flex; justify-content: space-between; width: 100%;">
+                        <span>${deductionDesc}</span>
+                        <span>${formatCurrency(deductionAmount)}</span>
+                    </div>
+                ` : (deductionAmount > 0 ? formatCurrency(deductionAmount) : '')}
+            </td>
+        </tr>
+    `;
         }
 
         return `
-            <div class="salary-slip" style="max-width: 100%; width: 100%; background: white; border: 1.5px solid #2c2c2c; padding: 15px; position: relative; font-family: 'Courier New', 'Lucida Sans Typewriter', monospace; min-height: 100%;">
-                <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-image: url('/images/dekalogo.webp'); background-repeat: no-repeat; background-position: center; background-size: 40%; opacity: 0.1; pointer-events: none; z-index: 0;"></div>
-
-                <div class="company-header" style="text-align: center; border-bottom: 1.5px dashed #333; margin-bottom: 12px; padding-bottom: 10px; position: relative; z-index: 1;">
-                    <div class="company-name" style="font-size: 1.1rem; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;">WARLEN INDUSTRIAL SALES CORPORATION</div>
-                    <div class="deka-sales" style="font-size: 0.75rem; font-weight: 700; margin-top: 3px;">DEKA SALES</div>
-                    <div class="specialty-contractor" style="font-size: 0.55rem; font-weight: 600; text-transform: uppercase; color: #555; margin-top: 2px;">SPECIALTY CONTRACTOR</div>
-                    <div class="period" style="margin-top: 8px; font-weight: 700; font-size: 0.7rem; text-align: right;">Date Period: ${startDateFormatted} – ${endDateFormatted}</div>
+        <div class="salary-slip" style="max-width: 100%; width: 100%; margin: 0 auto; background: #ffffff; padding: 15px; position: relative; border: 1px solid #000;">
+            <div style="position: absolute; top: 90px; left: 0; right: 0; bottom: 0; background-image: url('/images/dekalogo.webp'); background-repeat: no-repeat; background-position: center; background-size: 45%; opacity: 0.06; pointer-events: none; z-index: 0;"></div>
+            
+            <div style="position: relative; z-index: 1;">
+                <div style="text-align: center; border-bottom: 0.5px solid #333; margin-bottom: 10px; padding-bottom: 8px;">
+                    <img src="/images/dekalogo.webp" alt="Deka Sales Logo" style="height: 40px; margin-bottom: 4px;" />
+                    <div style="font-size: 1rem; color: #05469D; font-weight: 800; text-transform: uppercase;">WARLEN INDUSTRIAL SALES CORPORATION</div>
+                    <div style="font-size: 0.7rem; font-weight: 700; color: #FD0C0B; margin-top: 2px;">DEKA SALES</div>
+                    <div style="font-size: 0.5rem; font-weight: 600; text-transform: uppercase; color: #555;">SPECIALTY CONTRACTOR</div>
                 </div>
 
-                <div class="emp-info" style="margin: 12px 0; border: 1px solid #222; padding: 8px 10px; background: #f9f9f0; position: relative; z-index: 1;">
-                    <div class="emp-row" style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.7rem; font-weight: 600;">
-                        <span><span class="emp-label" style="font-weight: 700; text-transform: uppercase;">EMPLOYEE NAME:</span> ${employeeNameValue}</span>
-                        <span><span class="emp-label" style="font-weight: 700; text-transform: uppercase;">POSITION:</span> ${positionValue}</span>
+                <div style="margin: 10px 0;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 0.65rem;">
+                        <span><strong>EMPLOYEE NAME:</strong> ${employeeNameValue}</span>
+                        <span><strong>EMPLOYEE CODE:</strong> EMP-${employeeCodeValue}</span>
                     </div>
-                    <div class="emp-row" style="display: flex; justify-content: space-between; font-size: 0.7rem; font-weight: 600;">
-                        <span><span class="emp-label" style="font-weight: 700; text-transform: uppercase;">EMPLOYEE CODE:</span> EMP-${employeeCodeValue}</span>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.65rem;">
+                        <span><strong>POSITION:</strong> ${positionValue}</span>
+                        <span><strong>DATE PERIOD:</strong> ${startDateFormatted} – ${endDateFormatted}</span>
                     </div>
                 </div>
 
-                <table style="width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 0.7rem; position: relative; z-index: 1;">
+                <table style="width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 0.65rem; border: 1px solid #000;">
                     <thead>
                         <tr>
-                            <th style="width: 50%; text-align: left; border: 1px solid #222; padding: 6px 5px; text-transform: uppercase; background: #f0ede0; font-size: 0.7rem;">DESCRIPTION</th>
-                            <th style="width: 25%; text-align: right; border: 1px solid #222; padding: 6px 5px; text-transform: uppercase; background: #f0ede0; font-size: 0.7rem;">EARNINGS</th>
-                            <th style="width: 25%; text-align: right; border: 1px solid #222; padding: 6px 5px; text-transform: uppercase; background: #f0ede0; font-size: 0.7rem;">DEDUCTIONS</th>
+                            <th style="width: 40%; text-align: left; padding: 6px 4px; border-bottom: 1px solid #000;">EARNINGS </th>
+                            <th style="width: 20%; text-align: right; padding: 6px 4px; border-bottom: 1px solid #000; border-right: 1px solid #000;">AMOUNT</th>
+                            <th style="width: 40%; text-align: left; padding: 6px 4px; border-bottom: 1px solid #000;"><div style = "display:flex; justify-content: space-between;"><span>DEDUCTIONS </span> <span>AMOUNT</span></div></th>
                         </tr>
                     </thead>
                     <tbody>
                         ${allRowsHtml}
-                        <tr class="total-row">
-                            <td style="border: 1.5px solid #222; font-weight: 800; padding: 6px 5px; background: #faf7ec; font-size: 0.75rem;">TOTAL</td>
-                            <td style="text-align: right; border: 1.5px solid; #222; font-weight: 800; padding: 6px 5px; background: #faf7ec; font-size: 0.75rem;">${formatCurrency(totalEarningsAmount)}</td>
-                            <td style="text-align: right; border: 1.5px solid;  #222; font-weight: 800; padding: 6px 5px; background: #faf7ec; font-size: 0.75rem;">${formatCurrency(totalDeductionsAmount)}</td>
+                        <tr style="border-top: 2px solid #000;">
+                            <td style="font-weight: 800; padding: 6px 4px;"><strong>TOTAL</strong></td>
+                            <td style="text-align: right; font-weight: 800; padding: 6px 4px;">${formatCurrency(totalEarningsAmount)}</td>
+                            <td style="text-align: right; font-weight: 800; padding: 6px 4px;">${formatCurrency(totalDeductionsAmount)}</td>
                         </tr>
                     </tbody>
                 </table>
 
-                <div class="summary-section" style="margin: 12px 0; border-top: 1.5px solid #222; padding-top: 10px; position: relative; z-index: 1;">
-                    <div class="summary-row" style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.7rem;">
+                <div style="margin: 10px 0; border-top: 2px solid #000; padding-top: 8px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 0.7rem;">
                         <span>Gross Pay</span>
                         <span>${formatCurrency(totalEarningsAmount)}</span>
                     </div>
-                    <div class="summary-row" style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.7rem;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 0.7rem;">
                         <span>Total Deductions</span>
                         <span>${formatCurrency(totalDeductionsAmount)}</span>
                     </div>
-                    <div class="net-pay" style="font-size: 0.85rem; font-weight: 800; color: #075985; border-top: 1px solid #aaa; margin-top: 5px; padding-top: 5px; display: flex; justify-content: space-between;">
+                    <div style="font-size: 0.85rem; font-weight: 800; color: #075985; border-top: 1px solid #aaa; margin-top: 6px; padding-top: 6px; display: flex; justify-content: space-between;">
                         <span>NET PAY</span>
                         <span>${formatCurrency(payrollData.net_pay || (totalEarningsAmount - totalDeductionsAmount))} PHP</span>
                     </div>
                 </div>
 
-                <div class="footer" style="margin-top: 15px; font-size: 0.55rem; border-top: 1px dashed #aaa; padding-top: 8px; display: flex; justify-content: space-between; position: relative; z-index: 1;">
-                    <div>PRINTED DATE: <span id="printedDate">${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span></div>
+                <div style="margin-top: 15px; font-size: 0.55rem; border-top: 1px dashed #aaa; padding-top: 8px; display: flex; justify-content: space-between;">
+                    <div>PRINTED DATE: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
                     <div>RELEASE DATE: ${payDateFormatted}</div>
-                    <div>AUTHORIZED SIGNATURE: _________________</div>
                 </div>
-                <div class="note" style="font-size: 0.55rem; margin-top: 8px; text-align: right; position: relative; z-index: 1;">
-                    * This is a system-generated salary slip. For any discrepancy, contact payroll officer.
+                <div style="margin-top: 8px; display: flex; justify-content: space-between; font-size: 0.55rem;">
+                    <div>AUTHORIZED SIGNATURE: _________________</div>
+                    <div style="text-align: right;">* This is a system-generated salary slip. For any discrepancy, contact payroll officer.</div>
                 </div>
             </div>
-        `;
-    };
-
-    const handlePrintWithPDF = async () => {
-        if (!payrollData) return;
-
-        const element = document.createElement('div');
-        element.innerHTML = generateSalarySlipHTML();
-        document.body.appendChild(element);
-
-        const opt = {
-            margin: [0.2, 0.2, 0.2, 0.2],
-            filename: `Salary_Slip_${payrollData.employee_name || payrollData.employee?.name || 'Employee'}.pdf`,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2, letterRendering: true, useCORS: true },
-            jsPDF: { unit: 'in', format: 'a5', orientation: 'landscape' }
-        };
-
-        try {
-            await html2pdf().set(opt).from(element).save();
-        } catch (error) {
-            console.error('PDF generation failed:', error);
-            alert('Failed to generate PDF. Please try again.');
-        } finally {
-            document.body.removeChild(element);
-        }
+        </div>
+    `;
     };
 
     const handleDirectPrint = () => {
         if (!payrollData) return;
 
+        const printContent = generateSalarySlipHTML();
         const printWindow = window.open('', '_blank');
+
         if (!printWindow) {
             alert('Please allow pop-ups to print');
             return;
         }
 
-        const htmlContent = `
-            <!DOCTYPE html>
-            <html lang="en">
-            <head>
-                <meta charset="UTF-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>Salary Slip - ${payrollData.employee_name || payrollData.employee?.name || 'Employee'}</title>
-                <style>
-                    * { margin: 0; padding: 0; box-sizing: border-box; }
-                    body { 
-                        background: white; 
-                        display: flex; 
-                        justify-content: center; 
-                        align-items: center; 
-                        min-height: 100vh; 
+        printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Salary Slip - ${payrollData.employee_name || 'Employee'}</title>
+            <style>
+                * {
+                    margin: 0;
+                    padding: 0;
+                    box-sizing: border-box;
+                }
+                body {
+                    background: white;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    min-height: 100vh;
+                    padding: 10px;
+                }
+                @media print {
+                    body {
                         padding: 0;
                         margin: 0;
-                        font-family: 'Courier New', 'Lucida Sans Typewriter', monospace;
+                        -webkit-print-color-adjust: exact !important;
+                        print-color-adjust: exact !important;
                     }
                     .salary-slip {
-                        max-width: 100%;
-                        width: 100%;
+                        border: 1px solid #000;
+                        padding: 0.1cm;
                         margin: 0;
-                        padding: 15px;
+                        width: 100%;
+                        -webkit-print-color-adjust: exact !important;
+                        print-color-adjust: exact !important;
                     }
-                    @media print {
-                        body { 
-                            padding: 0; 
-                            margin: 0; 
-                        }
-                        .salary-slip { 
-                            border: none; 
-                            padding: 0.2cm;
-                            margin: 0;
-                            width: 100%;
-                        }
-                        @page {
-                            size: A5 landscape;
-                            margin: 0.2cm;
-                        }
-                        html, body {
-                            margin: 0;
-                            padding: 0;
-                            height: auto;
-                        }
+                    @page {
+                        size: A5 landscape;
+                        margin: 0.1cm;
                     }
-                </style>
-            </head>
-            <body>
-                ${generateSalarySlipHTML()}
-                <script>
-                    window.onload = function() {
-                        window.print();
-                        window.onafterprint = function() {
-                            window.close();
-                        };
+                }
+                .salary-slip {
+                    -webkit-print-color-adjust: exact !important;
+                    print-color-adjust: exact !important;
+                }
+            </style>
+        </head>
+        <body>
+            ${printContent}
+            <script>
+                window.onload = function() {
+                    window.print();
+                    window.onafterprint = function() {
+                        window.close();
                     };
-                <\/script>
-            </body>
-            </html>
-        `;
+                };
+            <\/script>
+        </body>
+        </html>
+    `);
 
-        printWindow.document.write(htmlContent);
         printWindow.document.close();
     };
 
@@ -421,7 +432,7 @@ export default function PayrollPrintLayout({ isOpen, onClose, payrollId }: Payro
                                 <Printer className="h-4 w-4 mr-2" />
                                 Print
                             </Button>
-                            <Button variant="outline" size="sm" onClick={handlePrintWithPDF} className='cursor-pointer'>
+                            <Button variant="outline" size="sm" onClick={generateSalarySlipHTML} className='cursor-pointer'>
                                 <Download className="h-4 w-4 mr-2" />
                                 Save as PDF
                             </Button>
