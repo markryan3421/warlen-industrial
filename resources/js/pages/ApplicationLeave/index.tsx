@@ -297,8 +297,22 @@ export default function Index({ applicationLeaves }: ApplicationLeaveProps) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Application Leaves" />
+
+            <style>{`
+                @keyframes fadeUp {
+                    from { opacity: 0; transform: translateY(16px); }
+                    to   { opacity: 1; transform: translateY(0); }
+                }
+                .pp-row { animation: fadeUp 0.3s cubic-bezier(0.22,1,0.36,1) both; }
+                @keyframes headerReveal {
+                    from { opacity: 0; transform: translateY(-10px); }
+                    to   { opacity: 1; transform: translateY(0); }
+                }
+                .pp-header { animation: headerReveal 0.35s cubic-bezier(0.22,1,0.36,1) both; }
+            `}</style>
+
             <div className="flex justify-between items-center p-4 mx-4 mt-2 -mb-6 pp-header">
-                <CustomHeader title="Application Leaves" description="List of requested leaves by employees" icon={<Clipboard className="h-6 w-6" />} />
+                <CustomHeader title="Application Leaves" description="List of requested leaves by employees" icon={<CalendarClock className="h-6 w-6" />} />
             </div>
             <div className="@container/main flex flex-1 flex-col gap-2 p-4">
                 {showNotification && notification && (

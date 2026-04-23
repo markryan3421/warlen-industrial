@@ -133,7 +133,18 @@ export default function Index({
     );
     const [dateFrom, setDateFrom] = useState<Date | undefined>(() => parseDate(filters.date_from));
     const [dateTo, setDateTo] = useState<Date | undefined>(() => parseDate(filters.date_to));
-    const [perPage, setPerPage] = useState(filters.perPage ?? String(serverPagination.per_page ?? 10));
+    const [perPage, setPerPage] = useState(() => {
+        if (filters.perPage) return filters.perPage;
+        if (serverPagination.per_page) return String(serverPagination.per_page);
+        return '10';
+    });
+
+    // Sync perPage with server pagination
+    useEffect(() => {
+        if (serverPagination.per_page && String(serverPagination.per_page) !== perPage) {
+            setPerPage(String(serverPagination.per_page));
+        }
+    }, [serverPagination.per_page]);
 
     // ── Ref always holds latest filter values ─────────────────────────────────
     const filtersRef = useRef({
@@ -159,16 +170,16 @@ export default function Index({
     }, [searchTerm, selectedPositions, selectedBranches, selectedSites, dateFrom, dateTo, perPage]);
 
     // ── Core navigation ───────────────────────────────────────────────────────
-    const applyFilters = useCallback((overrides: Partial<{
-        search: string;
-        positions: string[];
-        branches: string[];
-        sites: string[];
-        from: Date | undefined;
-        to: Date | undefined;
-        perPage: string;
-        page: number;
-    }> = {}) => {
+    const buildParams = useCallback((overrides: {
+        search?: string;
+        positions?: string[];
+        branches?: string[];
+        sites?: string[];
+        from?: Date | undefined;
+        to?: Date | undefined;
+        perPage?: string;
+        page?: number;
+    } = {}) => {
         const {
             searchTerm: s,
             selectedPositions: pos,
@@ -194,9 +205,28 @@ export default function Index({
         if (rst?.length) params.sites = rst.join(',');
         if (rf && isValid(rf)) params.date_from = format(rf, 'yyyy-MM-dd');
         if (rt && isValid(rt)) params.date_to = format(rt, 'yyyy-MM-dd');
-        if (rpp && rpp !== '10') params.perPage = rpp;
+        
+        // Always send perPage parameter
+        const perPageValue = rpp ? parseInt(rpp) : 10;
+        params.perPage = perPageValue;
+        
         if (overrides.page) params.page = overrides.page;
 
+        return params;
+    }, []);
+
+    const applyFilters = useCallback((overrides: {
+        search?: string;
+        positions?: string[];
+        branches?: string[];
+        sites?: string[];
+        from?: Date | undefined;
+        to?: Date | undefined;
+        perPage?: string;
+        page?: number;
+    } = {}) => {
+        const params = buildParams(overrides);
+        
         setIsFiltering(true);
         router.get('/payrolls', params, {
             preserveState: true,
@@ -207,7 +237,7 @@ export default function Index({
                 'totalNetPay', 'totalGrossPay', 'activeEmployee'],
             onFinish: () => setIsFiltering(false),
         });
-    }, []);
+    }, [buildParams]);
 
     // ── Filter handlers ───────────────────────────────────────────────────────
     const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -226,7 +256,6 @@ export default function Index({
     const handleBranchChange = useCallback((branch: string) => {
         const newBranches = branch ? [branch] : [];
         setSelectedBranches(newBranches);
-        // Clear selected site when branch changes
         if (selectedSites.length) {
             setSelectedSites([]);
             applyFilters({ branches: newBranches, sites: [], page: 1 });
@@ -256,34 +285,9 @@ export default function Index({
         applyFilters({ perPage: value, page: 1 });
     }, [applyFilters]);
 
-    // ── Page change ───────────────────────────────────────────────────────────
     const handlePageChange = useCallback((page: number) => {
-        console.log('Page change triggered with page:', page);
-
-        // Build params with current filters
-        const params: Record<string, string | number> = {
-            page: page,
-            perPage: perPage,
-        };
-
-        if (searchTerm?.trim()) params.search = searchTerm.trim();
-        if (selectedPositions.length) params.positions = selectedPositions.join(',');
-        if (selectedBranches.length) params.branches = selectedBranches.join(',');
-        if (selectedSites.length) params.sites = selectedSites.join(',');
-        if (dateFrom && isValid(dateFrom)) params.date_from = format(dateFrom, 'yyyy-MM-dd');
-        if (dateTo && isValid(dateTo)) params.date_to = format(dateTo, 'yyyy-MM-dd');
-
-        setIsFiltering(true);
-        router.get('/payrolls', params, {
-            preserveState: true,
-            preserveScroll: true,
-            replace: true,
-            only: ['payrolls', 'pagination', 'filters', 'totalCount', 'filteredCount',
-                'totalOvertimePay', 'totalOvertimeHours', 'totalDeductions',
-                'totalNetPay', 'totalGrossPay', 'activeEmployee'],
-            onFinish: () => setIsFiltering(false),
-        });
-    }, [searchTerm, selectedPositions, selectedBranches, selectedSites, dateFrom, dateTo, perPage]);
+        applyFilters({ page });
+    }, [applyFilters]);
 
     const clearFilters = useCallback(() => {
         setSearchTerm('');
@@ -293,10 +297,11 @@ export default function Index({
         setDateFrom(undefined);
         setDateTo(undefined);
         setPerPage('10');
-        setIsFiltering(true);
-        router.get('/payrolls', {}, {
-            preserveState: false, preserveScroll: true, replace: true,
-            onFinish: () => setIsFiltering(false),
+        
+        router.get('/payrolls', { perPage: 10 }, {
+            preserveState: false,
+            preserveScroll: true,
+            replace: true,
         });
     }, []);
 
@@ -334,11 +339,9 @@ export default function Index({
             setNotification({ message: e.message, timestamp: new Date(e.timestamp).toLocaleString() });
             setShowNotification(true);
             setTimeout(() => setShowNotification(false), 5000);
-            setIsFiltering(true);
             router.reload({
                 only: ['payrolls', 'pagination', 'totalOvertimePay', 'totalOvertimeHours',
                     'totalDeductions', 'totalNetPay', 'totalGrossPay', 'activeEmployee'],
-                onFinish: () => setIsFiltering(false),
             });
         });
         return () => channel.stopListening('.payroll.completed');
@@ -357,21 +360,15 @@ export default function Index({
         return allBranches;
     }, [allBranches]);
 
-    // Get sites based on selected branch
     const siteNames = useMemo(() => {
-        // If no branch is selected, return empty array (no sites shown)
         if (!selectedBranches.length || !selectedBranches[0]) {
             return [];
         }
-
         const selectedBranch = selectedBranches[0];
         const branchData = branchesData.find(b => b.branch_name === selectedBranch);
-
-        // Return sites for the selected branch, or empty array if no sites
         if (branchData && branchData.sites && branchData.sites.length > 0) {
             return branchData.sites.map(site => site.site_name);
         }
-
         return [];
     }, [selectedBranches, branchesData]);
 
@@ -392,15 +389,11 @@ export default function Index({
         _original: p,
     })), [payrolls]);
 
-    // Filter payroll table data based on selected site
     const filteredPayrollTableData = useMemo(() => {
         let data = payrollTableData;
-
-        // If site is selected, filter by site
         if (selectedSites.length && selectedSites[0]) {
             data = data.filter(row => row.site_name === selectedSites[0]);
         }
-
         return data;
     }, [payrollTableData, selectedSites]);
 
@@ -415,20 +408,20 @@ export default function Index({
         if (selectedSites.length) baseParams.set('sites', selectedSites.join(','));
         if (dateFrom && isValid(dateFrom)) baseParams.set('date_from', format(dateFrom, 'yyyy-MM-dd'));
         if (dateTo && isValid(dateTo)) baseParams.set('date_to', format(dateTo, 'yyyy-MM-dd'));
-        if (perPage && perPage !== '10') baseParams.set('perPage', perPage);
+        baseParams.set('perPage', String(serverPagination.per_page || 10));
 
         const links = serverPagination.links.map((link: any) => {
             if (!link.url) return link;
             const url = new URL(link.url, window.location.origin);
             const page = url.searchParams.get('page');
-            const merged = new URLSearchParams(baseParams);
+            const merged = new URLSearchParams(baseParams.toString());
             if (page) merged.set('page', page);
             url.search = merged.toString();
             return { ...link, url: url.toString() };
         });
 
         return { ...serverPagination, links };
-    }, [serverPagination, searchTerm, selectedPositions, selectedBranches, selectedSites, dateFrom, dateTo, perPage]);
+    }, [serverPagination, searchTerm, selectedPositions, selectedBranches, selectedSites, dateFrom, dateTo]);
 
     // ── Helpers ───────────────────────────────────────────────────────────────
     const formatCurrency = useCallback((n: number) =>
@@ -470,8 +463,8 @@ export default function Index({
                 status: false
             }}
             allPositions={positionNames}
-            allBranches={branchNames}  // Pass the branch names
-            allSites={siteNames}       // Pass the site names
+            allBranches={branchNames}
+            allSites={siteNames}
             branchesData={branchesData}
             searchTerm={searchTerm}
             selectedPositions={selectedPositions}
@@ -484,7 +477,7 @@ export default function Index({
             onPositionsChange={handlePositionsChange}
             onBranchChange={handleBranchChange}
             onSiteChange={handleSiteChange}
-            onStatusChange={() => { }}
+            onStatusChange={() => {}}
             onDateFromChange={handleDateFromChange}
             onDateToChange={handleDateToChange}
             onClearAll={clearFilters}
@@ -544,7 +537,7 @@ export default function Index({
                                 from={serverPagination?.from || 0}
                                 title="Payroll Records"
                                 onView={handleViewPayroll}
-                                onEdit={() => { }}
+                                onEdit={() => {}}
                                 onDelete={handleDeletePayroll}
                                 toolbar={toolbar}
                                 filterEmptyState={
