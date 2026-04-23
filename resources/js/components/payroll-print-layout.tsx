@@ -296,73 +296,78 @@ export default function PayrollPrintLayout({ isOpen, onClose, payrollId }: Payro
         if (!payrollData) return;
 
         const printContent = generateSalarySlipHTML();
-        const printWindow = window.open('', '_blank');
 
-        if (!printWindow) {
-            alert('Please allow pop-ups to print');
-            return;
-        }
+        // Create a temporary iframe for printing
+        const iframe = document.createElement('iframe');
+        iframe.style.position = 'absolute';
+        iframe.style.width = '0';
+        iframe.style.height = '0';
+        iframe.style.border = 'none';
+        document.body.appendChild(iframe);
 
-        printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Salary Slip - ${payrollData.employee_name || 'Employee'}</title>
-            <style>
-                * {
-                    margin: 0;
-                    padding: 0;
-                    box-sizing: border-box;
-                }
-                body {
-                    background: white;
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                    min-height: 100vh;
-                    padding: 10px;
-                }
-                @media print {
-                    body {
-                        padding: 0;
+        const iframeDoc = iframe.contentWindow?.document;
+        if (iframeDoc) {
+            iframeDoc.open();
+            iframeDoc.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Salary Slip - ${payrollData.employee_name || 'Employee'}</title>
+                <style>
+                    * {
                         margin: 0;
-                        -webkit-print-color-adjust: exact !important;
-                        print-color-adjust: exact !important;
+                        padding: 0;
+                        box-sizing: border-box;
+                    }
+                    body {
+                        background: white;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        min-height: 100vh;
+                        padding: 10px;
+                    }
+                    @media print {
+                        body {
+                            padding: 0;
+                            margin: 0;
+                            -webkit-print-color-adjust: exact !important;
+                            print-color-adjust: exact !important;
+                        }
+                        .salary-slip {
+                            border: 1px solid #000;
+                            padding: 0.1cm;
+                            margin: 0;
+                            width: 100%;
+                            -webkit-print-color-adjust: exact !important;
+                            print-color-adjust: exact !important;
+                        }
+                        @page {
+                            size: A5 landscape;
+                            margin: 0.1cm;
+                        }
                     }
                     .salary-slip {
-                        border: 1px solid #000;
-                        padding: 0.1cm;
-                        margin: 0;
-                        width: 100%;
                         -webkit-print-color-adjust: exact !important;
                         print-color-adjust: exact !important;
                     }
-                    @page {
-                        size: A5 landscape;
-                        margin: 0.1cm;
-                    }
-                }
-                .salary-slip {
-                    -webkit-print-color-adjust: exact !important;
-                    print-color-adjust: exact !important;
-                }
-            </style>
-        </head>
-        <body>
-            ${printContent}
-            <script>
-                window.onload = function() {
-                    window.print();
-                    window.onafterprint = function() {
-                        window.close();
+                </style>
+            </head>
+            <body>
+                ${printContent}
+                <script>
+                    window.onload = function() {
+                        window.print();
+                        window.onafterprint = function() {
+                            window.parent.document.body.removeChild(window.frameElement);
+                        };
                     };
-                };
-            <\/script>
-        </body>
-        </html>
-    `);
-
-        printWindow.document.close();
+                <\/script>
+            </body>
+            </html>
+        `);
+            iframeDoc.close();
+        }
     };
 
     if (!isOpen) return null;
