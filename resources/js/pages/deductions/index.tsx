@@ -11,12 +11,12 @@ import { EmployeeFilterBar } from '@/components/employee/employee-filter-bar';
 import { CustomPagination } from '@/components/custom-pagination';
 import type { BreadcrumbItem } from '@/types';
 import { CustomHeader } from '@/components/custom-header';
-import { CustomToast, toast } from '@/components/custom-toast';
+// import { CustomToast, toast } from '@/components/custom-toast';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-modal';
 import { DeductionFormModal } from '@/components/deductions/deduction-form-modal';
 import { EmployeeSelectionModal } from '@/components/employee-selection-modal';
 import DeductionController from '@/actions/App/Http/Controllers/DeductionController';
-
+import { toast } from 'sonner';
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Deductions', href: '/deductions' }];
 
 interface Employee {
@@ -398,7 +398,7 @@ export default function Index({
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Deductions" />
-            <CustomToast />
+            {/* <CustomToast /> */}
 
             <style>{`
                 @keyframes fadeUp {

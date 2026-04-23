@@ -12,7 +12,7 @@ import AppLayout from '@/layouts/app-layout';
 import { ArrowLeft, PlusCircle, Briefcase, CheckCircle, DollarSign, Save, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { BreadcrumbItem } from '@/types';
-import { toast } from '@/components/custom-toast';
+// import { toast } from '@/components/custom-toast';
 
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -36,14 +36,14 @@ export default function Create() {
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
         post('/positions', {
-            onSuccess: (page: { props: any; }) => {
-                const successMessage = (page.props as any).flash?.success || 'Position created successfully.';
-                toast.success(successMessage);
-            },
-            onError: (errors: { [s: string]: unknown; } | ArrayLike<unknown>) => {
-                const errorMessage = String(Object.values(errors).flat()[0]) || 'Failed to create position.';
-                toast.error(errorMessage);
-            },
+            // onSuccess: (page: { props: any; }) => {
+            //     const successMessage = (page.props as any).flash?.success || 'Position created successfully.';
+            //     toast.success(successMessage);
+            // },
+            // onError: (errors: { [s: string]: unknown; } | ArrayLike<unknown>) => {
+            //     const errorMessage = String(Object.values(errors).flat()[0]) || 'Failed to create position.';
+            //     toast.error(errorMessage);
+            // },
         });
     }
 
