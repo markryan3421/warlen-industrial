@@ -1,4 +1,4 @@
-import { Head, Link, router, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import { Briefcase, HandCoins, Plus, Search } from 'lucide-react';
@@ -11,7 +11,7 @@ import { EmployeeFilterBar } from '@/components/employee/employee-filter-bar';
 import { CustomPagination } from '@/components/custom-pagination';
 import type { BreadcrumbItem } from '@/types';
 import { CustomHeader } from '@/components/custom-header';
-import { toast } from 'sonner';
+import { CustomToast, toast } from '@/components/custom-toast';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-modal';
 import { DeductionFormModal } from '@/components/deductions/deduction-form-modal';
 import { EmployeeSelectionModal } from '@/components/employee-selection-modal';
@@ -65,6 +65,16 @@ const formatCurrency = (amount: string | number) =>
 const formatDate = (date: string) =>
     new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
+// Custom toast style helper
+const toastStyle = (color: string) => ({
+    style: {
+        backgroundColor: 'white',
+        color: color,
+        border: '1px solid #e2e8f0',
+        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+    },
+});
+
 // Debounce hook
 function useDebounce<T>(value: T, delay: number): T {
     const [debouncedValue, setDebouncedValue] = useState<T>(value);
@@ -86,6 +96,7 @@ export default function Index({
     filters = {}
 }: Props) {
     const { delete: destroy } = useForm();
+    const { props } = usePage<{ flash?: { success?: string; error?: string; warning?: string; info?: string } }>();
     const [selected, setSelected] = useState<Deduction | null>(null);
 
     // Local state for filters
@@ -100,6 +111,40 @@ export default function Index({
     const [currentPage, setCurrentPage] = useState(deductions.current_page || 1);
     const [itemsPerPage, setItemsPerPage] = useState(deductions.per_page || 10);
     const [isLoading, setIsLoading] = useState(false);
+
+    // Track last shown flash to prevent duplicates within a short time window
+    const lastFlashRef = useRef<{ key: string; time: number }>({ key: '', time: 0 });
+
+    // Flash message listener – prevents duplicate toasts within 500ms
+    useEffect(() => {
+        const flash = props.flash;
+        if (!flash) return;
+
+        const flashKey = JSON.stringify(flash);
+        const now = Date.now();
+        const last = lastFlashRef.current;
+
+        // If same flash key appeared within last 500ms, skip (prevents double toast)
+        if (last.key === flashKey && (now - last.time) < 500) {
+            return;
+        }
+
+        // Update ref
+        lastFlashRef.current = { key: flashKey, time: now };
+
+        if (flash.success) {
+            toast.success(flash.success, toastStyle('#16a34a')); // green text
+        }
+        if (flash.error) {
+            toast.error(flash.error, toastStyle('#dc2626')); // red text
+        }
+        if (flash.warning) {
+            toast.warning(flash.warning, toastStyle('#f97316')); // orange text
+        }
+        if (flash.info) {
+            toast.info(flash.info, toastStyle('#3b82f6')); // blue text
+        }
+    }, [props.flash]);
 
     // Debounced values for API requests
     const debouncedSearchTerm = useDebounce(searchTerm, 500);
@@ -224,14 +269,15 @@ export default function Index({
     const confirmDelete = () => {
         if (!itemToDelete) return;
         setIsDeleting(true);
-        router.delete(`/deductions/${itemToDelete.id}`, {
+        destroy(DeductionController.destroy(itemToDelete.id).url, {
             onSuccess: () => {
-                toast.success('Deduction deleted successfully.');
+                // Flash message will be shown by global useEffect
                 setDeleteDialogOpen(false);
                 setItemToDelete(null);
             },
             onError: (errors) => {
-                toast.error(Object.values(errors).flat()[0] || 'Failed to delete deduction.');
+                const errorMessage = Object.values(errors).flat()[0] || 'Failed to delete deduction.';
+                toast.error(errorMessage, toastStyle('#dc2626'));
             },
             onFinish: () => setIsDeleting(false),
         });
@@ -352,6 +398,7 @@ export default function Index({
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Deductions" />
+            <CustomToast />
 
             <style>{`
                 @keyframes fadeUp {

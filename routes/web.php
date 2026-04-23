@@ -31,7 +31,9 @@ use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\PayrollPeriodController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\PositionController;
+use App\Http\Middleware\HomeMiddleware;
 use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Inertia\Middleware\EncryptHistory;
@@ -42,9 +44,10 @@ Route::get('/', function () {
 	// return Inertia::render('welcome', [
 	//     'canRegister' => Features::enabled(Features::registration()),
 	// ]);
+
 	//Inertia::clearHistory();
 	return Inertia::render('auth/login');
-})->name('home');
+})->name('home')->middleware(HomeMiddleware::class);
 
 Route::middleware(['auth', 'admin', 'auth.session', 'throttle:limit-actions',])->group(function () {
 
@@ -78,7 +81,7 @@ Route::middleware(['auth', 'admin', 'auth.session', 'throttle:limit-actions',])-
 	Route::resource('application-leave', ApplicationLeaveController::class);
 	Route::resource('attendances', AttendanceImportController::class);
 
-	Route::resource('payroll-periods', PayrollPeriodController::class)->except(['show']);
+	Route::resource('payroll-periods', PayrollPeriodController::class)->except(['show', 'destroy']);
 
 	Route::resource('payrolls', PayrollController::class)->except(['show']);
 
@@ -218,6 +221,19 @@ Route::middleware(['auth', 'admin', 'auth.session', 'throttle:limit-actions'])->
 	Route::post('/deep-analysis', [AIInsightController::class, 'deepAnalysis']);
 	Route::get('/attendance', [AIInsightController::class, 'analyzeAttendance']);
 });
+
+Route::get('/maintenance', function () {
+	$intendedUrl = session('url.intended', '/dashboard');
+
+	// Clear it after retrieving
+	session()->forget('url.intended');
+
+	return Inertia::render('maintenance', [
+		'page' => 'HR Dashboard',
+		'message' => 'is currently under maintenance. Please check back later.',
+		'intendedUrl' => $intendedUrl
+	]);
+})->name('maintenance')->middleware('auth');
 
 
 require __DIR__ . '/settings.php';

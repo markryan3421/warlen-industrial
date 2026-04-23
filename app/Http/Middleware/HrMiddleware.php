@@ -21,7 +21,8 @@ class HrMiddleware
         }
 
         if (Auth::check() && Auth::user()->hasRole('hr_head')) {
-            return $next($request);
+            session()->put('url.intended', url()->previous());
+            return redirect()->route('maintenance');
         }
 
         abort(403, 'Unauthorized access. HR privileges required.');

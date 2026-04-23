@@ -110,7 +110,7 @@ function CellValue({ col, row }: { col: TableColumn; row: TableRow }) {
         return (
             <div className="flex justify-center">
                 <img
-                    src={row[col.key] as string}
+                    src={row[col.key]}
                     alt=""
                     className="w-10 h-10 rounded-lg object-cover border border-slate-200 dark:border-slate-700 transition-all duration-300 ease-[cubic-bezier(.34,1.56,.64,1)] hover:scale-125 hover:shadow-lg hover:z-10 relative"
                 />
@@ -577,9 +577,9 @@ export const CustomTable = ({
                                 />
                             </th>
                         )}
-                        <th className="w-14 px-5 py-3 text-center text-[10px] font-black tracking-widest uppercase text-[#1d4791] dark:text-blue-400 whitespace-nowrap">
+                        {/* <th className="w-14 px-5 py-3 text-center text-[10px] font-black tracking-widest uppercase text-[#1d4791] dark:text-blue-400 whitespace-nowrap">
                             #
-                        </th>
+                        </th> */}
                         {columns.map(col => (
                             <th
                                 key={col.key}
@@ -604,9 +604,9 @@ export const CustomTable = ({
                                     />
                                 </td>
                             )}
-                            <td className="px-5 py-3.5 text-center align-middle border-b">
+                            {/* <td className="px-5 py-3.5 text-center align-middle border-b">
                                 <IndexBadge value={from + index} />
-                            </td>
+                            </td> */}
                             {columns.map(col => (
                                 <td
                                     key={col.key}
@@ -653,12 +653,6 @@ export const CustomTable = ({
 
                 {/* Bulk Action Bar (Desktop) */}
                 {selectable && hasSelected && (
-                    <div className="hidden lg:flex items-center justify-between px-5 py-3 bg-[#1d4791]/5 dark:bg-[#1d4791]/10 border-b border-slate-100 dark:border-slate-800">
-                        {/* <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                                {selectedRows.length} item{selectedRows.length !== 1 ? 's' : ''} selected
-                            </span>
-                        </div> */}
                         <div className="flex gap-2">
                             {bulkActions.map((action, idx) => {
                                 const Icon = LucidIcons[action.icon] as React.ElementType;
@@ -676,7 +670,6 @@ export const CustomTable = ({
                                 );
                             })}
                         </div>
-                    </div>
                 )}
 
                 {/* Mobile View */}

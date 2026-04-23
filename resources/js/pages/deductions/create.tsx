@@ -1,5 +1,5 @@
 // pages/deductions/create.tsx
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, router, useForm } from '@inertiajs/react';
 import { ArrowLeft, HandCoins, Save, Users, Plus, Calendar } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { Input } from '@/components/ui/input';
@@ -12,7 +12,7 @@ import DeductionController from '@/actions/App/Http/Controllers/DeductionControl
 /* ─────────────────────────────────────────────────────────────
 Keyframes
 ───────────────────────────────────────────────────────────── */
-const KF = `@keyframes incFadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }`;
+const KF = `@keyframes incFadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} } @keyframes incScaleIn { from{opacity:0;transform:scale(0.97)} to{opacity:1;transform:scale(1)} }`;
 if (typeof document !== 'undefined' && !document.getElementById('inc-kf')) {
   const s = document.createElement('style'); s.id = 'inc-kf'; s.textContent = KF;
   document.head.appendChild(s);
@@ -88,14 +88,19 @@ export default function Create({ payroll_periods, employees }: Props) {
     employee_ids:      [] as number[],
   });
 
+  // Filter payroll periods to only show OPEN ones (not processing or calculated)
+  const availablePayrollPeriods = payroll_periods.filter(period => 
+    period.payroll_per_status === 'OPEN' || period.payroll_per_status === 'open'
+  );
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     post(DeductionController.store().url, {
-      onSuccess: () => {
-        toast.success('Deduction created successfully');
-        reset();
-      },
-      onError: (errs) => toast.error(Object.values(errs).flat()[0] as string || 'Failed to create deduction'),
+      // onSuccess: () => {
+      //   toast.success('Deduction created successfully');
+      //   reset();
+      // },
+      // onError: (errs) => toast.error(Object.values(errs).flat()[0] as string || 'Failed to create deduction'),
     });
   };
 
@@ -148,7 +153,7 @@ export default function Create({ payroll_periods, employees }: Props) {
                 <Input
                   value={data.deduction_name}
                   onChange={e => setData('deduction_name', e.target.value)}
-                  placeholder="e.g., SSS, Pag-IBIG, Tax"
+                  placeholder="Deduction name"
                   className="h-9 text-sm border-slate-200 focus:border-[#1d4791] focus:ring-2 focus:ring-[#1d4791]/20"
                 />
               </FieldGroup>
@@ -167,23 +172,37 @@ export default function Create({ payroll_periods, employees }: Props) {
                   </div>
                 </FieldGroup>
 
-                <FieldGroup label="Payroll Period" required error={errors.payroll_period_id}>
-                  <Select value={data.payroll_period_id} onValueChange={v => setData('payroll_period_id', v)}>
-                    <SelectTrigger className="h-9 text-sm border-slate-200 focus:ring-2 focus:ring-[#1d4791]/20 focus:border-[#1d4791]">
-                      <SelectValue placeholder="Select period" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl shadow-xl">
-                      {payroll_periods.map(p => (
-                        <SelectItem key={p.id} value={String(p.id)} className="text-xs">
-                          <span className="flex items-center gap-1.5">
-                            <Calendar className="h-3 w-3 text-slate-400" />
-                            {fmtDate(p.start_date)} – {fmtDate(p.end_date)}
-                          </span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FieldGroup>
+                {/* Only show Payroll Period field if there are available OPEN periods */}
+                {availablePayrollPeriods.length > 0 && (
+                  <FieldGroup label="Payroll Period" required error={errors.payroll_period_id}>
+                    <Select value={data.payroll_period_id} onValueChange={v => setData('payroll_period_id', v)}>
+                      <SelectTrigger className="h-9 text-sm border-slate-200 focus:ring-2 focus:ring-[#1d4791]/20 focus:border-[#1d4791]">
+                        <SelectValue placeholder="Select period" />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl shadow-xl">
+                        {availablePayrollPeriods.map(p => (
+                          <SelectItem key={p.id} value={String(p.id)} className="text-xs">
+                            <span className="flex items-center gap-1.5">
+                              <Calendar className="h-3 w-3 text-slate-400" />
+                              {fmtDate(p.start_date)} – {fmtDate(p.end_date)}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FieldGroup>
+                )}
+
+                {/* Show message when no OPEN periods available */}
+                {availablePayrollPeriods.length === 0 && (
+                  <div className="col-span-1 sm:col-span-2">
+                    <div className="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3">
+                      <p className="text-xs text-amber-700">
+                        ⚠️ No open payroll periods available. Please create or open a payroll period first before creating deductions.
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Amount preview */}
@@ -219,12 +238,12 @@ export default function Create({ payroll_periods, employees }: Props) {
 
           {/* Action row - Spans both columns */}
           <div style={fu(180)} className="col-span-1 lg:col-span-2 flex items-center justify-end gap-3 pt-2">
-            <Link as='button' href="/deductions"
+            <button type="button" onClick={() => router.get('/deductions')}
               className="h-9 px-4 rounded-lg border border-slate-200 text-xs font-semibold text-slate-600 hover:border-slate-300 hover:text-slate-800 transition-colors">
               Cancel
-            </Link>
-            <button type="submit" disabled={processing}
-              className="h-9 px-5 rounded-lg bg-[#1d4791] hover:bg-[#1d4791]/90 text-white text-xs font-bold shadow-sm shadow-[#1d4791]/20 flex items-center gap-2 transition-colors disabled:opacity-60">
+            </button>
+            <button type="submit" disabled={processing || availablePayrollPeriods.length === 0}
+              className="h-9 px-5 rounded-lg bg-[#1d4791] hover:bg-[#1d4791]/90 text-white text-xs font-bold shadow-sm shadow-[#1d4791]/20 flex items-center gap-2 transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
               {processing
                 ? <> <span className="h-3.5 w-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" />Creating… </>
                 : <> <Save className="h-3.5 w-3.5" />Create Deduction </>

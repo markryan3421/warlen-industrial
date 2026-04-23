@@ -69,6 +69,20 @@ class ContributionVersionController extends Controller
             return back()->with('error', 'Too many attempts. Please try again later.');
         }
 
+        $existingTypes = ContributionVersion::pluck('type')->toArray();
+        $allTypes = ['sss', 'philhealth', 'pagibig'];
+        $existingCount = count(array_intersect($existingTypes, $allTypes));
+
+        if ($existingCount >= 3) {
+            return back()->with('error', 'Cannot create new contribution. All contribution types (SSS, PhilHealth, Pag-IBIG) already have versions. Please edit or delete existing versions if you need to make changes.');
+        }
+
+        // Check if the specific type being created already exists
+        $type = $request->input('type');
+        if (in_array($type, $existingTypes)) {
+            return back()->with('error', 'A ' . ucfirst($type) . ' contribution version already exists. Only one version per contribution type is allowed.');
+        }
+
         DB::beginTransaction();
 
         try {
@@ -116,6 +130,18 @@ class ContributionVersionController extends Controller
             return back()->with('error', 'Too many attempts. Please try again later.');
         }
 
+        // Check if trying to change to a type that already exists (excluding current version)
+        $newType = $request->input('type');
+        if ($newType && $newType !== $contributionVersion->type) {
+            $existingTypes = ContributionVersion::where('id', '!=', $contributionVersion->id)
+                ->pluck('type')
+                ->toArray();
+
+            if (in_array($newType, $existingTypes)) {
+                return back()->with('error', 'A ' . ucfirst($newType) . ' contribution version already exists. Only one version per contribution type is allowed.');
+            }
+        }
+
         DB::beginTransaction();
 
         try {
@@ -146,6 +172,6 @@ class ContributionVersionController extends Controller
 
         $this->cacheForget('contribution_versions');
 
-        return to_route('contribution-versions.index')->with('success', 'Contribution deleted successfully.');
+        return to_route('contribution-versions.index')->with('error', 'Contribution deleted successfully.');
     }
 }

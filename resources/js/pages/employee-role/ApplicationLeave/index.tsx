@@ -122,18 +122,31 @@ export default function Index({ applicationLeaves, approvedCount = 0 }: Applicat
     return (
         <EmpLayout breadcrumbs={breadcrumbs}>
             <Head title="Application Leaves" />
+            <style>{`
+                @keyframes fadeUp {
+                    from { opacity: 0; transform: translateY(16px); }
+                    to   { opacity: 1; transform: translateY(0); }
+                }
+                .pp-row { animation: fadeUp 0.3s cubic-bezier(0.22,1,0.36,1) both; }
+                @keyframes headerReveal {
+                    from { opacity: 0; transform: translateY(-10px); }
+                    to   { opacity: 1; transform: translateY(0); }
+                }
+                .pp-header { animation: headerReveal 0.35s cubic-bezier(0.22,1,0.36,1) both; }
+            `}</style>
+
             <div className="@container/main flex flex-1 flex-col gap-4 p-4 md:p-6">
                 <CustomToast />
 
                 {/* Header */}
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between .pp-header">
                     <CustomHeader
                         icon={<CalendarClock />}
                         title={'Application Leave'}
                         description={'Request a Leave'}
                     />
                     {!hasReachedLimit && (
-                        <div className = "ml-auto -mt-2 xl:mt-0 xl:ml-0">
+                        <div className="ml-auto -mt-2 xl:mt-0 xl:ml-0">
                             <Link href={ApplicationLeaveController.create()}>
                                 <Button className="gap-2 cursor-pointer">
                                     <PlusCircle className="h-4 w-4" />
@@ -157,7 +170,7 @@ export default function Index({ applicationLeaves, approvedCount = 0 }: Applicat
                 )}
 
                 {/* Main content */}
-                <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-4 .pp-row">
                     {applicationLeaves.length === 0 ? (
                         <EmptyState hasReachedLimit={hasReachedLimit} />
                     ) : (

@@ -24,17 +24,17 @@ const AlertCard = memo(({ item, index }: { item: any, index: number }) => {
             <Link href={item.link || "#"}>
                 <Card className="w-full transition-all duration-300 group-hover:shadow-lg group-hover:border-blue-500 lg:col-span-5">
                     <CardHeader className='flex justify-between items-center'>
-                        <div className="relative flex-1">
-                            <Icon className='absolute -ml-3 md:h-5 md:w-5 md:mt-1 lg:ml-1 lg:h-6 lg:w-6 lg:mt-1'/>
-                            <CardTitle className='pl-6 md:pl-4 text-xs lg:pl-10 lg:text-base text-left min-w-[150px] pt-4'>
+                        <div className="relative flex-1 px-5 md:px-0 xl:px-0">
+                            <Icon className='absolute mt-4 -ml-3 sm:mt-5 md:h-5 md:w-5 md:mt-5 lg:ml-1 lg:h-6 lg:w-6 lg:mt-5 xl:ml-1 xl:h-6 xl:w-6 xl:mt-5'/>
+                            <CardTitle className='pl-6 md:text-xs md:pl-4 text-sm lg:pl-10 lg:text-base text-left min-w-[150px] pt-4'>
                                 {item.title}
                             </CardTitle>
-                            <CardDescription className='pl-6 -ml-px md:w-[130px] lg:w-full md:pl-4 text-[10px] md:text-[10px] lg:pl-10 lg:text-xs pb-4 text-left '>
+                            <CardDescription className='pl-6 md:w-[130px] lg:w-full md:pl-4 text-[10px] lg:pl-10 lg:text-[12px] pb-4 text-left '>
                                 {item.subtitle}
                             </CardDescription>
                         </div>
                         <div className="flex-shrink-0">
-                            <ArrowRight className='-ml-5 -mt-4 md:h-4 md:w-4 lg:-mt-3 transition-all duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:text-blue-600 animate-[wiggle_1s_ease-in-out_infinite] group-hover:animate-[wiggle_1s_ease-in-out_infinite]'/>
+                            <ArrowRight className='-ml-5 flex justify-center md:h-4 md:w-4 lg:-mt-3 transition-all duration-300 group-hover:translate-x-1 group-hover:scale-110 group-hover:text-blue-600 animate-[wiggle_1s_ease-in-out_infinite] group-hover:animate-[wiggle_1s_ease-in-out_infinite]'/>
                         </div>
                     </CardHeader>
                 </Card>

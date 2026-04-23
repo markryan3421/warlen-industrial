@@ -1,6 +1,6 @@
 import { Button } from "@headlessui/react"
 import { Link } from "@inertiajs/react"
-import { TrendingUp, PhilippinePeso, Inbox, UsersRound, CalendarClock, HandCoins, EllipsisVertical } from "lucide-react"
+import { TrendingUp, PhilippinePeso, Inbox, UsersRound, CalendarClock, HandCoins, EllipsisVertical, Calendar } from "lucide-react"
 import { useEffect, useState, useRef, memo, useCallback, useMemo, useLayoutEffect } from "react"
 import ApplicationLeaveController from "@/actions/App/Http/Controllers/ApplicationLeaveController"
 import EmployeeController from "@/actions/App/Http/Controllers/EmployeeController"
@@ -318,7 +318,7 @@ export const SectionCards = memo(function SectionCards({
             title: "Total Net Pay",
             value: totalNetPay,
             icon: PhilippinePeso,
-            footer: "Tap to view breakdown",
+            footer: "Tap to view payroll",
             href: totalNetPayLink,
             onClick: onTotalNetPayClick,
             iconSize: "w-5 h-5 text-blue-800",
@@ -328,8 +328,8 @@ export const SectionCards = memo(function SectionCards({
             id: 'pending-leave',
             title: "Pending Leave Requests",
             value: pendingApplicationLeave,
-            icon: Inbox,
-            footer: "Need Approvals",
+            icon: CalendarClock,
+            footer: "Tap to view pending applications",
             href: pendingLeaveLink || ApplicationLeaveController.index(),
             onClick: onPendingLeaveClick,
             iconSize: "w-6 h-6 text-blue-800",
@@ -338,8 +338,8 @@ export const SectionCards = memo(function SectionCards({
             id: 'payroll-activity',
             title: "Payroll Activity",
             value: openPayrollPeriod,
-            icon: CalendarClock,
-            footer: "You haven't run this month's payroll.",
+            icon: Calendar,
+            footer: "Tap to view periods",
             href: payrollActivityLink,
             onClick: onPayrollActivityClick,
             iconSize: "w-6 h-6 text-blue-800",
@@ -349,7 +349,7 @@ export const SectionCards = memo(function SectionCards({
             title: "Active Employees",
             value: totalActiveEmployee,
             icon: UsersRound,
-            footer: "New hires",
+            footer: "Tap to view employees",
             href: activeEmployeesLink,
             onClick: onActiveEmployeesClick,
             iconSize: "w-6 h-6 text-blue-800",

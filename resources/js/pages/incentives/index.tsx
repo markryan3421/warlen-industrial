@@ -1,5 +1,5 @@
-// resources/js/pages/incentives/index.tsx
-import { Head, router } from '@inertiajs/react';
+// pages/incentives/index.tsx
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import { Briefcase, Coins, Eye, Plus, Search, Pencil, Trash2 } from 'lucide-react';
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { CustomHeader } from '@/components/custom-header';
@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import AppLayout from '@/layouts/app-layout';
 import { CardContent } from '@/components/ui/card';
 import type { BreadcrumbItem } from '@/types';
-import { toast } from '@/components/custom-toast';
+import { CustomToast, toast } from '@/components/custom-toast';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-modal';
 import { CustomPagination } from '@/components/custom-pagination';
 import { IncentivesTableConfig } from '@/config/tables/incentives-table';
@@ -67,7 +67,19 @@ interface Props {
 		page?: number;
 		per_page?: number;
 	};
+	totalCount?: number;
+	filteredCount?: number;
 }
+
+// Custom toast style helper
+const toastStyle = (color: string) => ({
+	style: {
+		backgroundColor: 'white',
+		color: color,
+		border: '1px solid #e2e8f0',
+		boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+	},
+});
 
 // Debounce hook
 function useDebounce<T>(value: T, delay: number): T {
@@ -79,7 +91,10 @@ function useDebounce<T>(value: T, delay: number): T {
 	return debouncedValue;
 }
 
-export default function Index({ incentives, payroll_periods, employees, filters = {} }: Props) {
+export default function Index({ incentives, payroll_periods, employees, filters = {}, totalCount = 0, filteredCount = 0 }: Props) {
+	const { delete: destroy } = useForm();
+	const { props } = usePage<{ flash?: { success?: string; error?: string; warning?: string; info?: string } }>();
+
 	const [selected, setSelected] = useState<Incentive | null>(null);
 	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 	const [itemToDelete, setItemToDelete] = useState<Incentive | null>(null);
@@ -96,6 +111,40 @@ export default function Index({ incentives, payroll_periods, employees, filters 
 	);
 	const [currentPage, setCurrentPage] = useState(incentives.current_page || 1);
 	const [itemsPerPage, setItemsPerPage] = useState(incentives.per_page || 10);
+
+	// Track last shown flash to prevent duplicates within a short time window
+	const lastFlashRef = useRef<{ key: string; time: number }>({ key: '', time: 0 });
+
+	// Flash message listener – prevents duplicate toasts within 500ms
+	useEffect(() => {
+		const flash = props.flash;
+		if (!flash) return;
+
+		const flashKey = JSON.stringify(flash);
+		const now = Date.now();
+		const last = lastFlashRef.current;
+
+		// If same flash key appeared within last 500ms, skip (prevents double toast)
+		if (last.key === flashKey && (now - last.time) < 500) {
+			return;
+		}
+
+		// Update ref
+		lastFlashRef.current = { key: flashKey, time: now };
+
+		if (flash.success) {
+			toast.success(flash.success, toastStyle('#16a34a')); // green text
+		}
+		if (flash.error) {
+			toast.error(flash.error, toastStyle('#dc2626')); // red text
+		}
+		if (flash.warning) {
+			toast.warning(flash.warning, toastStyle('#f97316')); // orange text
+		}
+		if (flash.info) {
+			toast.info(flash.info, toastStyle('#3b82f6')); // blue text
+		}
+	}, [props.flash]);
 
 	// Debounced values for API requests
 	const debouncedSearchTerm = useDebounce(searchTerm, 500);
@@ -190,7 +239,7 @@ export default function Index({ incentives, payroll_periods, employees, filters 
 		navigateWithFilters({ perPage: newPerPage, page: 1 });
 	};
 
-	const handleSearch = (value: string) => {
+	const handleSearchChange = (value: string) => {
 		setSearchTerm(value);
 	};
 
@@ -212,17 +261,17 @@ export default function Index({ incentives, payroll_periods, employees, filters 
 		});
 	};
 
-	// ✅ Simplified: Direct navigation to create page
+	// Direct navigation to create page
 	const handleCreate = () => {
-		router.visit('/incentives/create');
+		router.visit(IncentiveController.create());
 	};
 
-	// ✅ Simplified: Direct navigation to edit page
+	// Direct navigation to edit page
 	const handleEdit = (incentive: Incentive) => {
 		router.visit(IncentiveController.edit(incentive.id).url);
 	};
 
-	// ✅ Handle delete
+	// Handle delete
 	const handleDeleteClick = (incentive: Incentive) => {
 		setItemToDelete(incentive);
 		setDeleteDialogOpen(true);
@@ -231,20 +280,21 @@ export default function Index({ incentives, payroll_periods, employees, filters 
 	const confirmDelete = () => {
 		if (!itemToDelete) return;
 		setIsDeleting(true);
-		router.delete(`/incentives/${itemToDelete.id}`, {
+		destroy(IncentiveController.destroy(itemToDelete.id).url, {
 			onSuccess: () => {
-				toast.success('Incentive deleted successfully.');
+				// Flash message will be shown by global useEffect
 				setDeleteDialogOpen(false);
 				setItemToDelete(null);
 			},
 			onError: (errors) => {
-				toast.error(Object.values(errors).flat()[0] || 'Failed to delete incentive.');
+				const errorMessage = Object.values(errors).flat()[0] || 'Failed to delete incentive.';
+				toast.error(errorMessage, toastStyle('#dc2626'));
 			},
 			onFinish: () => setIsDeleting(false),
 		});
 	};
 
-	// ✅ Handle view details
+	// Handle view details
 	const handleView = (incentive: Incentive) => setSelected(incentive);
 
 	const hasFilters = !!(searchTerm || dateFrom || dateTo);
@@ -312,6 +362,7 @@ export default function Index({ incentives, payroll_periods, employees, filters 
 	return (
 		<AppLayout breadcrumbs={breadcrumbs}>
 			<Head title="Incentives" />
+			<CustomToast />
 
 			<style>{`
                 @keyframes fadeUp {
@@ -355,7 +406,7 @@ export default function Index({ incentives, payroll_periods, employees, filters 
 							<EmployeeFilterBar
 								filters={{ search: true, position: false, branch: false, site: false, date: true, status: false }}
 								searchTerm={searchTerm}
-								onSearchChange={handleSearch}
+								onSearchChange={handleSearchChange}
 								dateFrom={dateFrom}
 								dateTo={dateTo}
 								onDateFromChange={handleDateFromChange}
@@ -416,8 +467,8 @@ export default function Index({ incentives, payroll_periods, employees, filters 
 								}}
 								perPage={String(itemsPerPage)}
 								onPerPageChange={handlePerPageChange}
-								totalCount={incentives.total}
-								filteredCount={incentives.total}
+								totalCount={totalCount || incentives.total}
+								filteredCount={filteredCount || incentives.total}
 								search={searchTerm}
 								resourceName="incentive"
 							/>
