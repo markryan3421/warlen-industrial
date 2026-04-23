@@ -1,11 +1,12 @@
 // pages/deductions/edit.tsx
 import { Head, Link, useForm } from '@inertiajs/react';
-import { ArrowLeft, HandCoins, Save, Pencil, Users, Calendar } from 'lucide-react';
+import { ArrowLeft, HandCoins, Save, Pencil, Users, Calendar, AlertCircle } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { IncentiveEmployeeSelector } from '@/components/incentive-employee-selector';
 import { toast } from '@/components/custom-toast';
+import { Badge } from '@/components/ui/badge';
 import type { BreadcrumbItem } from '@/types';
 import DeductionController from '@/actions/App/Http/Controllers/DeductionController';
 
@@ -49,6 +50,20 @@ interface Props {
 }
 
 const fmtDate = (d: string) => new Date(d).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' });
+
+const getStatusBadge = (status: string) => {
+  const statusLower = status?.toLowerCase();
+  switch (statusLower) {
+    case 'open':
+      return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-[10px]">OPEN</Badge>;
+    case 'processing':
+      return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200 text-[10px]">PROCESSING</Badge>;
+    case 'calculated':
+      return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-[10px]">CALCULATED</Badge>;
+    default:
+      return <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200 text-[10px]">{status}</Badge>;
+  }
+};
 
 /* ─────────────────────────────────────────────────────────────
 Shared sub-components
@@ -96,11 +111,20 @@ export default function Edit({ deduction, payroll_periods, employees }: Props) {
     employee_ids:      deduction.employees?.map(e => e.id) ?? [],
   });
 
+  // Find the currently selected period to show its status
+  const selectedPeriod = payroll_periods.find(p => p.id === Number(data.payroll_period_id));
+  const isSelectedPeriodOpen = selectedPeriod?.payroll_per_status?.toLowerCase() === 'open';
+  const canEdit = isSelectedPeriodOpen;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canEdit) {
+      toast.error('Cannot edit deduction for a closed or processed payroll period');
+      return;
+    }
     put(DeductionController.update(deduction.id).url, {
-      onSuccess: () => toast.success('Deduction updated successfully'),
-      onError:   (errs) => toast.error(Object.values(errs).flat()[0] as string || 'Failed to update deduction'),
+      // onSuccess: () => toast.success('Deduction updated successfully'),
+      // onError:   (errs) => toast.error(Object.values(errs).flat()[0] as string || 'Failed to update deduction'),
     });
   };
 
@@ -138,6 +162,17 @@ export default function Edit({ deduction, payroll_periods, employees }: Props) {
           </div>
         </div>
 
+        {/* Warning for non-OPEN payroll period */}
+        {!canEdit && (
+          <div style={fu(30)} className="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 text-amber-600 flex-shrink-0" />
+            <p className="text-xs text-amber-700">
+              This deduction is associated with a {selectedPeriod?.payroll_per_status?.toLowerCase() || 'closed'} payroll period and cannot be edited.
+              Please create a new deduction for an open payroll period if changes are needed.
+            </p>
+          </div>
+        )}
+
         {/* ── Form Grid ── */}
         <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
 
@@ -154,7 +189,8 @@ export default function Edit({ deduction, payroll_periods, employees }: Props) {
                   value={data.deduction_name}
                   onChange={e => setData('deduction_name', e.target.value)}
                   placeholder="e.g., SSS, Pag-IBIG, Tax"
-                  className="h-9 text-sm border-slate-200 focus:border-[#1d4791] focus:ring-2 focus:ring-[#1d4791]/20"
+                  disabled={!canEdit}
+                  className={`h-9 text-sm border-slate-200 focus:border-[#1d4791] focus:ring-2 focus:ring-[#1d4791]/20 ${!canEdit ? 'bg-slate-50' : ''}`}
                 />
               </FieldGroup>
 
@@ -167,27 +203,40 @@ export default function Edit({ deduction, payroll_periods, employees }: Props) {
                       value={data.deduction_amount}
                       onChange={e => setData('deduction_amount', e.target.value)}
                       placeholder="0.00"
-                      className="pl-7 h-9 text-sm border-slate-200 focus:border-[#1d4791] focus:ring-2 focus:ring-[#1d4791]/20"
+                      disabled={!canEdit}
+                      className={`pl-7 h-9 text-sm border-slate-200 focus:border-[#1d4791] focus:ring-2 focus:ring-[#1d4791]/20 ${!canEdit ? 'bg-slate-50' : ''}`}
                     />
                   </div>
                 </FieldGroup>
 
                 <FieldGroup label="Payroll Period" required error={errors.payroll_period_id}>
-                  <Select value={data.payroll_period_id} onValueChange={v => setData('payroll_period_id', v)}>
-                    <SelectTrigger className="h-9 text-sm border-slate-200 focus:ring-2 focus:ring-[#1d4791]/20 focus:border-[#1d4791]">
+                  <Select 
+                    value={data.payroll_period_id} 
+                    onValueChange={v => setData('payroll_period_id', v)}
+                    disabled={!canEdit}
+                  >
+                    <SelectTrigger className={`h-9 text-sm border-slate-200 focus:ring-2 focus:ring-[#1d4791]/20 focus:border-[#1d4791] ${!canEdit ? 'bg-slate-50' : ''}`}>
                       <SelectValue placeholder="Select period" />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl shadow-xl">
                       {payroll_periods.map(p => (
                         <SelectItem key={p.id} value={String(p.id)} className="text-xs">
-                          <span className="flex items-center gap-1.5">
-                            <Calendar className="h-3 w-3 text-slate-400" />
-                            {fmtDate(p.start_date)} – {fmtDate(p.end_date)}
-                          </span>
+                          <div className="flex items-center justify-between w-full gap-2">
+                            <span className="flex items-center gap-1.5">
+                              <Calendar className="h-3 w-3 text-slate-400" />
+                              {fmtDate(p.start_date)} – {fmtDate(p.end_date)}
+                            </span>
+                            {/* {getStatusBadge(p.payroll_per_status)} */}
+                          </div>
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+                  {selectedPeriod && !isSelectedPeriodOpen && (
+                    <p className="text-[10px] text-amber-600 mt-1">
+                      ⚠️ This payroll period is {selectedPeriod.payroll_per_status?.toLowerCase()}. Changes are not allowed.
+                    </p>
+                  )}
                 </FieldGroup>
               </div>
 
@@ -214,11 +263,17 @@ export default function Edit({ deduction, payroll_periods, employees }: Props) {
               <IncentiveEmployeeSelector
                 employees={employees}
                 selectedIds={data.employee_ids}
-                onToggle={toggleEmployee}
-                onSelectAll={handleSelectAll}
-                onRemoveAll={() => setData('employee_ids', [])}
+                onToggle={canEdit ? toggleEmployee : () => {}}
+                onSelectAll={canEdit ? handleSelectAll : () => {}}
+                onRemoveAll={canEdit ? () => setData('employee_ids', []) : () => {}}
                 error={errors.employee_ids as string | undefined}
+                disabled={!canEdit}
               />
+              {!canEdit && (
+                <p className="text-[10px] text-amber-600 mt-2 text-center">
+                  Employee assignment cannot be changed for this payroll period.
+                </p>
+              )}
             </div>
           </div>
 
@@ -228,8 +283,8 @@ export default function Edit({ deduction, payroll_periods, employees }: Props) {
               className="h-9 px-4 rounded-lg border border-slate-200 text-xs font-semibold text-slate-600 hover:border-slate-300 hover:text-slate-800 transition-colors">
               Cancel
             </Link>
-            <button type="submit" disabled={processing}
-              className="h-9 px-5 rounded-lg bg-[#1d4791] hover:bg-[#1d4791]/90 text-white text-xs font-bold shadow-sm shadow-[#1d4791]/20 flex items-center gap-2 transition-colors disabled:opacity-60">
+            <button type="submit" disabled={processing || !canEdit}
+              className={`h-9 px-5 rounded-lg bg-[#1d4791] hover:bg-[#1d4791]/90 text-white text-xs font-bold shadow-sm shadow-[#1d4791]/20 flex items-center gap-2 transition-colors disabled:opacity-60 disabled:cursor-not-allowed`}>
               {processing
                 ? <> <span className="h-3.5 w-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" />Saving… </>
                 : <> <Save className="h-3.5 w-3.5" />Update Deduction </>

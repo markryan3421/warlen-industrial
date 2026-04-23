@@ -273,7 +273,7 @@ class IncentiveController extends Controller
 		try {
 			$incentive->delete();
 			DB::commit();
-			return redirect()->route('incentives.index')->with('success', 'Incentive deleted successfully.');
+			return redirect()->route('incentives.index')->with('error', 'Incentive deleted successfully.');
 		} catch (\Exception $e) {
 			DB::rollBack();
 			return redirect()->route('incentives.index')->with('error', 'Failed to delete incentive: ' . $e->getMessage());

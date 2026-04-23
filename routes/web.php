@@ -81,7 +81,7 @@ Route::middleware(['auth', 'admin', 'auth.session', 'throttle:limit-actions',])-
 	Route::resource('application-leave', ApplicationLeaveController::class);
 	Route::resource('attendances', AttendanceImportController::class);
 
-	Route::resource('payroll-periods', PayrollPeriodController::class)->except(['show','destroy']);
+	Route::resource('payroll-periods', PayrollPeriodController::class)->except(['show', 'destroy']);
 
 	Route::resource('payrolls', PayrollController::class)->except(['show']);
 
@@ -221,6 +221,19 @@ Route::middleware(['auth', 'admin', 'auth.session', 'throttle:limit-actions'])->
 	Route::post('/deep-analysis', [AIInsightController::class, 'deepAnalysis']);
 	Route::get('/attendance', [AIInsightController::class, 'analyzeAttendance']);
 });
+
+Route::get('/maintenance', function () {
+	$intendedUrl = session('url.intended', '/dashboard');
+
+	// Clear it after retrieving
+	session()->forget('url.intended');
+
+	return Inertia::render('maintenance', [
+		'page' => 'HR Dashboard',
+		'message' => 'is currently under maintenance. Please check back later.',
+		'intendedUrl' => $intendedUrl
+	]);
+})->name('maintenance')->middleware('auth');
 
 
 require __DIR__ . '/settings.php';
