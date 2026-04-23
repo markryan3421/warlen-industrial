@@ -12,11 +12,11 @@ export default ({ children, breadcrumbs, ...props }: AppLayoutProps) => {
 
     return (
         <AppLayoutTemplate breadcrumbs={breadcrumbs} {...props}>
-            {/* <Toaster
+            <Toaster
                 position="top-right"
                 expand={false}
                 closeButton
-            /> */}
+            />
             {/* {showSkeleton ? <SkeletonRouter /> : children} */}
             {children}
             

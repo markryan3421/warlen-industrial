@@ -1,12 +1,12 @@
-import { Head, Link, useForm, router } from '@inertiajs/react';
+import { Head, Link, useForm, router, usePage } from '@inertiajs/react';
 import { format } from 'date-fns';
 import { Users, Search, UserPlus, Archive, UsersRound, RotateCcw, Briefcase, Building2, } from 'lucide-react';
-import { useState, useRef, useMemo } from 'react';
-import { toast } from 'sonner';
+import { useState, useRef, useMemo, useEffect } from 'react';
 import EmployeeController from '@/actions/App/Http/Controllers/EmployeeController';
 import { CustomHeader } from '@/components/custom-header';
 import { CustomPagination } from '@/components/custom-pagination';
 import { CustomTable } from '@/components/custom-table';
+// import { CustomToast, toast } from '@/components/custom-toast';
 import type { BranchData } from '@/components/employee/employee-filter-bar';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
@@ -19,10 +19,21 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, } from '@/components/ui/select';
+import { toast } from 'sonner';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Employees', href: '/employees' },
 ];
+
+// Custom toast style helper
+const toastStyle = (color: string) => ({
+    style: {
+        backgroundColor: 'white',
+        color: color,
+        border: '1px solid #e2e8f0',
+        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+    },
+});
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Employee {
@@ -97,6 +108,41 @@ export default function Index({
     filteredCount,
 }: PageProps) {
     const { delete: destroy } = useForm();
+    const { props } = usePage<{ flash?: { success?: string; error?: string; warning?: string; info?: string } }>();
+
+    // Track last shown flash to prevent duplicates within a short time window
+    const lastFlashRef = useRef<{ key: string; time: number }>({ key: '', time: 0 });
+
+    // Flash message listener – prevents duplicate toasts within 500ms
+    useEffect(() => {
+        const flash = props.flash;
+        if (!flash) return;
+
+        const flashKey = JSON.stringify(flash);
+        const now = Date.now();
+        const last = lastFlashRef.current;
+
+        // If same flash key appeared within last 500ms, skip (prevents double toast)
+        if (last.key === flashKey && (now - last.time) < 500) {
+            return;
+        }
+
+        // Update ref
+        lastFlashRef.current = { key: flashKey, time: now };
+
+        if (flash.success) {
+            toast.success(flash.success, toastStyle('#16a34a')); // green text
+        }
+        if (flash.error) {
+            toast.error(flash.error, toastStyle('#dc2626')); // red text
+        }
+        if (flash.warning) {
+            toast.warning(flash.warning, toastStyle('#f97316')); // orange text
+        }
+        if (flash.info) {
+            toast.info(flash.info, toastStyle('#3b82f6')); // blue text
+        }
+    }, [props.flash]);
 
     // Tab state
     const [activeTab, setActiveTab] = useState<'active' | 'archived'>(
@@ -405,21 +451,24 @@ export default function Index({
         setBulkArchiveConfirmOpen(true);
     };
 
-    const confirmBulkArchive = async () => {
+    const confirmBulkArchive = () => {
+        if (selectedIds.length === 0) return;
         setBulkLoading(true);
-        try {
-            await router.post('/employees/bulk-destroy', {
-                ids: selectedIds,
-                _method: 'DELETE',
-            });
-            setSelectedIds([]);
-            toast.success(`${selectedIds.length} employee(s) moved to archive.`);
-        } catch (error) {
-            toast.error('Failed to archive employees.');
-        } finally {
-            setBulkLoading(false);
-            setBulkArchiveConfirmOpen(false);
-        }
+        router.post('/employees/bulk-destroy', {
+            ids: selectedIds,
+            _method: 'DELETE',
+        }, {
+            onSuccess: () => {
+                // Flash message will be shown by global useEffect
+                setBulkArchiveConfirmOpen(false);
+                setSelectedIds([]);
+            },
+            onError: (errors) => {
+                const errorMessage = Object.values(errors).flat()[0] || 'Failed to archive employees.';
+                toast.error(errorMessage, toastStyle('#dc2626'));
+            },
+            onFinish: () => setBulkLoading(false),
+        });
     };
 
     // ── Bulk assign handlers ────────────────────────────────────────────────
@@ -438,15 +487,15 @@ export default function Index({
             ids: selectedIds,
             position_id: selectedPositionId,
         }, {
-            onSuccess: (page) => {
-                const flash = (page.props as any).flash;
-                if (flash?.success) toast.success(flash.success);
-                else toast.success(`Position assigned to ${selectedIds.length} employee(s).`);
+            onSuccess: () => {
+                // Flash message will be shown by global useEffect
                 setAssignPositionOpen(false);
                 setSelectedIds([]);
-                router.reload({ only: ['employees', 'archivedEmployees'] });
             },
-            onError: () => toast.error('Failed to assign position.'),
+            onError: (errors) => {
+                const errorMessage = Object.values(errors).flat()[0] || 'Failed to assign position.';
+                toast.error(errorMessage, toastStyle('#dc2626'));
+            },
             onFinish: () => setAssignLoading(false),
         });
     };
@@ -459,11 +508,9 @@ export default function Index({
 
     const availableSites = useMemo(() => {
         if (!selectedBranchId) return [];
-        const branch = allBranchesForAssign.find(b => b.id === Number(selectedBranchId));
-        // We need sites for the selected branch – use activeBranchesData to get sites
         const branchWithSites = activeBranchesData.find(b => b.id === Number(selectedBranchId));
         return branchWithSites?.sites ?? [];
-    }, [selectedBranchId, allBranchesForAssign, activeBranchesData]);
+    }, [selectedBranchId, activeBranchesData]);
 
     const confirmAssignBranchSite = () => {
         if (!selectedBranchId) {
@@ -474,17 +521,17 @@ export default function Index({
         router.post('/employees/bulk-assign-branch-site', {
             ids: selectedIds,
             branch_id: selectedBranchId,
-            site_id: selectedSiteId === '' ? null : selectedSiteId,   // ← send null for "None"
+            site_id: selectedSiteId === '' ? null : selectedSiteId,
         }, {
-            onSuccess: (page) => {
-                const flash = (page.props as any).flash;
-                if (flash?.success) toast.success(flash.success);
-                else toast.success(`Branch & site assigned to ${selectedIds.length} employee(s).`);
+            onSuccess: () => {
+                // Flash message will be shown by global useEffect
                 setAssignBranchOpen(false);
                 setSelectedIds([]);
-                router.reload({ only: ['employees', 'archivedEmployees'] });
             },
-            onError: () => toast.error('Failed to assign branch and site.'),
+            onError: (errors) => {
+                const errorMessage = Object.values(errors).flat()[0] || 'Failed to assign branch and site.';
+                toast.error(errorMessage, toastStyle('#dc2626'));
+            },
             onFinish: () => setAssignLoading(false),
         });
     };
@@ -508,12 +555,15 @@ export default function Index({
             {},
             {
                 onSuccess: () => {
-                    toast.success('Employee restored');
-                    setSelectedIds([]);
+                    // Flash message will be shown by global useEffect
                     setRestoreDialogOpen(false);
                     setItemToRestore(null);
+                    setSelectedIds([]);
                 },
-                onError: () => toast.error('Restore failed'),
+                onError: (errors) => {
+                    const errorMessage = Object.values(errors).flat()[0] || 'Restore failed';
+                    toast.error(errorMessage, toastStyle('#dc2626'));
+                },
                 onFinish: () => setIsRestoring(false),
             }
         );
@@ -524,21 +574,24 @@ export default function Index({
         setBulkRestoreConfirmOpen(true);
     };
 
-    const confirmBulkRestore = async () => {
+    const confirmBulkRestore = () => {
+        if (selectedIds.length === 0) return;
         setBulkLoading(true);
-        try {
-            await router.post('/employees/bulk-restore', {
-                ids: selectedIds,
-                _method: 'PUT',
-            });
-            setSelectedIds([]);
-            toast.success(`${selectedIds.length} employee(s) restored.`);
-        } catch (error) {
-            toast.error('Failed to restore employees.');
-        } finally {
-            setBulkLoading(false);
-            setBulkRestoreConfirmOpen(false);
-        }
+        router.post('/employees/bulk-restore', {
+            ids: selectedIds,
+            _method: 'PUT',
+        }, {
+            onSuccess: () => {
+                // Flash message will be shown by global useEffect
+                setBulkRestoreConfirmOpen(false);
+                setSelectedIds([]);
+            },
+            onError: (errors) => {
+                const errorMessage = Object.values(errors).flat()[0] || 'Failed to restore employees.';
+                toast.error(errorMessage, toastStyle('#dc2626'));
+            },
+            onFinish: () => setBulkLoading(false),
+        });
     };
 
     // ── Single delete confirmation ──────────────────────────────────────────
@@ -561,23 +614,14 @@ export default function Index({
         setIsDeleting(true);
         const destroyUrl = EmployeeController.destroy(itemToDelete.slug_emp).url;
         destroy(destroyUrl, {
-            onSuccess: page => {
-                const flash = (page.props as any).flash;
-                if (flash?.error) toast.error(flash.error);
-                else if (flash?.success) toast.success(flash.success);
-                else toast.success('Employee deleted successfully');
+            onSuccess: () => {
+                // Flash message will be shown by global useEffect
                 setDeleteDialogOpen(false);
                 setItemToDelete(null);
             },
-            onError: errors => {
-                let errorMessage = 'Failed to delete employee';
-                if (typeof errors === 'object') {
-                    const firstError = Object.values(errors)[0];
-                    if (typeof firstError === 'string') errorMessage = firstError;
-                    else if (Array.isArray(firstError) && firstError.length > 0)
-                        errorMessage = firstError[0];
-                } else if (typeof errors === 'string') errorMessage = errors;
-                toast.error(errorMessage);
+            onError: (errors) => {
+                const errorMessage = Object.values(errors).flat()[0] || 'Failed to delete employee';
+                toast.error(errorMessage, toastStyle('#dc2626'));
             },
             onFinish: () => setIsDeleting(false),
         });
@@ -606,6 +650,7 @@ export default function Index({
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Employees" />
+            {/* <CustomToast /> */}
 
             <style>{`
                 @keyframes fadeUp {
@@ -856,8 +901,7 @@ export default function Index({
                                                         ? `No employees matching "${searchTerm}" in selected positions.`
                                                         : searchTerm
                                                             ? `No employees matching "${searchTerm}".`
-                                                            : selectedBranch && selectedSite
-                                                                ? `No employees in ${selectedBranch} / ${selectedSite}.`
+                                                            : selectedBranch && selectedSite                                                                ? `No employees in ${selectedBranch} / ${selectedSite}.`
                                                                 : selectedBranch
                                                                     ? `No employees in ${selectedBranch}.`
                                                                     : dateFrom || dateTo

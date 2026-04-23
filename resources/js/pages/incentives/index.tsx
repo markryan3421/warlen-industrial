@@ -11,13 +11,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import AppLayout from '@/layouts/app-layout';
 import { CardContent } from '@/components/ui/card';
 import type { BreadcrumbItem } from '@/types';
-import { CustomToast, toast } from '@/components/custom-toast';
+// import { CustomToast, toast } from '@/components/custom-toast';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-modal';
 import { CustomPagination } from '@/components/custom-pagination';
 import { IncentivesTableConfig } from '@/config/tables/incentives-table';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { formatDateSimple } from '@/utils/formatDateSimple';
 import IncentiveController from '@/actions/App/Http/Controllers/IncentiveController';
+import { toast } from 'sonner';
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Incentives', href: '/incentives' }];
 
@@ -362,7 +363,7 @@ export default function Index({ incentives, payroll_periods, employees, filters 
 	return (
 		<AppLayout breadcrumbs={breadcrumbs}>
 			<Head title="Incentives" />
-			<CustomToast />
+			{/* <CustomToast /> */}
 
 			<style>{`
                 @keyframes fadeUp {
