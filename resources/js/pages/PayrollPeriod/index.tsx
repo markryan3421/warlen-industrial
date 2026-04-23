@@ -1,7 +1,7 @@
-import { Head, Link, useForm, usePage, router } from '@inertiajs/react';
+import { Head, Link, usePage, router } from '@inertiajs/react';
 import {
     CalendarDays, Plus, Clock, CheckCircle2,
-    AlertCircle, Filter, Pencil, Trash2, Eye, Banknote, XCircle, Loader2,
+    AlertCircle, Filter, Pencil, Eye, Banknote, XCircle, Loader2,
 } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 import PayrollPeriodController from '@/actions/App/Http/Controllers/PayrollPeriodController';
@@ -16,7 +16,6 @@ import {
 } from '@/components/ui/select';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { DeleteConfirmationDialog } from '@/components/delete-confirmation-modal';
 import { Button } from '@/components/ui/button';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -120,7 +119,6 @@ function StatCard({ label, count, active, onClick, color }: {
 
 // ── Main component ──────────────────────────────────────────────────────────
 export default function Index({ payrollPeriods }: PayrollPeriodProps) {
-    const { delete: destroy } = useForm();
     const { payroll_period_enums } = usePage<PageProps>().props;
 
     const [selectedPeriod, setSelectedPeriod] = useState<PayrollPeriod | null>(null);
@@ -231,45 +229,6 @@ export default function Index({ payrollPeriods }: PayrollPeriodProps) {
         };
     }, []); // Empty dependency array to run once
 
-    // Delete confirmation states
-    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-    const [itemToDelete, setItemToDelete] = useState<any>(null);
-    const [isDeleting, setIsDeleting] = useState(false);
-
-    const handleDeleteClick = (payrollPeriod: PayrollPeriod) => {
-        setItemToDelete(payrollPeriod);
-        setDeleteDialogOpen(true);
-    };
-
-    const confirmDelete = () => {
-        if (!itemToDelete) return;
-
-
-        setIsDeleting(true);
-        destroy(PayrollPeriodController.destroy(itemToDelete.id).url, {
-            onSuccess: (page) => {
-                const successMessage = (page.props as any).flash?.success || 'Payroll Period deleted successfully';
-                toast.success(successMessage);
-                setDeleteDialogOpen(false);
-                setItemToDelete(null);
-            },
-            onError: (errors) => {
-                const errorMessage = Object.values(errors).flat()[0] || 'Failed to delete payroll period';
-                toast.error(errorMessage);
-                setIsDeleting(false);
-            },
-            onFinish: () => {
-                setIsDeleting(false);
-            },
-        });
-    }
-
-    const handleDelete = (period: PayrollPeriod) => {
-        if (confirm('Are you sure you want to delete this payroll period?')) {
-            destroy(PayrollPeriodController.destroy(period.id).url);
-        }
-    };
-
     const formatDate = (d: string) => new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 
     const formatStatus = (status: string) => {
@@ -355,11 +314,10 @@ export default function Index({ payrollPeriods }: PayrollPeriodProps) {
         },
     ];
 
-    // Actions – these trigger the callbacks passed to CustomTable
+    // Actions – only View and Edit (Delete removed)
     const actions = [
         { label: 'View', icon: 'Eye' as const },
         { label: 'Edit', icon: 'Pencil' as const },
-        { label: 'Delete', icon: 'Trash' as const },
     ];
 
     // Toolbar slot for the filter controls
@@ -531,24 +489,10 @@ export default function Index({ payrollPeriods }: PayrollPeriodProps) {
                                 actions={actions}
                                 data={filteredPeriods}
                                 from={1}
-                                onDelete={handleDeleteClick}
                                 onView={(period) => { setSelectedPeriod(period); setIsModalOpen(true); }}
                                 onEdit={(period) => router.visit(PayrollPeriodController.edit(period.id).url)}
                                 toolbar={toolbar}
                                 filterEmptyState={filterEmptyState}
-                            />
-
-                            <DeleteConfirmationDialog
-                                isOpen={deleteDialogOpen}
-                                onClose={() => {
-                                    setDeleteDialogOpen(false);
-                                    setItemToDelete(null);
-                                }}
-                                onConfirm={confirmDelete}
-                                title='Delete employee'
-                                itemName={itemToDelete?.name || 'this employee'}
-                                isLoading={isDeleting}
-                                confirmText='Delete employee'
                             />
                         </div>
                     )}
