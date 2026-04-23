@@ -1,5 +1,5 @@
 // resources/js/pages/branches/edit.tsx
-import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import { Building2, MapPin, Pencil, Save, ArrowLeft, PlusCircle } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { toast } from '@/components/custom-toast';
@@ -248,7 +248,7 @@ export default function Edit({ branch }: Props) {
 							<Button
 								type="button"
 								variant="outline"
-								onClick={() => window.history.back()}
+								onClick={() => router.get('/branches')}
 								className="w-full sm:w-auto min-w-[120px] h-11 px-6 border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-all"
 							>
 								Cancel

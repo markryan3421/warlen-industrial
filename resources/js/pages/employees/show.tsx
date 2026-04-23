@@ -180,7 +180,7 @@ export default function Show({ employee }: PageProps) {
 				<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 fade-up stagger-1">
 					{/* Back to the previous page */}
 					<Button
-						onClick={() => router.visit(window.history.back())}
+						onClick={() => router.get('/employees')}
 						className="inline-flex items-center gap-2 text-sm group"
 					>
 						<ArrowLeft className="h-4 w-4 group-hover:-translate-x-0.5 transition-transform" />

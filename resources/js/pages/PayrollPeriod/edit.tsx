@@ -1,4 +1,4 @@
-import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import { Head, Link, useForm, usePage, router } from '@inertiajs/react';
 import { format } from 'date-fns';
 import { ArrowLeft, Banknote, CalendarDays, LoaderCircle, RefreshCw, CalendarIcon, CheckCircle2, XCircle, Users, Eye, Search } from 'lucide-react';
 import { useEffect, useState, useMemo } from 'react';
@@ -445,7 +445,7 @@ export default function Edit({ payrollPeriod }: EditProps) {
                             <div className="flex gap-3">
                                 <button
                                     type="button"
-                                    onClick={() => window.history.back()}
+                                    onClick={() => router.get('/payroll-periods')}
                                     disabled={processing}
                                     className="rounded-xl border-2 border-border px-5 py-2.5 text-sm font-semibold text-foreground transition-all hover:border-primary hover:text-primary disabled:opacity-50 active:scale-95"
                                 >
