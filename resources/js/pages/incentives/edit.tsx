@@ -1,5 +1,5 @@
 // pages/incentives/edit.tsx
-import { Head, useForm } from '@inertiajs/react';
+import { Head, useForm, router } from '@inertiajs/react';
 import { ArrowLeft, Coins, Save, Pencil, ToggleLeft, ToggleRight, Calendar } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { Input } from '@/components/ui/input';
@@ -249,7 +249,7 @@ export default function Edit({ incentive, payroll_periods, employees }: Props) {
 
           {/* Action row - Spans both columns */}
           <div style={fu(180)} className="col-span-1 lg:col-span-2 flex items-center justify-end gap-3 pt-2">
-            <button type="button" onClick={() => window.history.back()}
+            <button type="button" onClick={() => router.get('/incentives')}
               className="h-9 px-4 rounded-lg border border-slate-200 text-xs font-semibold text-slate-600 hover:border-slate-300 hover:text-slate-800 transition-colors">
               Cancel
             </button>

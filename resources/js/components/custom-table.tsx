@@ -653,12 +653,6 @@ export const CustomTable = ({
 
                 {/* Bulk Action Bar (Desktop) */}
                 {selectable && hasSelected && (
-                    <div className="hidden lg:flex items-center justify-between px-5 py-3 bg-[#1d4791]/5 dark:bg-[#1d4791]/10 border-b border-slate-100 dark:border-slate-800">
-                        {/* <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                                {selectedRows.length} item{selectedRows.length !== 1 ? 's' : ''} selected
-                            </span>
-                        </div> */}
                         <div className="flex gap-2">
                             {bulkActions.map((action, idx) => {
                                 const Icon = LucidIcons[action.icon] as React.ElementType;
@@ -676,7 +670,6 @@ export const CustomTable = ({
                                 );
                             })}
                         </div>
-                    </div>
                 )}
 
                 {/* Mobile View */}
