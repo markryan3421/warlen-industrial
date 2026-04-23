@@ -1,6 +1,6 @@
-// pages/deductions/create.tsx
+// pages/deductions/edit.tsx
 import { Head, Link, useForm } from '@inertiajs/react';
-import { ArrowLeft, HandCoins, Save, Users, Plus, Calendar } from 'lucide-react';
+import { ArrowLeft, HandCoins, Save, Pencil, Users, Calendar } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -35,7 +35,15 @@ interface PayrollPeriod {
   pay_date: string;
   payroll_per_status: string;
 }
+interface Deduction {
+  id: number;
+  deduction_name: string;
+  deduction_amount: string | number;
+  payroll_period_id: number;
+  employees?: Employee[];
+}
 interface Props {
+  deduction: Deduction;
   payroll_periods: PayrollPeriod[];
   employees: Employee[];
 }
@@ -75,27 +83,24 @@ function FieldGroup({ label, required, error, hint, children }: {
 /* ─────────────────────────────────────────────────────────────
 Main page
 ───────────────────────────────────────────────────────────── */
-export default function Create({ payroll_periods, employees }: Props) {
+export default function Edit({ deduction, payroll_periods, employees }: Props) {
   const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Deductions', href: '/deductions' },
-    { title: 'Create', href: '/deductions/create' },
+    { title: deduction.deduction_name, href: '#' },
   ];
 
-  const { data, setData, post, processing, errors, reset } = useForm({
-    deduction_name:    '',
-    deduction_amount:  '', 
-    payroll_period_id: '',
-    employee_ids:      [] as number[],
+  const { data, setData, put, processing, errors } = useForm({
+    deduction_name:    deduction.deduction_name || '',
+    deduction_amount:  String(deduction.deduction_amount || ''), 
+    payroll_period_id: String(deduction.payroll_period_id || ''),
+    employee_ids:      deduction.employees?.map(e => e.id) ?? [],
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    post(DeductionController.store().url, {
-      onSuccess: () => {
-        toast.success('Deduction created successfully');
-        reset();
-      },
-      onError: (errs) => toast.error(Object.values(errs).flat()[0] as string || 'Failed to create deduction'),
+    put(DeductionController.update(deduction.id).url, {
+      onSuccess: () => toast.success('Deduction updated successfully'),
+      onError:   (errs) => toast.error(Object.values(errs).flat()[0] as string || 'Failed to update deduction'),
     });
   };
 
@@ -110,7 +115,7 @@ export default function Create({ payroll_periods, employees }: Props) {
 
   return (
     <AppLayout breadcrumbs={breadcrumbs}>
-      <Head title="Create Deduction" />
+      <Head title={`Edit: ${deduction.deduction_name}`} />
 
       <div className="px-4 sm:px-6 lg:px-8 py-6 max-w-6xl mx-auto space-y-5">
 
@@ -124,11 +129,11 @@ export default function Create({ payroll_periods, employees }: Props) {
 
           <div className="bg-[#1d4791] px-4 py-2.5 rounded-xl flex items-center gap-3 shadow-md">
             <div className="h-7 w-7 rounded-lg bg-white/15 flex items-center justify-center">
-              <Plus className="h-3.5 w-3.5 text-white" />
+              <Pencil className="h-3.5 w-3.5 text-white" />
             </div>
             <div>
-              <p className="text-[10px] font-bold tracking-widest uppercase text-white">New Deduction</p>
-              <p className="text-[10px] text-white/55 mt-0.5 max-w-[200px] truncate">Define deduction & recipients</p>
+              <p className="text-[10px] font-bold tracking-widest uppercase text-white">Edit Deduction</p>
+              <p className="text-[10px] text-white/55 mt-0.5 max-w-[200px] truncate">{deduction.deduction_name}</p>
             </div>
           </div>
         </div>
@@ -141,7 +146,7 @@ export default function Create({ payroll_periods, employees }: Props) {
             <NavyCardHeader
               icon={<HandCoins className="h-4 w-4 text-white" />}
               title="Deduction Details"
-              subtitle="Name, amount, and payroll period"
+              subtitle="Edit name, amount, and payroll period"
             />
             <div className="p-5 space-y-5">
               <FieldGroup label="Deduction Name" required error={errors.deduction_name}>
@@ -186,7 +191,7 @@ export default function Create({ payroll_periods, employees }: Props) {
                 </FieldGroup>
               </div>
 
-              {/* Amount preview */}
+              {/* Current amount preview */}
               {data.deduction_amount && !isNaN(Number(data.deduction_amount)) && Number(data.deduction_amount) > 0 && (
                 <div className="rounded-xl bg-[#1d4791]/4 border border-[#1d4791]/15 px-4 py-3 flex items-center justify-between">
                   <span className="text-[11px] font-semibold text-slate-500">Deduction Amount</span>
@@ -226,8 +231,8 @@ export default function Create({ payroll_periods, employees }: Props) {
             <button type="submit" disabled={processing}
               className="h-9 px-5 rounded-lg bg-[#1d4791] hover:bg-[#1d4791]/90 text-white text-xs font-bold shadow-sm shadow-[#1d4791]/20 flex items-center gap-2 transition-colors disabled:opacity-60">
               {processing
-                ? <> <span className="h-3.5 w-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" />Creating… </>
-                : <> <Save className="h-3.5 w-3.5" />Create Deduction </>
+                ? <> <span className="h-3.5 w-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" />Saving… </>
+                : <> <Save className="h-3.5 w-3.5" />Update Deduction </>
               }
             </button>
           </div>
