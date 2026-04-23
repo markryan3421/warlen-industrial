@@ -38,6 +38,12 @@ export const CustomPagination = ({
 	onPageChange,
 }: PaginationProps) => {
 
+	// Hide the pagination if there's only one pagination available or there's no data at all
+	const totalPages = Math.ceil(pagination.total / parseInt(perPage));
+	if (totalPages <= 1 || pagination.total === 0) {
+		return null;
+	}
+
 	const windowSize = 5;
 	const previousLink = pagination.links[0];
 	const nextLink = pagination.links[pagination.links.length - 1];
