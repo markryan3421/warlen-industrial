@@ -33,6 +33,7 @@ interface Employee {
     user: { name: string; email: string };
     slug_emp: string;
     emp_code: string | number;
+    avatar: string | null;
     pay_frequency: string;
     contract_start_date: string;
     contract_end_date: string;
