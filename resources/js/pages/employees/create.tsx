@@ -1,7 +1,7 @@
 import { Head, useForm, usePage, router } from '@inertiajs/react';
 import { Search, ChevronDown, User, Briefcase, MapPin, Calendar, Phone, Mail, Hash, Clock, LoaderCircle, PersonStanding } from 'lucide-react';
 import { useEffect, useState, useRef } from 'react';
-import { toast } from 'sonner';
+// import { toast } from 'sonner';
 import { store } from '@/actions/App/Http/Controllers/EmployeeController';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
@@ -245,12 +245,12 @@ export default function Create({ positions, branches, site = [] }: Props) {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         post(store().url, {
-            onSuccess: (page) => {
-                toast.success((page.props as any).flash?.success || 'Employee created successfully.');
-            },
-            onError: (errors) => {
-                toast.error(Object.values(errors).flat()[0] || 'Failed to create employee.');
-            },
+            // onSuccess: (page) => {
+            //     toast.success((page.props as any).flash?.success || 'Employee created successfully.');
+            // },
+            // onError: (errors) => {
+            //     toast.error(Object.values(errors).flat()[0] || 'Failed to create employee.');
+            // },
         });
     };
 

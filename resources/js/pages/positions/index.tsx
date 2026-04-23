@@ -1,6 +1,6 @@
-import { Head, Link, router, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import { Briefcase, Search, BriefcaseBusiness } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { TableSearchHeader } from '@/components/table-search-header';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -12,7 +12,7 @@ import { CustomTable } from '@/components/custom-table';
 import { CustomPagination } from '@/components/custom-pagination';
 import { PositionTableConfig } from '@/config/tables/position-table';
 import PositionController from '@/actions/App/Http/Controllers/PositionController';
-import { toast } from '@/components/custom-toast';
+import { toast } from 'sonner';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-modal';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -56,12 +56,58 @@ interface IndexProps {
     filteredCount: number;
 }
 
+// Custom toast style helper for sonner
+const toastStyle = (color: string) => ({
+    style: {
+        backgroundColor: 'white',
+        color: color,
+        border: '1px solid #e2e8f0',
+        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+    },
+});
+
 export default function Index({ positions, filters = { search: '', perPage: '10' }, totalCount, filteredCount }: IndexProps) {
     const { delete: destroy } = useForm();
+    const { props } = usePage<{ flash?: { success?: string; error?: string; warning?: string; info?: string } }>();
+    
     const { data, setData } = useForm({
         search: filters?.search || '',
         perPage: filters?.perPage || '10',
     });
+
+    // Track last shown flash to prevent duplicates within a short time window
+    const lastFlashRef = useRef<{ key: string; time: number }>({ key: '', time: 0 });
+
+    // Flash message listener – prevents duplicate toasts within 500ms
+    useEffect(() => {
+        const flash = props.flash;
+        if (!flash) return;
+
+        const flashKey = JSON.stringify(flash);
+        const now = Date.now();
+        const last = lastFlashRef.current;
+
+        // If same flash key appeared within last 500ms, skip (prevents double toast)
+        if (last.key === flashKey && (now - last.time) < 500) {
+            return;
+        }
+
+        // Update ref
+        lastFlashRef.current = { key: flashKey, time: now };
+
+        if (flash.success) {
+            toast.success(flash.success, toastStyle('#16a34a')); // green text
+        }
+        if (flash.error) {
+            toast.error(flash.error, toastStyle('#dc2626')); // red text
+        }
+        if (flash.warning) {
+            toast.warning(flash.warning, toastStyle('#f97316')); // orange text
+        }
+        if (flash.info) {
+            toast.info(flash.info, toastStyle('#3b82f6')); // blue text
+        }
+    }, [props.flash]);
 
     // Transform positions to convert boolean to Yes/No
     const transformedPositions = useMemo(() => {
@@ -139,15 +185,14 @@ export default function Index({ positions, filters = { search: '', perPage: '10'
         
         setIsDeleting(true);
         destroy(PositionController.destroy(positionToDelete.pos_slug).url, {
-            onSuccess: (page) => {
-                const successMessage = (page.props as any).flash?.success || 'Position deleted successfully.';
-                toast.success(successMessage);
+            onSuccess: () => {
+                // Flash message will be shown by global useEffect
                 setDeleteDialogOpen(false);
                 setPositionToDelete(null);
             },
             onError: (errors) => {
                 const errorMessage = Object.values(errors).flat()[0] || 'Failed to delete position.';
-                toast.error(errorMessage);
+                toast.error(errorMessage, toastStyle('#dc2626'));
             },
             onFinish: () => {
                 setIsDeleting(false);
@@ -173,7 +218,7 @@ export default function Index({ positions, filters = { search: '', perPage: '10'
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Positions" />
-            <CustomToast />
+            {/* <CustomToast /> */}
 
             <div className="flex flex-col gap-4 p-4 mx-4">
                 

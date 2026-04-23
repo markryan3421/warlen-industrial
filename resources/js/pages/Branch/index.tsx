@@ -5,7 +5,8 @@ import { useState, useEffect, useRef } from 'react';
 import BranchController from "@/actions/App/Http/Controllers/BranchController";
 import { CustomHeader } from '@/components/custom-header';
 import { CustomTable } from '@/components/custom-table';
-import { CustomToast, toast } from '@/components/custom-toast';
+// import { CustomToast, toast } from '@/components/custom-toast';
+import { toast } from 'sonner';
 import { EmployeeFilterBar } from '@/components/employee/employee-filter-bar';
 import { Button } from '@/components/ui/button';
 import { CustomPagination } from '@/components/custom-pagination';
@@ -192,7 +193,7 @@ export default function Index({ branches, filters, totalCount, filteredCount }: 
 	return (
 		<AppLayout breadcrumbs={breadcrumbs}>
 			<Head title="Branches" />
-			<CustomToast />
+			{/* <CustomToast /> */}
 
 			<style>{`
                 @keyframes fadeUp {

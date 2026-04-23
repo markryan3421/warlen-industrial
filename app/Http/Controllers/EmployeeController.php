@@ -216,7 +216,7 @@ class EmployeeController extends Controller
 
         $this->cacheForget('employees');
 
-        return to_route('employees.index')->with('success', 'Employee deleted successfully.');
+        return to_route('employees.index')->with('success', 'Employee archived successfully.');
     }
     public function bulkDestroy(Request $request)
     {
