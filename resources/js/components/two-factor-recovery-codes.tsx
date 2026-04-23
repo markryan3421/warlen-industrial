@@ -55,7 +55,7 @@ export default function TwoFactorRecoveryCodes({
     return (
         <Card>
             <CardHeader>
-                <CardTitle className="flex gap-3">
+                <CardTitle className="flex gap-3 py-2">
                     <LockKeyhole className="size-4" aria-hidden="true" />
                     2FA Recovery Codes
                 </CardTitle>
@@ -68,7 +68,7 @@ export default function TwoFactorRecoveryCodes({
                 <div className="flex flex-col gap-3 select-none sm:flex-row sm:items-center sm:justify-between">
                     <Button
                         onClick={toggleCodesVisibility}
-                        className="w-fit"
+                        className="w-fit mb-2"
                         aria-expanded={codesAreVisible}
                         aria-controls="recovery-codes-section"
                     >
