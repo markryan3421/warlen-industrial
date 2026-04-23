@@ -1,4 +1,4 @@
-import { Head, useForm, usePage } from '@inertiajs/react';
+import { Head, useForm, usePage, router } from '@inertiajs/react';
 import { Search, ChevronDown, User, Briefcase, MapPin, Calendar, Phone, Mail, Hash, Clock, LoaderCircle, PersonStanding } from 'lucide-react';
 import { useEffect, useState, useRef } from 'react';
 import { toast } from 'sonner';
@@ -203,10 +203,24 @@ export default function Create({ positions, branches, site = [] }: Props) {
         if (data.branch_id) {
             const filtered = site.filter(s => s.branch_id === parseInt(data.branch_id));
             setAvailableSites(filtered);
-            setData('site_id', '');
-            setSiteSearch('');
+            
+            // 🔁 Clear site_id if the current value is not valid for the new branch
+            const currentSiteId = data.site_id;
+            if (currentSiteId) {
+                const stillValid = filtered.some(s => s.id === parseInt(currentSiteId));
+                if (!stillValid) {
+                    setData('site_id', '');
+                    setSiteSearch('');
+                }
+            } else {
+                // If branch changes and no site was selected, ensure site_id is cleared
+                setData('site_id', '');
+                setSiteSearch('');
+            }
         } else {
             setAvailableSites([]);
+            setData('site_id', '');
+            setSiteSearch('');
         }
     }, [data.branch_id]);
 
@@ -309,7 +323,7 @@ export default function Create({ positions, branches, site = [] }: Props) {
                         </div>
                         <Button
                             variant="outline"
-                            onClick={() => window.history.back()}
+                            onClick={() => router.get('/employees')}
                             className="rounded-xl border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
                         >
                             Cancel

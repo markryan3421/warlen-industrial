@@ -29,8 +29,8 @@ class EmployeeController extends Controller
     /**
      * Display a listing of the resource.
      */
-     public function index(Request $request)
-    { 
+    public function index(Request $request)
+    {
         Gate::authorize('viewAny', Employee::class);
 
         $employees = $this->cacheRemember('employees', 60, fn() => $this->employeeRepository->getEmployees());
@@ -44,21 +44,10 @@ class EmployeeController extends Controller
             searchColumns: ['emp_code', 'user.name', 'position.pos_name', 'branch.branch_name', 'site.site_name', 'employee_status'],
         );
 
-        $buildBranchData = fn($collection) => $collection
-            ->groupBy(fn($e) => $e->branch?->id)
-            ->filter()
-            ->map(fn($group, $branchId) => [
-                'id' => $branchId,
-                'branch_name' => $group->first()->branch->branch_name,
-                'sites' => $group
-                    ->filter(fn($e) => $e->site?->id)
-                    ->unique('site.id')
-                    ->map(fn($e) => ['id' => $e->site->id, 'site_name' => $e->site->site_name])
-                    ->values()
-                    ->all(),
-            ])
-            ->values()
-            ->all();
+        // Only branches that have active employees (with their sites)
+        $activeBranchesData = Branch::whereIn('id', $employees->pluck('branch.id'))->with('sites')->get();
+        // Only branches that have archived employees
+        $archivedBranchesData = Branch::whereIn('id', $archived->pluck('branch.id'))->with('sites')->get();
 
         return Inertia::render('employees/index', [
             'archivedEmployees' => $archived,
@@ -70,14 +59,14 @@ class EmployeeController extends Controller
                 'total'   => $result['pagination']['total'] ?? 0,
                 'perPage' => (int) ($request->perPage ?? 10),
             ],
-            'activeBranchesData'   => $buildBranchData($employees),
-            'archivedBranchesData' => $buildBranchData($archived),
+            'activeBranchesData'   => $activeBranchesData,
+            'archivedBranchesData' => $archivedBranchesData,
             'allPositions'         => $allPositions,
             'filters'              => $result['filters'],
             'totalCount'           => $result['totalCount'],
             'filteredCount'        => $result['filteredCount'],
             'positionsList'        => Position::select('id', 'pos_name')->get(),
-            'allBranchesForAssign' => Branch::select('id', 'branch_name')->get(),
+            'allBranchesForAssign' => Branch::select('id', 'branch_name')->get(), // keep all for bulk assign
         ]);
     }
     /**
@@ -222,7 +211,7 @@ class EmployeeController extends Controller
         }
 
         $this->invalidateUserSessions($employee->user_id);
-        // $employee->update(['employee_status' => 'inactive']);
+        $employee->update(['employee_status' => 'inactive']);
         $employee->delete();
 
         $this->cacheForget('employees');
@@ -245,6 +234,7 @@ class EmployeeController extends Controller
         DB::transaction(function () use ($ids) {
             Employee::whereIn('id', $ids)->each(function ($employee) {
                 $this->invalidateUserSessions($employee->user_id);
+                $employee->update(['employee_status' => 'inactive']);
                 $employee->delete(); // soft delete
             });
         });
@@ -267,6 +257,7 @@ class EmployeeController extends Controller
         }
 
         Employee::withTrashed()->whereIn('id', $ids)->each(function ($employee) {
+            $employee->update(['employee_status' => 'active']);
             $employee->restore();
         });
 
@@ -282,6 +273,7 @@ class EmployeeController extends Controller
             return back()->with('error', 'Too many attempts. Please try again later.');
         }
 
+        $employee->update(['employee_status' => 'active']);
         $employee->restore();
 
         $this->cacheForget('employees');
@@ -320,19 +312,18 @@ class EmployeeController extends Controller
             return back()->with('error', 'Too many attempts. Please try again later.');
         }
 
-        $site = Site::where('id', $request->site_id)
-            ->where('branch_id', $request->branch_id)
-            ->firstOrFail();
+        $data = [
+            'branch_id' => $request->branch_id,
+            'site_id' => $request->site_id, // can be null
+        ];
 
         $updatedCount = Employee::whereIn('id', $request->ids)
             ->where(function ($query) {
                 $query->whereNull('branch_id')
                     ->orWhereNull('site_id');
             })
-            ->update([
-                'branch_id' => $request->branch_id,
-                'site_id' => $request->site_id,
-            ]);
+            ->update($data);
+
 
         $this->cacheForget('employees');
 

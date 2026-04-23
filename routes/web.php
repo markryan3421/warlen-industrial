@@ -31,19 +31,25 @@ use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\PayrollPeriodController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\PositionController;
+use App\Http\Middleware\HomeMiddleware;
 use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use Inertia\Middleware\EncryptHistory;
+
 // use Laravel\Fortify\Features;
 
 Route::get('/', function () {
 	// return Inertia::render('welcome', [
 	//     'canRegister' => Features::enabled(Features::registration()),
 	// ]);
-	return Inertia::render('auth/login');
-})->name('home');
 
-Route::middleware(['auth', 'admin', 'auth.session', 'throttle:limit-actions'])->group(function () {
+	//Inertia::clearHistory();
+	return Inertia::render('auth/login');
+})->name('home')->middleware(HomeMiddleware::class);
+
+Route::middleware(['auth', 'admin', 'auth.session', 'throttle:limit-actions',])->group(function () {
 
 	Route::get('payroll', function () {
 		return Inertia::render('payroll/index');
@@ -75,7 +81,7 @@ Route::middleware(['auth', 'admin', 'auth.session', 'throttle:limit-actions'])->
 	Route::resource('application-leave', ApplicationLeaveController::class);
 	Route::resource('attendances', AttendanceImportController::class);
 
-	Route::resource('payroll-periods', PayrollPeriodController::class)->except(['show']);
+	Route::resource('payroll-periods', PayrollPeriodController::class)->except(['show','destroy']);
 
 	Route::resource('payrolls', PayrollController::class)->except(['show']);
 

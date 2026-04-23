@@ -19,7 +19,6 @@ trait IncentiveValidationRules
                 'regex:/^[a-zA-Z0-9\s\-_\.&,()@]+$/',
             ],
             'is_daily' => [
-                'required',
                 'boolean',
             ],
             'incentive_amount' => [

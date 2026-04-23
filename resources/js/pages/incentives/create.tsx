@@ -1,18 +1,18 @@
-// pages/deductions/create.tsx
-import { Head, Link, useForm } from '@inertiajs/react';
-import { ArrowLeft, HandCoins, Save, Users, Plus, Calendar } from 'lucide-react';
+// pages/incentives/create.tsx
+import { Head, useForm, router } from '@inertiajs/react';
+import { ArrowLeft, Coins, Save, Users, Plus, ToggleLeft, ToggleRight, Calendar } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { IncentiveEmployeeSelector } from '@/components/incentive-employee-selector';
 import { toast } from '@/components/custom-toast';
 import type { BreadcrumbItem } from '@/types';
-import DeductionController from '@/actions/App/Http/Controllers/DeductionController';
+import IncentiveController, { store } from '@/actions/App/Http/Controllers/IncentiveController';
 
 /* ─────────────────────────────────────────────────────────────
-Keyframes
+Keyframes — shared with edit.tsx
 ───────────────────────────────────────────────────────────── */
-const KF = `@keyframes incFadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }`;
+const KF = `@keyframes incFadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} } @keyframes incScaleIn { from{opacity:0;transform:scale(0.97)} to{opacity:1;transform:scale(1)} }`;
 if (typeof document !== 'undefined' && !document.getElementById('inc-kf')) {
   const s = document.createElement('style'); s.id = 'inc-kf'; s.textContent = KF;
   document.head.appendChild(s);
@@ -77,25 +77,26 @@ Main page
 ───────────────────────────────────────────────────────────── */
 export default function Create({ payroll_periods, employees }: Props) {
   const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Deductions', href: '/deductions' },
-    { title: 'Create', href: '/deductions/create' },
+    { title: 'Incentives', href: '/incentives' },
+    { title: 'Create', href: '/incentives/create' },
   ];
 
   const { data, setData, post, processing, errors, reset } = useForm({
-    deduction_name:    '',
-    deduction_amount:  '', 
+    incentive_name:    '',
+    incentive_amount:  '', 
     payroll_period_id: '',
     employee_ids:      [] as number[],
+    is_daily:          false,
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    post(DeductionController.store().url, {
+    post(IncentiveController.store().url, {
       onSuccess: () => {
-        toast.success('Deduction created successfully');
+        toast.success('Incentive created successfully');
         reset();
       },
-      onError: (errs) => toast.error(Object.values(errs).flat()[0] as string || 'Failed to create deduction'),
+      onError: (errs) => toast.error(Object.values(errs).flat()[0] as string || 'Failed to create incentive'),
     });
   };
 
@@ -110,16 +111,16 @@ export default function Create({ payroll_periods, employees }: Props) {
 
   return (
     <AppLayout breadcrumbs={breadcrumbs}>
-      <Head title="Create Deduction" />
+      <Head title="Create Incentive" />
 
       <div className="px-4 sm:px-6 lg:px-8 py-6 max-w-6xl mx-auto space-y-5">
 
         {/* ── Page header ── */}
         <div style={fu(0)} className="flex items-center justify-between">
-          <a href="/deductions"
+          <a href="/incentives"
             className="inline-flex items-center gap-2 text-xs font-semibold text-slate-500 hover:text-[#1d4791] transition-colors group">
             <ArrowLeft className="h-3.5 w-3.5 group-hover:-translate-x-0.5 transition-transform" />
-            Back to Deductions
+            Back to Incentives
           </a>
 
           <div className="bg-[#1d4791] px-4 py-2.5 rounded-xl flex items-center gap-3 shadow-md">
@@ -127,8 +128,8 @@ export default function Create({ payroll_periods, employees }: Props) {
               <Plus className="h-3.5 w-3.5 text-white" />
             </div>
             <div>
-              <p className="text-[10px] font-bold tracking-widest uppercase text-white">New Deduction</p>
-              <p className="text-[10px] text-white/55 mt-0.5 max-w-[200px] truncate">Define deduction & recipients</p>
+              <p className="text-[10px] font-bold tracking-widest uppercase text-white">New Incentive</p>
+              <p className="text-[10px] text-white/55 mt-0.5 max-w-[200px] truncate">Define bonus structure & recipients</p>
             </div>
           </div>
         </div>
@@ -136,31 +137,31 @@ export default function Create({ payroll_periods, employees }: Props) {
         {/* ── Form Grid ── */}
         <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
 
-          {/* Column 1: Deduction Details */}
+          {/* Column 1: Incentive Details */}
           <div style={fu(60)} className="rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-white h-fit">
             <NavyCardHeader
-              icon={<HandCoins className="h-4 w-4 text-white" />}
-              title="Deduction Details"
-              subtitle="Name, amount, and payroll period"
+              icon={<Coins className="h-4 w-4 text-white" />}
+              title="Incentive Details"
+              subtitle="Name, amount, and frequency"
             />
             <div className="p-5 space-y-5">
-              <FieldGroup label="Deduction Name" required error={errors.deduction_name}>
+              <FieldGroup label="Incentive Name" required error={errors.incentive_name}>
                 <Input
-                  value={data.deduction_name}
-                  onChange={e => setData('deduction_name', e.target.value)}
-                  placeholder="e.g., SSS, Pag-IBIG, Tax"
+                  value={data.incentive_name}
+                  onChange={e => setData('incentive_name', e.target.value)}
+                  placeholder="Enter incentive name"
                   className="h-9 text-sm border-slate-200 focus:border-[#1d4791] focus:ring-2 focus:ring-[#1d4791]/20"
                 />
               </FieldGroup>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                <FieldGroup label="Amount (₱)" required error={errors.deduction_amount}>
+                <FieldGroup label="Amount (₱)" required error={errors.incentive_amount}>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium select-none">₱</span>
                     <Input
                       type="number" step="0.01" min="0"
-                      value={data.deduction_amount}
-                      onChange={e => setData('deduction_amount', e.target.value)}
+                      value={data.incentive_amount}
+                      onChange={e => setData('incentive_amount', e.target.value)}
                       placeholder="0.00"
                       className="pl-7 h-9 text-sm border-slate-200 focus:border-[#1d4791] focus:ring-2 focus:ring-[#1d4791]/20"
                     />
@@ -186,12 +187,34 @@ export default function Create({ payroll_periods, employees }: Props) {
                 </FieldGroup>
               </div>
 
-              {/* Amount preview */}
-              {data.deduction_amount && !isNaN(Number(data.deduction_amount)) && Number(data.deduction_amount) > 0 && (
+              {/* Daily toggle */}
+              <button
+                type="button"
+                onClick={() => setData('is_daily', !data.is_daily)}
+                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-all ${
+                  data.is_daily
+                    ? 'bg-[#1d4791]/5 border-[#1d4791]/25'
+                    : 'bg-slate-50 border-slate-200 hover:border-slate-300'
+                }`}
+              >
+                <div className="text-left">
+                  <p className="text-xs font-semibold text-slate-700">Daily Incentive</p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">Applies per day instead of one-time</p>
+                </div>
+                {data.is_daily
+                  ? <ToggleRight className="h-6 w-6 text-[#1d4791] flex-shrink-0" />
+                  : <ToggleLeft className="h-6 w-6 text-slate-300 flex-shrink-0" />
+                }
+              </button>
+
+              {/* Current amount preview */}
+              {data.incentive_amount && !isNaN(Number(data.incentive_amount)) && Number(data.incentive_amount) > 0 && (
                 <div className="rounded-xl bg-[#1d4791]/4 border border-[#1d4791]/15 px-4 py-3 flex items-center justify-between">
-                  <span className="text-[11px] font-semibold text-slate-500">Deduction Amount</span>
+                  <span className="text-[11px] font-semibold text-slate-500">
+                    {data.is_daily ? 'Daily rate' : 'One-time amount'}
+                  </span>
                   <span className="text-sm font-bold text-[#1d4791]">
-                    ₱{Number(data.deduction_amount).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                    ₱{Number(data.incentive_amount).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                   </span>
                 </div>
               )}
@@ -203,7 +226,7 @@ export default function Create({ payroll_periods, employees }: Props) {
             <NavyCardHeader
               icon={<Users className="h-4 w-4 text-white" />}
               title="Employee Assignment"
-              subtitle="Manage who is subject to this deduction"
+              subtitle="Manage who receives this incentive"
             />
             <div className="p-5">
               <IncentiveEmployeeSelector
@@ -219,15 +242,15 @@ export default function Create({ payroll_periods, employees }: Props) {
 
           {/* Action row - Spans both columns */}
           <div style={fu(180)} className="col-span-1 lg:col-span-2 flex items-center justify-end gap-3 pt-2">
-            <Link as='button' href="/deductions"
+            <button type="button" onClick={() => router.get('/incentives')}
               className="h-9 px-4 rounded-lg border border-slate-200 text-xs font-semibold text-slate-600 hover:border-slate-300 hover:text-slate-800 transition-colors">
               Cancel
-            </Link>
+            </button>
             <button type="submit" disabled={processing}
               className="h-9 px-5 rounded-lg bg-[#1d4791] hover:bg-[#1d4791]/90 text-white text-xs font-bold shadow-sm shadow-[#1d4791]/20 flex items-center gap-2 transition-colors disabled:opacity-60">
               {processing
                 ? <> <span className="h-3.5 w-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" />Creating… </>
-                : <> <Save className="h-3.5 w-3.5" />Create Deduction </>
+                : <> <Save className="h-3.5 w-3.5" />Create Incentive </>
               }
             </button>
           </div>

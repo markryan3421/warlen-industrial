@@ -11,11 +11,11 @@ import { EmployeeFilterBar } from '@/components/employee/employee-filter-bar';
 import { CustomPagination } from '@/components/custom-pagination';
 import type { BreadcrumbItem } from '@/types';
 import { CustomHeader } from '@/components/custom-header';
-import DeductionController from '@/actions/App/Http/Controllers/DeductionController';
 import { toast } from 'sonner';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-modal';
 import { DeductionFormModal } from '@/components/deductions/deduction-form-modal';
 import { EmployeeSelectionModal } from '@/components/employee-selection-modal';
+import DeductionController from '@/actions/App/Http/Controllers/DeductionController';
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Deductions', href: '/deductions' }];
 
@@ -99,10 +99,6 @@ export default function Index({
 
     const [currentPage, setCurrentPage] = useState(deductions.current_page || 1);
     const [itemsPerPage, setItemsPerPage] = useState(deductions.per_page || 10);
-    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [selectedDeduction, setSelectedDeduction] = useState<Deduction | null>(null);
-    const [showEmployeeModal, setShowEmployeeModal] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
     // Debounced values for API requests
@@ -112,13 +108,6 @@ export default function Index({
 
     const isInitialMount = useRef(true);
     const prevFiltersRef = useRef({ search: '', dateFrom: '', dateTo: '' });
-
-    const { data, setData, post, put, processing, errors, reset } = useForm({
-        deduction_name: '',
-        deduction_amount: '',
-        payroll_period_id: '',
-        employee_ids: [] as number[],
-    });
 
     // Navigate with filters
     const navigateWithFilters = useCallback((updates: {
@@ -195,19 +184,6 @@ export default function Index({
         setCurrentPage(deductions.current_page);
     }, [deductions.current_page]);
 
-    useEffect(() => {
-        if (editingDeduction && isEditing) {
-            setSelectedDeduction(editingDeduction);
-            setIsEditModalOpen(true);
-            setData({
-                deduction_name: editingDeduction.deduction_name,
-                deduction_amount: String(editingDeduction.deduction_amount),
-                payroll_period_id: String(editingDeduction.payroll_period_id || ''),
-                employee_ids: editingDeduction.employees?.map(emp => emp.id) || [],
-            });
-        }
-    }, [editingDeduction, isEditing]);
-
     const handlePageChange = (page: number) => {
         navigateWithFilters({ page });
     };
@@ -263,65 +239,6 @@ export default function Index({
 
     const handleView = (deduction: Deduction) => setSelected(deduction);
 
-    const handleEdit = (deduction: Deduction) => {
-        console.log('=== HANDLE EDIT DEBUG ===');
-        console.log('Full deduction object:', deduction);
-        console.log('Deduction employees:', deduction.employees);
-
-        // Extract employee IDs from the employees relationship
-        const employeeIds = deduction.employees?.map(emp => emp.id) || [];
-
-        console.log('Extracted employee IDs:', employeeIds);
-
-        setSelectedDeduction(deduction);
-        setData({
-            deduction_name: deduction.deduction_name,
-            deduction_amount: String(deduction.deduction_amount),
-            payroll_period_id: String(deduction.payroll_period?.id || ''),
-            employee_ids: employeeIds,  // Use the extracted IDs
-        });
-        setIsEditModalOpen(true);
-        setIsCreateModalOpen(false);
-    };
-
-    const handleCreate = () => {
-        reset();
-        setIsCreateModalOpen(true);
-        setIsEditModalOpen(false);
-    };
-
-    const handleCloseModal = () => {
-        setIsCreateModalOpen(false);
-        setIsEditModalOpen(false);
-        setSelectedDeduction(null);
-        setShowEmployeeModal(false);
-        reset();
-    };
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (isEditModalOpen && selectedDeduction) {
-            put(`/deductions/${selectedDeduction.id}`, {
-                onSuccess: () => {
-                    toast.success('Deduction updated successfully');
-                    handleCloseModal();
-                },
-                onError: () => toast.error('Failed to update deduction')
-            });
-        } else {
-            post('/deductions', {
-                onSuccess: () => {
-                    toast.success('Deduction created successfully');
-                    handleCloseModal();
-                },
-                onError: () => toast.error('Failed to create deduction')
-            });
-        }
-    };
-
-    const formatDateSimple = (date: string) =>
-        date ? new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '';
-
     const hasFilters = !!(searchTerm || dateFrom || dateTo);
     const currentData = deductions.data || [];
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -330,24 +247,6 @@ export default function Index({
 
     const getEmployeeName = useCallback((emp: any) =>
         emp.user?.name || 'Unnamed Employee', []);
-
-    const toggleEmployee = useCallback((id: number) => {
-        setData('employee_ids',
-            data.employee_ids.includes(id)
-                ? data.employee_ids.filter(eId => eId !== id)
-                : [...data.employee_ids, id]
-        );
-    }, [data.employee_ids]);
-
-    const removeEmployee = useCallback((id: number) => {
-        setData('employee_ids', data.employee_ids.filter(employeeId => employeeId !== id));
-    }, [data.employee_ids]);
-
-    const addAllEmployees = useCallback((ids: number[]) => {
-        setData('employee_ids', [...data.employee_ids, ...ids]);
-    }, [data.employee_ids]);
-
-    const selectedEmployeesList = employees.filter(emp => data.employee_ids.includes(emp.id));
 
     const columns = [
         {
@@ -391,7 +290,6 @@ export default function Index({
         { label: 'Delete', icon: 'Trash2' as const, route: '' },
     ];
 
-    // Generate pagination links for CustomPagination
     const paginationLinks = useMemo(() => {
         const links = [];
         const totalPages = Math.ceil(deductions.total / itemsPerPage);
@@ -447,6 +345,10 @@ export default function Index({
         return links;
     }, [currentPage, deductions.total, itemsPerPage, searchTerm, dateFrom, dateTo]);
 
+    const handleEdit = (deduction: Deduction) => {
+        router.get(DeductionController.edit(deduction.id).url);
+    }
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Deductions" />
@@ -467,9 +369,9 @@ export default function Index({
             <div className="flex flex-1 flex-col gap-4 p-4 mx-4">
                 <div className="flex justify-between items-center pp-header">
                     <CustomHeader title="Deductions" icon={<HandCoins className="h-6 w-6" />} description='Manage and track employee deductions' />
-                    <Button onClick={handleCreate} className="bg-[#1d4791] hover:bg-[#1d4791]/90">
+                    <Link href={DeductionController.create()} className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 whitespace-nowrap">
                         <Plus className="h-4 w-4 mr-2" /> Add Deduction
-                    </Button>
+                    </Link>
                 </div>
 
                 <CardContent className="p-0 pp-row">
@@ -513,7 +415,7 @@ export default function Index({
                                     <div className="rounded-full bg-primary/10 p-6 mb-4"><HandCoins className="h-12 w-12 text-primary" /></div>
                                     <h3 className="text-xl font-semibold mb-2">No deductions yet</h3>
                                     <p className="text-muted-foreground mb-4">Create your first deduction to get started</p>
-                                    <Button onClick={handleCreate} className="bg-[#1d4791] hover:bg-[#1d4791]/90">Create First Deduction</Button>
+                                    <Link href={DeductionController.create()} className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 whitespace-nowrap">Create First Deduction</Link>
                                 </div>
                             ) : currentData.length === 0 && hasFilters ? (
                                 <div className="flex flex-col items-center justify-center py-16">
@@ -559,29 +461,6 @@ export default function Index({
                     />
                 </CardContent>
             </div>
-
-            <DeductionFormModal
-                isOpen={isCreateModalOpen || isEditModalOpen}
-                onClose={handleCloseModal}
-                isEditing={isEditModalOpen}
-                deduction={selectedDeduction}
-                payroll_periods={payroll_periods}
-                employees={employees}
-                onSuccess={() => {
-                    router.reload();
-                }}
-            />
-
-            <EmployeeSelectionModal
-                isOpen={showEmployeeModal}
-                onClose={() => setShowEmployeeModal(false)}
-                employees={employees}
-                selectedIds={data.employee_ids}
-                onToggle={toggleEmployee}
-                onRemove={removeEmployee}
-                onAddAll={addAllEmployees}
-                onRemoveAll={() => setData('employee_ids', [])}
-            />
 
             <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
                 <DialogContent className="max-w-2xl">

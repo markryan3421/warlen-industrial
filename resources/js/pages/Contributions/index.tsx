@@ -1,7 +1,7 @@
-import { Head, Link, router, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import { format, isToday } from 'date-fns';
-import { Calculator, Percent, Plus, Trash2, LoaderCircle, Filter, Handshake, Users, Settings, Save, Shield, Heart, Search } from 'lucide-react';
-import { useState, useMemo, useEffect } from 'react';
+import { Calculator, Percent, Plus, Trash2, LoaderCircle, Filter, Handshake, Users, Settings, Save, Shield, Heart, Search, HeartPulse, HandHeart } from 'lucide-react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 
 import { CustomHeader } from '@/components/custom-header';
 import { CustomModalView } from '@/components/custom-modal-view';
@@ -118,6 +118,16 @@ interface FormData {
 // UTILITY FUNCTIONS
 // =============================================================================
 
+// Custom toast style helper
+const toastStyle = (color: string) => ({
+    style: {
+        backgroundColor: 'white',
+        color: color,
+        border: '1px solid #e2e8f0',
+        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+    },
+});
+
 const getContributionTypeColor = (type: string) => {
     switch (type) {
         case 'sss':
@@ -165,6 +175,7 @@ export default function Index({
     contributionVersions,
 }: IndexProps) {
     const { delete: destroy } = useForm();
+    const { props } = usePage<{ flash?: { success?: string; error?: string; warning?: string; info?: string } }>();
     const [selectedVersion, setSelectedVersion] = useState<ContributionVersion | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isBracketsModalOpen, setIsBracketsModalOpen] = useState(false);
@@ -188,8 +199,8 @@ export default function Index({
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [employeeSettings, setEmployeeSettings] = useState<Record<number, Record<number, EmployeeContributionSettingData>>>({});
     const [originalEmployeeSettings, setOriginalEmployeeSettings] = useState<Record<number, Record<number, EmployeeContributionSettingData>>>({});
-    const [loadingEmployees, setLoadingEmployees] = useState(false);
     const [savingSettings, setSavingSettings] = useState<Record<number, boolean>>({});
+    const [employeesDataLoaded, setEmployeesDataLoaded] = useState(false);
 
     // Per‑version pagination state for employee tables
     const [employeePagination, setEmployeePagination] = useState<Record<number, { page: number; perPage: number }>>({});
@@ -201,6 +212,40 @@ export default function Index({
     const [sssSearchTerm, setSssSearchTerm] = useState('');
     const [philhealthSearchTerm, setPhilhealthSearchTerm] = useState('');
     const [pagibigSearchTerm, setPagibigSearchTerm] = useState('');
+
+    // Track last shown flash to prevent duplicates within a short time window
+    const lastFlashRef = useRef<{ key: string; time: number }>({ key: '', time: 0 });
+
+    // Flash message listener – prevents duplicate toasts within 500ms
+    useEffect(() => {
+        const flash = props.flash;
+        if (!flash) return;
+
+        const flashKey = JSON.stringify(flash);
+        const now = Date.now();
+        const last = lastFlashRef.current;
+
+        // If same flash key appeared within last 500ms, skip (prevents double toast)
+        if (last.key === flashKey && (now - last.time) < 500) {
+            return;
+        }
+
+        // Update ref
+        lastFlashRef.current = { key: flashKey, time: now };
+
+        if (flash.success) {
+            toast.success(flash.success, toastStyle('#16a34a')); // green text
+        }
+        if (flash.error) {
+            toast.error(flash.error, toastStyle('#dc2626')); // red text (danger)
+        }
+        if (flash.warning) {
+            toast.warning(flash.warning, toastStyle('#f97316')); // orange text (warning)
+        }
+        if (flash.info) {
+            toast.info(flash.info, toastStyle('#3b82f6')); // blue text (info)
+        }
+    }, [props.flash]);
 
     // Helper to get or initialize pagination for a version
     const getVersionPagination = (versionId: number) => {
@@ -247,15 +292,14 @@ export default function Index({
 
         setIsDeleting(true);
         destroy(route('contribution-versions.destroy', { contribution_version: itemToDelete.id }), {
-            onSuccess: (page) => {
-                const successMessage = (page.props as any).flash?.success || 'Contribution version deleted successfully.';
-                toast.success(successMessage);
+            onSuccess: () => {
+                // Flash message will be shown by global useEffect
                 setDeleteDialogOpen(false);
                 setItemToDelete(null);
             },
             onError: (errors) => {
                 const errorMessage = Object.values(errors).flat()[0] || 'Failed to delete contribution version.';
-                toast.error(errorMessage);
+                toast.error(errorMessage, toastStyle('#dc2626'));
             },
             onFinish: () => {
                 setIsDeleting(false);
@@ -314,11 +358,10 @@ export default function Index({
 
     const hasRecords = versions.length > 0;
 
-    // Fetch employees and their settings
+    // Fetch employees and their settings (no loading state)
     const fetchEmployeesAndSettings = async () => {
         if (!hasRecords) return;
 
-        setLoadingEmployees(true);
         try {
             const employeesResponse = await fetch('/employees/list');
             const employeesData = await employeesResponse.json();
@@ -358,16 +401,20 @@ export default function Index({
         } catch (error) {
             console.error('Failed to fetch employees:', error);
             toast.error('Failed to load employees');
-        } finally {
-            setLoadingEmployees(false);
         }
     };
 
+    // Reset loaded flag when versions change
     useEffect(() => {
-        if (hasRecords && activeTab === 'employee-settings') {
-            fetchEmployeesAndSettings();
+        setEmployeesDataLoaded(false);
+    }, [versions]);
+
+    // Fetch employees & settings immediately when versions exist (no tab dependency)
+    useEffect(() => {
+        if (hasRecords && !employeesDataLoaded) {
+            fetchEmployeesAndSettings().then(() => setEmployeesDataLoaded(true));
         }
-    }, [versions.length, activeTab]);
+    }, [hasRecords, employeesDataLoaded]);
 
     const updateEmployeeSetting = (
         contributionVersionId: number,
@@ -421,7 +468,7 @@ export default function Index({
         }
 
         if (changedSettings.length === 0) {
-            toast.info('No changes to save');
+            toast.info('No changes to save', toastStyle('#3b82f6'));
             return;
         }
 
@@ -445,7 +492,7 @@ export default function Index({
             .then(async response => {
                 const data = await response.json();
                 if (response.ok) {
-                    toast.success(`${data.message || 'Settings saved successfully!'} (${changedSettings.length} employee${changedSettings.length > 1 ? 's' : ''} updated)`);
+                    toast.success(`${data.message || 'Settings saved successfully!'} (${changedSettings.length} employee${changedSettings.length > 1 ? 's' : ''} updated)`, toastStyle('#16a34a'));
                     const updatedOriginalSettings = { ...originalEmployeeSettings };
                     for (const setting of changedSettings) {
                         if (!updatedOriginalSettings[contributionVersionId]) {
@@ -461,12 +508,12 @@ export default function Index({
                     }
                     setOriginalEmployeeSettings(updatedOriginalSettings);
                 } else {
-                    toast.error(data.message || 'Failed to save settings');
+                    toast.error(data.message || 'Failed to save settings', toastStyle('#dc2626'));
                 }
             })
             .catch(error => {
                 console.error('Save error:', error);
-                toast.error('An error occurred while saving');
+                toast.error('An error occurred while saving', toastStyle('#dc2626'));
             })
             .finally(() => {
                 setSavingSettings(prev => ({ ...prev, [contributionVersionId]: false }));
@@ -495,7 +542,9 @@ export default function Index({
         updateVersionPagination(versionId, { page: 1 });
     };
 
-    // Render a single contribution card (SSS / PhilHealth / Pag-IBIG)
+    // =========================================================================
+    // renderContributionCard – uses CustomTable + CustomPagination
+    // =========================================================================
     const renderContributionCard = (
         type: 'sss' | 'philhealth' | 'pagibig',
         searchTerm: string,
@@ -522,7 +571,6 @@ export default function Index({
         const isPhilHealth = type === 'philhealth';
         const isSSS = type === 'sss';
 
-        // Apply search filter
         const filteredEmployeesList = filterEmployeesBySearch(employees, searchTerm);
         const totalEmployees = filteredEmployeesList.length;
         const exemptedCount = Object.values(settingsForVersion).filter(
@@ -530,7 +578,6 @@ export default function Index({
         ).length;
         const allExempted = totalEmployees > 0 && exemptedCount === totalEmployees;
 
-        // Pagination (only relevant when there are results)
         const { page: currentPage, perPage: currentPerPage } = getVersionPagination(versionId);
         const startIndex = (currentPage - 1) * currentPerPage;
         const paginatedEmployees = filteredEmployeesList.slice(startIndex, startIndex + currentPerPage);
@@ -545,12 +592,11 @@ export default function Index({
             per_page: currentPerPage,
         };
 
-        // Bulk actions (apply to ALL employees, unfiltered)
         const setAllExempted = (exempted: boolean) => {
             employees.forEach((employee) => {
                 updateEmployeeSetting(versionId, employee.id, 'is_exempted', exempted);
             });
-            toast.success(`All employees ${exempted ? 'exempted from' : 'enabled for'} ${getContributionTypeLabel(type)}`);
+            toast.success(`All employees ${exempted ? 'exempted from' : 'enabled for'} ${getContributionTypeLabel(type)}`, toastStyle('#16a34a'));
         };
 
         const setAllFixedAmount = (amount: string) => {
@@ -561,305 +607,224 @@ export default function Index({
                         updateEmployeeSetting(versionId, employee.id, 'fixed_amount', amount);
                     }
                 });
-                toast.success(`Fixed amount set to ${isPhilHealth ? amount + '%' : '₱' + amount} for all non-exempted employees`);
+                toast.success(`Fixed amount set to ${isPhilHealth ? amount + '%' : '₱' + amount} for all non-exempted employees`, toastStyle('#16a34a'));
             }
         };
 
-        return (
-            <Card key={versionId} className="overflow-hidden shadow-sm hover:shadow-md transition-all duration-200">
-                {/* Card Header */}
-                <div className={`${getContributionTypeBgColor(type)} border-b`}>
-                    <CardHeader className="pb-3">
-                        <div className="flex items-center justify-between flex-wrap gap-4">
-                            <div className="flex items-center gap-3">
-                                <div className={`p-2.5 rounded-xl ${getContributionTypeColor(type)} bg-white shadow-sm`}>
-                                    {isSSS ? <Shield className="h-5 w-5" /> : <Heart className="h-5 w-5" />}
-                                </div>
-                                <div>
-                                    <CardTitle className="text-xl flex items-center gap-2">
-                                        {getContributionTypeLabel(type)}
-                                        <Badge variant="outline" className="text-xs font-normal">
-                                            {isSSS ? 'Manual Input per Payroll' : (isPhilHealth ? 'Percentage Based (5% default)' : 'Fixed Amount')}
-                                        </Badge>
-                                    </CardTitle>
-                                    <CardDescription className="mt-1">
-                                        {isSSS
-                                            ? 'Set custom SSS contribution amount per employee.'
-                                            : isPhilHealth
-                                                ? 'Configure exemption and percentage rate (default 5%).'
-                                                : `Configure exemption and fixed amount per payroll for ${getContributionTypeLabel(type)}.`}
-                                    </CardDescription>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <div className="text-right">
-                                    <div className="text-sm text-muted-foreground">
-                                        {exemptedCount} of {totalEmployees} employees exempted
-                                    </div>
-                                    <div className="w-32 h-1.5 bg-gray-200 rounded-full mt-1 overflow-hidden">
-                                        <div
-                                            className="h-full bg-green-500 rounded-full transition-all duration-300"
-                                            style={{ width: `${totalEmployees > 0 ? (exemptedCount / totalEmployees) * 100 : 0}%` }}
-                                        />
-                                    </div>
-                                </div>
-                                <Button
-                                    size="sm"
-                                    onClick={() => saveContributionSettings(versionId)}
-                                    disabled={isSaving}
-                                    className="gap-2 shadow-sm"
-                                >
-                                    {isSaving && <LoaderCircle className="h-4 w-4 animate-spin" />}
-                                    <Save className="h-4 w-4" />
-                                    Save Settings
-                                </Button>
-                            </div>
+        const employeeColumns = [
+            {
+                label: 'Employee Name',
+                key: 'name',
+                className: 'w-[250px] min-w-[200px]',
+                render: (row: any) => (
+                    <div className="flex items-center gap-2">
+                        <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                            <span className="text-xs font-semibold text-primary">
+                                {row.user?.name?.charAt(0).toUpperCase() || 'E'}
+                            </span>
                         </div>
-                    </CardHeader>
-                </div>
-
-                <CardContent className="p-0">
-                    {/* Single line toolbar: search + bulk actions + set amount */}
-                    <div className="p-3 border-b bg-muted/20 flex flex-wrap items-center gap-3">
-                        {/* Search - using EmployeeFilterBar with only search enabled, inline style */}
-                        <div className="flex-1 min-w-[200px]">
-                            <EmployeeFilterBar
-                                filters={{
-                                    search: true,
-                                    position: false,
-                                    branch: false,
-                                    site: false,
-                                    date: false,
-                                    status: false,
-                                }}
-                                allPositions={[]}
-                                branchesData={[]}
-                                searchTerm={searchTerm}
-                                selectedPositions={[]}
-                                selectedBranch=""
-                                selectedSite=""
-                                status=""
-                                dateFrom={undefined}
-                                dateTo={undefined}
-                                onSearchChange={(val) => {
-                                    setSearchTerm(val);
-                                    resetPaginationForVersion(versionId);
-                                }}
-                                onPositionsChange={() => {}}
-                                onBranchChange={() => {}}
-                                onSiteChange={() => {}}
-                                onStatusChange={() => {}}
-                                onDateFromChange={() => {}}
-                                onDateToChange={() => {}}
-                                onClearAll={() => {
-                                    setSearchTerm('');
-                                    resetPaginationForVersion(versionId);
-                                }}
-                                searchPlaceholder="Search by name or ID..."
-                                dateLabel="Hire Date"
+                        <span className="truncate">{row.user?.name || `Employee #${row.id}`}</span>
+                    </div>
+                ),
+            },
+            {
+                label: 'Exempted',
+                key: 'exempted',
+                className: 'w-24 text-center',
+                render: (row: any) => {
+                    const setting = settingsForVersion[row.id] || {
+                        employee_id: row.id,
+                        contribution_version_id: versionId,
+                        is_exempted: false,
+                        fixed_amount: null,
+                        monthly_cap: null,
+                    };
+                    return (
+                        <div className="flex justify-center">
+                            <Switch
+                                checked={setting.is_exempted || false}
+                                onCheckedChange={(checked) =>
+                                    updateEmployeeSetting(versionId, row.id, 'is_exempted', checked)
+                                }
+                                className="data-[state=checked]:bg-green-500"
                             />
                         </div>
-
-                        {/* Divider */}
-                        <div className="w-px h-6 bg-border" />
-
-                        {/* Exempt All / Enable All button */}
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setAllExempted(!allExempted)}
-                            className="gap-1 shrink-0"
-                        >
-                            {allExempted ? 'Enable All' : 'Exempt All'}
-                        </Button>
-
-                        {/* Set Amount input group */}
-                        <div className="flex items-center gap-1 shrink-0">
-                            <span className="text-sm text-muted-foreground">Set Amount:</span>
-                            <div className="relative w-28">
-                                {!isPhilHealth && (
-                                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">₱</span>
-                                )}
-                                <Input
-                                    type="number"
-                                    step="0.01"
-                                    placeholder={isPhilHealth ? "5.00" : "0.00"}
-                                    className={`${!isPhilHealth ? 'pl-6' : 'pl-3'} h-8 text-sm ${allExempted ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                    disabled={allExempted}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' && !allExempted) {
-                                            const target = e.target as HTMLInputElement;
-                                            setAllFixedAmount(target.value);
-                                            target.value = '';
-                                        }
-                                    }}
-                                />
-                                {isPhilHealth && (
-                                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">%</span>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Table or Empty State */}
-                    {totalEmployees === 0 ? (
-                        <div className="py-12 text-center">
-                            <div className="flex flex-col items-center gap-2">
-                                <Search className="h-10 w-10 text-muted-foreground" />
-                                <p className="text-muted-foreground font-medium">No employees found</p>
-                                {searchTerm && (
-                                    <p className="text-sm text-muted-foreground">
-                                        No employees match "{searchTerm}"
-                                    </p>
-                                )}
-                                {searchTerm && (
-                                    <Button variant="outline" size="sm" onClick={() => setSearchTerm('')} className="mt-2">
-                                        Clear search
-                                    </Button>
-                                )}
-                            </div>
-                        </div>
-                    ) : (
-                        <>
-                            <div className="overflow-x-auto">
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow className="bg-muted/30">
-                                            <TableHead className="font-semibold">Employee Name</TableHead>
-                                            <TableHead className="w-24 text-center font-semibold">Exempted</TableHead>
-                                            {!isSSS && (
-                                                <TableHead className="w-44 font-semibold">
-                                                    {isPhilHealth ? 'Rate (%)' : 'Fixed Amount (per payroll)'}
-                                                </TableHead>
-                                            )}
-                                            {isSSS && (
-                                                <TableHead className="w-56 font-semibold">Fixed Amount (per payroll)</TableHead>
-                                            )}
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {paginatedEmployees.map((employee) => {
-                                            const setting = settingsForVersion[employee.id] || {
-                                                employee_id: employee.id,
-                                                contribution_version_id: versionId,
-                                                is_exempted: false,
-                                                fixed_amount: null,
-                                                monthly_cap: null,
-                                            };
-
-                                            return (
-                                                <TableRow key={employee.id} className="hover:bg-muted/30 transition-colors duration-150">
-                                                    <TableCell className="font-medium">
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-                                                                <span className="text-xs font-semibold text-primary">
-                                                                    {employee.user?.name?.charAt(0).toUpperCase() || 'E'}
-                                                                </span>
-                                                            </div>
-                                                            <span>{employee.user?.name || `Employee #${employee.id}`}</span>
-                                                        </div>
-                                                    </TableCell>
-                                                    <TableCell className="text-center">
-                                                        <Switch
-                                                            checked={setting.is_exempted || false}
-                                                            onCheckedChange={(checked) =>
-                                                                updateEmployeeSetting(versionId, employee.id, 'is_exempted', checked)
-                                                            }
-                                                            className="data-[state=checked]:bg-green-500"
-                                                        />
-                                                    </TableCell>
-                                                    {!isSSS && (
-                                                        <TableCell>
-                                                            <div className="relative">
-                                                                {isPhilHealth ? (
-                                                                    <>
-                                                                        <Input
-                                                                            type="number"
-                                                                            step="0.01"
-                                                                            placeholder="5.00"
-                                                                            value={setting.fixed_amount || ''}
-                                                                            onChange={(e) =>
-                                                                                updateEmployeeSetting(versionId, employee.id, 'fixed_amount', e.target.value)
-                                                                            }
-                                                                            disabled={setting.is_exempted}
-                                                                            className={`pl-3 pr-8 ${setting.is_exempted ? 'bg-muted/50' : ''}`}
-                                                                        />
-                                                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">%</span>
-                                                                    </>
-                                                                ) : (
-                                                                    <>
-                                                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">₱</span>
-                                                                        <Input
-                                                                            type="number"
-                                                                            step="0.01"
-                                                                            placeholder="0.00"
-                                                                            value={setting.fixed_amount || ''}
-                                                                            onChange={(e) =>
-                                                                                updateEmployeeSetting(versionId, employee.id, 'fixed_amount', e.target.value)
-                                                                            }
-                                                                            disabled={setting.is_exempted}
-                                                                            className={`pl-7 ${setting.is_exempted ? 'bg-muted/50' : ''}`}
-                                                                        />
-                                                                    </>
-                                                                )}
-                                                            </div>
-                                                            {isPhilHealth && (
-                                                                <p className="text-xs text-muted-foreground mt-1">
-                                                                    Default: 5% (2.5% employee, 2.5% employer)
-                                                                </p>
-                                                            )}
-                                                        </TableCell>
-                                                    )}
-                                                    {isSSS && (
-                                                        <TableCell>
-                                                            {setting.is_exempted ? (
-                                                                <div className="text-muted-foreground text-sm italic">Exempted</div>
-                                                            ) : (
-                                                                <div className="relative">
-                                                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">₱</span>
-                                                                    <Input
-                                                                        type="number"
-                                                                        step="0.01"
-                                                                        placeholder="Enter amount"
-                                                                        value={setting.fixed_amount || ''}
-                                                                        onChange={(e) => {
-                                                                            updateEmployeeSetting(versionId, employee.id, 'fixed_amount', e.target.value);
-                                                                        }}
-                                                                        disabled={setting.is_exempted}
-                                                                        className={`pl-7 ${setting.is_exempted ? 'bg-muted/50' : ''}`}
-                                                                    />
-                                                                </div>
-                                                            )}
-                                                        </TableCell>
-                                                    )}
-                                                </TableRow>
-                                            );
-                                        })}
-                                    </TableBody>
-                                </Table>
-                            </div>
-
-                            {/* Pagination - only when there are results */}
-                            {totalEmployees > 0 && (
-                                <div className="border-t bg-muted/10 px-4 py-3">
-                                    <CustomPagination
-                                        pagination={clientPagination}
-                                        perPage={String(currentPerPage)}
-                                        onPerPageChange={(value) => {
-                                            updateVersionPagination(versionId, { perPage: parseInt(value, 10), page: 1 });
-                                        }}
-                                        onPageChange={(page) => updateVersionPagination(versionId, { page })}
-                                        totalCount={totalEmployees}
-                                        filteredCount={totalEmployees}
-                                        search=""
-                                        resourceName="employee"
-                                    />
-                                </div>
+                    );
+                },
+            },
+            {
+                label: isPhilHealth ? 'Rate (%)' : (isSSS ? 'Fixed Amount (per payroll)' : 'Fixed Amount (per payroll)'),
+                key: 'amount',
+                className: 'w-[200px] min-w-[180px]',
+                render: (row: any) => {
+                    const setting = settingsForVersion[row.id] || {
+                        employee_id: row.id,
+                        contribution_version_id: versionId,
+                        is_exempted: false,
+                        fixed_amount: null,
+                        monthly_cap: null,
+                    };
+                    if (setting.is_exempted) {
+                        return <div className="text-muted-foreground text-sm italic">Exempted</div>;
+                    }
+                    return (
+                        <div className="relative max-w-[180px]">
+                            {!isPhilHealth && (
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">₱</span>
                             )}
-                        </>
-                    )}
-                </CardContent>
-            </Card>
+                            <Input
+                                type="number"
+                                step="0.01"
+                                placeholder={isPhilHealth ? "5.00" : "0.00"}
+                                value={setting.fixed_amount || ''}
+                                onChange={(e) =>
+                                    updateEmployeeSetting(versionId, row.id, 'fixed_amount', e.target.value)
+                                }
+                                className={`${!isPhilHealth ? 'pl-7' : 'pl-3'} ${setting.is_exempted ? 'bg-muted/50' : ''}`}
+                            />
+                            {isPhilHealth && (
+                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">%</span>
+                            )}
+                        </div>
+                    );
+                },
+            },
+        ];
+
+        const toolbarContent = (
+            <div className="flex flex-wrap lg:flex-nowrap items-center gap-3">
+                <div className="flex-1 min-w-[250px]">
+                    <EmployeeFilterBar
+                        filters={{
+                            search: true,
+                            position: false,
+                            branch: false,
+                            site: false,
+                            date: false,
+                            status: false,
+                        }}
+                        allPositions={[]}
+                        branchesData={[]}
+                        searchTerm={searchTerm}
+                        selectedPositions={[]}
+                        selectedBranch=""
+                        selectedSite=""
+                        status=""
+                        dateFrom={undefined}
+                        dateTo={undefined}
+                        onSearchChange={(val) => {
+                            setSearchTerm(val);
+                            resetPaginationForVersion(versionId);
+                        }}
+                        onPositionsChange={() => { }}
+                        onBranchChange={() => { }}
+                        onSiteChange={() => { }}
+                        onStatusChange={() => { }}
+                        onDateFromChange={() => { }}
+                        onDateToChange={() => { }}
+                        // onClearAll={() => {
+                        //     setSearchTerm('');
+                        //     resetPaginationForVersion(versionId);
+                        // }}
+                        searchPlaceholder="Search by name or ID..."
+                        dateLabel="Hire Date"
+                    />
+                </div>
+
+                <div className="w-px h-6 bg-border hidden lg:block" />
+
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setAllExempted(!allExempted)}
+                    className="gap-1 shrink-0"
+                >
+                    {allExempted ? 'Enable All' : 'Exempt All'}
+                </Button>
+
+                <div className="flex items-center gap-1 shrink-0">
+                    <span className="text-sm text-muted-foreground whitespace-nowrap">Set Amount:</span>
+                    <div className="relative w-28">
+                        {!isPhilHealth && (
+                            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">₱</span>
+                        )}
+                        <Input
+                            type="number"
+                            step="0.01"
+                            placeholder={isPhilHealth ? "5.00" : "0.00"}
+                            className={`${!isPhilHealth ? 'pl-6' : 'pl-3'} h-8 text-sm ${allExempted ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            disabled={allExempted}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !allExempted) {
+                                    const target = e.target as HTMLInputElement;
+                                    setAllFixedAmount(target.value);
+                                    target.value = '';
+                                }
+                            }}
+                        />
+                        {isPhilHealth && (
+                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">%</span>
+                        )}
+                    </div>
+                </div>
+
+                <div className="flex-1" />
+
+                <Button
+                    size="sm"
+                    onClick={() => saveContributionSettings(versionId)}
+                    disabled={isSaving}
+                    className="gap-2 shadow-sm shrink-0"
+                >
+                    {isSaving && <LoaderCircle className="h-4 w-4 animate-spin" />}
+                    <Save className="h-4 w-4" />
+                    Save Settings
+                </Button>
+            </div>
+        );
+
+        const tableTitle = `${getContributionTypeLabel(type)} Employee Settings`;
+        const handlePerPageChange = (value: string) => {
+            updateVersionPagination(versionId, { perPage: parseInt(value, 10), page: 1 });
+        };
+        const handlePageChange = (page: number) => {
+            updateVersionPagination(versionId, { page });
+        };
+
+        return (
+            <div className="space-y-4">
+                <CustomTable
+                    columns={employeeColumns}
+                    actions={[]}
+                    data={paginatedEmployees}
+                    from={clientPagination.from}
+                    to={clientPagination.to}
+                    total={totalEmployees}
+                    filteredCount={totalEmployees}
+                    totalCount={totalEmployees}
+                    searchTerm={searchTerm}
+                    onDelete={() => { }}
+                    onView={() => { }}
+                    onEdit={() => { }}
+                    title={tableTitle}
+                    toolbar={toolbarContent}
+                    selectable={false}
+                />
+                {totalEmployees > 0 && (
+                    <div className="bg-muted/10 px-4 py-3 rounded-b-2xl">
+                        <CustomPagination
+                            pagination={clientPagination}
+                            perPage={String(currentPerPage)}
+                            onPerPageChange={handlePerPageChange}
+                            onPageChange={handlePageChange}
+                            totalCount={totalEmployees}
+                            filteredCount={totalEmployees}
+                            search={searchTerm}
+                            resourceName="employee"
+                        />
+                    </div>
+                )}
+            </div>
         );
     };
 
@@ -905,11 +870,11 @@ export default function Index({
 
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
                     <TabsList className="grid w-full max-w-md grid-cols-2">
-                        <TabsTrigger value="versions" className="gap-2">
+                        <TabsTrigger value="versions" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:cursor-default data-[state=active]:text-primary-foreground rounded-lg transition-all cursor-pointer">
                             <Percent className="h-4 w-4" />
                             Contribution Versions
                         </TabsTrigger>
-                        <TabsTrigger value="employee-settings" className="gap-2">
+                        <TabsTrigger value="employee-settings" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:cursor-default data-[state=active]:text-primary-foreground rounded-lg transition-all cursor-pointer">
                             <Users className="h-4 w-4" />
                             Employee Settings
                         </TabsTrigger>
@@ -998,17 +963,10 @@ export default function Index({
                         )}
                     </TabsContent>
 
-                    {/* Tab 2: Employee Settings - with inner tabs for SSS / PhilHealth / Pag-IBIG */}
+                    {/* Tab 2: Employee Settings – data is preloaded, so no empty state flash */}
                     <TabsContent value="employee-settings">
                         <div className="space-y-6">
-                            {loadingEmployees ? (
-                                <Card>
-                                    <CardContent className="flex items-center justify-center py-16">
-                                        <LoaderCircle className="h-8 w-8 animate-spin text-muted-foreground" />
-                                        <span className="ml-2 text-muted-foreground">Loading employees...</span>
-                                    </CardContent>
-                                </Card>
-                            ) : employees.length === 0 ? (
+                            {employees.length === 0 ? (
                                 <Card>
                                     <CardContent className="flex flex-col items-center justify-center py-16 text-center">
                                         <div className="rounded-full bg-muted p-4 mb-4">
@@ -1021,9 +979,9 @@ export default function Index({
                             ) : (
                                 <Tabs value={employeeSettingsTab} onValueChange={(v) => setEmployeeSettingsTab(v as any)} className="space-y-4">
                                     <TabsList className="grid w-full max-w-md grid-cols-3">
-                                        <TabsTrigger value="sss">SSS</TabsTrigger>
-                                        <TabsTrigger value="philhealth">PhilHealth</TabsTrigger>
-                                        <TabsTrigger value="pagibig">Pag-IBIG</TabsTrigger>
+                                        <TabsTrigger value="sss" className='flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:cursor-default data-[state=active]:text-primary-foreground rounded-lg transition-all cursor-pointer'> <Shield className="h-4 w-4" />SSS</TabsTrigger>
+                                        <TabsTrigger value="philhealth" className='flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:cursor-default data-[state=active]:text-primary-foreground rounded-lg transition-all cursor-pointer'> <HeartPulse className="h-4 w-4" />PhilHealth</TabsTrigger>
+                                        <TabsTrigger value="pagibig" className='flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:cursor-default data-[state=active]:text-primary-foreground rounded-lg transition-all cursor-pointer'> <HandHeart className="h-4 w-4" />Pag-IBIG</TabsTrigger>
                                     </TabsList>
                                     <TabsContent value="sss">
                                         {renderContributionCard('sss', sssSearchTerm, setSssSearchTerm)}
@@ -1158,7 +1116,7 @@ export default function Index({
 }
 
 // =============================================================================
-// CREATE MODAL COMPONENT (unchanged)
+// CREATE MODAL COMPONENT (fixed - removed duplicate flash listener)
 // =============================================================================
 
 interface CreateContributionModalProps {
@@ -1186,14 +1144,12 @@ function CreateContributionModal({ isOpen, onClose, existingTypes }: CreateContr
     function submitContributionVersion(e: React.FormEvent) {
         e.preventDefault();
         post(route('contribution-versions.store'), {
-            onSuccess: (page) => {
-                const successMessage = page.props.flash?.success || 'Contribution version created successfully.';
-                toast.success(successMessage);
+            onSuccess: () => {
                 handleClose();
             },
             onError: (errors) => {
                 const errorMessage = Object.values(errors).flat()[0] || 'Failed to create contribution version.';
-                toast.error(errorMessage);
+                toast.error(errorMessage, toastStyle('#dc2626'));
             }
         });
     }
@@ -1419,7 +1375,7 @@ function CreateContributionModal({ isOpen, onClose, existingTypes }: CreateContr
 }
 
 // =============================================================================
-// EDIT MODAL COMPONENT (unchanged)
+// EDIT MODAL COMPONENT (fixed - removed duplicate flash listener)
 // =============================================================================
 
 interface EditContributionModalProps {
@@ -1455,14 +1411,12 @@ function EditContributionModal({ isOpen, onClose, contributionVersion, existingT
     function submitContributionVersion(e: React.FormEvent) {
         e.preventDefault();
         put(route('contribution-versions.update', { contribution_version: contributionVersion.id }), {
-            onSuccess: (page) => {
-                const successMessage = page.props.flash?.success || 'Contribution version updated successfully.';
-                toast.success(successMessage);
+            onSuccess: () => {
                 handleClose();
             },
             onError: (errors) => {
                 const errorMessage = Object.values(errors).flat()[0] || 'Failed to update contribution version.';
-                toast.error(errorMessage);
+                toast.error(errorMessage, toastStyle('#dc2626'));
             }
         });
     }

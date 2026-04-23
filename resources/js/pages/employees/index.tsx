@@ -33,6 +33,7 @@ interface Employee {
     user: { name: string; email: string };
     slug_emp: string;
     emp_code: string | number;
+    avatar: string | null;
     pay_frequency: string;
     contract_start_date: string;
     contract_end_date: string;
@@ -465,15 +466,15 @@ export default function Index({
     }, [selectedBranchId, allBranchesForAssign, activeBranchesData]);
 
     const confirmAssignBranchSite = () => {
-        if (!selectedBranchId || !selectedSiteId) {
-            toast.error('Please select both branch and site');
+        if (!selectedBranchId) {
+            toast.error('Please select a branch');
             return;
         }
         setAssignLoading(true);
         router.post('/employees/bulk-assign-branch-site', {
             ids: selectedIds,
             branch_id: selectedBranchId,
-            site_id: selectedSiteId,
+            site_id: selectedSiteId === '' ? null : selectedSiteId,   // ← send null for "None"
         }, {
             onSuccess: (page) => {
                 const flash = (page.props as any).flash;
@@ -854,14 +855,14 @@ export default function Index({
                                                     {searchTerm && selectedPositions.length > 0
                                                         ? `No employees matching "${searchTerm}" in selected positions.`
                                                         : searchTerm
-                                                        ? `No employees matching "${searchTerm}".`
-                                                        : selectedBranch && selectedSite
-                                                        ? `No employees in ${selectedBranch} / ${selectedSite}.`
-                                                        : selectedBranch
-                                                        ? `No employees in ${selectedBranch}.`
-                                                        : dateFrom || dateTo
-                                                        ? 'No employees in the selected date range.'
-                                                        : 'No employees match your current filters.'}
+                                                            ? `No employees matching "${searchTerm}".`
+                                                            : selectedBranch && selectedSite
+                                                                ? `No employees in ${selectedBranch} / ${selectedSite}.`
+                                                                : selectedBranch
+                                                                    ? `No employees in ${selectedBranch}.`
+                                                                    : dateFrom || dateTo
+                                                                        ? 'No employees in the selected date range.'
+                                                                        : 'No employees match your current filters.'}
                                                 </p>
                                                 <Button variant="outline" size="sm" onClick={clearActiveFilters}>
                                                     Clear filters
@@ -976,12 +977,12 @@ export default function Index({
                                                     {archivedSearchTerm && archivedSelectedPositions.length > 0
                                                         ? `No archived employees matching "${archivedSearchTerm}" in selected positions.`
                                                         : archivedSearchTerm
-                                                        ? `No archived employees matching "${archivedSearchTerm}".`
-                                                        : archivedSelectedBranch && archivedSelectedSite
-                                                        ? `No archived employees in ${archivedSelectedBranch} / ${archivedSelectedSite}.`
-                                                        : archivedSelectedBranch
-                                                        ? `No archived employees in ${archivedSelectedBranch}.`
-                                                        : 'No archived employees match your current filters.'}
+                                                            ? `No archived employees matching "${archivedSearchTerm}".`
+                                                            : archivedSelectedBranch && archivedSelectedSite
+                                                                ? `No archived employees in ${archivedSelectedBranch} / ${archivedSelectedSite}.`
+                                                                : archivedSelectedBranch
+                                                                    ? `No archived employees in ${archivedSelectedBranch}.`
+                                                                    : 'No archived employees match your current filters.'}
                                                 </p>
                                                 <Button variant="outline" size="sm" onClick={clearArchivedFilters}>
                                                     Clear filters
@@ -1028,18 +1029,6 @@ export default function Index({
                     isLoading={bulkLoading}
                     icon={<Archive className="h-5 w-5" />}
                     variant="warning"
-                />
-
-                <DeleteConfirmationDialog
-                    isOpen={bulkRestoreConfirmOpen}
-                    onClose={() => setBulkRestoreConfirmOpen(false)}
-                    onConfirm={confirmBulkRestore}
-                    title="Restore Employees"
-                    description={`Restore ${selectedIds.length} selected employee(s)? They will become active again.`}
-                    confirmText="Restore All"
-                    isLoading={bulkLoading}
-                    icon={<RotateCcw className="h-5 w-5" />}
-                    variant="info"
                 />
 
                 <RestoreConfirmationDialog
@@ -1105,6 +1094,7 @@ export default function Index({
                             <DialogTitle>Assign Branch & Site</DialogTitle>
                         </DialogHeader>
                         <div className="py-4 space-y-4">
+                            {/* Branch select (required) */}
                             <Select value={selectedBranchId} onValueChange={setSelectedBranchId}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="Select branch" />
@@ -1117,15 +1107,18 @@ export default function Index({
                                     ))}
                                 </SelectContent>
                             </Select>
+
+                            {/* Site select (optional) */}
                             <Select
                                 value={selectedSiteId}
-                                onValueChange={setSelectedSiteId}
+                                onValueChange={(value) => setSelectedSiteId(value === 'none' ? '' : value)}
                                 disabled={!selectedBranchId}
                             >
                                 <SelectTrigger>
-                                    <SelectValue placeholder="Select site" />
+                                    <SelectValue placeholder="Select site (optional)" />
                                 </SelectTrigger>
                                 <SelectContent>
+                                    <SelectItem value="none">None</SelectItem>
                                     {availableSites.map(site => (
                                         <SelectItem key={site.id} value={String(site.id)}>
                                             {site.site_name}
@@ -1133,8 +1126,9 @@ export default function Index({
                                     ))}
                                 </SelectContent>
                             </Select>
+
                             <p className="text-xs text-muted-foreground">
-                                This will assign the selected branch and site to all {selectedIds.length} employee(s).
+                                This will assign the selected branch and (optionally) site to all {selectedIds.length} employee(s).
                                 Employees already having both will be skipped.
                             </p>
                         </div>
