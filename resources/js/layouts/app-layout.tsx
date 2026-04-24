@@ -15,7 +15,7 @@ export default ({ children, breadcrumbs, ...props }: AppLayoutProps) => {
             <Toaster
                 position="top-right"
                 expand={false}
-                closeButton
+                //closeButton
             />
             {/* {showSkeleton ? <SkeletonRouter /> : children} */}
             {children}

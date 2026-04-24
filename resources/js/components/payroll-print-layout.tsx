@@ -8,6 +8,7 @@ interface PayrollPrintLayoutProps {
     isOpen: boolean;
     onClose: () => void;
     payrollId?: number | null;
+    fetchUrl?: string; // Add dynamic URL prop
 }
 
 interface PayrollData {
@@ -136,24 +137,34 @@ const categorizeEarnings = (earnings: Array<{ description: string; amount: numbe
     return { incentives, otherEarnings };
 };
 
-export default function PayrollPrintLayout({ isOpen, onClose, payrollId }: PayrollPrintLayoutProps) {
+export default function PayrollPrintLayout({ isOpen, onClose, payrollId, fetchUrl }: PayrollPrintLayoutProps) {
     const [payrollData, setPayrollData] = useState<PayrollData | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const printAreaRef = useRef<HTMLDivElement>(null);
 
+    // Determine the URL to fetch
+    const getFetchUrl = () => {
+        if (fetchUrl) {
+            return fetchUrl;
+        }
+        // Default URL for admin
+        return `/payrolls/${payrollId}/print-data`;
+    };
+
     useEffect(() => {
         if (isOpen && payrollId) {
             fetchPayrollData();
         }
-    }, [isOpen, payrollId]);
+    }, [isOpen, payrollId, fetchUrl]);
 
     const fetchPayrollData = async () => {
         setIsLoading(true);
         setError(null);
 
         try {
-            const response = await fetch(`/payrolls/${payrollId}/print-data`);
+            const url = getFetchUrl();
+            const response = await fetch(url);
             const data = await response.json();
             console.log('Full payroll response:', JSON.stringify(data, null, 2));
             setPayrollData(data);

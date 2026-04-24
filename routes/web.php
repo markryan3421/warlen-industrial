@@ -132,6 +132,8 @@ Route::middleware(['auth', 'hr', 'auth.session', 'throttle:limit-actions'])->gro
 	//     'as' => 'hr'
 	// ]);
 
+	Route::get('/hr/payroll/{id}/print-data', [HrPayrollController::class, 'getPrintData'])->name('hr.payroll.print-data');
+
 	Route::resource('hr/incentives', HRIncentiveController::class)->except(['show'])->names([
 		'index' => 'hr.incentives.index',
 		'create' => 'hr.incentives.create',
@@ -148,6 +150,7 @@ Route::middleware(['auth', 'hr', 'auth.session', 'throttle:limit-actions'])->gro
 		'edit' => 'hr.payroll.edit',
 		'update' => 'hr.payroll.update',
 	]);
+
 	Route::resource('/hr/payroll-periods', HrPayrollPeriodController::class)->names([
 		'index' => 'hr.payroll-periods.index',
 		'create' => 'hr.payroll-periods.create',

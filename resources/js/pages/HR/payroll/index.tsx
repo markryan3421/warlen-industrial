@@ -1,41 +1,32 @@
-import { Head, Link, useForm, usePage, router } from '@inertiajs/react';
-import Echo from 'laravel-echo';
-import { CreditCard, Eye, X, Bell } from 'lucide-react';
-import Pusher from 'pusher-js';
-import { useState, useEffect, useMemo } from 'react';
-import PayrollProcessingCards from '@/components/payroll-processing-cards';
+import { Head, useForm, router } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import HrLayout from '@/layouts/hr-layout';
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import type { BreadcrumbItem } from '@/types';
+import { X, Bell, Search } from 'lucide-react';
+import PayrollProcessingCards from '@/components/payroll-processing-cards';
+import { CustomTable } from '@/components/custom-table';
+import { CustomPagination } from '@/components/custom-pagination';
+import { toast } from 'sonner';
+import { TableSkeleton } from '@/components/table-skeleton';
+import PayrollPrintLayout from '@/components/payroll-print-layout';
+import { EmployeeFilterBar } from '@/components/employee/employee-filter-bar';
+import { format, parseISO, isValid } from 'date-fns';
+import {
+    getPayrollTableColumns,
+    getPayrollTableActions,
+    getSkeletonColumns
+} from '@/config/tables/payroll-table-config';
 
-// IMPORTANT: For Reverb, we need to import Pusher with a different name
-// Reverb uses the Pusher protocol but connects to your Reverb server
+declare global { interface Window { Echo: any; } }
 
-// Declare global window interface for Echo
-declare global {
-    interface Window {
-        Pusher: any;
-        Echo: any;
-    }
-}
+const breadcrumbs: BreadcrumbItem[] = [{ title: 'Payroll', href: '/hr/payroll' }];
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Payroll',
-        href: '/payroll',
-    },
-];
-
+// ─── Types ────────────────────────────────────────────────────────────────────
 interface PayrollItem {
-    id: number;
-    payroll_id: number;
-    code: string;
-    type: 'earning' | 'deduction';
-    amount: number;
-    description: string | null;
-    created_at: string;
-    updated_at: string;
+    id: number; payroll_id: number; code: string;
+    type: 'earning' | 'deduction'; amount: number;
+    description: string | null; created_at: string; updated_at: string;
 }
 
 interface Payroll {
@@ -56,629 +47,544 @@ interface Payroll {
     employee?: {
         id: number;
         emp_code: string;
-        user: {
-            name: string;
-            email: string;
+        user: { name: string; email: string; };
+        position: { id: number; pos_name: string; deleted_at: string; };
+        branch?: {
+            id: number;
+            branch_name: string;
+            sites?: Array<{ id: number; site_name: string }>;
         };
-        position: {
-            pos_name: string;
-            deleted_at: string;
-        };
+        site?: { id: number; site_name: string; };
         pay_frequency: string;
     };
     created_at: string;
     updated_at: string;
 }
 
+interface BranchData {
+    id: number;
+    branch_name: string;
+    branch_address: string;
+    sites: Array<{ id: number; site_name: string }>;
+}
+
 interface PageProps {
     payrolls: Payroll[];
+    pagination?: { links: any[]; from: number; to: number; current_page: number; last_page: number; per_page: number; total: number; };
+    filters?: { search?: string; positions?: string; branches?: string; sites?: string; date_from?: string; date_to?: string; perPage?: string; };
+    totalCount: number;
+    filteredCount: number;
     totalOvertimePay: number;
     totalOvertimeHours: number;
     totalDeductions: number;
     totalNetPay: number;
     totalGrossPay: number;
-    activeEmployee: number; 
+    activeEmployee: number;
+    allPositions?: Array<{ id: number; pos_name: string }> | string[];
+    allBranches?: string[];
+    allSites?: string[];
+    branchesData?: BranchData[];
 }
 
-export default function Index({ 
-    payrolls, 
-    totalOvertimePay: initialOvertimePay, 
-    totalOvertimeHours: initialOvertimeHours,
-    totalDeductions: initialDeductions,
-    totalNetPay: initialNetPay,
-    totalGrossPay: initialGrossPay,
-    activeEmployee: initialActiveEmployee
+// ─── Component ────────────────────────────────────────────────────────────────
+export default function Index({
+    payrolls = [],
+    pagination: serverPagination = { links: [], from: 0, to: 0, current_page: 1, last_page: 1, per_page: 10, total: 0 },
+    filters = {},
+    totalCount = 0, filteredCount = 0,
+    totalOvertimePay: initialOvertimePay = 0,
+    totalOvertimeHours: initialOvertimeHours = 0,
+    totalDeductions: initialDeductions = 0,
+    totalNetPay: initialNetPay = 0,
+    totalGrossPay: initialGrossPay = 0,
+    activeEmployee: initialActiveEmployee = 0,
+    allPositions = [],
+    allBranches = [],
+    allSites = [],
+    branchesData = [],
 }: PageProps) {
     const { delete: destroy } = useForm();
-    const [selectedPayroll, setSelectedPayroll] = useState<Payroll | null>(null);
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [notification, setNotification] = useState<{message: string, timestamp: string} | null>(null);
+
+    // ── UI state ──────────────────────────────────────────────────────────────
+    const [notification, setNotification] = useState<{ message: string; timestamp: string } | null>(null);
     const [showNotification, setShowNotification] = useState(false);
-    const [echoInitialized, setEchoInitialized] = useState(false);
+    const [isTableLoading, setIsTableLoading] = useState(true);
+    const [isFiltering, setIsFiltering] = useState(false);
+    const [isInitialLoad, setIsInitialLoad] = useState(true);
+    const [selectedPrintPayrollId, setSelectedPrintPayrollId] = useState<number | null>(null);
+    const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
 
-    // Filter states - initialize with undefined (no default dates)
-    const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
-    const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
-    const [selectedFrequency, setSelectedFrequency] = useState<string>("all");
-    const [selectedPosition, setSelectedPosition] = useState<string>("all");
+    // ── Filter state ──────────────────────────────────────────────────────────
+    const parseDate = (d?: string) => {
+        if (!d) return undefined;
+        const p = parseISO(d);
+        return isValid(p) ? p : undefined;
+    };
 
-    // Initialize Echo with Reverb configuration
+    const [searchTerm, setSearchTerm] = useState(filters.search ?? '');
+    const [selectedPositions, setSelectedPositions] = useState<string[]>(
+        filters.positions?.split(',').filter(Boolean) ?? []
+    );
+    const [selectedBranches, setSelectedBranches] = useState<string[]>(
+        filters.branches?.split(',').filter(Boolean) ?? []
+    );
+    const [selectedSites, setSelectedSites] = useState<string[]>(
+        filters.sites?.split(',').filter(Boolean) ?? []
+    );
+    const [dateFrom, setDateFrom] = useState<Date | undefined>(() => parseDate(filters.date_from));
+    const [dateTo, setDateTo] = useState<Date | undefined>(() => parseDate(filters.date_to));
+    const [perPage, setPerPage] = useState(() => {
+        if (filters.perPage) return filters.perPage;
+        if (serverPagination.per_page) return String(serverPagination.per_page);
+        return '10';
+    });
+
+    // Sync perPage with server pagination
     useEffect(() => {
-        // Set Pusher on window (required for Echo)
-        window.Pusher = Pusher;
-
-        // Get Reverb configuration from environment variables
-        const key = import.meta.env.VITE_REVERB_APP_KEY;
-        const host = import.meta.env.VITE_REVERB_HOST || 'localhost';
-        const port = import.meta.env.VITE_REVERB_PORT || '8080';
-        const scheme = import.meta.env.VITE_REVERB_SCHEME || 'http';
-        
-        console.log('Reverb Config:', { key, host, port, scheme });
-
-        if (!key) {
-            console.error('VITE_REVERB_APP_KEY is not defined in your .env file');
-            return;
+        if (serverPagination.per_page && String(serverPagination.per_page) !== perPage) {
+            setPerPage(String(serverPagination.per_page));
         }
+    }, [serverPagination.per_page]);
 
-        // Initialize Echo with Reverb configuration
-        window.Echo = new Echo({
-            broadcaster: 'reverb',
-            key: key,
-            wsHost: host,
-            wsPort: port,
-            wssPort: port,
-            forceTLS: scheme === 'https',
-            enabledTransports: ['ws', 'wss'],
-            authEndpoint: '/broadcasting/auth',
-            auth: {
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
-                },
-            },
-        });
+    // ── Ref always holds latest filter values ─────────────────────────────────
+    const filtersRef = useRef({
+        searchTerm,
+        selectedPositions,
+        selectedBranches,
+        selectedSites,
+        dateFrom,
+        dateTo,
+        perPage
+    });
 
-        setEchoInitialized(true);
-
-        // Cleanup on unmount
-        return () => {
-            if (window.Echo) {
-                window.Echo.leave('payroll');
-            }
+    useEffect(() => {
+        filtersRef.current = {
+            searchTerm,
+            selectedPositions,
+            selectedBranches,
+            selectedSites,
+            dateFrom,
+            dateTo,
+            perPage
         };
+    }, [searchTerm, selectedPositions, selectedBranches, selectedSites, dateFrom, dateTo, perPage]);
+
+    // ── Core navigation ───────────────────────────────────────────────────────
+    const buildParams = useCallback((overrides: {
+        search?: string;
+        positions?: string[];
+        branches?: string[];
+        sites?: string[];
+        from?: Date | undefined;
+        to?: Date | undefined;
+        perPage?: string;
+        page?: number;
+    } = {}) => {
+        const {
+            searchTerm: s,
+            selectedPositions: pos,
+            selectedBranches: br,
+            selectedSites: st,
+            dateFrom: from,
+            dateTo: to,
+            perPage: pp
+        } = filtersRef.current;
+
+        const params: Record<string, string | number> = {};
+        const rs = overrides.search !== undefined ? overrides.search : s;
+        const rp = overrides.positions !== undefined ? overrides.positions : pos;
+        const rb = overrides.branches !== undefined ? overrides.branches : br;
+        const rst = overrides.sites !== undefined ? overrides.sites : st;
+        const rf = overrides.from !== undefined ? overrides.from : from;
+        const rt = overrides.to !== undefined ? overrides.to : to;
+        const rpp = overrides.perPage !== undefined ? overrides.perPage : pp;
+
+        if (rs?.trim()) params.search = rs.trim();
+        if (rp?.length) params.positions = rp.join(',');
+        if (rb?.length) params.branches = rb.join(',');
+        if (rst?.length) params.sites = rst.join(',');
+        if (rf && isValid(rf)) params.date_from = format(rf, 'yyyy-MM-dd');
+        if (rt && isValid(rt)) params.date_to = format(rt, 'yyyy-MM-dd');
+
+        // Always send perPage parameter
+        const perPageValue = rpp ? parseInt(rpp) : 10;
+        params.perPage = perPageValue;
+
+        if (overrides.page) params.page = overrides.page;
+
+        return params;
     }, []);
 
-    // Listen to payroll channel after Echo is initialized
-    useEffect(() => {
-        if (!echoInitialized || !window.Echo) return;
+    const applyFilters = useCallback((overrides: {
+        search?: string;
+        positions?: string[];
+        branches?: string[];
+        sites?: string[];
+        from?: Date | undefined;
+        to?: Date | undefined;
+        perPage?: string;
+        page?: number;
+    } = {}) => {
+        const params = buildParams(overrides);
 
-        console.log('Listening to payroll channel...');
-
-        // Listen to payroll channel for completion events
-        const channel = window.Echo.private('payroll');
-        
-        channel.listen('.payroll.completed', (e: any) => {
-            console.log('Payroll period completed:', e);
-            
-            // Show notification
-            setNotification({
-                message: e.message,
-                timestamp: new Date(e.timestamp).toLocaleString()
-            });
-            setShowNotification(true);
-            
-            // Auto-hide notification after 5 seconds
-            setTimeout(() => {
-                setShowNotification(false);
-            }, 5000);
-            
-            // Refresh the payroll list using Inertia
-            router.reload({ only: ['payrolls', 'totalOvertimePay', 'totalOvertimeHours', 'totalDeductions', 'totalNetPay', 'totalGrossPay'] });
+        setIsFiltering(true);
+        router.get('/hr/payroll', params, {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+            only: ['payrolls', 'pagination', 'filters', 'totalCount', 'filteredCount',
+                'totalOvertimePay', 'totalOvertimeHours', 'totalDeductions',
+                'totalNetPay', 'totalGrossPay', 'activeEmployee'],
+            onFinish: () => setIsFiltering(false),
         });
+    }, [buildParams]);
 
-        // Optional: Listen for connection events
-        channel.subscribed(() => {
-            console.log('Successfully subscribed to payroll channel');
-        });
+    // ── Filter handlers ───────────────────────────────────────────────────────
+    const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-        channel.error((error: any) => {
-            console.error('Channel error:', error);
-        });
+    const handleSearchChange = useCallback((value: string) => {
+        setSearchTerm(value);
+        if (searchTimer.current) clearTimeout(searchTimer.current);
+        searchTimer.current = setTimeout(() => applyFilters({ search: value, page: 1 }), 500);
+    }, [applyFilters]);
 
-        // Cleanup
-        return () => {
-            channel.stopListening('.payroll.completed');
-        };
-    }, [echoInitialized]);
+    const handlePositionsChange = useCallback((positions: string[]) => {
+        setSelectedPositions(positions);
+        applyFilters({ positions, page: 1 });
+    }, [applyFilters]);
 
-    // Function to check if any filter is applied
-    const hasActiveFilters = useMemo(() => {
-        return dateFrom !== undefined || dateTo !== undefined || 
-               selectedFrequency !== "all" || selectedPosition !== "all";
-    }, [dateFrom, dateTo, selectedFrequency, selectedPosition]);
-
-    // Function to filter payrolls based on selected filters
-    const getFilteredPayrolls = useMemo(() => {
-        // If no filters are applied, return all payrolls
-        if (!hasActiveFilters) {
-            return payrolls;
+    const handleBranchChange = useCallback((branch: string) => {
+        const newBranches = branch ? [branch] : [];
+        setSelectedBranches(newBranches);
+        if (selectedSites.length) {
+            setSelectedSites([]);
+            applyFilters({ branches: newBranches, sites: [], page: 1 });
+        } else {
+            applyFilters({ branches: newBranches, page: 1 });
         }
+    }, [applyFilters, selectedSites.length]);
 
-        return payrolls.filter(payroll => {
-            // Date filter - only apply if both dates are selected
-            if (dateFrom && dateTo && payroll.payroll_period) {
-                const periodStart = new Date(payroll.payroll_period.start_date);
-                const periodEnd = new Date(payroll.payroll_period.end_date);
-                const filterStart = new Date(dateFrom);
-                const filterEnd = new Date(dateTo);
-                
-                // Set time to start/end of day for accurate comparison
-                filterStart.setHours(0, 0, 0, 0);
-                filterEnd.setHours(23, 59, 59, 999);
-                
-                // Check if period overlaps with selected date range
-                if (periodEnd < filterStart || periodStart > filterEnd) {
-                    return false;
-                }
-            }
+    const handleSiteChange = useCallback((site: string) => {
+        const newSites = site ? [site] : [];
+        setSelectedSites(newSites);
+        applyFilters({ sites: newSites, page: 1 });
+    }, [applyFilters]);
 
-            // Frequency filter
-            if (selectedFrequency !== "all" && payroll.employee?.pay_frequency !== selectedFrequency) {
-                return false;
-            }
+    const handleDateFromChange = useCallback((from: Date | undefined) => {
+        setDateFrom(from);
+        applyFilters({ from: from && isValid(from) ? from : undefined, page: 1 });
+    }, [applyFilters]);
 
-            // Position filter
-            if (selectedPosition !== "all" && payroll.employee?.position?.pos_name !== selectedPosition) {
-                return false;
-            }
+    const handleDateToChange = useCallback((to: Date | undefined) => {
+        setDateTo(to);
+        applyFilters({ to: to && isValid(to) ? to : undefined, page: 1 });
+    }, [applyFilters]);
 
-            return true;
-        });
-    }, [payrolls, dateFrom, dateTo, selectedFrequency, selectedPosition, hasActiveFilters]);
+    const handlePerPageChange = useCallback((value: string) => {
+        setPerPage(value);
+        applyFilters({ perPage: value, page: 1 });
+    }, [applyFilters]);
 
-    // Get filtered payrolls
-    const filteredPayrolls = getFilteredPayrolls;
+    const handlePageChange = useCallback((page: number) => {
+        applyFilters({ page });
+    }, [applyFilters]);
 
-    // Calculate totals based on filtered payrolls
-    const filteredTotals = useMemo(() => {
-        // If no filters are applied, use the initial values from props
-        if (!hasActiveFilters) {
-            return {
-                totalOvertimePay: initialOvertimePay,
-                totalOvertimeHours: initialOvertimeHours,
-                totalDeductions: initialDeductions,
-                totalNetPay: initialNetPay,
-                activeEmployee: initialActiveEmployee
-            };
-        }
-
-        // Debug logs to help identify the issue
-        console.log('Filtered Payrolls Count:', filteredPayrolls.length);
-        console.log('Sample Payroll Structure:', filteredPayrolls[0]);
-
-        // Calculate from filtered payrolls
-        const totals = filteredPayrolls.reduce((acc, payroll) => {
-            // Calculate overtime pay from payroll items
-            let overtimePay = 0;
-            let overtimeHours = 0;
-            
-            // Check if payroll_items exists and has items
-            if (payroll.payroll_items && payroll.payroll_items.length > 0) {
-                console.log(`Payroll ID ${payroll.id} - Payroll Items:`, payroll.payroll_items);
-
-                // Define overtime codes to look for
-                const overtimeKeywords = [
-                    'OT', 'OTS', 'OVERTIME', 'OT PAY', 'REG OT', 
-                    'OTHR', 'OT HRS', 'OVERTIME PAY', 'OT_WORK',
-                    'overtime', 'ot', 'ots'
-                ];
-
-                // Filter for overtime items
-                const overtimeItems = payroll.payroll_items.filter(item => {
-                    // Check if it's an earning type
-                    if (item.type !== 'earning') return false;
-                    
-                    const code = (item.code || '').toUpperCase().trim();
-                    const description = (item.description || '').toUpperCase().trim();
-                    
-                    // Check against keywords
-                    const isOvertime = overtimeKeywords.some(keyword => 
-                        code.includes(keyword) || 
-                        description.includes(keyword) ||
-                        code === keyword ||
-                        description === keyword
-                    );
-
-                    if (isOvertime) {
-                        console.log(`Found overtime item:`, { code, description, amount: item.amount });
-                    }
-
-                    return isOvertime;
-                });
-
-                // Sum up overtime pay
-                overtimePay = overtimeItems.reduce((sum, item) => {
-                    const amount = Number(item.amount) || 0;
-                    return sum + amount;
-                }, 0);
-
-                // Try to extract hours from description if available
-                overtimeItems.forEach(item => {
-                    if (item.description) {
-                        // Look for patterns like "2 hours", "2.5 hrs", etc.
-                        const hoursMatch = item.description.match(/(\d+(?:\.\d+)?)\s*(?:hour|hr|h)/i);
-                        if (hoursMatch) {
-                            overtimeHours += parseFloat(hoursMatch[1]) || 0;
-                        }
-                    }
-                });
-            } else {
-                console.log(`Payroll ID ${payroll.id} - No payroll items found`);
-                
-                // Alternative: If overtime is not in items, maybe it's part of gross_pay?
-                // You might need to implement a different logic here based on your data structure
-            }
-
-            // Ensure all values are numbers
-            const deduction = Number(payroll.total_deduction) || 0;
-            const netPay = Number(payroll.net_pay) || 0;
-
-            console.log(`Payroll ID ${payroll.id} - Calculated:`, {
-                overtimePay,
-                overtimeHours,
-                deduction,
-                netPay
-            });
-
-            return {
-                totalOvertimePay: acc.totalOvertimePay + overtimePay,
-                totalOvertimeHours: acc.totalOvertimeHours + overtimeHours,
-                totalDeductions: acc.totalDeductions + deduction,
-                totalNetPay: acc.totalNetPay + netPay,
-                activeEmployee: acc.activeEmployee + 1
-            };
-        }, {
-            totalOvertimePay: 0,
-            totalOvertimeHours: 0,
-            totalDeductions: 0,
-            totalNetPay: 0,
-            activeEmployee: 0
-        });
-
-        console.log('Final Filtered Totals:', totals);
-        return totals;
-    }, [filteredPayrolls, hasActiveFilters, initialOvertimePay, initialOvertimeHours, initialDeductions, initialNetPay, initialActiveEmployee]);
-
-    // Handle refresh button click - clear all filters
-    const handleRefresh = () => {
-        // Clear all filters
+    const clearFilters = useCallback(() => {
+        setSearchTerm('');
+        setSelectedPositions([]);
+        setSelectedBranches([]);
+        setSelectedSites([]);
         setDateFrom(undefined);
         setDateTo(undefined);
-        setSelectedFrequency("all");
-        setSelectedPosition("all");
-        
-        // Reload data from server
-        router.reload({ only: ['payrolls', 'totalOvertimePay', 'totalOvertimeHours', 'totalDeductions', 'totalNetPay', 'totalGrossPay', 'activeEmployee'] });
-    };
+        setPerPage('10');
 
-    // Function to check if employee position is valid
-    const hasValidPosition = (payroll: Payroll) => {
-        return payroll.employee?.position && !payroll.employee.position.deleted_at;
-    };
-
-    // Function to format currency to Philippine Peso
-    const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('en-PH', {
-            style: 'currency',
-            currency: 'PHP',
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        }).format(amount);
-    };
-
-    // Function to format number with commas (without currency symbol)
-    const formatNumber = (amount: number) => {
-        return new Intl.NumberFormat('en-PH', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        }).format(amount);
-    };
-
-    // Function to format date
-    const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric'
+        router.get('/hr/payroll', { perPage: 10 }, {
+            preserveState: false,
+            preserveScroll: true,
+            replace: true,
         });
-    };
+    }, []);
 
-    // Format period range from payroll_period if available
-    const formatPeriodRange = (payroll: Payroll) => {
-        if (payroll.payroll_period) {
-            return `${formatDate(payroll.payroll_period.start_date)} - ${formatDate(payroll.payroll_period.end_date)}`;
+    // ── Loading state ─────────────────────────────────────────────────────────
+    useEffect(() => {
+        if (payrolls !== undefined && isInitialLoad) {
+            const t = setTimeout(() => { setIsTableLoading(false); setIsInitialLoad(false); }, 300);
+            return () => clearTimeout(t);
         }
-        return 'N/A';
-    };
+    }, [payrolls, isInitialLoad]);
 
-    const handleViewItems = (payroll: Payroll) => {
-        setSelectedPayroll(payroll);
-        setIsModalOpen(true);
-    };
+    useEffect(() => {
+        let tid: NodeJS.Timeout;
+        let isFilterUpdate = false;
+        const onStart = (e: any) => {
+            if (e.detail?.preserveState) { isFilterUpdate = true; return; }
+            clearTimeout(tid); setIsTableLoading(true);
+        };
+        const onFinish = () => {
+            tid = setTimeout(() => setIsTableLoading(false), isFilterUpdate ? 100 : 200);
+            isFilterUpdate = false;
+        };
+        const off1 = router.on('start', onStart);
+        const off2 = router.on('finish', onFinish);
+        return () => { off1(); off2(); clearTimeout(tid); };
+    }, [isInitialLoad]);
 
-    const closeModal = () => {
-        setIsModalOpen(false);
-        setSelectedPayroll(null);
-    };
+    useEffect(() => () => { if (searchTimer.current) clearTimeout(searchTimer.current); }, []);
 
-    // Get unique values for filters
-    const uniqueFrequencies = useMemo(() => 
-        Array.from(new Set(payrolls.map(p => p.employee?.pay_frequency).filter(Boolean))), 
-        [payrolls]
+    // ── Echo listener ─────────────────────────────────────────────────────────
+    useEffect(() => {
+        if (!window.Echo) return;
+        const channel = window.Echo.private('payroll');
+        channel.listen('.payroll.completed', (e: any) => {
+            setNotification({ message: e.message, timestamp: new Date(e.timestamp).toLocaleString() });
+            setShowNotification(true);
+            setTimeout(() => setShowNotification(false), 5000);
+            router.reload({
+                only: ['payrolls', 'pagination', 'totalOvertimePay', 'totalOvertimeHours',
+                    'totalDeductions', 'totalNetPay', 'totalGrossPay', 'activeEmployee'],
+            });
+        });
+        return () => channel.stopListening('.payroll.completed');
+    }, []);
+
+    // ── Derived data ──────────────────────────────────────────────────────────
+    const positionNames = useMemo(() => {
+        if (!allPositions?.length) return [];
+        return typeof allPositions[0] === 'string'
+            ? allPositions as string[]
+            : (allPositions as Array<{ id: number; pos_name: string }>).map(p => p.pos_name);
+    }, [allPositions]);
+
+    const branchNames = useMemo(() => {
+        if (!allBranches?.length) return [];
+        return allBranches;
+    }, [allBranches]);
+
+    const siteNames = useMemo(() => {
+        if (!selectedBranches.length || !selectedBranches[0]) {
+            return [];
+        }
+        const selectedBranch = selectedBranches[0];
+        const branchData = branchesData.find(b => b.branch_name === selectedBranch);
+        if (branchData && branchData.sites && branchData.sites.length > 0) {
+            return branchData.sites.map(site => site.site_name);
+        }
+        return [];
+    }, [selectedBranches, branchesData]);
+
+    const payrollTableData = useMemo(() => payrolls.map(p => ({
+        id: p.id,
+        period_name: p.payroll_period?.period_name ?? 'N/A',
+        period_start: p.payroll_period?.start_date ?? '',
+        period_end: p.payroll_period?.end_date ?? '',
+        emp_code: p.employee?.emp_code ?? 'N/A',
+        employee_name: p.employee?.user.name ?? 'Unknown Employee',
+        position_name: p.employee?.position?.pos_name ?? 'No Position',
+        branch_name: p.employee?.branch?.branch_name ?? 'No Branch',
+        site_name: p.employee?.site?.site_name ?? p.employee?.branch?.sites?.[0]?.site_name ?? 'No Site',
+        pay_frequency: p.employee?.pay_frequency ?? 'N/A',
+        gross_pay: p.gross_pay ?? 0,
+        total_deduction: p.total_deduction ?? 0,
+        net_pay: p.net_pay ?? 0,
+        _original: p,
+    })), [payrolls]);
+
+    const filteredPayrollTableData = useMemo(() => {
+        let data = payrollTableData;
+        if (selectedSites.length && selectedSites[0]) {
+            data = data.filter(row => row.site_name === selectedSites[0]);
+        }
+        return data;
+    }, [payrollTableData, selectedSites]);
+
+    // ── Pagination with filters ───────────────────────────────────────────────
+    const paginationWithFilters = useMemo(() => {
+        if (!serverPagination?.links?.length) return serverPagination;
+
+        const baseParams = new URLSearchParams();
+        if (searchTerm.trim()) baseParams.set('search', searchTerm.trim());
+        if (selectedPositions.length) baseParams.set('positions', selectedPositions.join(','));
+        if (selectedBranches.length) baseParams.set('branches', selectedBranches.join(','));
+        if (selectedSites.length) baseParams.set('sites', selectedSites.join(','));
+        if (dateFrom && isValid(dateFrom)) baseParams.set('date_from', format(dateFrom, 'yyyy-MM-dd'));
+        if (dateTo && isValid(dateTo)) baseParams.set('date_to', format(dateTo, 'yyyy-MM-dd'));
+        baseParams.set('perPage', String(serverPagination.per_page || 10));
+
+        const links = serverPagination.links.map((link: any) => {
+            if (!link.url) return link;
+            const url = new URL(link.url, window.location.origin);
+            const page = url.searchParams.get('page');
+            const merged = new URLSearchParams(baseParams.toString());
+            if (page) merged.set('page', page);
+            url.search = merged.toString();
+            return { ...link, url: url.toString() };
+        });
+
+        return { ...serverPagination, links };
+    }, [serverPagination, searchTerm, selectedPositions, selectedBranches, selectedSites, dateFrom, dateTo]);
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+    const formatCurrency = useCallback((n: number) =>
+        new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', minimumFractionDigits: 2 }).format(n), []);
+
+    const formatNumber = useCallback((n: number) =>
+        new Intl.NumberFormat('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n), []);
+
+    // ── Action handlers ───────────────────────────────────────────────────────
+    const handleViewPayroll = useCallback((row: any) => {
+        if (row?._original) {
+            setSelectedPrintPayrollId(row._original.id);
+            setIsPrintModalOpen(true);
+        }
+    }, []);
+
+    const handleDeletePayroll = useCallback((id: string | number) => {
+        if (!confirm('Are you sure you want to delete this payroll record?')) return;
+        destroy(`/hr/payroll/${id}`, {
+            onSuccess: () => { toast.success('Payroll record deleted successfully'); applyFilters(); },
+            onError: () => toast.error('Failed to delete payroll record'),
+        });
+    }, [destroy, applyFilters]);
+
+    // ── Table config ──────────────────────────────────────────────────────────
+    const columns = useMemo(() => getPayrollTableColumns(formatCurrency), [formatCurrency]);
+    const actions = useMemo(() => getPayrollTableActions(handleViewPayroll), [handleViewPayroll]);
+    const skeletonColumns = useMemo(() => getSkeletonColumns(), []);
+
+    // ── Toolbar ───────────────────────────────────────────────────────────────
+    const toolbar = (
+        <EmployeeFilterBar
+            filters={{
+                search: true,
+                position: true,
+                branch: true,
+                site: true,
+                date: true,
+                status: false
+            }}
+            allPositions={positionNames}
+            allBranches={branchNames}
+            allSites={siteNames}
+            branchesData={branchesData}
+            searchTerm={searchTerm}
+            selectedPositions={selectedPositions}
+            selectedBranch={selectedBranches[0] || ""}
+            selectedSite={selectedSites[0] || ""}
+            status=""
+            dateFrom={dateFrom}
+            dateTo={dateTo}
+            onSearchChange={handleSearchChange}
+            onPositionsChange={handlePositionsChange}
+            onBranchChange={handleBranchChange}
+            onSiteChange={handleSiteChange}
+            onStatusChange={() => { }}
+            onDateFromChange={handleDateFromChange}
+            onDateToChange={handleDateToChange}
+            onClearAll={clearFilters}
+            searchPlaceholder="Search by name or employee code..."
+            dateLabel="Payroll Period"
+        />
     );
-    
-    const uniquePositions = useMemo(() => 
-        Array.from(new Set(payrolls.map(p => p.employee?.position?.pos_name).filter(Boolean))), 
-        [payrolls]
-    );
-    
+
+    // ─────────────────────────────────────────────────────────────────────────
     return (
         <HrLayout breadcrumbs={breadcrumbs}>
             <Head title="Payroll" />
-            <div className="flex flex-1 flex-col gap-2 p-4">
-                <PayrollProcessingCards 
+            <div className="flex flex-1 flex-col gap-4 p-4">
+
+                <PayrollProcessingCards
                     payrolls={payrolls}
-                    totalOvertimePay={filteredTotals.totalOvertimePay}
-                    totalOvertimeHours={filteredTotals.totalOvertimeHours}
-                    totalDeductions={filteredTotals.totalDeductions}
-                    totalNetPay={filteredTotals.totalNetPay}
-                    activeEmployee={filteredTotals.activeEmployee}
+                    totalOvertimePay={initialOvertimePay}
+                    totalOvertimeHours={initialOvertimeHours}
+                    totalDeductions={initialDeductions}
+                    totalNetPay={initialNetPay}
+                    totalGrossPay={initialGrossPay}
+                    activeEmployee={initialActiveEmployee}
                     formatCurrency={formatCurrency}
                     formatNumber={formatNumber}
-                    
-                    // Filter props
-                    dateFrom={dateFrom}
-                    dateTo={dateTo}
-                    selectedFrequency={selectedFrequency}
-                    selectedPosition={selectedPosition}
-                    onDateFromChange={setDateFrom}
-                    onDateToChange={setDateTo}
-                    onFrequencyChange={setSelectedFrequency}
-                    onPositionChange={setSelectedPosition}
-                    onRefresh={handleRefresh}
-                    
-                    // Options for dropdowns
-                    frequencyOptions={uniqueFrequencies}
-                    positionOptions={uniquePositions}
-                    
-                    // New props for filtered counts
-                    totalFilteredPayrolls={filteredPayrolls.length}
-                    totalOriginalPayrolls={payrolls.length}
+                    totalFilteredPayrolls={filteredCount}
+                    totalOriginalPayrolls={totalCount}
                 />
-                
-                {/* Notification Toast */}
+
+                {/* Notification */}
                 {showNotification && notification && (
-                    <div className="fixed top-4 right-4 z-50 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-slide-in">
+                    <div className="fixed top-4 right-4 z-50 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-in slide-in-from-top-2 fade-in duration-200">
                         <Bell className="h-5 w-5 text-green-600" />
                         <div>
                             <p className="font-medium">{notification.message}</p>
                             <p className="text-xs text-green-600">{notification.timestamp}</p>
                         </div>
-                        <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="ml-4" 
-                            onClick={() => setShowNotification(false)}
-                        >
+                        <Button variant="ghost" size="sm" onClick={() => setShowNotification(false)}>
                             <X className="h-4 w-4" />
                         </Button>
                     </div>
                 )}
-                
-                <div className="flex justify-between items-center">
-                    <h1 className="text-2xl font-bold">
-                        Payroll 
-                        {hasActiveFilters && (
-                            <span className="text-sm font-normal text-gray-500 ml-2">
-                                (Showing {filteredPayrolls.length} of {payrolls.length} records)
-                            </span>
-                        )}
-                    </h1>
-                </div>
 
-                <div className="py-4">
-                    {filteredPayrolls.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-16 text-center">
-                            <div className="rounded-full bg-gray-100 p-6 mb-4">
-                                <CreditCard className="h-12 w-12 text-gray-400" />
-                            </div>
-                            <h3 className="text-lg font-semibold mb-2">No payroll records found</h3>
-                            <p className="text-gray-500 mb-6 max-w-sm">
-                                {payrolls.length > 0 
-                                    ? "No records match your current filters. Try adjusting your filter criteria."
-                                    : "Get started by generating your first payroll."
-                                }
-                            </p>
-                            {hasActiveFilters && (
-                                <Button variant="outline" onClick={handleRefresh}>
-                                    Clear All Filters
-                                </Button>
-                            )}
-                        </div>
+                {/* Table */}
+                <div className="mx-4">
+                    {isTableLoading && isInitialLoad ? (
+                        <TableSkeleton
+                            columns={skeletonColumns}
+                            rows={Math.min(parseInt(perPage), 10)}
+                            title="Payroll Records"
+                        />
                     ) : (
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Period</TableHead>
-                                    <TableHead>Employee Code</TableHead>
-                                    <TableHead>Employee Name</TableHead>
-                                    <TableHead>Position</TableHead>
-                                    <TableHead>Gross Pay</TableHead>
-                                    <TableHead>Total Deduction</TableHead>
-                                    <TableHead>Net Pay</TableHead>
-                                    <TableHead>Actions</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {filteredPayrolls.map((payroll) => {
-                                    return (
-                                        <TableRow key={payroll.id}>
-                                            <TableCell>
-                                                {payroll.payroll_period ? (
-                                                    <div>
-                                                        <div className="font-medium">{payroll.payroll_period.period_name}</div>
-                                                        <div className="text-xs text-gray-500">
-                                                            {formatPeriodRange(payroll)}
-                                                        </div>
-                                                    </div>
-                                                ) : (
-                                                    <span className="text-gray-400 italic">No period</span>
-                                                )}
-                                            </TableCell>
-                                            <TableCell>{payroll.employee?.emp_code || 'N/A'}</TableCell>
-                                            <TableCell>{payroll.employee?.user.name || 'N/A'}</TableCell>
-                                            <TableCell>
-                                                {hasValidPosition(payroll) ? 
-                                                    payroll.employee?.position.pos_name : 
-                                                    <span className="text-gray-400 italic">Not assigned</span>
-                                                }
-                                            </TableCell>
-                                            <TableCell className="text-right font-medium">
-                                                {formatCurrency(payroll.gross_pay)}
-                                            </TableCell>
-                                            <TableCell className="text-right text-red-600">
-                                                -{formatCurrency(payroll.total_deduction)}
-                                            </TableCell>
-                                            <TableCell className="text-right font-semibold text-green-600">
-                                                {formatCurrency(payroll.net_pay)}
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="flex gap-2">
-                                                    <Button 
-                                                        variant="outline" 
-                                                        size="sm"
-                                                        onClick={() => handleViewItems(payroll)}
-                                                    >
-                                                        <Eye className="h-4 w-4 mr-1" />
-                                                        View Items
-                                                    </Button>
-                                                </div>
-                                            </TableCell>
-                                        </TableRow>
-                                    );
-                                })}
-                            </TableBody>
-                        </Table>
+                        <>
+                            <CustomTable
+                                columns={columns}
+                                actions={actions}
+                                data={filteredPayrollTableData}
+                                from={serverPagination?.from || 0}
+                                title="Payroll Records"
+                                onView={handleViewPayroll}
+                                onEdit={() => { }}
+                                onDelete={handleDeletePayroll}
+                                toolbar={toolbar}
+                                filterEmptyState={
+                                    <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
+                                        <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center mb-3">
+                                            <Search className="h-5 w-5 text-slate-400 dark:text-slate-500" />
+                                        </div>
+                                        <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1">No results found</h3>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 max-w-xs">
+                                            {searchTerm
+                                                ? `No payroll records matching "${searchTerm}".`
+                                                : dateFrom || dateTo
+                                                    ? 'No payroll records in the selected date range.'
+                                                    : 'No payroll records match your current filters.'}
+                                        </p>
+                                        <Button variant="outline" size="sm" onClick={clearFilters}>Clear filters</Button>
+                                    </div>
+                                }
+                                isLoading={isFiltering && !isInitialLoad}
+                            />
+
+                            {filteredPayrollTableData.length > 0 && (
+                                <CustomPagination
+                                    pagination={paginationWithFilters}
+                                    perPage={perPage}
+                                    onPerPageChange={handlePerPageChange}
+                                    onPageChange={handlePageChange}
+                                    totalCount={totalCount}
+                                    filteredCount={filteredCount}
+                                    search={searchTerm}
+                                    resourceName="payroll"
+                                />
+                            )}
+                        </>
                     )}
                 </div>
             </div>
 
-            {/* Payroll Items Modal */}
-            {isModalOpen && selectedPayroll && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center">
-                    {/* Backdrop */}
-                    <div 
-                        className="absolute inset-0 bg-black/50" 
-                        onClick={closeModal}
-                    />
-                    
-                    {/* Modal Content */}
-                    <div className="relative bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
-                        <div className="flex items-center justify-between p-6 border-b sticky top-0 bg-white">
-                            <div>
-                                <h2 className="text-xl font-semibold">Payroll Items</h2>
-                                <p className="text-sm text-gray-500">
-                                    {selectedPayroll.employee?.user.name} - {selectedPayroll.payroll_period?.period_name}
-                                </p>
-                            </div>
-                            <Button variant="ghost" size="sm" onClick={closeModal}>
-                                <X className="h-5 w-5" />
-                            </Button>
-                        </div>
-
-                        <div className="p-6">
-                            <div className="space-y-6">
-                                {/* Earnings Section */}
-                                {selectedPayroll.payroll_items?.some(item => item.type === 'earning') && (
-                                    <div>
-                                        <h3 className="text-lg font-medium mb-3 text-green-600">Earnings</h3>
-                                        <div className="bg-gray-50 rounded-lg p-4">
-                                            <div className="space-y-2">
-                                                {selectedPayroll.payroll_items
-                                                    ?.filter(item => item.type === 'earning')
-                                                    .map((item) => (
-                                                        <div key={item.id} className="flex justify-between items-center py-2 border-b last:border-0">
-                                                            <div>
-                                                                <span className="font-medium">{item.code}</span>
-                                                                {item.description && (
-                                                                    <p className="text-xs text-gray-500">{item.description}</p>
-                                                                )}
-                                                            </div>
-                                                            <span className="font-medium">{formatCurrency(item.amount)}</span>
-                                                        </div>
-                                                    ))}
-                                            </div>
-                                            <div className="mt-4 pt-3 border-t flex justify-between items-center font-semibold">
-                                                <span>Total Earnings</span>
-                                                <span className="text-green-600">{formatCurrency(selectedPayroll.gross_pay)}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Deductions Section */}
-                                {selectedPayroll.payroll_items?.some(item => item.type === 'deduction') && (
-                                    <div>
-                                        <h3 className="text-lg font-medium mb-3 text-red-600">Deductions</h3>
-                                        <div className="bg-gray-50 rounded-lg p-4">
-                                            <div className="space-y-2">
-                                                {selectedPayroll.payroll_items
-                                                    ?.filter(item => item.type === 'deduction')
-                                                    .map((item) => (
-                                                        <div key={item.id} className="flex justify-between items-center py-2 border-b last:border-0">
-                                                            <div>
-                                                                <span className="font-medium">{item.code}</span>
-                                                                {item.description && (
-                                                                    <p className="text-xs text-gray-500">{item.description}</p>
-                                                                )}
-                                                            </div>
-                                                            <span className="font-medium text-red-600">-{formatCurrency(item.amount)}</span>
-                                                        </div>
-                                                    ))}
-                                            </div>
-                                            <div className="mt-4 pt-3 border-t flex justify-between items-center font-semibold">
-                                                <span>Total Deductions</span>
-                                                <span className="text-red-600">-{formatCurrency(selectedPayroll.total_deduction)}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Net Pay Summary */}
-                                <div className="bg-blue-50 rounded-lg p-4">
-                                    <div className="flex justify-between items-center">
-                                        <div>
-                                            <span className="text-lg font-semibold">Net Pay</span>
-                                            <p className="text-xs text-gray-600">Take home pay</p>
-                                        </div>
-                                        <span className="text-2xl font-bold text-blue-600">
-                                            {formatCurrency(selectedPayroll.net_pay)}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="flex justify-end gap-3 p-6 border-t bg-gray-50 sticky bottom-0">
-                            <Button variant="outline" onClick={closeModal}>
-                                Close
-                            </Button>
-                            <Button>
-                                Download Payslip
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <PayrollPrintLayout
+                isOpen={isPrintModalOpen}
+                onClose={() => {
+                    setIsPrintModalOpen(false);
+                    setSelectedPrintPayrollId(null);
+                }}
+                payrollId={selectedPrintPayrollId}
+                fetchUrl={`/hr/payroll/${selectedPrintPayrollId}/print-data`}
+            />
         </HrLayout>
     );
 }

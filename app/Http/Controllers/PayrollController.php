@@ -218,6 +218,8 @@ class PayrollController extends Controller
         $payroll = Payroll::with(['employee.user', 'employee.position', 'employee.branch', 'employee.site', 'payrollPeriod', 'payrollItems'])
             ->findOrFail($id);
 
+         Gate::authorize('viewAny', $payroll);
+
         return response()->json([
             'id' => $payroll->id,
             'employee_name' => $payroll->employee->user->name,
