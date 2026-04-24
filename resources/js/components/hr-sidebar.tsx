@@ -4,7 +4,7 @@ import {
     HandCoins,
     Banknote,
     CircleUser,
-    Clipboard,
+    CalendarClock,
     Calendar,
     UserCog,
     Settings,
@@ -16,7 +16,7 @@ import {
     Coins,
     LayoutDashboard,
     Building2,
-    Handshake
+    Handshake,
 } from 'lucide-react';
 import AttendanceController from "@/actions/App/Http/Controllers/HrRole/HRAttendanceController";
 import HREmployeeController from '@/actions/App/Http/Controllers/HrRole/HREmployeeController';
@@ -38,14 +38,8 @@ import {
 import type { NavItem } from '@/types';
 import AppLogo from './app-logo';
 
-// HR-specific menu items
-const hrExpendituresItems: NavItem[] = [
-    {
-        title: 'Dashboard',
-        href: '/hr/dashboard',
-        icon: LayoutDashboard,
-    },
 
+const HROrganizationItems: NavItem[] = [
     {
         title: 'Branches',
         href: '/hr/branches',
@@ -56,36 +50,13 @@ const hrExpendituresItems: NavItem[] = [
         href: '/hr/positions',
         icon: UserCog,
     },
+];
 
-    {
-        title: 'Incentives',
-        href: IncentiveController.index(),
-        icon: Coins,
-    },
-    {
-        title: 'Deduction',
-        href: '/hr/deductions',
-        icon: HandCoins,
-    },
-    {
-        title: 'Contributions',
-        href: '/hr/contribution-versions',
-        icon: Handshake,
-    },
+const HRWorkforceManagementItems: NavItem[] = [
     {
         title: 'Employees',
         href: HREmployeeController.index(),
         icon: CircleUser,
-    },
-    {
-        title: 'Run Payroll',
-        href: PayrollController.index(),
-        icon: Banknote,
-    },
-    {
-        title: 'Payroll Period',
-        href: PayrollPeriodController.index(),
-        icon: Calendar,
     },
     {
         title: 'Attendance',
@@ -95,57 +66,47 @@ const hrExpendituresItems: NavItem[] = [
     {
         title: 'Application Leaves',
         href: '/hr/application-leave',
-        icon: Clipboard,
+        icon: CalendarClock,
     },
-    // {
-    //     title: 'Attendance Logs',
-    //     href: AttendanceController.attendanceLogs(),
-    //     icon: Contact,
-    // },
-    // {
-    //     title: 'Attendance Exception Stats',
-    //     href: AttendanceController.attendanceExceptionStats(),
-    //     icon: Calendar,
-    // },
-    // {
-    //     title: 'Attendance Period Stats',
-    //     href: AttendanceController.attendancePeriodStats(),
-    //     icon: BookUser,
-    // },
-
-    // {
-    //     title: 'Attendance Schedules',
-    //     href: AttendanceController.attendanceSchedules(),
-    //     icon: UserRoundCog,
-    // }
-
 ];
 
-const hrAccessControlItems: NavItem[] = [
-    //    {
-    //     title: 'Employees',
-    //     href: '/employees',
-    //     icon: CircleUser,
-    // },
-    // {
-    //     title: 'Application Leaves',
-    //     href: ApplicationLeaveController.index(),
-    //     icon: Clipboard,
-    // },
-    // {
-    //     title: 'Payroll Periods',
-    //     href: '/hr/payroll-periods',
-    //     icon: Calendar,
-    // },
-    // {
-    //     title: 'Positions',
-    //     href: '/hr/positions',
-    //     icon: UserCog,
-    // },
+const HRPayrollConfigurationItems: NavItem[] = [
+    {
+        title: 'Incentives',
+        href: IncentiveController.index(),
+        icon: Coins,
+    },
+    {
+        title: 'Deductions',
+        href: '/hr/deductions',
+        icon: HandCoins,
+    },
+    {
+        title: 'Contributions',
+        href: '/hr/contribution-versions',
+        icon: Handshake,
+    },
 ];
 
-const footerNavItems: NavItem[] = [
-
+const HRPayrollOperationsItems: NavItem[] = [
+    {
+        title: 'Payrolls',
+        href: PayrollController.index(),
+        icon: Banknote,
+    },
+    {
+        title: 'Payroll Periods',
+        href: PayrollPeriodController.index(),
+        icon: Calendar,
+    },
+];
+// HR-specific menu items
+const HRGeneralItems: NavItem[] = [
+    {
+        title: 'Dashboard',
+        href: '/hr/dashboard',
+        icon: LayoutDashboard,
+    },
 ];
 
 export function HrSidebar() {
@@ -153,8 +114,8 @@ export function HrSidebar() {
     const isExpanded = state === 'expanded';
 
     return (
-        <Sidebar collapsible="icon" className="border-r bg-white">
-            <SidebarHeader className="px-5">
+        <Sidebar collapsible="icon" className="border-r-1 bg-white">
+            <SidebarHeader className="px-5 sm:-ml-1 md:px-5 lg:px-2 lg:ml-2">
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton className="py-10" asChild>
@@ -166,8 +127,16 @@ export function HrSidebar() {
                 </SidebarMenu>
             </SidebarHeader>
 
-            <SidebarContent className={isExpanded ? 'px-5' : '-ml-3 px-5'}>
-                <NavMain items={hrExpendituresItems} label="Expenditures" />
+            <SidebarContent className={`
+                ${isExpanded ? 'px-5 transition-all duration-200 ease-in-out' : 'px-2 transition-all duration-200 ease-in-out'}
+            `}>
+
+                <NavMain items={HRGeneralItems} label="General" />
+                <NavMain items={HROrganizationItems} label="Organization" />
+                <NavMain items={HRWorkforceManagementItems} label="Workforce Management" />
+                <NavMain items={HRPayrollConfigurationItems} label="Payroll Configurations" />
+                <NavMain items={HRPayrollOperationsItems} label="Payroll Operations" />
+
             </SidebarContent>
 
             <SidebarFooter>

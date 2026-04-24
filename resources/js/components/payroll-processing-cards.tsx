@@ -231,7 +231,7 @@ export default function PayrollProcessingCards({
                 <CustomHeader
                     className="mx-4"
                     icon={<Banknote className="h-6 w-6" />}
-                    title="Run Payroll"
+                    title="Payrolls"
                     description="Manage and organize payroll periods with ease. Create, edit, and close payroll cycles."
                 />
 
