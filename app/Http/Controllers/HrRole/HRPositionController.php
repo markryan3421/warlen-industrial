@@ -65,7 +65,7 @@ class HRPositionController extends Controller
         Gate::authorize('create', Position::class);
         $position->create($request->validated());
 
-        return redirect()->route('hr.positions.index');
+        return redirect()->route('hr.positions.index')->with('success', 'Position created successfully.');
     }
 
     /**
@@ -94,7 +94,7 @@ class HRPositionController extends Controller
         Gate::authorize('update', $position);
         $updateposition->update($request->validated(), $position);
 
-        return redirect()->route('hr.positions.index');
+        return redirect()->route('hr.positions.index')->with('success', 'Position updated successfully.');
     }
 
     /**
@@ -105,6 +105,6 @@ class HRPositionController extends Controller
         Gate::authorize('delete', $position);
         $position->delete();
 
-        return redirect()->route('hr.positions.index');
+        return redirect()->route('hr.positions.index')->with('warning', 'Position deleted successfully.');
     }
 }

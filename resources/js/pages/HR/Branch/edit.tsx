@@ -1,4 +1,4 @@
-import { Head, useForm } from '@inertiajs/react';
+import { Head, router, useForm } from '@inertiajs/react';
 import { Building2, MapPin, Pencil, PlusCircle } from 'lucide-react';
 import { toast } from '@/components/custom-toast';
 import InputError from '@/components/input-error';
@@ -46,26 +46,26 @@ export default function Edit({ branch }: Props) {
     const submitBranch = (e: React.FormEvent) => {
         e.preventDefault();
         put(`/hr/branches/${branch.branch_slug}`, {
-            onSuccess: (page) => {
-                const successMessage = page.props.flash?.success || 'Branch updated successfully.';
-                toast.success(successMessage, {
-                    style: {
-                        backgroundColor: 'white',
-                        color: '#002dce',
-                        border: '1px solid #d5d8d5'
-                    }
-                });
-            },
-            onError: (errors) => {
-                const errorMessage = Object.values(errors).flat()[0] || 'Failed to update branch.';
-                toast.error(errorMessage, {
-                    style: {
-                        backgroundColor: 'white',
-                        color: 'red',
-                        border: '1px solid #d5d8d5'
-                    }
-                });
-            }
+            // onSuccess: (page) => {
+            //     const successMessage = page.props.flash?.success || 'Branch updated successfully.';
+            //     toast.success(successMessage, {
+            //         style: {
+            //             backgroundColor: 'white',
+            //             color: '#002dce',
+            //             border: '1px solid #d5d8d5'
+            //         }
+            //     });
+            // },
+            // onError: (errors) => {
+            //     const errorMessage = Object.values(errors).flat()[0] || 'Failed to update branch.';
+            //     toast.error(errorMessage, {
+            //         style: {
+            //             backgroundColor: 'white',
+            //             color: 'red',
+            //             border: '1px solid #d5d8d5'
+            //         }
+            //     });
+            // }
         });
     };
 
@@ -199,7 +199,7 @@ export default function Edit({ branch }: Props) {
                         <Button
                             type="button"
                             variant="outline"
-                            onClick={() => window.history.back()}
+                            onClick={() => router.get('/hr/branches')}
                             className="min-w-[100px]"
                         >
                             Cancel

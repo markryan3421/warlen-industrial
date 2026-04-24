@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Branch\StoreBranchRequest;
 use App\Http\Requests\Branch\UpdateBranchRequest;
 use App\Models\Branch;
+use App\Models\Site;
 use App\Repository\BranchRepository;
 use App\Traits\HasPaginatedIndex;
 use Illuminate\Http\Request;
@@ -93,9 +94,47 @@ class HRBranchController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show(Branch $branch)
     {
-        //
+       // $branch = Branch::where('branch_slug', $branch->branch_slug)->firstOrFail();
+        Gate::authorize('view', $branch);
+
+        // Get all sites for this branch with employee counts
+        $sites = Site::where('branch_id', $branch->id)
+            ->withCount('employees')
+            ->get();
+
+        // Load employees for each site
+        $transformed = $sites->map(function ($site) {
+            $previewEmployees = $site->employees()
+                ->select('id', 'employee_number', 'user_id', 'avatar', 'slug_emp')
+                ->with('user:id,name,email')
+                ->get();
+
+            return [
+                'id' => $site->id,
+                'site_name' => $site->site_name,
+                'employees_count' => $site->employees_count,
+                'employees_preview' => $previewEmployees->map(fn($e) => [
+                    'id' => $e->id,
+                    'employee_number' => $e->employee_number,
+                    'avatar' => $e->avatar,
+                    'user' => $e->user,
+                    'slug_emp' => $e->slug_emp,
+                ])->values(),
+            ];
+        });
+
+        return Inertia::render('HR/Branch/show', [
+            'branch' => [
+                'id' => $branch->id,
+                'branch_name' => $branch->branch_name,
+                'branch_slug' => $branch->branch_slug,
+                'branch_address' => $branch->branch_address,
+                'sites_count' => $sites->count(),
+            ],
+            'sites' => $transformed,
+        ]);
     }
 
     /**
@@ -161,6 +200,6 @@ class HRBranchController extends Controller
 
         $this->cacheForget('branches');
 
-        return to_route('hr.branches.index')->with('success', 'Branch and site deleted successfully.');
+        return to_route('hr.branches.index')->with('warning', 'Branch and site deleted successfully.');
     }
 }

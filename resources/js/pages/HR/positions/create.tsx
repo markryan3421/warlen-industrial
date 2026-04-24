@@ -36,14 +36,14 @@ export default function Create() {
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
         post('/hr/positions', {
-            onSuccess: (page: { props: any; }) => {
-                const successMessage = (page.props as any).flash?.success || 'Position created successfully.';
-                toast.success(successMessage);
-            },
-            onError: (errors: { [s: string]: unknown; } | ArrayLike<unknown>) => {
-                const errorMessage = String(Object.values(errors).flat()[0]) || 'Failed to create position.';
-                toast.error(errorMessage);
-            },
+            // onSuccess: (page: { props: any; }) => {
+            //     const successMessage = (page.props as any).flash?.success || 'Position created successfully.';
+            //     toast.success(successMessage);
+            // },
+            // onError: (errors: { [s: string]: unknown; } | ArrayLike<unknown>) => {
+            //     const errorMessage = String(Object.values(errors).flat()[0]) || 'Failed to create position.';
+            //     toast.error(errorMessage);
+            // },
         });
     }
 
@@ -240,7 +240,7 @@ export default function Create() {
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ duration: 0.3, delay: 0.5 }}
                             >
-                                <Link href="/positions" className="w-full sm:w-auto">
+                                <Link href="/hr/positions" className="w-full sm:w-auto">
                                     <Button
                                         variant="outline"
                                         className="w-full gap-2 hover:bg-destructive/10 hover:text-destructive hover:border-destructive transition-all duration-200"
