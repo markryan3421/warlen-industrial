@@ -19,13 +19,13 @@ type Props = {
 };
 
 const INTER = "'Inter', sans-serif";
-const ACCENT_COLOR = '#CC570D';      // orange (kept for contrast)
-const STEEL_BLUE = '#093B92';        // dark blue button
-const CARD_BG = '#fefaf5';           // dirty white / off-white card
-const BODY_BG = '#f1ede8';           // slightly warmer dirty white background
-const BORDER_LIGHT = '#e2dbd1';      // muted beige/gray border
-const TEXT_DARK = '#2c2b28';         // dark warm gray for headings
-const TEXT_MUTED = '#6b6258';        // muted dirty gray for secondary text
+const ACCENT_COLOR = '#CC570D';
+const STEEL_BLUE = '#093B92';
+const CARD_BG = '#fefaf5';           // dirty white card
+const BODY_BG = '#f1ede8';           // dirty white background
+const BORDER_LIGHT = '#e2dbd1';
+const TEXT_DARK = '#2c2b28';
+const TEXT_MUTED = '#6b6258';
 
 const features = [
     { label: 'Automated Payroll Calculation', color: '#10b981' },
@@ -86,7 +86,7 @@ export default function Login({ status }: Props) {
         <>
             <Head title="DEKA Payroll Management System" />
             <style>{`
-                /* Prevent autofill background color change - dirty white theme */
+                /* Prevent autofill background color change */
                 input:-webkit-autofill,
                 input:-webkit-autofill:hover,
                 input:-webkit-autofill:focus,
@@ -95,6 +95,35 @@ export default function Login({ status }: Props) {
                     -webkit-text-fill-color: ${TEXT_DARK} !important;
                     caret-color: ${TEXT_DARK} !important;
                     transition: background-color 5000s ease-in-out 0s;
+                }
+
+                /* Custom light‑theme checkbox */
+                input[type="checkbox"] {
+                    appearance: none;
+                    width: 18px;
+                    height: 18px;
+                    background: #fff;
+                    border: 1.5px solid ${BORDER_LIGHT};
+                    border-radius: 4px;
+                    cursor: pointer;
+                    position: relative;
+                    transition: all 0.2s ease;
+                }
+                input[type="checkbox"]:checked {
+                    background: ${ACCENT_COLOR};
+                    border-color: ${ACCENT_COLOR};
+                }
+                input[type="checkbox"]:checked::after {
+                    content: '✓';
+                    position: absolute;
+                    color: white;
+                    font-size: 12px;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                }
+                input[type="checkbox"]:hover {
+                    border-color: ${ACCENT_COLOR};
                 }
             `}</style>
             <div
@@ -107,8 +136,6 @@ export default function Login({ status }: Props) {
                     backgroundColor: BODY_BG,
                 }}
             >
-                {/* No background image, just the dirty white base */}
-
                 <div style={{ position: 'absolute', top: '28px', left: '36px', zIndex: 20 }}>
                     <img src="/images/dekalogo.png" style={{ width: '52px', height: '52px', objectFit: 'contain', opacity: 0.9 }} alt="DEKA" />
                 </div>
@@ -122,7 +149,7 @@ export default function Login({ status }: Props) {
                             </span>
                         </div>
                         <h1 style={{ fontFamily: INTER, fontWeight: 1000, fontSize: 'clamp(2rem, 4vw, 4rem)', lineHeight: 1.2, margin: '0 0 0.5rem 0', color: TEXT_DARK }}>
-                            <span style={{ color: STEEL_BLUE }}>Warlen Industrial</span><br />
+                            <span style={{ color: STEEL_BLUE }}>WARLEN INDUSTRIAL SALES CORP.</span>{' '}
                             <span style={{ color: ACCENT_COLOR }}>DEKA Sales</span>
                         </h1>
                         <h2 style={{ fontFamily: INTER, fontWeight: 800, fontSize: 'clamp(1rem, 3vw, 3rem)', color: '#4a4238', margin: '0 0 1rem 0' }}>Payroll Management System</h2>
@@ -132,7 +159,7 @@ export default function Login({ status }: Props) {
                         </p>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
                             {features.map(({ label, color }) => (
-                                <span key={label} style={{ fontFamily: INTER, fontWeight: 500, fontSize: '0.75rem', color, border: `1px solid ${color}80`, borderRadius: '32px', padding: '5px 16px', background: 'rgba(255,250,240,0.8)' }}>
+                                <span key={label} style={{ fontFamily: INTER, fontWeight: 600, fontSize: '0.75rem', color: color, border: `2px solid ${color}`, borderRadius: '32px', padding: '5px 14px', background: 'rgba(255,250,240,0.9)', letterSpacing: '0.3px' }}>
                                     {label}
                                 </span>
                             ))}
@@ -225,8 +252,8 @@ export default function Login({ status }: Props) {
                                         </div>
 
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
-                                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                                                <input type="checkbox" name="remember" style={{ accentColor: ACCENT_COLOR, cursor: 'pointer' }} />
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                                                <input type="checkbox" name="remember" />
                                                 <span style={{ fontSize: '0.8rem', color: TEXT_MUTED }}>Keep session</span>
                                             </label>
                                             <TextLink
