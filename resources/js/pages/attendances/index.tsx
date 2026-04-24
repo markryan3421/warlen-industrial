@@ -804,7 +804,7 @@ export default function AttendanceManagement({
                             className="w-full sm:w-full"
                         >
                             <TabsList className="bg-muted/50 p-1 rounded-full shadow-sm flex mr-auto">
-                                <TabsTrigger value="table" className="rounded-full px-6">
+                                <TabsTrigger value="table" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:cursor-default data-[state=active]:text-primary-foreground rounded-lg transition-all cursor-pointer">
                                     <Sheet className="h-4 w-4 mr-2" />
                                     Table
                                     {activeSubTab === 'table' && !isTableLoading && current.data.length > 0 && (
@@ -815,7 +815,7 @@ export default function AttendanceManagement({
                                 </TabsTrigger>
                                 <TabsTrigger
                                     value={activeMainTab === 'logs' ? 'timeline' : 'calendar'}
-                                    className="rounded-full px-6"
+                                    className="rounded-full flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:cursor-default data-[state=active]:text-primary-foreground rounded-lg transition-all cursor-pointer"
                                 >
                                     {activeMainTab === 'logs' ? (
                                         <>
