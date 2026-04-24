@@ -50,9 +50,9 @@ export const TableSkeleton = ({
                         <thead>
                             <tr className="border-b border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-800/80">
                                 {/* # column */}
-                                <th className="w-14 px-5 py-3 text-center">
+                                {/* <th className="w-14 px-5 py-3 text-center">
                                     <div className="h-3 w-6 bg-gray-200 dark:bg-gray-700 rounded mx-auto" style={animationStyle} />
-                                </th>
+                                </th> */}
                                 
                                 {columns.map((col, index) => (
                                     <th
@@ -73,9 +73,9 @@ export const TableSkeleton = ({
                                     className="border-b border-slate-100 dark:border-slate-800 last:border-0 bg-white dark:bg-slate-900"
                                 >
                                     {/* Row index */}
-                                    <td className="px-5 py-3.5 text-center align-middle">
+                                    {/* <td className="px-5 py-3.5 text-center align-middle">
                                         <div className="h-7 w-7 bg-gray-200 dark:bg-gray-700 rounded-lg mx-auto" style={animationStyle} />
-                                    </td>
+                                    </td> */}
                                     
                                     {/* Data cells */}
                                     {columns.map((_, colIndex) => (

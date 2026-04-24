@@ -139,6 +139,10 @@ export default function Index({
     const [selectedPositions, setSelectedPositions] = useState<string[]>(
         filters.positions ? filters.positions.split(',').filter(Boolean) : []
     );
+
+    const [isFiltering, setIsFiltering] = useState(false);
+    const [isTableLoading, setIsTableLoading] = useState(true);
+    const [isInitialLoad, setIsInitialLoad] = useState(true);
     const [selectedBranch, setSelectedBranch] = useState(filters.branch ?? '');
     const [selectedSite, setSelectedSite] = useState(filters.site ?? '');
     const [status, setStatus] = useState<string>(filters.status ?? '');

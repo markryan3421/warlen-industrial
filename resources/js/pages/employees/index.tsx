@@ -845,7 +845,7 @@ export default function Index({
                                         </div>
                                     )}
                                     <CustomTable
-                                        title="Active Employee Lists"
+                                        title="Employee Lists"
                                         columns={EmployeesTableConfig.columns}
                                         actions={EmployeesTableConfig.actions}
                                         data={employees.data}

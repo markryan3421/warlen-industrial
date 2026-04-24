@@ -13,9 +13,9 @@ export default ({ children, breadcrumbs, title, ...props }: AppLayoutProps & { t
                 <Toaster
                     position="top-right"
                     expand={false}
-                    closeButton
+                    // closeButton
                 />
-                <div className="container mx-auto p-6">
+                <div className="container mx-auto">
                     {children}
                 </div>
                 

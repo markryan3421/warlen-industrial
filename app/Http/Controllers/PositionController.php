@@ -116,7 +116,7 @@ class PositionController extends Controller
         $this->cacheForget(['employees']);
 
        // DB::commit();
-        return redirect()->route('positions.index')->with('error', 'Position deleted successfully.');
+        return redirect()->route('positions.index')->with('warning', 'Position deleted successfully.');
     }
     
 }

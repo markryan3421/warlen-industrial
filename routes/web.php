@@ -138,6 +138,11 @@ Route::middleware(['auth', 'hr', 'auth.session', 'throttle:limit-actions'])->gro
 	//     'as' => 'hr'
 	// ]);
 
+	Route::get('/hr/employee-contribution-settings', [EmployeeContributionSettingsController::class, 'getSettingsByVersion']);
+	Route::get('/hr/employees/list', [EmployeeContributionSettingsController::class, 'getEmployees']);
+	// Bulk save settings
+	Route::post('/hr/employee-contribution-settings/bulk', [EmployeeContributionSettingsController::class, 'bulkStore']);
+
 	Route::get('/hr/payroll/{id}/print-data', [HrPayrollController::class, 'getPrintData'])->name('hr.payroll.print-data');
 
 	Route::resource('hr/incentives', HRIncentiveController::class)->except(['show'])->names([
@@ -176,13 +181,14 @@ Route::middleware(['auth', 'hr', 'auth.session', 'throttle:limit-actions'])->gro
 		'destroy' => 'hr.employees.destroy',
 	]);
 
-	Route::resource('hr/branches', HRBranchController::class)->except(['show'])->names([
+	Route::resource('hr/branches', HRBranchController::class)->names([
 		'index' => 'hr.branches.index',
 		'create' => 'hr.branches.create',
 		'store' => 'hr.branches.store',
 		'edit' => 'hr.branches.edit',
 		'update' => 'hr.branches.update',
 		'destroy' => 'hr.branches.destroy',
+		'show' => 'hr.branches.show',
 	]);
 
 	Route::resource('hr/positions', HRPositionController::class)->except(['show'])->names([

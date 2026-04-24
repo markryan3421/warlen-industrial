@@ -1,4 +1,4 @@
-import { Head, useForm } from '@inertiajs/react';
+import { Head, router, useForm } from '@inertiajs/react';
 import { Building2, MapPin, PlusCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -45,26 +45,26 @@ export default function Create() {
     function submitBranch(e: React.FormEvent) {
         e.preventDefault();
         post(store().url, {
-            onSuccess: (page) => {
-                const successMessage = page.props.flash?.success || 'Branch created successfully.'
-                toast.success(successMessage, {
-                    style: {
-                        backgroundColor: 'white',
-                        color: '#00ca00',
-                        border: '1px solid #d5d8d5'
-                    }
-                });
-            },
-            onError: (errors) => {
-                const errorMessage = Object.values(errors).flat()[0] || 'Failed to create branch.';
-                toast.error(errorMessage, {
-                    style: {
-                        backgroundColor: 'white',
-                        color: '#ff0000',
-                        border: '1px solid #d5d8d5'
-                    }
-                });
-            }
+            // onSuccess: (page) => {
+            //     const successMessage = page.props.flash?.success || 'Branch created successfully.'
+            //     toast.success(successMessage, {
+            //         style: {
+            //             backgroundColor: 'white',
+            //             color: '#00ca00',
+            //             border: '1px solid #d5d8d5'
+            //         }
+            //     });
+            // },
+            // onError: (errors) => {
+            //     const errorMessage = Object.values(errors).flat()[0] || 'Failed to create branch.';
+            //     toast.error(errorMessage, {
+            //         style: {
+            //             backgroundColor: 'white',
+            //             color: '#ff0000',
+            //             border: '1px solid #d5d8d5'
+            //         }
+            //     });
+            // }
         });
     }
 
@@ -192,7 +192,7 @@ export default function Create() {
                         <Button
                             type="button"
                             variant="outline"
-                            onClick={() => window.history.back()}
+                            onClick={() => router.get('/hr/branches')}
                             className="min-w-[100px] gap-2 hover:cursor-pointer"
                         >
                             Cancel

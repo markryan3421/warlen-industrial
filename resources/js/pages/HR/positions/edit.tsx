@@ -229,7 +229,7 @@ export default function Update({ position }: PageProps) {
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ duration: 0.3, delay: 0.5 }}
                             >
-                                <Link href="/positions" className="w-full sm:w-auto">
+                                <Link href="/hr/positions" className="w-full sm:w-auto">
                                     <Button
                                         variant="outline"
                                         className="w-full gap-2 hover:bg-destructive/10 hover:text-destructive hover:border-destructive transition-all duration-200"

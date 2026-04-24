@@ -1,5 +1,5 @@
 import { Head, useForm, router } from '@inertiajs/react';
-import { Calendar, Sheet, ChartSpline, Clock, ScrollText, Upload, Loader2 } from 'lucide-react';
+import { Calendar, Sheet, ChartSpline, Clock, ScrollText, Upload, Loader2, Search } from 'lucide-react';
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 
 // Components
@@ -241,16 +241,35 @@ export default function AttendanceManagement({
     const [activeMainTab, setActiveMainTab] = useState(currentTab);
     const [activeSubTab, setActiveSubTab] = useState<'table' | 'timeline' | 'calendar'>('table');
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [isTableLoading, setIsTableLoading] = useState(false);
+    const [isTableLoading, setIsTableLoading] = useState(true);
     const [localSearch, setLocalSearch] = useState(filters.search || '');
     const [animateHeader, setAnimateHeader] = useState(false);
+    const [refreshKey, setRefreshKey] = useState(0);
 
     const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const initialLoadRef = useRef(true);
 
     const { data, setData } = useForm({
         search: filters.search || '',
         perPage: filters.perPage || '10',
     });
+
+    // Refresh data function
+    const refreshData = useCallback(() => {
+        setIsTableLoading(true);
+        setRefreshKey(prev => prev + 1);
+
+        router.reload({
+            preserveState: false,
+            preserveScroll: true,
+            only: ['logs', 'exceptionStats', 'schedules', 'periodStats', 'totalCounts', 'filteredCounts'],
+            onFinish: () => {
+                setTimeout(() => {
+                    setIsTableLoading(false);
+                }, 300);
+            }
+        });
+    }, []);
 
     // ==========================================================================
     // SYNC STATE WITH PROPS
@@ -275,37 +294,141 @@ export default function AttendanceManagement({
     }, [filters.perPage, data.perPage, setData]);
 
     // ==========================================================================
-    // HANDLE LOADING STATE - FIXED
+    // HANDLE LOADING STATE
     // ==========================================================================
 
+    const getCurrentData = useCallback(() => {
+        switch (activeMainTab) {
+            case 'logs':
+                return {
+                    data: logs?.data || [],
+                    pagination: {
+                        current_page: logs?.current_page || 1,
+                        last_page: logs?.last_page || 1,
+                        per_page: logs?.per_page || parseInt(data.perPage),
+                        total: logs?.total || 0,
+                        from: logs?.from || 0,
+                        to: logs?.to || 0,
+                        links: logs?.links || [],
+                    },
+                    config: AttendanceLogsTableConfig,
+                    title: 'Attendance Logs',
+                    totalCount: totalCounts?.logs || logs?.total || 0,
+                    filteredCount: filteredCounts?.logs || logs?.data?.length || 0,
+                };
+            case 'exceptions':
+                return {
+                    data: exceptionStats?.data || [],
+                    pagination: {
+                        current_page: exceptionStats?.current_page || 1,
+                        last_page: exceptionStats?.last_page || 1,
+                        per_page: exceptionStats?.per_page || parseInt(data.perPage),
+                        total: exceptionStats?.total || 0,
+                        from: exceptionStats?.from || 0,
+                        to: exceptionStats?.to || 0,
+                        links: exceptionStats?.links || [],
+                    },
+                    config: AttendanceExceptionStatsTableConfig,
+                    title: 'Attendance Exception Stats',
+                    totalCount: totalCounts?.exceptionStats || exceptionStats?.total || 0,
+                    filteredCount: filteredCounts?.exceptionStats || exceptionStats?.data?.length || 0,
+                };
+            case 'schedules':
+                return {
+                    data: schedules?.data || [],
+                    pagination: {
+                        current_page: schedules?.current_page || 1,
+                        last_page: schedules?.last_page || 1,
+                        per_page: schedules?.per_page || parseInt(data.perPage),
+                        total: schedules?.total || 0,
+                        from: schedules?.from || 0,
+                        to: schedules?.to || 0,
+                        links: schedules?.links || [],
+                    },
+                    config: AttendanceSchedulesTableConfig,
+                    title: 'Attendance Schedules',
+                    totalCount: totalCounts?.schedules || schedules?.total || 0,
+                    filteredCount: filteredCounts?.schedules || schedules?.data?.length || 0,
+                };
+            case 'periods':
+                return {
+                    data: periodStats?.data || [],
+                    pagination: {
+                        current_page: periodStats?.current_page || 1,
+                        last_page: periodStats?.last_page || 1,
+                        per_page: periodStats?.per_page || parseInt(data.perPage),
+                        total: periodStats?.total || 0,
+                        from: periodStats?.from || 0,
+                        to: periodStats?.to || 0,
+                        links: periodStats?.links || [],
+                    },
+                    config: AttendancePeriodStatsTableConfig,
+                    title: 'Attendance Period Stats',
+                    totalCount: totalCounts?.periodStats || periodStats?.total || 0,
+                    filteredCount: filteredCounts?.periodStats || periodStats?.data?.length || 0,
+                };
+            default:
+                return {
+                    data: [],
+                    pagination: {
+                        current_page: 1,
+                        last_page: 1,
+                        per_page: parseInt(data.perPage),
+                        total: 0,
+                        from: 0,
+                        to: 0,
+                        links: [],
+                    },
+                    config: AttendanceLogsTableConfig,
+                    title: 'Attendance Management',
+                    totalCount: 0,
+                    filteredCount: 0,
+                };
+        }
+    }, [activeMainTab, data.perPage, logs, exceptionStats, schedules, periodStats, totalCounts, filteredCounts]);
+
+    // Effect for handling initial load and navigation loading states
     useEffect(() => {
         let timeoutId: NodeJS.Timeout;
-        let isNavigating = false;
         let isMounted = true;
 
         const onStart = () => {
             if (!isMounted) return;
-            isNavigating = true;
             if (timeoutId) clearTimeout(timeoutId);
             setIsTableLoading(true);
         };
 
         const onFinish = () => {
             if (!isMounted) return;
-            // Clear any existing timeout
             if (timeoutId) clearTimeout(timeoutId);
 
-            // Only set loading false after a short delay to ensure DOM is updated
             timeoutId = setTimeout(() => {
-                if (isMounted && isNavigating) {
+                if (isMounted) {
                     setIsTableLoading(false);
-                    isNavigating = false;
+                    initialLoadRef.current = false;
                 }
             }, 150);
         };
 
         const removeStartListener = router.on('start', onStart);
         const removeFinishListener = router.on('finish', onFinish);
+
+        const currentData = getCurrentData();
+        if (currentData.data.length > 0 || currentData.totalCount > 0) {
+            timeoutId = setTimeout(() => {
+                if (isMounted) {
+                    setIsTableLoading(false);
+                    initialLoadRef.current = false;
+                }
+            }, 300);
+        } else if (currentData.data.length === 0 && initialLoadRef.current) {
+            timeoutId = setTimeout(() => {
+                if (isMounted && initialLoadRef.current) {
+                    setIsTableLoading(false);
+                    initialLoadRef.current = false;
+                }
+            }, 1000);
+        }
 
         return () => {
             isMounted = false;
@@ -315,21 +438,31 @@ export default function AttendanceManagement({
         };
     }, []);
 
+    // Effect to watch for data changes
+    useEffect(() => {
+        if (isTableLoading && initialLoadRef.current) {
+            const currentData = getCurrentData();
+            if (currentData.data.length > 0 || currentData.totalCount > 0) {
+                const timer = setTimeout(() => {
+                    setIsTableLoading(false);
+                    initialLoadRef.current = false;
+                }, 100);
+                return () => clearTimeout(timer);
+            }
+        }
+    }, [logs, exceptionStats, schedules, periodStats]);
+
     // ==========================================================================
-    // TAB CHANGE HANDLER - INSTANT SKELETON WITH HEADER ANIMATION
+    // TAB CHANGE HANDLER
     // ==========================================================================
 
     const handleMainTabChange = useCallback((tabId: string) => {
         if (tabId === activeMainTab) return;
 
-        // Trigger header animation
         setAnimateHeader(false);
         setTimeout(() => setAnimateHeader(true), 10);
-
-        // Show skeleton immediately
         setIsTableLoading(true);
 
-        // Build URL with reset to page 1
         const queryString: Record<string, string> = {
             tab: tabId,
             perPage: data.perPage,
@@ -340,42 +473,36 @@ export default function AttendanceManagement({
             queryString.search = localSearch.trim();
         }
 
-        // Navigate
         router.get('/hr/attendances', queryString, {
             preserveState: true,
             preserveScroll: true,
-            onSuccess: () => {
-                // Success is handled by onFinish
-            },
-            onError: () => {
-                // If error occurs, hide loading
-                setIsTableLoading(false);
+            onFinish: () => {
+                setTimeout(() => {
+                    setIsTableLoading(false);
+                }, 150);
             }
         });
 
-        // Update active tab immediately for UI responsiveness
         setActiveMainTab(tabId);
     }, [activeMainTab, data.perPage, localSearch]);
 
     const handleSubTabChange = useCallback((value: string) => {
         if (value === activeSubTab) return;
-        // Simply change the sub-tab without loading state since no data fetch is needed
+        setIsTableLoading(true);
         setActiveSubTab(value as typeof activeSubTab);
+        setTimeout(() => {
+            setIsTableLoading(false);
+        }, 300);
     }, [activeSubTab]);
 
-    // Cleanup loading state on unmount
     useEffect(() => {
-        return () => {
-            setIsTableLoading(false);
-        };
+        return () => setIsTableLoading(false);
     }, []);
 
-    // Reset sub-tab when main tab changes
     useEffect(() => {
         setActiveSubTab('table');
     }, [activeMainTab]);
 
-    // Trigger header animation on initial load
     useEffect(() => {
         setTimeout(() => setAnimateHeader(true), 100);
     }, []);
@@ -393,7 +520,6 @@ export default function AttendanceManagement({
         }
 
         searchTimer.current = setTimeout(() => {
-            // Only show loading if search actually changed
             if (value !== localSearch) {
                 setIsTableLoading(true);
             }
@@ -411,6 +537,11 @@ export default function AttendanceManagement({
             router.get('/hr/attendances', queryString, {
                 preserveState: true,
                 preserveScroll: true,
+                onFinish: () => {
+                    setTimeout(() => {
+                        setIsTableLoading(false);
+                    }, 150);
+                }
             });
         }, 500);
     }, [activeMainTab, data.perPage, localSearch]);
@@ -432,6 +563,11 @@ export default function AttendanceManagement({
         router.get('/hr/attendances', queryString, {
             preserveState: true,
             preserveScroll: true,
+            onFinish: () => {
+                setTimeout(() => {
+                    setIsTableLoading(false);
+                }, 150);
+            }
         });
     }, [activeMainTab, localSearch]);
 
@@ -447,6 +583,11 @@ export default function AttendanceManagement({
         }, {
             preserveState: true,
             preserveScroll: true,
+            onFinish: () => {
+                setTimeout(() => {
+                    setIsTableLoading(false);
+                }, 150);
+            }
         });
     }, [activeMainTab]);
 
@@ -504,7 +645,7 @@ export default function AttendanceManagement({
         },
         {
             id: 'exceptions',
-            label: 'Exception Stats',
+            label: 'Attendance Exception Stats',
             icon: ChartSpline,
             count: totalCounts?.exceptionStats || exceptionStats?.total || 0,
             data: exceptionStats,
@@ -513,7 +654,7 @@ export default function AttendanceManagement({
         },
         {
             id: 'schedules',
-            label: 'Schedules',
+            label: 'Attendance Schedules',
             icon: Clock,
             count: totalCounts?.schedules || schedules?.total || 0,
             data: schedules,
@@ -522,7 +663,7 @@ export default function AttendanceManagement({
         },
         {
             id: 'periods',
-            label: 'Period Stats',
+            label: 'Attendance Period Stats',
             icon: Calendar,
             count: totalCounts?.periodStats || periodStats?.total || 0,
             data: periodStats,
@@ -535,106 +676,8 @@ export default function AttendanceManagement({
     // HELPER FUNCTIONS
     // ==========================================================================
 
-    const getCurrentData = useCallback(() => {
-        switch (activeMainTab) {
-            case 'logs': {
-                return {
-                    data: logs?.data || [],
-                    pagination: {
-                        current_page: logs?.current_page || 1,
-                        last_page: logs?.last_page || 1,
-                        per_page: logs?.per_page || parseInt(data.perPage),
-                        total: logs?.total || 0,
-                        from: logs?.from || 0,
-                        to: logs?.to || 0,
-                        links: logs?.links || [],
-                    },
-                    config: AttendanceLogsTableConfig,
-                    title: 'Attendance Logs',
-                    totalCount: totalCounts?.logs || logs?.total || 0,
-                    filteredCount: filteredCounts?.logs || logs?.data?.length || 0,
-                };
-            }
-            case 'exceptions': {
-                return {
-                    data: exceptionStats?.data || [],
-                    pagination: {
-                        current_page: exceptionStats?.current_page || 1,
-                        last_page: exceptionStats?.last_page || 1,
-                        per_page: exceptionStats?.per_page || parseInt(data.perPage),
-                        total: exceptionStats?.total || 0,
-                        from: exceptionStats?.from || 0,
-                        to: exceptionStats?.to || 0,
-                        links: exceptionStats?.links || [],
-                    },
-                    config: AttendanceExceptionStatsTableConfig,
-                    title: 'Attendance Exception Stats',
-                    totalCount: totalCounts?.exceptionStats || exceptionStats?.total || 0,
-                    filteredCount: filteredCounts?.exceptionStats || exceptionStats?.data?.length || 0,
-                };
-            }
-            case 'schedules': {
-                return {
-                    data: schedules?.data || [],
-                    pagination: {
-                        current_page: schedules?.current_page || 1,
-                        last_page: schedules?.last_page || 1,
-                        per_page: schedules?.per_page || parseInt(data.perPage),
-                        total: schedules?.total || 0,
-                        from: schedules?.from || 0,
-                        to: schedules?.to || 0,
-                        links: schedules?.links || [],
-                    },
-                    config: AttendanceSchedulesTableConfig,
-                    title: 'Attendance Schedules',
-                    totalCount: totalCounts?.schedules || schedules?.total || 0,
-                    filteredCount: filteredCounts?.schedules || schedules?.data?.length || 0,
-                };
-            }
-            case 'periods': {
-                return {
-                    data: periodStats?.data || [],
-                    pagination: {
-                        current_page: periodStats?.current_page || 1,
-                        last_page: periodStats?.last_page || 1,
-                        per_page: periodStats?.per_page || parseInt(data.perPage),
-                        total: periodStats?.total || 0,
-                        from: periodStats?.from || 0,
-                        to: periodStats?.to || 0,
-                        links: periodStats?.links || [],
-                    },
-                    config: AttendancePeriodStatsTableConfig,
-                    title: 'Period Statistics',
-                    totalCount: totalCounts?.periodStats || periodStats?.total || 0,
-                    filteredCount: filteredCounts?.periodStats || periodStats?.data?.length || 0,
-                };
-            }
-            default:
-                return {
-                    data: [],
-                    pagination: {
-                        current_page: 1,
-                        last_page: 1,
-                        per_page: parseInt(data.perPage),
-                        total: 0,
-                        from: 0,
-                        to: 0,
-                        links: [],
-                    },
-                    config: AttendanceLogsTableConfig,
-                    title: 'Attendance Management',
-                    totalCount: 0,
-                    filteredCount: 0,
-                };
-        }
-    }, [activeMainTab, data.perPage, logs, exceptionStats, schedules, periodStats, totalCounts, filteredCounts]);
-
-    const getCurrentMainTab = useCallback(() => {
-        return mainTabs.find(t => t.id === activeMainTab) || mainTabs[0];
-    }, [activeMainTab, mainTabs]);
-
     const current = getCurrentData();
-    const currentMainTab = getCurrentMainTab();
+    const currentMainTab = mainTabs.find(t => t.id === activeMainTab) || mainTabs[0];
 
     const getSkeletonColumns = useCallback(() => {
         switch (activeMainTab) {
@@ -712,7 +755,6 @@ export default function AttendanceManagement({
                 .pp-header { 
                     animation: headerReveal 0.35s cubic-bezier(0.22,1,0.36,1) both; 
                 }
-                /* Header animation trigger class */
                 .header-animate {
                     animation: headerReveal 0.35s cubic-bezier(0.22,1,0.36,1) both;
                 }
@@ -720,27 +762,24 @@ export default function AttendanceManagement({
 
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4 overflow-hidden mx-4">
                 {/* Header Section */}
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        {/* Header Section with animation */}
-                        <div className={animateHeader ? 'header-animate' : 'opacity-0'}>
-                            <CustomHeader
-                                icon={
-                                    activeMainTab === 'logs' ? <ScrollText className="h-6 w-6 text-white" /> :
-                                        activeMainTab === 'exceptions' ? <ChartSpline className="h-6 w-6 text-white" /> :
-                                            activeMainTab === 'schedules' ? <Clock className="h-6 w-6 text-white" /> :
-                                                <Calendar className="h-6 w-6 text-white" />
-                                }
-                                title={currentMainTab.label}
-                                description={currentMainTab.description}
-                            />
-                        </div>
+                <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 rounded-xl">
+                    <div className={`${animateHeader ? 'header-animate' : 'opacity-0'} w-full lg:w-auto`}>
+                        <CustomHeader
+                            icon={
+                                activeMainTab === 'logs' ? <ScrollText className="h-6 w-6 text-white" /> :
+                                    activeMainTab === 'exceptions' ? <ChartSpline className="h-6 w-6 text-white" /> :
+                                        activeMainTab === 'schedules' ? <Clock className="h-6 w-6 text-white" /> :
+                                            <Calendar className="h-6 w-6 text-white" />
+                            }
+                            title={currentMainTab.label}
+                            description={currentMainTab.description}
+                        />
                     </div>
 
                     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                         <DialogTrigger asChild>
-                            <Button className="flex items-center lg:gap-2 pp-header">
-                                <Upload className="h-4 w-4" />
+                            <Button className="flex items-center ml-auto -mt-3 lg:w-auto justify-center lg:ml-auto pp-header">
+                                <Upload className="h-4 w-4 mr-2" />
                                 Import Attendance
                             </Button>
                         </DialogTrigger>
@@ -752,11 +791,21 @@ export default function AttendanceManagement({
                                 </DialogDescription>
                             </DialogHeader>
                             <div className="mt-4">
-                                <BiometricImport />
+                                <BiometricImport
+                                    onSuccess={() => {
+                                        setIsDialogOpen(false);
+                                        setIsTableLoading(true);
+                                        setTimeout(() => {
+                                            refreshData();
+                                        }, 100);
+                                    }}
+                                />
                             </div>
                         </DialogContent>
                     </Dialog>
                 </div>
+
+
 
                 {/* Main Tabs Navigation */}
                 <div className="border-b border-gray-200 pp-row">
@@ -768,18 +817,18 @@ export default function AttendanceManagement({
                                     <TabsTrigger
                                         key={tab.id}
                                         value={tab.id}
-                                        className="px-5 py-3 data-[state=active]:border-b-4 data-[state=active]:rounded-t-lg data-[state=active]:border-primary rounded-none bg-transparent data-[state=active]:shadow-none data-[state=active]:text-primary data-[state=inactive]:text-gray-500"
+                                        className="px-3 md:px-5 py-3 mr-0.5 border-b-2 data-[state=active]:border-b-4 data-[state=active]:rounded-t-xl data-[state=active]:border-primary data-[state=inactive]:border-gray-300 data-[state=inactive]:border-b-2 rounded-t-xl rounded-b-none bg-transparent data-[state=active]:shadow-none data-[state=active]:text-primary data-[state=inactive]:text-gray-600 hover:data-[state=inactive]:border-gray-500 transition-all duration-200"
                                     >
-                                        <Icon className="h-4 w-4 mr-2" />
-                                        {tab.label}
+                                        <Icon className="h-4 w-4 lg:mr-2" />
+                                        <span className="hidden lg:inline">{tab.label}</span>
                                         {tab.count > 0 && (
                                             <span className={`
-                                                ml-2 px-2 py-0.5 rounded-full text-xs
-                                                ${activeMainTab === tab.id
+                                ml-1 lg:ml-2 px-1.5 lg:px-2 py-0.5 rounded-full text-xs
+                                ${activeMainTab === tab.id
                                                     ? 'bg-primary/10 text-primary'
                                                     : 'bg-gray-100 text-gray-600'
                                                 }
-                                            `}>
+                            `}>
                                                 {tab.count.toLocaleString()}
                                             </span>
                                         )}
@@ -792,14 +841,14 @@ export default function AttendanceManagement({
 
                 {/* Sub Tabs for Logs and Exceptions */}
                 {(activeMainTab === 'logs' || activeMainTab === 'exceptions') && (
-                    <div className="flex items-center justify-between gap-4 w-full pp-row">
+                    <div className="flex flex-col justify-center lg:flex-row items-center lg:justify-between xl:justify-between gap-4 w-full pp-row">
                         <Tabs
                             value={activeSubTab}
                             onValueChange={handleSubTabChange}
-                            className="w-full sm:w-auto"
+                            className="w-full sm:w-full"
                         >
-                            <TabsList className="bg-muted/50 p-1 rounded-full shadow-sm">
-                                <TabsTrigger value="table" className="rounded-full px-6">
+                            <TabsList className="bg-muted/50 p-1 rounded-full shadow-sm flex mr-auto">
+                                <TabsTrigger value="table" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:cursor-default data-[state=active]:text-primary-foreground rounded-lg transition-all cursor-pointer">
                                     <Sheet className="h-4 w-4 mr-2" />
                                     Table
                                     {activeSubTab === 'table' && !isTableLoading && current.data.length > 0 && (
@@ -810,7 +859,7 @@ export default function AttendanceManagement({
                                 </TabsTrigger>
                                 <TabsTrigger
                                     value={activeMainTab === 'logs' ? 'timeline' : 'calendar'}
-                                    className="rounded-full px-6"
+                                    className="rounded-full flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:cursor-default data-[state=active]:text-primary-foreground rounded-lg transition-all cursor-pointer"
                                 >
                                     {activeMainTab === 'logs' ? (
                                         <>
@@ -836,17 +885,15 @@ export default function AttendanceManagement({
                                 </TabsTrigger>
                             </TabsList>
                         </Tabs>
-
-                        {/* Search - only show in table view */}
                         {activeSubTab === 'table' && (
-                            <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-4 mr-auto lg:ml-0">
                                 <div className="relative">
                                     <Input
                                         type="text"
                                         value={localSearch}
                                         onChange={handleSearchChange}
-                                        placeholder={`Search in ${currentMainTab.label}...`}
-                                        className="h-10 w-64 pr-8"
+                                        placeholder={`Search employee name...`}
+                                        className="h-9 w-60 placeholder:text-[14px] lg:placeholder:text-[15px] lg:h-10 lg:w-64 pr-8"
                                         autoComplete="off"
                                     />
                                     {isTableLoading && localSearch && (
@@ -878,14 +925,14 @@ export default function AttendanceManagement({
 
                 {/* Search for tabs without sub-tabs */}
                 {!['logs', 'exceptions'].includes(activeMainTab) && (
-                    <div className="flex sm:flex-col lg:flex-row justify-end items-center gap-4">
+                    <div className="flex flex-row mr-auto lg:mr-0 lg:ml-auto lg:flex-row xl:flex-row items-center gap-4">
                         <div className="lg:relative">
                             <Input
                                 type="text"
                                 value={localSearch}
                                 onChange={handleSearchChange}
-                                placeholder={`Search in ${currentMainTab.label}...`}
-                                className="h-10 w-64 pr-8"
+                                placeholder={`Search employee name...`}
+                                className="placeholder:text-[14px] lg:placeholder:text-[15px] lg:h-10 lg:w-64 lg:pr-8"
                                 autoComplete="off"
                             />
                             {isTableLoading && localSearch && (
@@ -928,47 +975,44 @@ export default function AttendanceManagement({
                                     />
                                 </div>
                             ) : (
-                                <>
-                                    {current.data.length > 0 ? (
-                                        <div className="pp-row">
-                                            <CustomTable
-                                                columns={current.config.columns}
-                                                actions={current.config.actions}
-                                                data={current.data}
-                                                from={current.pagination?.from || 0}
-                                                to={current.pagination?.to || 0}
-                                                total={current.pagination?.total || 0}
-                                                filteredCount={current.filteredCount}
-                                                totalCount={current.totalCount}
-                                                searchTerm={localSearch}
-                                                onDelete={() => { }}
-                                                onView={() => { }}
-                                                onEdit={() => { }}
-                                                title={current.title || currentMainTab.label}
-                                            />
-                                        </div>
-                                    ) : (
-                                        <div className="flex flex-col items-center justify-center py-16 text-center">
-                                            <div className="rounded-full bg-gray-100 p-6 mb-4">
-                                                {activeMainTab === 'logs' && <ScrollText className="h-12 w-12 text-gray-400" />}
-                                                {activeMainTab === 'exceptions' && <ChartSpline className="h-12 w-12 text-gray-400" />}
-                                                {activeMainTab === 'schedules' && <Clock className="h-12 w-12 text-gray-400" />}
-                                                {activeMainTab === 'periods' && <Calendar className="h-12 w-12 text-gray-400" />}
+                                <div className="pp-row">
+                                    <CustomTable
+                                        key={refreshKey}
+                                        columns={current.config.columns}
+                                        actions={current.config.actions}
+                                        data={current.data}
+                                        from={current.pagination?.from || 0}
+                                        to={current.pagination?.to || 0}
+                                        totalCount={current.totalCount}
+                                        filteredCount={current.filteredCount}
+                                        searchTerm={localSearch}
+                                        onDelete={() => { }}
+                                        onView={() => { }}
+                                        onEdit={() => { }}
+                                        title={current.title || currentMainTab.label}
+                                        filterEmptyState={
+                                            <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
+                                                <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center mb-3">
+                                                    {activeMainTab === 'logs' && <ScrollText className="h-5 w-5 text-slate-400 dark:text-slate-500" />}
+                                                    {activeMainTab === 'exceptions' && <ChartSpline className="h-5 w-5 text-slate-400 dark:text-slate-500" />}
+                                                    {activeMainTab === 'schedules' && <Clock className="h-5 w-5 text-slate-400 dark:text-slate-500" />}
+                                                    {activeMainTab === 'periods' && <Calendar className="h-5 w-5 text-slate-400 dark:text-slate-500" />}
+                                                </div>
+                                                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1">No results found</h3>
+                                                <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 max-w-xs">
+                                                    {localSearch
+                                                        ? `No ${(current.title || currentMainTab.label).toLowerCase()} matching "${localSearch}".`
+                                                        : `No ${(current.title || currentMainTab.label).toLowerCase()} available at the moment.`}
+                                                </p>
+                                                {localSearch && (
+                                                    <Button variant="outline" size="sm" onClick={handleResetFilters}>
+                                                        Clear filters
+                                                    </Button>
+                                                )}
                                             </div>
-                                            <h3 className="text-lg font-semibold mb-2">No records found</h3>
-                                            <p className="text-gray-500 mb-6 max-w-sm">
-                                                {localSearch
-                                                    ? `No results match "${localSearch}". Try adjusting your search.`
-                                                    : `No ${currentMainTab.label.toLowerCase()} available at the moment.`}
-                                            </p>
-                                            {localSearch && (
-                                                <Button onClick={handleResetFilters} variant="outline">
-                                                    Clear Search
-                                                </Button>
-                                            )}
-                                        </div>
-                                    )}
-                                </>
+                                        }
+                                    />
+                                </div>
                             )}
 
                             {/* Pagination */}
@@ -988,7 +1032,6 @@ export default function AttendanceManagement({
                                                     activeMainTab === 'schedules' ? 'schedule' : 'period stat'
                                         }
                                         className="mt-4"
-                                        baseUrl="/hr/attendances"
                                     />
                                 </div>
                             )}
