@@ -215,7 +215,7 @@ Route::middleware(['auth', 'hr', 'auth.session', 'throttle:limit-actions'])->gro
 
 // AI Routes for Inertia (these return JSON for API calls)
 Route::middleware(['auth', 'admin', 'auth.session', 'throttle:limit-actions'])->prefix('ai')->group(function () {
-	Route::get('/dashboard', [AIInsightController::class, 'dashboard'])->name('ai.dashboard');
+	Route::get('/dashboard', [AIInsightController::class, 'dashboard']);
 	Route::get('/insights', [AIInsightController::class, 'getInsights']);
 	Route::post('/generate-insights', [AIInsightController::class, 'generateInsights']); // Add this
 	Route::post('/deep-analysis', [AIInsightController::class, 'deepAnalysis']);

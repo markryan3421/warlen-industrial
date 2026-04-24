@@ -29,6 +29,8 @@ interface PayrollData {
         name?: string;
         emp_code?: string;
         position?: { pos_name?: string };
+        daily_rate?: number;
+        monthly_rate?: number;
     };
     avatar?: string;
     employee_avatar?: string;
@@ -41,6 +43,13 @@ const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(amount);
 };
 
+const formatCurrencyNoSymbol = (amount: number) => {
+    if (amount === undefined || amount === null || isNaN(amount)) {
+        return '0.00';
+    }
+    return new Intl.NumberFormat('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount);
+};
+
 const formatDate = (dateString: string) => {
     if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -48,6 +57,34 @@ const formatDate = (dateString: string) => {
         month: 'short',
         day: 'numeric'
     });
+};
+
+// Add this helper function before the component
+const parseLateMinutes = (description: string): number => {
+    const lowerDesc = description.toLowerCase();
+    let totalMinutes = 0;
+
+    // Match hours (e.g., "1hr", "2 hours", "1h")
+    const hourMatch = lowerDesc.match(/(\d+(?:\.\d+)?)\s*(?:hr|hour|hours|h)/i);
+    if (hourMatch) {
+        totalMinutes += parseFloat(hourMatch[1]) * 60;
+    }
+
+    // Match minutes (e.g., "45mins", "30 min", "45m")
+    const minuteMatch = lowerDesc.match(/(\d+(?:\.\d+)?)\s*(?:min|mins|minute|minutes|m)/i);
+    if (minuteMatch) {
+        totalMinutes += parseFloat(minuteMatch[1]);
+    }
+
+    // If only a number is present, assume it's minutes
+    if (totalMinutes === 0) {
+        const numberMatch = lowerDesc.match(/(\d+(?:\.\d+)?)/);
+        if (numberMatch && !lowerDesc.includes('hour')) {
+            totalMinutes = parseFloat(numberMatch[1]);
+        }
+    }
+
+    return totalMinutes;
 };
 
 // Helper function to categorize deductions
@@ -63,6 +100,7 @@ const categorizeDeductions = (deductions: Array<{ description: string; amount: n
     deductions.forEach(deduction => {
         const lowerDesc = (deduction.description || '').toLowerCase();
         const isContribution = contributionKeywords.some(keyword => lowerDesc.includes(keyword));
+
 
         if (isContribution) {
             contributions.push(deduction);
@@ -126,6 +164,47 @@ export default function PayrollPrintLayout({ isOpen, onClose, payrollId }: Payro
             setIsLoading(false);
         }
     };
+
+    // Define helper functions after fetchPayrollData but before they're used
+    const getBasicPay = () => {
+        if (!payrollData?.earnings) return 0;
+        const basicPayItem = payrollData.earnings.find(item =>
+            item.description?.toLowerCase().includes('basic') ||
+            item.description?.toLowerCase().includes('basic pay')
+        );
+        return basicPayItem ? Number(basicPayItem.amount) || 0 : 0;
+    };
+
+    const getDailyRate = () => {
+        if (payrollData?.employee?.daily_rate) {
+            return payrollData.employee.daily_rate;
+        }
+        if (payrollData?.employee?.monthly_rate) {
+            return payrollData.employee.monthly_rate / 22;
+        }
+        const basicPay = getBasicPay();
+        if (basicPay > 0 && payrollData?.start_date && payrollData?.end_date) {
+            const start = new Date(payrollData.start_date);
+            const end = new Date(payrollData.end_date);
+            const daysDiff = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+            return basicPay / daysDiff;
+        }
+        return 0;
+    };
+
+    const getPeriodDays = () => {
+        if (payrollData?.start_date && payrollData?.end_date) {
+            const start = new Date(payrollData.start_date);
+            const end = new Date(payrollData.end_date);
+            return Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+        }
+        return 0;
+    };
+
+    // Calculate values after payrollData is loaded
+    const basicPay = payrollData ? getBasicPay() : 0;
+    const dailyRate = payrollData ? getDailyRate() : 0;
+    const periodDays = payrollData ? getPeriodDays() : 0;
 
     const generateSalarySlipHTML = () => {
         if (!payrollData) return '';
@@ -204,11 +283,13 @@ export default function PayrollPrintLayout({ isOpen, onClose, payrollId }: Payro
                 deductionDesc = deduction.description || '';
                 // Remove "DEDUCTIONS - " or "DEDUCTION - " prefix if present
                 deductionDesc = deductionDesc.replace(/^(DEDUCTION|DEDUCTIONS)\s*-\s*/i, '').trim();
+                // Change the word "LATE" (case-insensitive, whole word) to "Late"
+                deductionDesc = deductionDesc.replace(/\bLATE\b/i, 'Late');
                 deductionAmount = Number(deduction.amount) || 0;
             }
 
             allRowsHtml += `
-        <tr style="border-bottom: 1px solid #ccc;">
+        <tr>
             <td style="padding: 6px 4px;">${earningDesc || ''}</td>
             <td style="padding: 6px 4px; text-align: right; border-right: 0.5px solid #000;">${earningAmount > 0 ? formatCurrency(earningAmount) : ''}</td>
             <td style="padding: 6px 4px;">
@@ -225,11 +306,11 @@ export default function PayrollPrintLayout({ isOpen, onClose, payrollId }: Payro
 
         return `
         <div class="salary-slip" style="max-width: 100%; width: 100%; margin: 0 auto; background: #ffffff; padding: 15px; position: relative; border: 1px solid #000;">
-            <div style="position: absolute; top: 90px; left: 0; right: 0; bottom: 0; background-image: url('/images/dekalogo.webp'); background-repeat: no-repeat; background-position: center; background-size: 45%; opacity: 0.06; pointer-events: none; z-index: 0;"></div>
+            <div style="position: absolute; top: 100px; left: 0; right: 0; bottom: 0; background-image: url('/images/dekalogo.webp'); background-repeat: no-repeat; background-position: center; background-size: 48%; opacity: 0.06; pointer-events: none; z-index: 0;"></div>
             
             <div style="position: relative; z-index: 1;">
                 <div style="text-align: center; border-bottom: 0.5px solid #333; margin-bottom: 10px; padding-bottom: 8px;">
-                    <img src="/images/dekalogo.webp" alt="Deka Sales Logo" style="height: 40px; margin-bottom: 4px;" />
+                    <img src="/images/dekalogo.webp" alt="Deka Sales Logo" style="height: 50px; width = 50px; margin-bottom: 4px;" />
                     <div style="font-size: 1rem; color: #05469D; font-weight: 800; text-transform: uppercase;">WARLEN INDUSTRIAL SALES CORPORATION</div>
                     <div style="font-size: 0.7rem; font-weight: 700; color: #FD0C0B; margin-top: 2px;">DEKA SALES</div>
                     <div style="font-size: 0.5rem; font-weight: 600; text-transform: uppercase; color: #555;">SPECIALTY CONTRACTOR</div>
@@ -258,7 +339,7 @@ export default function PayrollPrintLayout({ isOpen, onClose, payrollId }: Payro
                         ${allRowsHtml}
                         <tr style="border-top: 2px solid #000;">
                             <td style="font-weight: 800; padding: 6px 4px;"><strong>TOTAL</strong></td>
-                            <td style="text-align: right; font-weight: 800; padding: 6px 4px;">${formatCurrency(totalEarningsAmount)}</td>
+                            <td style="text-align: right; font-weight: 800; padding: 6px 4px; border-right: 1px solid #000;">${formatCurrency(totalEarningsAmount)}</td>
                             <td style="text-align: right; font-weight: 800; padding: 6px 4px;">${formatCurrency(totalDeductionsAmount)}</td>
                         </tr>
                     </tbody>
@@ -430,16 +511,12 @@ export default function PayrollPrintLayout({ isOpen, onClose, payrollId }: Payro
                 <DialogHeader>
                     <div className="flex justify-between items-center">
                         <DialogTitle className="text-2xl font-bold">
-                            <span className="px-2 py-1 border rounded-xl text-[15px]">Payroll Slip</span>
+                            <span className="px-2 py-1 border rounded-xl text-[15px]">Payroll Slip Preview</span>
                         </DialogTitle>
                         <div className="flex gap-2">
                             <Button variant="outline" size="sm" onClick={handleDirectPrint} className='cursor-pointer'>
                                 <Printer className="h-4 w-4 mr-2" />
                                 Print
-                            </Button>
-                            <Button variant="outline" size="sm" onClick={generateSalarySlipHTML} className='cursor-pointer'>
-                                <Download className="h-4 w-4 mr-2" />
-                                Save as PDF
                             </Button>
                             <Button variant="outline" size="sm" onClick={onClose} className='cursor-pointer'>
                                 <X className="h-4 w-4" />
@@ -494,14 +571,33 @@ export default function PayrollPrintLayout({ isOpen, onClose, payrollId }: Payro
                                     <h3 className="font-semibold text-md text-gray-700">REGULAR EARNINGS</h3>
                                 </div>
                                 <div className="space-y-2">
-                                    {otherEarnings.map((item, index) => (
-                                        <div key={index} className="flex justify-between items-center last:border-0">
-                                            <span className="text-sm text-gray-700">{item.description || 'N/A'}</span>
-                                            <span className="text-sm font-medium text-green-600">
-                                                {formatCurrency(item.amount)}
-                                            </span>
-                                        </div>
-                                    ))}
+                                    {otherEarnings.map((item, index) => {
+                                        // Check if this is a Basic Pay item
+                                        const isBasicPay = item.description?.toLowerCase().includes('basic') ||
+                                            item.description?.toLowerCase().includes('basic pay');
+
+                                        return (
+                                            <div key={index} className="flex justify-between items-center last:border-0">
+                                                {isBasicPay ? (
+                                                    <div className="flex flex-col w-full">
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="text-sm text-gray-700">{item.description || 'N/A'} <span className="text-xs text-gray-500">({formatCurrencyNoSymbol(dailyRate)} daily x {periodDays} days)</span></span>
+                                                            <span className="text-sm font-medium text-green-600">
+                                                                {formatCurrency(item.amount)}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        <span className="text-sm text-gray-700">{item.description || 'N/A'}</span>
+                                                        <span className="text-sm font-medium text-green-600">
+                                                            {formatCurrency(item.amount)}
+                                                        </span>
+                                                    </>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
                                     <div className="flex justify-between items-center pt-2 border-t mt-2">
                                         <span className="text-sm font-semibold text-gray-800">Total Regular Earnings</span>
                                         <span className="text-sm font-semibold text-green-700">
@@ -575,7 +671,12 @@ export default function PayrollPrintLayout({ isOpen, onClose, payrollId }: Payro
                                     {otherDeductions.map((item, index) => (
                                         <div key={index} className="flex justify-between items-center last:border-0">
                                             <span className="text-sm text-gray-700">
-                                                {item.description ? item.description.replace(/^(DEDUCTION|DEDUCTIONS)\s*-\s*/i, '').trim() : 'N/A'}
+                                                {item.description
+                                                    ? item.description.replace(/^(DEDUCTION|DEDUCTIONS)\s*-\s*/i, '')
+                                                        .trim()
+                                                        .replace(/\bLATE\b/i, 'Late')
+                                                    : 'N/A'
+                                                }
                                             </span>
                                             <span className="text-sm font-medium text-red-600">
                                                 {formatCurrency(item.amount)}
