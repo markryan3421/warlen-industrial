@@ -120,6 +120,12 @@ Route::middleware(['auth', 'employee', 'auth.session', 'throttle:limit-actions']
 //intended for HR
 Route::middleware(['auth', 'hr', 'auth.session', 'throttle:limit-actions'])->group(function () {
 
+	Route::delete('/hr/employees/bulk-destroy', [HREmployeeController::class, 'bulkDestroy']);
+    Route::put('/hr/employees/bulk-restore', [HREmployeeController::class, 'bulkRestore']);
+    Route::put('/hr/employees/{employee:slug_emp}/restore', [HREmployeeController::class, 'restore'])->name('hr.employees.restore');
+    Route::post('/hr/employees/bulk-assign-position', [HREmployeeController::class, 'bulkAssignPosition']);
+    Route::post('/hr/employees/bulk-assign-branch-site', [HREmployeeController::class, 'bulkAssignBranchSite']);
+
 	Route::get('hr/dashboard', HRDashboardController::class)->name('hr.dashboard');
 
 	Route::get('/hr/attendance-logs', [HRAttendanceController::class, 'attendanceLogs'])->name('hr.attendance-logs');
@@ -160,11 +166,12 @@ Route::middleware(['auth', 'hr', 'auth.session', 'throttle:limit-actions'])->gro
 		'destroy' => 'hr.payroll-periods.destroy',
 	]);
 
-	Route::resource('hr/employees', HREmployeeController::class)->except(['show'])->names([
+	Route::resource('hr/employees', HREmployeeController::class)->names([
 		'index' => 'hr.employees.index',
 		'create' => 'hr.employees.create',
 		'store' => 'hr.employees.store',
 		'edit' => 'hr.employees.edit',
+		'show' => 'hr.employee.show',
 		'update' => 'hr.employees.update',
 		'destroy' => 'hr.employees.destroy',
 	]);

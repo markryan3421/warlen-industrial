@@ -680,7 +680,7 @@ export const CustomTable = ({
 
                 {/* Bulk Action Bar */}
                 {selectable && hasSelected && (
-                    <div className="flex gap-2 px-5 py-3 border-b border-slate-100 dark:border-slate-800 bg-blue-50/60 dark:bg-[#1d4791]/10">
+                    <div className="">
                         {bulkActions.map((action, idx) => {
                             const Icon = LucidIcons[action.icon] as React.ElementType;
                             return (

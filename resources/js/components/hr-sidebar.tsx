@@ -55,7 +55,7 @@ const HROrganizationItems: NavItem[] = [
 const HRWorkforceManagementItems: NavItem[] = [
     {
         title: 'Employees',
-        href: HREmployeeController.index(),
+        href: '/hr/employees',
         icon: CircleUser,
     },
     {
