@@ -205,11 +205,11 @@ export default function Index({
         if (rst?.length) params.sites = rst.join(',');
         if (rf && isValid(rf)) params.date_from = format(rf, 'yyyy-MM-dd');
         if (rt && isValid(rt)) params.date_to = format(rt, 'yyyy-MM-dd');
-        
+
         // Always send perPage parameter
         const perPageValue = rpp ? parseInt(rpp) : 10;
         params.perPage = perPageValue;
-        
+
         if (overrides.page) params.page = overrides.page;
 
         return params;
@@ -226,7 +226,7 @@ export default function Index({
         page?: number;
     } = {}) => {
         const params = buildParams(overrides);
-        
+
         setIsFiltering(true);
         router.get('/payrolls', params, {
             preserveState: true,
@@ -297,7 +297,7 @@ export default function Index({
         setDateFrom(undefined);
         setDateTo(undefined);
         setPerPage('10');
-        
+
         router.get('/payrolls', { perPage: 10 }, {
             preserveState: false,
             preserveScroll: true,
@@ -477,7 +477,7 @@ export default function Index({
             onPositionsChange={handlePositionsChange}
             onBranchChange={handleBranchChange}
             onSiteChange={handleSiteChange}
-            onStatusChange={() => {}}
+            onStatusChange={() => { }}
             onDateFromChange={handleDateFromChange}
             onDateToChange={handleDateToChange}
             onClearAll={clearFilters}
@@ -529,50 +529,47 @@ export default function Index({
                             title="Payroll Records"
                         />
                     ) : (
-                        <>
-                            <CustomTable
-                                columns={columns}
-                                actions={actions}
-                                data={filteredPayrollTableData}
-                                from={serverPagination?.from || 0}
-                                title="Payroll Records"
-                                onView={handleViewPayroll}
-                                onEdit={() => {}}
-                                onDelete={handleDeletePayroll}
-                                toolbar={toolbar}
-                                filterEmptyState={
-                                    <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
-                                        <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center mb-3">
-                                            <Search className="h-5 w-5 text-slate-400 dark:text-slate-500" />
-                                        </div>
-                                        <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1">No results found</h3>
-                                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 max-w-xs">
-                                            {searchTerm
-                                                ? `No payroll records matching "${searchTerm}".`
-                                                : dateFrom || dateTo
-                                                    ? 'No payroll records in the selected date range.'
-                                                    : 'No payroll records match your current filters.'}
-                                        </p>
-                                        <Button variant="outline" size="sm" onClick={clearFilters}>Clear filters</Button>
+                        <CustomTable
+                            columns={columns}
+                            actions={actions}
+                            data={filteredPayrollTableData}
+                            from={serverPagination?.from || 0}
+                            title="Payroll Records"
+                            onView={handleViewPayroll}
+                            onEdit={() => { }}
+                            onDelete={handleDeletePayroll}
+                            toolbar={toolbar}
+                            filterEmptyState={
+                                <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
+                                    <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center mb-3">
+                                        <Search className="h-5 w-5 text-slate-400 dark:text-slate-500" />
                                     </div>
-                                }
-                                isLoading={isFiltering && !isInitialLoad}
-                            />
-
-                            {filteredPayrollTableData.length > 0 && (
-                                <CustomPagination
-                                    pagination={paginationWithFilters}
-                                    perPage={perPage}
-                                    onPerPageChange={handlePerPageChange}
-                                    onPageChange={handlePageChange}
-                                    totalCount={totalCount}
-                                    filteredCount={filteredCount}
-                                    search={searchTerm}
-                                    resourceName="payroll"
-                                />
-                            )}
-                        </>
+                                    <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1">No results found</h3>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 max-w-xs">
+                                        {searchTerm
+                                            ? `No payroll records matching "${searchTerm}".`
+                                            : dateFrom || dateTo
+                                                ? 'No payroll records in the selected date range.'
+                                                : 'No payroll records match your current filters.'}
+                                    </p>
+                                    <Button variant="outline" size="sm" onClick={clearFilters}>Clear filters</Button>
+                                </div>
+                            }
+                            isLoading={isFiltering && !isInitialLoad}
+                        />
                     )}
+
+                    {/* FIXED: Always render pagination - removed the conditional */}
+                    <CustomPagination
+                        pagination={paginationWithFilters}
+                        perPage={perPage}
+                        onPerPageChange={handlePerPageChange}
+                        onPageChange={handlePageChange}
+                        totalCount={totalCount}
+                        filteredCount={filteredCount}
+                        search={searchTerm}
+                        resourceName="payroll"
+                    />
                 </div>
             </div>
 

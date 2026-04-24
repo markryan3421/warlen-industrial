@@ -15,7 +15,7 @@ export default ({ children, breadcrumbs, title, ...props }: AppLayoutProps & { t
                     expand={false}
                     closeButton
                 />
-                <div className="container mx-auto p-6">
+                <div className="container mx-auto">
                     {children}
                 </div>
                 

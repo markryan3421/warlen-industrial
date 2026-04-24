@@ -7,7 +7,7 @@ export const AttendanceLogsTableConfig = {
         },
         {
             label: 'Employee Name',
-            key: 'employee_name',
+            key: 'employee_name',   
             className: 'border px-4 py-3',
         },
         {

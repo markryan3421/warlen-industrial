@@ -35,13 +35,13 @@
 import { Head, Link, useForm, router } from '@inertiajs/react';
 import { format } from 'date-fns';
 import { Users, Search, UserPlus } from 'lucide-react';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
 import HREmployeeController from '@/actions/App/Http/Controllers/HrRole/HREmployeeController';
 import { CustomHeader } from '@/components/custom-header';
 import { CustomPagination } from '@/components/custom-pagination';
 import { CustomTable } from '@/components/custom-table';
-import type { BranchData} from '@/components/employee/employee-filter-bar';
+import type { BranchData } from '@/components/employee/employee-filter-bar';
 import { EmployeeFilterBar } from '@/components/employee/employee-filter-bar';
 import { Button } from '@/components/ui/button';
 import HrLayout from '@/layouts/hr-layout';
@@ -122,7 +122,6 @@ export default function Index({
     filteredCount,
 }: PageProps) {
     const { delete: destroy } = useForm();
-    console.log(EmployeesTableConfig.actions);
 
     // ── Filter state — initialised from URL params so the UI reflects the
     //    current server-side filter on first render / browser back-forward.
@@ -130,6 +129,10 @@ export default function Index({
     const [selectedPositions, setSelectedPositions] = useState<string[]>(
         filters.positions ? filters.positions.split(',').filter(Boolean) : [],
     );
+
+    const [isFiltering, setIsFiltering] = useState(false);
+    const [isTableLoading, setIsTableLoading] = useState(true);
+    const [isInitialLoad, setIsInitialLoad] = useState(true);
     const [selectedBranch, setSelectedBranch] = useState(filters.branch ?? '');
     const [selectedSite, setSelectedSite] = useState(filters.site ?? '');
     // '' = All (default, renders everyone)
@@ -142,6 +145,45 @@ export default function Index({
     const [dateTo, setDateTo] = useState<Date | undefined>(
         filters.date_to ? new Date(filters.date_to) : undefined,
     );
+
+    // ── Loading state management ──────────────────────────────────────────────
+    useEffect(() => {
+        if (employees !== undefined && isInitialLoad) {
+            const t = setTimeout(() => {
+                setIsTableLoading(false);
+                setIsInitialLoad(false);
+            }, 300);
+            return () => clearTimeout(t);
+        }
+    }, [employees, isInitialLoad]);
+
+    useEffect(() => {
+        let tid: NodeJS.Timeout;
+        let isFilterUpdate = false;
+        const onStart = (e: any) => {
+            if (e.detail?.preserveState) {
+                isFilterUpdate = true;
+                return;
+            }
+            clearTimeout(tid);
+            setIsTableLoading(true);
+            setIsFiltering(true);
+        };
+        const onFinish = () => {
+            tid = setTimeout(() => {
+                setIsTableLoading(false);
+                setIsFiltering(false);
+            }, isFilterUpdate ? 100 : 200);
+            isFilterUpdate = false;
+        };
+        const off1 = router.on('start', onStart);
+        const off2 = router.on('finish', onFinish);
+        return () => {
+            off1();
+            off2();
+            clearTimeout(tid);
+        };
+    }, []);
 
     // ── Central navigation function ───────────────────────────────────────────
     /**
@@ -286,25 +328,41 @@ export default function Index({
         router.get(HREmployeeController.edit(employee.slug_emp).url);
     };
 
+    // Calculate pagination loading state
+    const isPaginationLoading = isFiltering || (isTableLoading && !isInitialLoad);
+
     // ─── Render ───────────────────────────────────────────────────────────────
     return (
         <HrLayout breadcrumbs={breadcrumbs}>
             <Head title="Employees" />
-            <div className="flex flex-1 flex-col gap-4 p-4">
+            <div className="flex flex-1 flex-col gap-4 p-4 mx-4">
+
+                <style>{`
+                @keyframes fadeUp {
+                    from { opacity: 0; transform: translateY(16px); }
+                    to   { opacity: 1; transform: translateY(0); }
+                }
+                .pp-row { animation: fadeUp 0.3s cubic-bezier(0.22,1,0.36,1) both; }
+                @keyframes headerReveal {
+                    from { opacity: 0; transform: translateY(-10px); }
+                    to   { opacity: 1; transform: translateY(0); }
+                }
+                .pp-header { animation: headerReveal 0.35s cubic-bezier(0.22,1,0.36,1) both; }
+            `}</style>
+
 
                 {/* Page header */}
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center pp-header">
                     <CustomHeader
-                        icon={<Users className="h-6 w-6 text-primary" />}
+                        icon={<Users className="h-6 w-6 text-white" />}
                         title="Employees"
                         description="Manage your workforce: add, edit, and organize employee records with ease."
                     />
                     <Link href={HREmployeeController.create().url}>
-                        <Button className="h-14">
+                        <Button className="hover:cursor-pointer flex ml-auto">
                             <UserPlus className="h-5 w-5" />
                             <div className="flex flex-col items-start leading-tight">
-                                <span className="text-sm font-medium">Create</span>
-                                <span className="text-xs font-normal">Employee</span>
+                                <span className="text-sm font-medium">Create Employee</span>
                             </div>
                         </Button>
                     </Link>
@@ -326,9 +384,9 @@ export default function Index({
                     </div>
 
                 ) : (
-                    <>
+                    <div className = "pp-row">
                         <CustomTable
-                            title="Employees"
+                            title="Employee Lists"
                             columns={EmployeesTableConfig.columns}
                             actions={EmployeesTableConfig.actions}
                             data={employees.data}
@@ -408,8 +466,9 @@ export default function Index({
                             filteredCount={filteredCount}
                             search={searchTerm}
                             resourceName="employee"
+                            isLoading={isPaginationLoading}
                         />
-                    </>
+                    </div>
                 )}
             </div>
         </HrLayout>

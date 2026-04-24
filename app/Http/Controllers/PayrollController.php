@@ -13,8 +13,8 @@ use Inertia\Inertia;
 
 class PayrollController extends Controller
 {
-
     use HasPaginatedIndex;
+    
     public function __construct(protected PayrollService $payrollService) {}
 
     /**
@@ -24,18 +24,17 @@ class PayrollController extends Controller
     {
         Gate::authorize('viewAny', Payroll::class);
 
-        // Build query with relationships - ADD SITE RELATIONSHIP
+        // Build query with relationships
         $query = Payroll::query()
             ->with([
                 'payrollPeriod',
                 'employee.user',
                 'employee.position',
                 'employee.branch',
-                'employee.branch.sites', // Load sites through branch
-                'employee.site', // Load direct site relationship
+                'employee.branch.sites',
+                'employee.site',
                 'payrollItems'
-            ])
-            ->latest();
+            ]);
 
         // Apply search filter
         if ($request->filled('search')) {
@@ -95,15 +94,27 @@ class PayrollController extends Controller
             });
         }
 
-        // Get total count before pagination
-        $totalCount = $query->count();
+        // FIXED: Get filtered count BEFORE pagination
+        $filteredCount = $query->count();
 
-        // Apply pagination
+        // FIXED: Validate and limit per page
         $perPage = $request->input('perPage', 10);
-        $payrolls = $query->paginate($perPage);
+        $perPage = min(max($perPage, 1), 100); // Between 1 and 100
 
-        // Get filtered count
-        $filteredCount = $payrolls->total();
+        // FIXED: Handle invalid page numbers
+        $currentPage = $request->input('page', 1);
+        $lastPage = max(1, ceil($filteredCount / $perPage));
+        
+        // Reset to last page if current page exceeds last page
+        if ($currentPage > $lastPage && $lastPage > 0) {
+            $currentPage = $lastPage;
+        }
+
+        // Apply pagination with validated parameters
+        $payrolls = $query->paginate($perPage, ['*'], 'page', $currentPage);
+
+        // FIXED: Total count should be the same as filtered count for consistency
+        $totalCount = $filteredCount;
 
         // Get all unique positions for filter dropdown
         $allPositions = Payroll::query()
@@ -116,13 +127,12 @@ class PayrollController extends Controller
             ->values()
             ->toArray();
 
-        // Get all unique branches for filter dropdown as simple array
+        // Get all unique branches for filter dropdown
         $allBranches = Branch::query()
             ->orderBy('branch_name')
             ->pluck('branch_name')
             ->toArray();
 
-        // If no branches in branches table, get from employees that have branches
         if (empty($allBranches)) {
             $allBranches = Payroll::query()
                 ->with('employee.branch')
@@ -141,7 +151,6 @@ class PayrollController extends Controller
             ->pluck('site_name')
             ->toArray();
 
-        // If no sites in sites table, get from employees that have sites
         if (empty($allSites)) {
             $allSites = Payroll::query()
                 ->with('employee.site')
@@ -218,7 +227,7 @@ class PayrollController extends Controller
         $payroll = Payroll::with(['employee.user', 'employee.position', 'employee.branch', 'employee.site', 'payrollPeriod', 'payrollItems'])
             ->findOrFail($id);
 
-         Gate::authorize('viewAny', $payroll);
+        Gate::authorize('viewAny', $payroll);
 
         return response()->json([
             'id' => $payroll->id,
@@ -297,5 +306,4 @@ class PayrollController extends Controller
     {
         //
     }
-    
 }
