@@ -14,6 +14,7 @@ import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes';
 
 import type { BreadcrumbItem } from '@/types';
+import { formatCurrency } from '@/utils/formatCurrency';
 
 // Line chart data - moved outside component to prevent recreation
 const lineChartData = [
@@ -123,6 +124,11 @@ const StableLineChart = memo(
             label: string;
         } | null>(null);
 
+        // Helper function to format number with commas
+        const formatNumberWithCommas = (value: number) => {
+            return value.toLocaleString('en-US');
+        };
+
         return (
             <div className="relative">
                 <LineChart
@@ -156,7 +162,7 @@ const StableLineChart = memo(
                     />
                     <YAxis
                         tick={{ fontSize: 10 }}
-                        tickFormatter={(value) => value.toLocaleString()}
+                        tickFormatter={(value) => formatCurrency(Number(value))}
                         width={50}
                     />
                     <Tooltip
@@ -166,7 +172,7 @@ const StableLineChart = memo(
                                     <div className="bg-black/90 text-white rounded-lg px-3 py-2 shadow-lg border border-white/10">
                                         <p className="font-semibold text-sm">{label}</p>
                                         <p className="text-xs text-gray-300">
-                                            Total Net Pay: ₱ {payload[0]?.value?.toLocaleString()}
+                                            Total Net Pay: {formatCurrency(Number(payload[0]?.value))}
                                         </p>
                                     </div>
                                 );
@@ -195,7 +201,7 @@ const StableLineChart = memo(
                     />
                 </LineChart>
 
-                {/* Custom floating label (alternative to default tooltip) */}
+                {/* Custom floating label with formatted numbers */}
                 {activePoint && (
                     <div
                         style={{
@@ -209,7 +215,7 @@ const StableLineChart = memo(
                         className="bg-black/90 text-white text-xs rounded-md px-2 py-1 whitespace-nowrap shadow-lg border border-white/20"
                     >
                         <div className="font-semibold">{activePoint.label}</div>
-                        <div>PHP{activePoint.value.toLocaleString()}</div>
+                        <div>₱ {formatNumberWithCommas(activePoint.value)}</div>
                         <div className="absolute left-1/2 bottom-0 transform -translate-x-1/2 translate-y-full">
                             <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-black/90"></div>
                         </div>
@@ -553,7 +559,7 @@ export default function Dashboard({
                                 <div className="hidden lg:block xl:max-w-[350px] mt-4">
                                     <div className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50">
                                         <header className='flex justify-center font-semibold text-xs text-center text-gray-700 dark:text-gray-300'>
-                                             Employee Distribution by Pay Frequency
+                                            Employee Distribution by Pay Frequency
                                         </header>
 
                                         <div className="flex flex-col items-center">
