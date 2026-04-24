@@ -23,6 +23,7 @@ class AdminMiddleware
         if (Auth::check() && Auth::user()->hasAnyRole(['admin'])) {
             return $next($request);
         }
+
         abort(403, 'Unauthorized access. Admin privileges required.');
     }
 }
