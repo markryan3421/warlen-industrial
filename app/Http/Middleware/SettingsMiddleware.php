@@ -26,8 +26,12 @@ class SettingsMiddleware
 
             // Block direct browser navigation for authenticated users with roles
             if (Auth::check() && Auth::user()->hasAnyRole(['admin', 'hr_head', 'employee'])) {
-                return back()->with('error', 'Direct access not allowed. Please use the settings page.');
+                return back();
             }
+        }
+
+        if (Auth::check() && Auth::user()->hasAnyRole(['admin', 'hr_head', 'employee'])) {
+            return back();
         }
 
         return $next($request);
