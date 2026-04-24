@@ -14,6 +14,11 @@ interface SystemAlertProps {
     scheduleDeviation?: number;
     pendingRequests?: number;
     payrollActivityMessage?: string | null;
+    // Dynamic link props - these will override defaults if provided
+    newlyRegisteredLink?: string;
+    scheduleDeviationLink?: string;
+    pendingRequestsLink?: string;
+    payrollActivityLink?: string;
 }
 
 const AlertCard = memo(({ item, index }: { item: any, index: number }) => {
@@ -49,7 +54,11 @@ export default memo(function SystemAlert({
     newlyRegistered = 0, 
     scheduleDeviation = 0, 
     pendingRequests = 0, 
-    payrollActivityMessage = null 
+    payrollActivityMessage = null,
+    newlyRegisteredLink = "/employees",
+    scheduleDeviationLink = "/attendances",
+    pendingRequestsLink = "/application-leave",
+    payrollActivityLink = "/payroll-periods"
 }: SystemAlertProps) {
     // Build all four cards always, with dynamic subtitles including fallback messages
     const alerts = [
@@ -59,7 +68,7 @@ export default memo(function SystemAlert({
             subtitle: newlyRegistered > 0 
                 ? `${newlyRegistered} employee${newlyRegistered !== 1 ? 's' : ''} added` 
                 : "No new employees registered",
-            link: "/employees"
+            link: newlyRegisteredLink
         },
         {
             icon: CalendarDays,
@@ -67,7 +76,7 @@ export default memo(function SystemAlert({
             subtitle: scheduleDeviation > 0 
                 ? `${scheduleDeviation} early timeout${scheduleDeviation !== 1 ? 's' : ''}` 
                 : "No early timeouts",
-            link: "/attendances"
+            link: scheduleDeviationLink
         },
         {
             icon: CalendarClock,
@@ -75,13 +84,13 @@ export default memo(function SystemAlert({
             subtitle: pendingRequests > 0 
                 ? `${pendingRequests} leave request${pendingRequests !== 1 ? 's' : ''} pending` 
                 : "No pending leave requests",
-            link: "/application-leave"
+            link: pendingRequestsLink
         },
         {
             icon: ScrollText,
             title: "Payroll Activity",
             subtitle: payrollActivityMessage || "No active payroll period",
-            link: "/payroll-periods"
+            link: payrollActivityLink
         }
     ];
 
