@@ -172,6 +172,6 @@ class ContributionVersionController extends Controller
 
         $this->cacheForget('contribution_versions');
 
-        return to_route('contribution-versions.index')->with('error', 'Contribution deleted successfully.');
+        return to_route('contribution-versions.index')->with('warning', 'Contribution deleted successfully.');
     }
 }

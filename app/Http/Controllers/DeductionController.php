@@ -195,7 +195,7 @@ class DeductionController extends Controller
         try {
             $deduction->delete();
             DB::commit();
-            return redirect()->route('deductions.index')->with('error', 'Deduction deleted successfully.');
+            return redirect()->route('deductions.index')->with('warning', 'Deduction deleted successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
             return redirect()->route('deductions.index')->with('error', 'Failed to delete deduction: ' . $e->getMessage());

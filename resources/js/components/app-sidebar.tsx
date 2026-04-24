@@ -46,11 +46,11 @@ const WorkforceManagementItems: NavItem[] = [
         href: '/employees',
         icon: CircleUser,
     },
-    {
-     title: 'Positions',
-     href: '/positions',
-     icon: UserCog,  
-    },
+    // {
+    //  title: 'Positions',
+    //  href: '/positions',
+    //  icon: UserCog,  
+    // },
     {
         title: 'Application Leaves',
         href: '/application-leave',
@@ -84,7 +84,7 @@ const PayrollConfigurationItems: NavItem[] = [
     },
     {
         title: 'Contributions',
-        href: '/Contributions',
+        href: '/contributions',
         icon: Handshake,
     },
 ]
