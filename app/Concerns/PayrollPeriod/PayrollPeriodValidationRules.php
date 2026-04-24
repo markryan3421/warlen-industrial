@@ -28,7 +28,7 @@ trait PayrollPeriodValidationRules
             'payroll_per_status' => ['required', Rule::enum(PayrollPeriodStatusEnum::class)],
             'is_paid' => [
                 'boolean',
-              // $this->payrollIsPaidRules(),
+            //   $this->payrollIsPaidRules(),
             ],
         ];
     }

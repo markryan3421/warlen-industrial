@@ -25,7 +25,7 @@ interface TableColumn {
 interface ActionConfig {
     label: string;
     icon: keyof typeof LucidIcons;
-    route: string;
+    route?: string;
     className?: string;
 }
 
@@ -44,9 +44,10 @@ interface CustomTableProps {
     filteredCount?: number;
     totalCount?: number;
     searchTerm?: string;
-    onDelete: (row: TableRow) => void;
-    onView: (row: TableRow) => void;
-    onEdit: (row: TableRow) => void;
+    onDelete?: (row: TableRow) => void;
+    onView?: (row: TableRow) => void;
+    onEdit?: (row: TableRow) => void;
+    onRunPayroll?: (row: TableRow) => void;
     title?: string;
     toolbar?: React.ReactNode;
     filterEmptyState?: React.ReactNode;
@@ -167,33 +168,46 @@ function ActionDropdown({
     onView,
     onEdit,
     onRestore,
+    onRunPayroll,
     route,
 }: {
     row: TableRow;
     actions: ActionConfig[];
-    onDelete: (r: TableRow) => void;
-    onView: (r: TableRow) => void;
-    onEdit: (r: TableRow) => void;
+    onDelete?: (r: TableRow) => void;
+    onView?: (r: TableRow) => void;
+    onEdit?: (r: TableRow) => void;
     onRestore?: (r: TableRow) => void;
+    onRunPayroll?: (r: TableRow) => void;
     route: ReturnType<typeof useRoute>;
 }) {
-    const nonDestructive = actions.filter(a => a.label !== "Delete" && a.label !== "Restore");
-    const destructive = actions.filter(a => a.label === "Delete");
-    const restore = actions.filter(a => a.label === "Restore");
+    // Filter "Run Payroll" to only appear on rows with status "open"
+    const visibleActions = actions.filter(action => {
+        if (action.label === 'Run Payroll') return row.payroll_per_status === 'open';
+        return true;
+    });
+
+    const nonDestructive = visibleActions.filter(
+        a => a.label !== 'Delete' && a.label !== 'Restore' && a.label !== 'Run Payroll'
+    );
+    const runPayrollActions = visibleActions.filter(a => a.label === 'Run Payroll');
+    const destructive = visibleActions.filter(a => a.label === 'Delete');
+    const restore = visibleActions.filter(a => a.label === 'Restore');
 
     const handleAction = (action: ActionConfig) => {
-        if (action.label === "Delete") {
+        if (action.label === 'Delete') {
             if (row.id !== undefined && row.id !== null) {
-                onDelete(row);
+                onDelete?.(row);
             } else {
                 console.error('Cannot delete: row has no id', row);
             }
-        } else if (action.label === "View") {
-            onView(row);
-        } else if (action.label === "Edit") {
-            onEdit(row);
-        } else if (action.label === "Restore") {
+        } else if (action.label === 'View') {
+            onView?.(row);
+        } else if (action.label === 'Edit') {
+            onEdit?.(row);
+        } else if (action.label === 'Restore') {
             onRestore?.(row);
+        } else if (action.label === 'Run Payroll') {
+            onRunPayroll?.(row);
         } else if (action.route) {
             if (row.id !== undefined && row.id !== null) {
                 window.location.href = route(action.route, row.id);
@@ -232,11 +246,11 @@ function ActionDropdown({
                         );
                     })}
 
-                    {restore.length > 0 && nonDestructive.length > 0 && (
+                    {restore.length > 0 && (nonDestructive.length > 0 || runPayrollActions.length > 0) && (
                         <DropdownMenuSeparator className="my-1 border-slate-100 dark:border-slate-800" />
                     )}
 
-                    {/* Non-destructive actions */}
+                    {/* Non-destructive actions (View, Edit, etc.) */}
                     {nonDestructive.map((action, i) => {
                         const Icon = LucidIcons[action.icon] as React.ElementType;
                         return (
@@ -251,8 +265,26 @@ function ActionDropdown({
                         );
                     })}
 
+                    {/* Run Payroll — separated, styled distinctively */}
+                    {runPayrollActions.length > 0 && nonDestructive.length > 0 && (
+                        <DropdownMenuSeparator className="my-1 border-slate-100 dark:border-slate-800" />
+                    )}
+                    {runPayrollActions.map((action, i) => {
+                        const Icon = LucidIcons[action.icon] as React.ElementType;
+                        return (
+                            <DropdownMenuItem
+                                key={i}
+                                onClick={() => handleAction(action)}
+                                className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium text-[#1d4791] dark:text-blue-400 hover:bg-[#1d4791]/10 dark:hover:bg-[#1d4791]/25 cursor-pointer transition-colors focus:bg-[#1d4791]/10 focus:text-[#1d4791]"
+                            >
+                                <Icon className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.75} />
+                                {action.label}
+                            </DropdownMenuItem>
+                        );
+                    })}
+
                     {/* Separator + destructive */}
-                    {destructive.length > 0 && (nonDestructive.length > 0 || restore.length > 0) && (
+                    {destructive.length > 0 && (nonDestructive.length > 0 || restore.length > 0 || runPayrollActions.length > 0) && (
                         <DropdownMenuSeparator className="my-1 border-slate-100 dark:border-slate-800" />
                     )}
                     {destructive.map((action, i) => {
@@ -288,6 +320,7 @@ export const CustomTable = ({
     onDelete,
     onView,
     onEdit,
+    onRunPayroll,
     title,
     toolbar,
     filterEmptyState,
@@ -301,7 +334,7 @@ export const CustomTable = ({
     const route = useRoute();
     const dataColumns = columns.filter(col => !col.isAction);
     const hasActions = columns.some(col => col.isAction);
-    const actionProps = { actions, onDelete, onView, onEdit, onRestore, route };
+    const actionProps = { actions, onDelete, onView, onEdit, onRestore, onRunPayroll, route };
 
     const handleSelectAll = (checked: boolean) => {
         if (!onSelectChange) return;
@@ -577,9 +610,6 @@ export const CustomTable = ({
                                 />
                             </th>
                         )}
-                        {/* <th className="w-14 px-5 py-3 text-center text-[10px] font-black tracking-widest uppercase text-[#1d4791] dark:text-blue-400 whitespace-nowrap">
-                            #
-                        </th> */}
                         {columns.map(col => (
                             <th
                                 key={col.key}
@@ -594,7 +624,7 @@ export const CustomTable = ({
                     {data.map((row, index) => (
                         <tr
                             key={index}
-                            className={`group border-b border-slate-100 dark:border-slate-800 last:border-0 bg-white dark:bg-slate-900 hover:bg-[#1d4791]/[0.03] dark:hover:bg-[#1d4791]/10 transition-colors duration-150 `}
+                            className="group border-b border-slate-100 dark:border-slate-800 last:border-0 bg-white dark:bg-slate-900 hover:bg-[#1d4791]/[0.03] dark:hover:bg-[#1d4791]/10 transition-colors duration-150"
                         >
                             {selectable && (
                                 <td className="px-2 py-3.5 text-center border">
@@ -604,9 +634,6 @@ export const CustomTable = ({
                                     />
                                 </td>
                             )}
-                            {/* <td className="px-5 py-3.5 text-center align-middle border-b">
-                                <IndexBadge value={from + index} />
-                            </td> */}
                             {columns.map(col => (
                                 <td
                                     key={col.key}
@@ -651,25 +678,25 @@ export const CustomTable = ({
                     </div>
                 )}
 
-                {/* Bulk Action Bar (Desktop) */}
+                {/* Bulk Action Bar */}
                 {selectable && hasSelected && (
-                        <div className="flex gap-2">
-                            {bulkActions.map((action, idx) => {
-                                const Icon = LucidIcons[action.icon] as React.ElementType;
-                                return (
-                                    <Button
-                                        key={idx}
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => action.onClick(selectedRows)}
-                                        className="text-sm"
-                                    >
-                                        <Icon className="h-4 w-4 mr-1" />
-                                        {action.label}
-                                    </Button>
-                                );
-                            })}
-                        </div>
+                    <div className="flex gap-2 px-5 py-3 border-b border-slate-100 dark:border-slate-800 bg-blue-50/60 dark:bg-[#1d4791]/10">
+                        {bulkActions.map((action, idx) => {
+                            const Icon = LucidIcons[action.icon] as React.ElementType;
+                            return (
+                                <Button
+                                    key={idx}
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => action.onClick(selectedRows)}
+                                    className="text-sm"
+                                >
+                                    <Icon className="h-4 w-4 mr-1" />
+                                    {action.label}
+                                </Button>
+                            );
+                        })}
+                    </div>
                 )}
 
                 {/* Mobile View */}

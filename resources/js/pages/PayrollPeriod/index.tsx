@@ -362,7 +362,28 @@ export default function Index({ payrollPeriods }: PayrollPeriodProps) {
     const actions = [
         { label: 'View', icon: 'Eye' as const },
         { label: 'Edit', icon: 'Pencil' as const },
+        { label: 'Run Payroll', icon: 'Play' as const },
     ];
+
+    const handleRunPayroll = (period: PayrollPeriod) => {
+        if (period.payroll_per_status !== 'open') return;
+
+        router.put(
+            `/payroll-periods/${period.id}`,
+            {
+                start_date: period.start_date,
+                end_date: period.end_date,
+                pay_date: period.pay_date,
+                payroll_per_status: 'processing',
+                is_paid: period.is_paid,
+            },
+            {
+                preserveScroll: true,
+                onSuccess: () => toast.success('Payroll run started.', toastStyle('#16a34a')),
+                onError: () => toast.error('Failed to start payroll run.', toastStyle('#dc2626')),
+            }
+        );
+    };
 
     // Toolbar slot for the filter controls
     const toolbar = (
@@ -534,6 +555,7 @@ export default function Index({ payrollPeriods }: PayrollPeriodProps) {
                                 from={1}
                                 onView={(period) => { setSelectedPeriod(period); setIsModalOpen(true); }}
                                 onEdit={(period) => router.visit(PayrollPeriodController.edit(period.id).url)}
+                                onRunPayroll={handleRunPayroll}
                                 toolbar={toolbar}
                                 filterEmptyState={filterEmptyState}
                             />
