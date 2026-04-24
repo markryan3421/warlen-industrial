@@ -337,7 +337,7 @@ export default function Index({ payrollPeriods }: PayrollPeriodProps) {
                         progress={processingProgress}
                     />
                 );
-            },x
+            },
         },
         {
             label: 'Payment',

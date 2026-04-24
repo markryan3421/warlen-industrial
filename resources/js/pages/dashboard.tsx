@@ -556,7 +556,7 @@ export default function Dashboard({
                                 </div>
 
                                 {/* Desktop Layout */}
-                                <div className="hidden lg:block xl:max-w-[350px] mt-4">
+                                <div className="hidden lg:block lg:h-auto xl:h-auto xl:max-w-[350px] mt-4">
                                     <div className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50">
                                         <header className='flex justify-center font-semibold text-xs text-center text-gray-700 dark:text-gray-300'>
                                             Employee Distribution by Pay Frequency

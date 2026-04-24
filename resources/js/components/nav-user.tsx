@@ -1,3 +1,4 @@
+// components/nav-user.tsx
 import { usePage } from '@inertiajs/react';
 import { ChevronsUpDown } from 'lucide-react';
 import {

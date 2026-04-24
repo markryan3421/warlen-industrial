@@ -7,47 +7,60 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
+use Illuminate\Http\Response;
+use Inertia\Inertia;
 use Inertia\Middleware\EncryptHistory;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
-        web: __DIR__.'/../routes/web.php',
-        api: __DIR__.'/../routes/api.php',
-        commands: __DIR__.'/../routes/console.php',
-        channels: __DIR__.'/../routes/channels.php',
+        web: __DIR__ . '/../routes/web.php',
+        api: __DIR__ . '/../routes/api.php',
+        commands: __DIR__ . '/../routes/console.php',
+        channels: __DIR__ . '/../routes/channels.php',
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->trustProxies(at: '*');  
+        $middleware->trustProxies(at: '*');
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
 
-       // $middleware->trustProxies(at:'*');
+        // $middleware->trustProxies(at:'*');
 
         $middleware->alias([
-                'roleBase' => \App\Http\Middleware\RolaBaseMiddleware::class,
-                'admin' => AdminMiddleware::class,
-                'hr' => \App\Http\Middleware\HrMiddleware::class,
-                'employee' => \App\Http\Middleware\EmployeeMiddleware::class,
-                // 'adminhr' => \App\Http\Middleware\AdminHrMiddleware::class,
+            'roleBase' => \App\Http\Middleware\RolaBaseMiddleware::class,
+            'admin' => AdminMiddleware::class,
+            'hr' => \App\Http\Middleware\HrMiddleware::class,
+            'employee' => \App\Http\Middleware\EmployeeMiddleware::class,
+            // 'adminhr' => \App\Http\Middleware\AdminHrMiddleware::class,
         ]);
         $middleware->web(append: [
             HandleAppearance::class,
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
-           // EncryptHistory::class,
+            // EncryptHistory::class,
         ]);
     })
 
     //   ->withSchedule(function (Schedule $schedule) {
     //     // Run daily at midnight to update statuses
     //     $schedule->command('app:update-employee-statuses')->daily();
-        
+
     //     // Or run more frequently if needed
     //     // $schedule->command('app:update-employee-statuses')->hourly();
-        
+
     //     // Run every minute for testing (remove in production)
     //     // $schedule->command('app:update-employee-statuses')->everyMinute();
     // })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->respond(function ($response) {
+            if ($response->getStatusCode() === 404) {
+                return Inertia::render('not-found', [
+                    'page' => 'The requested page',
+                    'message' => 'could not be found.',
+                    'intendedUrl' => url()->previous()
+                ])->toResponse(request())
+                    ->setStatusCode(404);
+            }
+
+            return $response;
+        });
     })->create();
