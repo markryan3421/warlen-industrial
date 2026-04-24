@@ -26,16 +26,17 @@ export function UserMenuContent() {
         router.flushAll();
     };
 
-    const avatarUrl =
-        user?.avatar ||
-        `https://ui-avatars.com/api/?background=1d4791&color=fff&name=${encodeURIComponent(user?.name || 'User')}`;
+    // Fix: Ensure avatarUrl is always a string
+    const avatarUrl: string = user?.avatar 
+        ? String(user.avatar) 
+        : `https://ui-avatars.com/api/?background=1d4791&color=fff&name=${encodeURIComponent(user?.name || 'User')}`;
 
     return (
         <>
             <DropdownMenuLabel className="p-0 font-normal">
                 <div className="flex items-center gap-3 px-3 py-2 text-left text-sm">
                     <Avatar className="h-10 w-10">
-                        <AvatarImage src={avatarUrl} alt={user?.name} />
+                        <AvatarImage src={avatarUrl} alt={user?.name || ''} />
                         <AvatarFallback className="bg-blue-600 text-white">
                             {getInitials(user?.name || 'User')}
                         </AvatarFallback>

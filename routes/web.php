@@ -225,6 +225,7 @@ Route::middleware(['auth', 'admin', 'auth.session', 'throttle:limit-actions'])->
 	Route::get('/attendance', [AIInsightController::class, 'analyzeAttendance']);
 });
 
+
 Route::get('/maintenance', function () {
 	$intendedUrl = session('url.intended', '/dashboard');
 

@@ -2,7 +2,7 @@ import { Head, Link } from '@inertiajs/react';
 import { ArrowUpRight, Circle, Minus } from 'lucide-react';
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import {
-    CartesianGrid, Cell, Line, LineChart, Pie, PieChart, Tooltip, TooltipProps,
+    CartesianGrid, Cell, Line, LineChart, Pie, PieChart, Tooltip,
     XAxis, YAxis
 } from 'recharts';
 
@@ -14,6 +14,8 @@ import AppLayout from '@/layouts/hr-layout';
 import { dashboard } from '@/routes';
 
 import type { BreadcrumbItem } from '@/types';
+import { formatCurrency } from '@/utils/formatCurrency';
+
 
 // Line chart data - moved outside component to prevent recreation
 const lineChartData = [
@@ -33,9 +35,9 @@ const lineChartData = [
 
 // Default colors for pay frequencies
 const defaultColors = {
-    weekender: "#0031d2",    // Blue
-    monthly: "#007bff",      // Light blue
-    semi_monthly: "#00ccff", // Lighter blue
+    weekender: "#05469D",
+    monthly: "#c7891e",
+    semi_monthly: "#FD0C0B",
 };
 
 const chartConfig = {
@@ -123,6 +125,11 @@ const StableLineChart = memo(
             label: string;
         } | null>(null);
 
+        // Helper function to format number with commas
+        const formatNumberWithCommas = (value: number) => {
+            return value.toLocaleString('en-US');
+        };
+
         return (
             <div className="relative">
                 <LineChart
@@ -156,8 +163,8 @@ const StableLineChart = memo(
                     />
                     <YAxis
                         tick={{ fontSize: 10 }}
-                        tickFormatter={(value) => value.toLocaleString()}
-                        width={35}
+                        tickFormatter={(value) => formatCurrency(Number(value))}
+                        width={50}
                     />
                     <Tooltip
                         content={({ active, payload, label }) => {
@@ -166,7 +173,7 @@ const StableLineChart = memo(
                                     <div className="bg-black/90 text-white rounded-lg px-3 py-2 shadow-lg border border-white/10">
                                         <p className="font-semibold text-sm">{label}</p>
                                         <p className="text-xs text-gray-300">
-                                            Total Net Pay: ₱ {payload[0]?.value?.toLocaleString()}
+                                            Total Net Pay: {formatCurrency(Number(payload[0]?.value))}
                                         </p>
                                     </div>
                                 );
@@ -195,7 +202,7 @@ const StableLineChart = memo(
                     />
                 </LineChart>
 
-                {/* Custom floating label (alternative to default tooltip) */}
+                {/* Custom floating label with formatted numbers */}
                 {activePoint && (
                     <div
                         style={{
@@ -209,7 +216,7 @@ const StableLineChart = memo(
                         className="bg-black/90 text-white text-xs rounded-md px-2 py-1 whitespace-nowrap shadow-lg border border-white/20"
                     >
                         <div className="font-semibold">{activePoint.label}</div>
-                        <div>PHP{activePoint.value.toLocaleString()}</div>
+                        <div>₱ {formatNumberWithCommas(activePoint.value)}</div>
                         <div className="absolute left-1/2 bottom-0 transform -translate-x-1/2 translate-y-full">
                             <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-black/90"></div>
                         </div>
@@ -236,7 +243,7 @@ const LineChartComponent = memo(({ data }: { data: typeof lineChartData }) => {
     const scaleY = stableHeight > 0 && liveHeight > 0 ? liveHeight / stableHeight : 1;
 
     return (
-        <div ref={containerRef} className="relative w-full h-full overflow-hidden mt-10">
+        <div ref={containerRef} className="relative w-full h-full overflow-hidden mt-15 md:mt-15 lg:mt-14 xl:mt-13 border-1 rounded-lg">
             {stableWidth > 0 && stableHeight > 0 && (
                 <div
                     style={{
@@ -442,24 +449,26 @@ export default function Dashboard({
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard" />
-            <div className="@container/main flex flex-1 flex-col gap-2">
-                <SectionCards
-                    totalNetPay={totalNetPay}
-                    totalActiveEmployee={totalActiveEmployee}
-                    openPayrollPeriod={openPayrollPeriod}
-                    pendingApplicationLeave={pendingApplicationLeave}
-                    totalNetPayLink="/hr/payroll"
-                    pendingLeaveLink="/hr/application-leave"
-                    payrollActivityLink="/hr/payroll-periods"
-                    activeEmployeesLink="/hr/employees"
-                />
+            <div className="@container/main flex flex-1 flex-col gap-2 -m-3">
+                <div className = "-m-4 mb-0">
+                    <SectionCards
+                        totalNetPay={totalNetPay}
+                        totalActiveEmployee={totalActiveEmployee}
+                        openPayrollPeriod={openPayrollPeriod}
+                        pendingApplicationLeave={pendingApplicationLeave}
+                        totalNetPayLink="/hr/payroll"
+                        pendingLeaveLink="/hr/application-leave"
+                        payrollActivityLink="/hr/payroll-periods"
+                        activeEmployeesLink="/hr/employees"
+                    />
+                </div>
 
                 {/* Main Container with Border */}
-                <div className="mx-2 sm:mx-4 lg:mx-10 my-4">
+                <div className="mx-2 sm:mx-4 lg:mx-6 my-4">
                     <div className="relative overflow-hidden rounded-xl border border-sidebar-border/70 bg-white dark:bg-gray-900 shadow-sm">
 
                         {/* Main 3-column grid layout */}
-                        <div className='grid grid-cols-1 lg:grid-cols-9 gap-4 p-3 sm:p-5 lg:p-8'>
+                        <div className='grid grid-cols-1 lg:grid-cols-9 gap-4 p-3 sm:p-5 lg:p-6'>
 
                             {/* Column 1: System Alert */}
                             <div className="col-span-1 md:col-span-1 lg:col-span-3">
@@ -469,7 +478,6 @@ export default function Dashboard({
                                         scheduleDeviation={scheduleDeviation}
                                         pendingRequests={pendingApplicationLeave}
                                         payrollActivityMessage={payrollActivityMessage}
-
                                         newlyRegisteredLink="/hr/employees"
                                         scheduleDeviationLink="/hr/attendances"
                                         pendingRequestsLink="/hr/application-leave"
@@ -521,15 +529,19 @@ export default function Dashboard({
                                             Employee Distribution by Pay Frequency
                                         </header>
 
-                                        <div className="flex flex-col sm:flex-row items-center gap-4 w-full">
-                                            <div className="w-full sm:w-[50%] md:w-[40%]">
+                                        <div className="flex flex-col items-center gap-4 w-full">
+                                            <div className="w-full sm:w-[50%] md:w-[50%]">
                                                 <div className="w-full h-[140px]">
                                                     <PieChartComponent data={pieData} />
                                                 </div>
                                             </div>
 
-                                            <div className="w-full sm:w-[50%]">
-                                                <div className="grid grid-cols-2 sm:grid-cols-1 gap-2">
+                                            <div>
+                                                <span className="text-sm text-center text-gray-500">Pay Frequency Percentage</span>
+                                            </div>
+
+                                            <div className="w-full">
+                                                <div className="grid grid-cols-2 gap-2">
                                                     {legendItems.map((item) => (
                                                         <div key={item.name} className="flex items-center justify-between gap-2 text-xs">
                                                             <div className="flex items-center gap-2">
@@ -554,10 +566,10 @@ export default function Dashboard({
                                 </div>
 
                                 {/* Desktop Layout */}
-                                <div className="hidden lg:block max-w-[350px] mt-4">
+                                <div className="hidden lg:block xl:max-w-[350px] mt-4">
                                     <div className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50">
-                                        <header className='flex justify-center mb-3 font-semibold text-sm text-gray-700 dark:text-gray-300'>
-                                            Pay Frequency Distribution
+                                        <header className='flex justify-center font-semibold text-xs text-center text-gray-700 dark:text-gray-300'>
+                                            Employee Distribution by Pay Frequency
                                         </header>
 
                                         <div className="flex flex-col items-center">
@@ -565,7 +577,11 @@ export default function Dashboard({
                                                 <DesktopPieChartComponent data={pieData} />
                                             </div>
 
-                                            <div className="grid grid-cols-2 gap-x-9 gap-y-1 mt-4 w-full">
+                                            <div>
+                                                <span className="text-[10px] text-center text-gray-500">Pay Frequency Percentage</span>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 lg:-ml-3 xl:ml-0 gap-x-9 gap-y-0.5 mt-1 w-full">
                                                 {legendItems.map((item) => (
                                                     <div key={item.name} className="flex items-center justify-between gap-1 text-[10px]">
                                                         <div className="flex items-center gap-1.5">

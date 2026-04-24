@@ -1,6 +1,6 @@
 // components/app-sidebar.tsx
 import { Link } from '@inertiajs/react';
-import { LayoutDashboard, History, CircleUser, Building2, Handshake, Coins  , UserCog, CalendarClock, Banknote, LayoutDashboardIcon, HandCoins, ChartSpline } from 'lucide-react';
+import { LayoutDashboard, History, CircleUser, Building2, Handshake, Coins, UserCog, CalendarClock, Banknote, LayoutDashboardIcon, HandCoins, ChartSpline } from 'lucide-react';
 import { FileBadge, Calendar, UsersRound, Contact, BookUser } from 'lucide-react';
 import { Users } from 'lucide-react';
 import LogsController from "@/actions/App/Http/Controllers/ActivityLogController";
@@ -26,9 +26,70 @@ import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
 import AppLogo from './app-logo';
 
-// Navigation Items Configuration
-// In your app-sidebar.tsx
-const ExpendituresItems: NavItem[] = [
+const OrganizationItems: NavItem[] = [
+    {
+        title: 'Branches',
+        href: '/branches', // Don't use controller method here, use string
+        icon: Building2,
+        // No pattern needed - will use href for matching
+    },
+    {
+        title: 'Positions',
+        href: '/positions',
+        icon: UserCog,
+    },
+];
+
+const WorkforceManagementItems: NavItem[] = [
+    {
+        title: 'Employees',
+        href: '/employees',
+        icon: CircleUser,
+    },
+    {
+     title: 'Positions',
+     href: '/positions',
+     icon: UserCog,  
+    },
+    {
+        title: 'Application Leaves',
+        href: '/application-leave',
+        icon: CalendarClock,
+    },
+];
+
+const PayrollOperationsItems: NavItem[] = [
+    {
+        title: 'Payrolls',
+        href: '/payrolls',
+        icon: Banknote,
+    },
+    {
+        title: 'Payroll Periods',
+        href: '/payroll-periods',
+        icon: Calendar,
+    },
+];
+
+const PayrollConfigurationItems: NavItem[] = [
+    {
+        title: 'Incentives',
+        href: '/incentives',
+        icon: Coins,
+    },
+    {
+        title: 'Deductions',
+        href: '/deductions',
+        icon: HandCoins,
+    },
+    {
+        title: 'Contributions',
+        href: '/Contributions',
+        icon: Handshake,
+    },
+]
+
+const DashboardAndReports: NavItem[] = [
     {
         title: 'Dashboard',
         href: '/dashboard',
@@ -42,68 +103,12 @@ const ExpendituresItems: NavItem[] = [
         icon: ChartSpline,
     },
     {
-        title: 'Branches',
-        href: '/branches', // Don't use controller method here, use string
-        icon: Building2,
-        // No pattern needed - will use href for matching
-    },
-    {
-        title: 'Contributions',
-        href: '/contribution-versions',
-        icon: Handshake,
-    },
-    {
-        title: 'Incentives',
-        href: '/incentives',
-        icon: Coins,
-    },
-    {
-        title: 'Deduction',
-        href: '/deductions',
-        icon: HandCoins,
-    }
-];
-
-const AccessControlItems: NavItem[] = [
-    {
-        title: 'Run Payroll',
-        href: '/payrolls',
-        icon: Banknote,
-    },
-    {
-        title: 'Employees',
-        href: '/employees',
-        icon: UsersRound,
-    },
-    {
-        title: 'Application Leaves',
-        href: '/application-leave',
-        icon: CalendarClock,
-    },
-    {
-        title: 'Payroll Periods',
-        href: '/payroll-periods',
-        icon: Calendar,
-    },
-    {
-        title: 'Positions',
-        href: '/positions',
-        icon: UserCog,
-    },
-    {
         title: 'Activity Logs',
         href: '/activity-logs',
         icon: History,
-    },
+    }
 ];
 
-const AttendanceItems: NavItem[] = [
-    {
-        title: 'Attendances',
-        href: '/attendances',
-        icon: Users,
-    },
-];
 
 const footerNavItems: NavItem[] = [];
 
@@ -138,9 +143,11 @@ export function AppSidebar() {
             <SidebarContent className={`
                 ${isExpanded ? 'px-5 transition-all duration-200 ease-in-out' : 'px-2 transition-all duration-200 ease-in-out'}
             `}>
-                <NavMain items={ExpendituresItems} label="Expenditures" isCollapsed={!isExpanded} />
-                <NavMain items={AccessControlItems} label="Access Control" isCollapsed={!isExpanded} />
-                <NavMain items={AttendanceItems} label="Attendance" isCollapsed={!isExpanded} />
+                <NavMain items={DashboardAndReports} label="General" isCollapsed={!isExpanded} />
+                <NavMain items={OrganizationItems} label="Organization" isCollapsed={!isExpanded} />
+                <NavMain items={WorkforceManagementItems} label="Workforce Management" isCollapsed={!isExpanded} />
+                <NavMain items={PayrollConfigurationItems} label="Payroll Configuration" isCollapsed={!isExpanded} />
+                <NavMain items={PayrollOperationsItems} label="Payroll Operations" isCollapsed={!isExpanded} />
             </SidebarContent>
 
             <SidebarFooter>

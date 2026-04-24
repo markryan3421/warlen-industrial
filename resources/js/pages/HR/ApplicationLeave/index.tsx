@@ -1,6 +1,6 @@
 import { Head, Link, useForm, usePage, router } from '@inertiajs/react';
 import Echo from 'laravel-echo';
-import { CalendarDays, PlusCircle, Clipboard, X, Bell, Eye, Pencil, Trash2 } from 'lucide-react';
+import { CalendarDays, PlusCircle, CalendarClock, X, Bell, Eye, Pencil, Trash2 } from 'lucide-react';
 import Pusher from 'pusher-js';
 import { useState, useMemo, useEffect } from 'react';
 import ApplicationLeaveController from "@/actions/App/Http/Controllers/HrRole/HRApplicationLeaveController";
@@ -349,7 +349,7 @@ export default function Index({ applicationLeaves }: ApplicationLeaveProps) {
                 <CustomHeader
                     title="Application Leaves"
                     description="List of all application leaves"
-                    icon={<Clipboard className="h-6 w-6" />}
+                    icon={<CalendarClock className="h-6 w-6" />}
                 />
             </div>
 

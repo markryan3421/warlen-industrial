@@ -1,41 +1,26 @@
 // layouts/hr-layout.tsx
-import { Head } from '@inertiajs/react';
-import { HrSidebar } from '@/components/hr-sidebar';
-import { SidebarProvider } from '@/components/ui/sidebar';
-import { Toaster } from '@/components/ui/sonner';
-import { Breadcrumbs } from '@/components/breadcrumbs';
-import type { BreadcrumbItem } from '@/types';
-import Footer from '@/components/custom-footer';
+import Footer from "@/components/custom-footer";
+import { Toaster } from "@/components/ui/sonner"
+import HrSidebarLayout from '@/layouts/hr-sidebar-layout';
+import type { AppLayoutProps } from '@/types';
+import { Head } from "@inertiajs/react";
 
-
-interface HrLayoutProps {
-    children: React.ReactNode;
-    breadcrumbs?: BreadcrumbItem[];
-    title?: string;
-}
-
-export default function HrLayout({ children, breadcrumbs = [], title }: HrLayoutProps) {
+export default ({ children, breadcrumbs, title, ...props }: AppLayoutProps & { title?: string }) => {
     return (
         <>
             {title && <Head title={title} />}
-            <SidebarProvider>
-                <div className="flex min-h-screen w-full">
-                    <HrSidebar />
-                    <main className="flex-1 overflow-y-auto bg-gray-50">
-                        <div className="container mx-auto p-6">
-                            {/* Breadcrumbs */}
-                            {breadcrumbs && breadcrumbs.length > 0 && (
-                                <div className="mb-4">
-                                    <Breadcrumbs breadcrumbs={breadcrumbs} />
-                                </div>
-                            )}
-                            {children}
-                            <Footer />
-                        </div>
-                    </main>
+            <HrSidebarLayout breadcrumbs={breadcrumbs} {...props}>
+                <Toaster
+                    position="top-right"
+                    expand={false}
+                    closeButton
+                />
+                <div className="container mx-auto p-6">
+                    {children}
                 </div>
-                <Toaster position="top-right" />
-            </SidebarProvider>
+                
+                <Footer />
+            </HrSidebarLayout>
         </>
     );
-}
+};
