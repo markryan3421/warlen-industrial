@@ -27,14 +27,20 @@ const BORDER_LIGHT = '#e2dbd1';
 const TEXT_DARK = '#2c2b28';
 const TEXT_MUTED = '#6b6258';
 
+// Enhanced badges – more features with varied colors
 const features = [
-    { label: 'Automated Payroll Calculation', color: '#10b981' },
-    { label: 'Incentives Sortification',       color: '#c084fc' },
-    { label: 'Attendance Filterization',       color: '#94a3b8' },
-    { label: 'Data Archive',                   color: '#f97316' },
-    { label: 'Dashboard Optimization',         color: '#60a5fa' },
-    { label: 'Employee Management',            color: '#facc15' },
-    { label: 'Report Generation',              color: '#f87171' },
+    { label: 'Automated Payroll Calculation', color: '#03b479' },
+    { label: 'Incentives Sortification', color: '#c084fc' },
+    { label: 'Attendance Filterization', color: '#94a3b8' },
+    { label: 'Data Archive', color: '#f97316' },
+    { label: 'Dashboard Optimization', color: '#60a5fa' },
+    { label: 'Employee Management', color: '#facc15' },
+    // { label: 'Report Generation', color: '#f87171' },
+    // { label: 'Real-time Analytics', color: '#34d399' },
+    // { label: 'Multi-role Access', color: '#a78bfa' },
+    // { label: 'Compliance Tracking', color: '#fbbf24' },
+    { label: 'Leave Management', color: '#9b4646' },
+    { label: 'Overtime Calculations', color: '#f472b6' },
 ];
 
 function OutlinedField({ id, label, icon, children }: any) {
@@ -231,33 +237,69 @@ export default function Login({ status }: Props) {
                         transition: width 0.2s ease, height 0.2s ease;
                     }
                     
+                    /* Enhanced feature badges container */
                     .features-container {
                         display: flex;
                         flex-wrap: wrap;
                         gap: 12px;
+                        margin-top: 8px;
                     }
                     
+                    /* Badge styling – fully responsive, text wraps */
                     .feature-tag {
                         font-family: ${INTER};
                         font-weight: 600;
                         font-size: 0.75rem;
                         border-radius: 32px;
-                        padding: 5px 14px;
+                        padding: 6px 14px;
                         background: rgba(255,250,240,0.9);
                         letter-spacing: 0.3px;
-                        transition: transform 0.1s ease;
-                        white-space: nowrap;
+                        transition: transform 0.1s ease, box-shadow 0.1s ease;
+                        white-space: normal;
+                        word-break: break-word;
+                        line-height: 1.2;
+                        text-align: center;
+                        display: inline-block;
+                        max-width: 100%;
+                        flex: 0 0 auto;
+                        cursor: default;
+                        box-shadow: 0 1px 2px rgba(0,0,0,0.02);
                     }
                     
+                    .feature-tag:hover {
+                        transform: translateY(-2px);
+                        box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+                    }
+                    
+                    /* Responsive badge adjustments */
                     @media (max-width: 640px) {
                         .feature-tag {
                             font-size: 0.7rem;
-                            padding: 4px 10px;
-                            white-space: normal;
-                            text-align: center;
+                            padding: 5px 12px;
                         }
                         .features-container {
-                            justify-content: center;
+                            gap: 10px;
+                        }
+                    }
+                    
+                    /* On very small screens, make badges take full width or two columns */
+                    @media (max-width: 480px) {
+                        .features-container {
+                            gap: 8px;
+                        }
+                        .feature-tag {
+                            flex: 1 0 calc(50% - 8px);
+                            min-width: 120px;
+                            text-align: center;
+                            font-size: 0.7rem;
+                            padding: 5px 8px;
+                        }
+                    }
+                    
+                    /* Even smaller devices: full width badges */
+                    @media (max-width: 380px) {
+                        .feature-tag {
+                            flex: 1 0 100%;
                         }
                     }
                     
@@ -372,7 +414,7 @@ export default function Login({ status }: Props) {
                             <span 
                                 style={{ 
                                     fontFamily: INTER, 
-                                    fontWeight: 600, 
+                                    fontWeight: 900, 
                                     fontSize: '0.75rem', 
                                     letterSpacing: '2px', 
                                     color: ACCENT_COLOR, 
@@ -383,7 +425,7 @@ export default function Login({ status }: Props) {
                                     display: 'inline-block'
                                 }}
                             >
-                                Industrial Enterprise Suite
+                                Workforce Management Suite
                             </span>
                         </div>
                         <h1 style={{ 
@@ -430,7 +472,7 @@ export default function Login({ status }: Props) {
                         </div>
                     </div>
 
-                    {/* Right side – Login Card */}
+                    {/* Right side – Login Card (unchanged) */}
                     <div className="login-card-container">
                         <div className="login-card">
                             <div style={{ textAlign: 'center', marginBottom: '1.8rem' }}>
