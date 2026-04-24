@@ -1,6 +1,7 @@
 // components/user-menu-content.tsx
 import { Link, router, usePage } from '@inertiajs/react';
 import { LogOut, Settings } from 'lucide-react';
+import { useState } from 'react';
 import {
     DropdownMenuGroup,
     DropdownMenuItem,
@@ -10,21 +11,24 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useMobileNavigation } from '@/hooks/use-mobile-navigation';
 import { logout } from '@/routes';
-import { edit } from '@/routes/profile';
 import { useInitials } from '@/hooks/use-initials';
+import { SettingsModal } from '@/components/settings-modal';
 
 export function UserMenuContent() {
     const { auth } = usePage().props;
     const user = auth?.user;
     const cleanup = useMobileNavigation();
     const getInitials = useInitials();
+    const [settingsOpen, setSettingsOpen] = useState(false);
 
     const handleLogout = () => {
         cleanup();
         router.flushAll();
     };
 
-    const avatarUrl = user?.avatar || `https://ui-avatars.com/api/?background=1d4791&color=fff&name=${encodeURIComponent(user?.name || 'User')}`;
+    const avatarUrl =
+        user?.avatar ||
+        `https://ui-avatars.com/api/?background=1d4791&color=fff&name=${encodeURIComponent(user?.name || 'User')}`;
 
     return (
         <>
@@ -48,16 +52,16 @@ export function UserMenuContent() {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-                <DropdownMenuItem asChild>
-                    <Link
-                        className="block w-full cursor-pointer"
-                        href={edit()}
-                        prefetch
-                        onClick={cleanup}
-                    >
-                        <Settings className="mr-2 h-4 w-4" />
-                        Settings
-                    </Link>
+                <DropdownMenuItem
+                    className="cursor-pointer"
+                    onSelect={(e) => {
+                        e.preventDefault();
+                        cleanup();
+                        setSettingsOpen(true);
+                    }}
+                >
+                    <Settings className="mr-2 h-4 w-4" />
+                    Settings
                 </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
@@ -73,6 +77,11 @@ export function UserMenuContent() {
                     Log out
                 </Link>
             </DropdownMenuItem>
+
+            <SettingsModal
+                open={settingsOpen}
+                onClose={() => setSettingsOpen(false)}
+            />
         </>
     );
 }

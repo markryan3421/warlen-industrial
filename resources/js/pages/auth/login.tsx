@@ -1,12 +1,11 @@
-import { Form } from '@inertiajs/react';
+import { Form, Head } from '@inertiajs/react';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import InputError from '@/components/input-error';
 import TextLink from '@/components/text-link';
 import { Spinner } from '@/components/ui/spinner';
 import { store } from '@/routes/login';
 import { request } from '@/routes/password';
-import gsap from 'gsap';
 import '@fontsource/inter/400.css';
 import '@fontsource/inter/600.css';
 import '@fontsource/inter/700.css';
@@ -20,10 +19,13 @@ type Props = {
 };
 
 const INTER = "'Inter', sans-serif";
-const ACCENT_COLOR = '#CC570D';   // orange
-const STEEL_BLUE = '#093B92';     // solid blue for button
-const CARD_BG = '#1e1f2a';
-const BORDER_LIGHT = '#3a3c48';
+const ACCENT_COLOR = '#CC570D';
+const STEEL_BLUE = '#093B92';
+const CARD_BG = '#fefaf5';           // dirty white card
+const BODY_BG = '#f1ede8';           // dirty white background
+const BORDER_LIGHT = '#e2dbd1';
+const TEXT_DARK = '#2c2b28';
+const TEXT_MUTED = '#6b6258';
 
 const features = [
     { label: 'Automated Payroll Calculation', color: '#10b981' },
@@ -47,7 +49,7 @@ function OutlinedField({ id, label, icon, children }: any) {
                     left: '12px',
                     fontSize: '11px',
                     fontWeight: 600,
-                    color: '#cbd5e1',
+                    color: TEXT_MUTED,
                     background: CARD_BG,
                     padding: '0 6px',
                     zIndex: 10,
@@ -70,7 +72,7 @@ function OutlinedField({ id, label, icon, children }: any) {
                 onMouseEnter={e => (e.currentTarget.style.borderColor = ACCENT_COLOR)}
                 onMouseLeave={e => (e.currentTarget.style.borderColor = BORDER_LIGHT)}
             >
-                <span style={{ color: '#94a3b8', marginRight: '12px' }}>{icon}</span>
+                <span style={{ color: TEXT_MUTED, marginRight: '12px' }}>{icon}</span>
                 {children}
             </div>
         </div>
@@ -79,171 +81,61 @@ function OutlinedField({ id, label, icon, children }: any) {
 
 export default function Login({ status }: Props) {
     const [showPassword, setShowPassword] = useState(false);
-    const [showMain, setShowMain] = useState(false);
-
-    const overlayRef = useRef<HTMLDivElement>(null);
-    const oldLogoRef = useRef<HTMLImageElement>(null);
-    const oldTextRef = useRef<HTMLDivElement>(null);
-    const newLogoRef = useRef<HTMLImageElement>(null);
-    const newTextRef = useRef<HTMLDivElement>(null);
-    const mainRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        document.body.style.overflow = 'hidden';
-
-        const tl = gsap.timeline({
-            onComplete: () => {
-                gsap.to(overlayRef.current, {
-                    scale: 0.97,
-                    borderRadius: '32px',
-                    duration: 0.5,
-                    ease: 'power2.inOut',
-                });
-                gsap.to(overlayRef.current, {
-                    opacity: 0,
-                    duration: 0.6,
-                    delay: 0.1,
-                    ease: 'power2.inOut',
-                    onComplete: () => {
-                        setShowMain(true);
-                        document.body.style.overflow = '';
-                        gsap.fromTo(mainRef.current,
-                            { opacity: 0, y: 20 },
-                            { opacity: 1, y: 0, duration: 0.7, ease: 'power2.out' }
-                        );
-                        if (overlayRef.current) {
-                            overlayRef.current.style.display = 'none';
-                        }
-                    }
-                });
-            }
-        });
-
-        gsap.set([newLogoRef.current, newTextRef.current], { opacity: 0, scale: 0.9 });
-        gsap.set([oldLogoRef.current, oldTextRef.current], { opacity: 0, y: 20 });
-
-        tl.fromTo(overlayRef.current,
-            { opacity: 0, backgroundColor: '#0a0c10' },
-            { opacity: 1, duration: 0.5, ease: 'power2.out' }
-        )
-        .fromTo(oldLogoRef.current,
-            { opacity: 0, scale: 0.7 },
-            { opacity: 1, scale: 1, duration: 0.6, ease: 'back.out(0.6)' },
-            '-=0.2'
-        )
-        .fromTo(oldTextRef.current,
-            { opacity: 0, y: 25 },
-            { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' },
-            '-=0.4'
-        )
-        .to({}, { duration: 1.0 })
-        .to(oldLogoRef.current, { opacity: 0, scale: 0.6, duration: 0.4, ease: 'power2.in' }, 'transform')
-        .to(oldTextRef.current, { opacity: 0, y: -20, duration: 0.35, ease: 'power2.in' }, 'transform')
-        .to(overlayRef.current, { backgroundColor: '#1e1f2a', duration: 0.6, ease: 'power2.inOut' }, 'transform+=0.05')
-        .fromTo(newLogoRef.current,
-            { opacity: 0, scale: 0.8 },
-            { opacity: 1, scale: 1, duration: 0.6, ease: 'power2.out' },
-            'transform+=0.2'
-        )
-        .fromTo(newTextRef.current,
-            { opacity: 0, y: 15 },
-            { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' },
-            '-=0.3'
-        )
-        .to({}, { duration: 0.6 });
-
-        return () => {
-            tl.kill();
-            document.body.style.overflow = '';
-        };
-    }, []);
 
     return (
         <>
-            {/* Intro Overlay */}
-            <div
-                ref={overlayRef}
-                style={{
-                    position: 'fixed',
-                    inset: 0,
-                    zIndex: 9999,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexDirection: 'column',
-                    gap: '2rem',
-                    willChange: 'transform, background-color, border-radius',
-                }}
-            >
-                <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem' }}>
-                    <img
-                        ref={oldLogoRef}
-                        src="/images/dekalogo.png"
-                        style={{ width: '130px', height: '130px', objectFit: 'contain' }}
-                        alt="DEKA"
-                    />
-                    <div
-                        ref={oldTextRef}
-                        style={{ fontFamily: INTER, fontWeight: 800, fontSize: '2.6rem', letterSpacing: '0.08em', color: ACCENT_COLOR }}
-                    >
-                        DEKA SALES
-                    </div>
-                </div>
-                <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem', position: 'absolute' }}>
-                    <img
-                        ref={newLogoRef}
-                        src="/images/dekalatestlogo.webp"
-                        style={{ width: '140px', height: '140px', objectFit: 'contain' }}
-                        alt="Warlen"
-                    />
-                    <div
-                        ref={newTextRef}
-                        style={{
-                            fontFamily: INTER,
-                            fontWeight: 800,
-                            fontSize: 'clamp(1.4rem, 4vw, 2rem)',
-                            letterSpacing: '0.03em',
-                            color: '#e2e8f0',
-                            whiteSpace: 'nowrap',
-                            padding: '0 1rem',
-                        }}
-                    >
-                        WARLEN INDUSTRIAL SALES CORPORATION
-                    </div>
-                </div>
-            </div>
+            <Head title="DEKA Payroll Management System" />
+            <style>{`
+                /* Prevent autofill background color change */
+                input:-webkit-autofill,
+                input:-webkit-autofill:hover,
+                input:-webkit-autofill:focus,
+                input:-webkit-autofill:active {
+                    -webkit-box-shadow: 0 0 0 30px ${CARD_BG} inset !important;
+                    -webkit-text-fill-color: ${TEXT_DARK} !important;
+                    caret-color: ${TEXT_DARK} !important;
+                    transition: background-color 5000s ease-in-out 0s;
+                }
 
-            {/* Main UI */}
+                /* Custom light‑theme checkbox */
+                input[type="checkbox"] {
+                    appearance: none;
+                    width: 18px;
+                    height: 18px;
+                    background: #fff;
+                    border: 1.5px solid ${BORDER_LIGHT};
+                    border-radius: 4px;
+                    cursor: pointer;
+                    position: relative;
+                    transition: all 0.2s ease;
+                }
+                input[type="checkbox"]:checked {
+                    background: ${ACCENT_COLOR};
+                    border-color: ${ACCENT_COLOR};
+                }
+                input[type="checkbox"]:checked::after {
+                    content: '✓';
+                    position: absolute;
+                    color: white;
+                    font-size: 12px;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                }
+                input[type="checkbox"]:hover {
+                    border-color: ${ACCENT_COLOR};
+                }
+            `}</style>
             <div
-                ref={mainRef}
                 style={{
-                    opacity: 0,
                     position: 'relative',
                     minHeight: '100vh',
                     width: '100%',
-                    display: showMain ? 'flex' : 'none',
+                    display: 'flex',
                     flexDirection: 'column',
-                    backgroundColor: '#0a0c10',
+                    backgroundColor: BODY_BG,
                 }}
             >
-                <div
-                    style={{
-                        position: 'absolute',
-                        inset: 0,
-                        backgroundImage: 'url(/images/bgdeka.png)',
-                        backgroundSize: 'cover',
-                        backgroundPosition: 'center',
-                        filter: 'brightness(0.75) contrast(1.1)',
-                    }}
-                />
-                <div
-                    style={{
-                        position: 'absolute',
-                        inset: 0,
-                        background: 'radial-gradient(circle at 30% 40%, rgba(25, 30, 40, 0.7), rgba(10, 12, 18, 0.85))',
-                    }}
-                />
-
                 <div style={{ position: 'absolute', top: '28px', left: '36px', zIndex: 20 }}>
                     <img src="/images/dekalogo.png" style={{ width: '52px', height: '52px', objectFit: 'contain', opacity: 0.9 }} alt="DEKA" />
                 </div>
@@ -252,22 +144,22 @@ export default function Login({ status }: Props) {
                     {/* Left side */}
                     <div style={{ flex: '1 1 45%', minWidth: '280px', marginBottom: '2rem' }}>
                         <div style={{ marginBottom: '1rem' }}>
-                            <span style={{ fontFamily: INTER, fontWeight: 600, fontSize: '0.75rem', letterSpacing: '2px', color: ACCENT_COLOR, textTransform: 'uppercase', background: 'rgba(0,0,0,0.4)', padding: '4px 12px', borderRadius: '20px' }}>
+                            <span style={{ fontFamily: INTER, fontWeight: 600, fontSize: '0.75rem', letterSpacing: '2px', color: ACCENT_COLOR, textTransform: 'uppercase', background: 'rgba(0,0,0,0.04)', padding: '4px 12px', borderRadius: '20px' }}>
                                 Industrial Enterprise Suite
                             </span>
                         </div>
-                        <h1 style={{ fontFamily: INTER, fontWeight: 1000, fontSize: 'clamp(2rem, 4vw, 4rem)', lineHeight: 1.2, margin: '0 0 0.5rem 0', color: '#f1f5f9' }}>
-                            <span style={{ color: STEEL_BLUE }}>Warlen Industrial</span><br />
+                        <h1 style={{ fontFamily: INTER, fontWeight: 1000, fontSize: 'clamp(2rem, 4vw, 4rem)', lineHeight: 1.2, margin: '0 0 0.5rem 0', color: TEXT_DARK }}>
+                            <span style={{ color: STEEL_BLUE }}>WARLEN INDUSTRIAL SALES CORP.</span>{' '}
                             <span style={{ color: ACCENT_COLOR }}>DEKA Sales</span>
                         </h1>
-                        <h2 style={{ fontFamily: INTER, fontWeight: 800, fontSize: 'clamp(1rem, 3vw, 3rem)', color: '#cbd5e6', margin: '0 0 1rem 0' }}>Payroll Management System</h2>
-                        <p style={{ fontFamily: INTER, fontSize: '0.95rem', color: '#a0aec0', lineHeight: 1.6, margin: '0 0 1.8rem 0', maxWidth: '520px' }}>
+                        <h2 style={{ fontFamily: INTER, fontWeight: 800, fontSize: 'clamp(1rem, 3vw, 3rem)', color: '#4a4238', margin: '0 0 1rem 0' }}>Payroll Management System</h2>
+                        <p style={{ fontFamily: INTER, fontSize: '0.95rem', color: TEXT_MUTED, lineHeight: 1.6, margin: '0 0 1.8rem 0', maxWidth: '520px' }}>
                             Secure, high‑performance payroll management exclusively for{' '}
-                            <strong style={{ color: '#e2e8f0' }}>WARLEN INDUSTRIAL SALES CORPORATION, DEKA Sales</strong>.
+                            <strong style={{ color: TEXT_DARK }}>WARLEN INDUSTRIAL SALES CORPORATION, DEKA Sales</strong>.
                         </p>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
                             {features.map(({ label, color }) => (
-                                <span key={label} style={{ fontFamily: INTER, fontWeight: 500, fontSize: '0.75rem', color, border: `1px solid ${color}80`, borderRadius: '32px', padding: '5px 16px', background: 'rgba(0,0,0,0.3)' }}>
+                                <span key={label} style={{ fontFamily: INTER, fontWeight: 600, fontSize: '0.75rem', color: color, border: `2px solid ${color}`, borderRadius: '32px', padding: '5px 14px', background: 'rgba(255,250,240,0.9)', letterSpacing: '0.3px' }}>
                                     {label}
                                 </span>
                             ))}
@@ -276,15 +168,15 @@ export default function Login({ status }: Props) {
 
                     {/* Right side – Login Card */}
                     <div style={{ width: '100%', maxWidth: '460px', flexShrink: 0 }}>
-                        <div style={{ background: CARD_BG, borderRadius: '28px', boxShadow: '0 25px 45px -12px rgba(0,0,0,0.6)', padding: '2rem', border: '1px solid #3a3c48' }}>
+                        <div style={{ background: CARD_BG, borderRadius: '28px', boxShadow: '0 20px 35px -10px rgba(0,0,0,0.08)', padding: '2rem', border: `1px solid ${BORDER_LIGHT}` }}>
                             <div style={{ textAlign: 'center', marginBottom: '1.8rem' }}>
                                 <div style={{ width: '48px', height: '3px', background: `linear-gradient(90deg, ${ACCENT_COLOR}, ${STEEL_BLUE})`, margin: '0 auto 1rem auto', borderRadius: '4px' }} />
-                                <h2 style={{ fontFamily: INTER, fontWeight: 700, fontSize: '1.6rem', letterSpacing: '0.2em', color: '#e2e8f0', margin: 0 }}>L O G I N</h2>
-                                <p style={{ fontSize: '0.75rem', color: '#8ca3b9', marginTop: '6px' }}>Secure authentication required</p>
+                                <h2 style={{ fontFamily: INTER, fontWeight: 700, fontSize: '1.6rem', letterSpacing: '0.2em', color: TEXT_DARK, margin: 0 }}>L O G I N</h2>
+                                <p style={{ fontSize: '0.75rem', color: TEXT_MUTED, marginTop: '6px' }}>Secure authentication required</p>
                             </div>
 
                             {status && (
-                                <div style={{ fontSize: '0.8rem', color: '#34d399', textAlign: 'center', marginBottom: '20px', background: 'rgba(16, 185, 129, 0.1)', padding: '8px', borderRadius: '12px' }}>
+                                <div style={{ fontSize: '0.8rem', color: '#10b981', textAlign: 'center', marginBottom: '20px', background: 'rgba(16, 185, 129, 0.1)', padding: '8px', borderRadius: '12px' }}>
                                     {status}
                                 </div>
                             )}
@@ -292,73 +184,77 @@ export default function Login({ status }: Props) {
                             <Form {...store.form()} resetOnSuccess={['password']} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                                 {({ processing, errors }) => (
                                     <>
-                                        <OutlinedField id="email" label="Email Address" icon={<Mail size={18} />}>
-                                            <input
-                                                id="email"
-                                                name="email"
-                                                type="email"
-                                                placeholder="operations@warlen.com"
-                                                required
-                                                autoFocus
-                                                autoComplete="email"
-                                                style={{
-                                                    fontFamily: INTER,
-                                                    flex: 1,
-                                                    background: 'transparent',
-                                                    border: 'none',
-                                                    outline: 'none',
-                                                    fontSize: '0.9rem',
-                                                    color: '#f1f5f9',
-                                                    padding: '12px 0',
-                                                }}
-                                            />
+                                        <div>
+                                            <OutlinedField id="email" label="Email Address" icon={<Mail size={18} />}>
+                                                <input
+                                                    id="email"
+                                                    name="email"
+                                                    type="email"
+                                                    placeholder="operations@warlen.com"
+                                                    required
+                                                    autoFocus
+                                                    autoComplete="email"
+                                                    style={{
+                                                        fontFamily: INTER,
+                                                        flex: 1,
+                                                        background: 'transparent',
+                                                        border: 'none',
+                                                        outline: 'none',
+                                                        fontSize: '0.9rem',
+                                                        color: TEXT_DARK,
+                                                        padding: '12px 0',
+                                                    }}
+                                                />
+                                            </OutlinedField>
                                             {errors?.email && <InputError message={errors.email} className="text-xs mt-1" />}
-                                        </OutlinedField>
+                                        </div>
 
-                                        <OutlinedField id="password" label="Password" icon={<Lock size={18} />}>
-                                            <input
-                                                id="password"
-                                                name="password"
-                                                type={showPassword ? 'text' : 'password'}
-                                                placeholder="••••••••••••••••"
-                                                required
-                                                autoComplete="current-password"
-                                                style={{
-                                                    fontFamily: INTER,
-                                                    flex: 1,
-                                                    background: 'transparent',
-                                                    border: 'none',
-                                                    outline: 'none',
-                                                    fontSize: '0.9rem',
-                                                    color: '#f1f5f9',
-                                                    padding: '12px 0',
-                                                }}
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowPassword(!showPassword)}
-                                                style={{
-                                                    background: 'none',
-                                                    border: 'none',
-                                                    cursor: 'pointer',
-                                                    padding: 0,
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    color: '#94a3b8',
-                                                    marginLeft: '8px',
-                                                }}
-                                                onMouseEnter={e => (e.currentTarget.style.color = ACCENT_COLOR)}
-                                                onMouseLeave={e => (e.currentTarget.style.color = '#94a3b8')}
-                                            >
-                                                {showPassword ? <Eye size={18} /> : <EyeOff size={18} />}
-                                            </button>
+                                        <div>
+                                            <OutlinedField id="password" label="Password" icon={<Lock size={18} />}>
+                                                <input
+                                                    id="password"
+                                                    name="password"
+                                                    type={showPassword ? 'text' : 'password'}
+                                                    placeholder="••••••••••••••••"
+                                                    required
+                                                    autoComplete="current-password"
+                                                    style={{
+                                                        fontFamily: INTER,
+                                                        flex: 1,
+                                                        background: 'transparent',
+                                                        border: 'none',
+                                                        outline: 'none',
+                                                        fontSize: '0.9rem',
+                                                        color: TEXT_DARK,
+                                                        padding: '12px 0',
+                                                    }}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowPassword(!showPassword)}
+                                                    style={{
+                                                        background: 'none',
+                                                        border: 'none',
+                                                        cursor: 'pointer',
+                                                        padding: 0,
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        color: TEXT_MUTED,
+                                                        marginLeft: '8px',
+                                                    }}
+                                                    onMouseEnter={e => (e.currentTarget.style.color = ACCENT_COLOR)}
+                                                    onMouseLeave={e => (e.currentTarget.style.color = TEXT_MUTED)}
+                                                >
+                                                    {showPassword ? <Eye size={18} /> : <EyeOff size={18} />}
+                                                </button>
+                                            </OutlinedField>
                                             {errors?.password && <InputError message={errors.password} className="text-xs mt-1" />}
-                                        </OutlinedField>
+                                        </div>
 
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
-                                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                                                <input type="checkbox" name="remember" style={{ accentColor: ACCENT_COLOR, cursor: 'pointer' }} />
-                                                <span style={{ fontSize: '0.8rem', color: '#b9c7d9' }}>Keep session</span>
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                                                <input type="checkbox" name="remember" />
+                                                <span style={{ fontSize: '0.8rem', color: TEXT_MUTED }}>Keep session</span>
                                             </label>
                                             <TextLink
                                                 href={request()}
@@ -376,7 +272,6 @@ export default function Login({ status }: Props) {
                                             </TextLink>
                                         </div>
 
-                                        {/* SOLID BLUE BUTTON – NO GRADIENT */}
                                         <button
                                             type="submit"
                                             disabled={processing}
@@ -396,7 +291,7 @@ export default function Login({ status }: Props) {
                                                 alignItems: 'center',
                                                 justifyContent: 'center',
                                                 gap: '10px',
-                                                boxShadow: '0 6px 14px rgba(0,0,0,0.3)',
+                                                boxShadow: '0 4px 10px rgba(0,0,0,0.05)',
                                                 transition: 'transform 0.15s ease, filter 0.2s ease',
                                                 marginTop: '8px',
                                             }}
@@ -412,14 +307,14 @@ export default function Login({ status }: Props) {
                                 )}
                             </Form>
 
-                            <div style={{ marginTop: '1.8rem', textAlign: 'center', fontSize: '0.7rem', color: '#6c7a91', borderTop: '1px solid rgba(100,116,139,0.2)', paddingTop: '1.2rem' }}>
+                            <div style={{ marginTop: '1.8rem', textAlign: 'center', fontSize: '0.7rem', color: TEXT_MUTED, borderTop: `1px solid ${BORDER_LIGHT}`, paddingTop: '1.2rem' }}>
                                 <span> Restricted Access</span>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div style={{ position: 'relative', zIndex: 10, textAlign: 'center', padding: '1rem 1rem 1.5rem', fontSize: '0.7rem', color: '#6a7a8e', borderTop: '1px solid rgba(100,116,139,0.15)', marginTop: 'auto' }}>
+                <div style={{ position: 'relative', zIndex: 10, textAlign: 'center', padding: '1rem 1rem 1.5rem', fontSize: '0.7rem', color: TEXT_MUTED, borderTop: `1px solid ${BORDER_LIGHT}`, marginTop: 'auto' }}>
                     © 2026 Warlen Industrial Sales Corporation, DEKA Sales — All operational data is encrypted and monitored.
                 </div>
             </div>

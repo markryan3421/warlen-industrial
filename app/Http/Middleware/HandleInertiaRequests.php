@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 use Illuminate\Support\Facades\Storage;
+use Laravel\Fortify\Features;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -38,11 +39,11 @@ class HandleInertiaRequests extends Middleware
     {
         $user = $request->user();
         $userData = null;
-        
+
         if ($user) {
             $employee = $user->employee;
             $avatar = null;
-            
+
             // Get avatar from employee if exists
             if ($employee && $employee->avatar) {
                 if (filter_var($employee->avatar, FILTER_VALIDATE_URL)) {
@@ -51,32 +52,43 @@ class HandleInertiaRequests extends Middleware
                     $avatar = Storage::url($employee->avatar);
                 }
             }
-            
+
             // Fallback to UI Avatars if no avatar
             if (!$avatar) {
                 $avatar = 'https://ui-avatars.com/api/?background=1d4791&color=fff&name=' . urlencode($user->name);
             }
-            
+
             $userData = [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'avatar' => $avatar,
+                'id'                => $user->id,
+                'name'              => $user->name,
+                'email'             => $user->email,
+                'avatar'            => $avatar,
+                'email_verified_at' => $user->email_verified_at, // needed for mustVerifyEmail check
             ];
         }
-        
+
         return [
             ...parent::share($request),
             'name' => config('app.name'),
             'auth' => [
                 'user' => $userData,
             ],
+
+            // ✅ Enables router.reload({ only: ['twoFactorEnabled'] }) to work correctly
+            'twoFactorEnabled' => $user?->hasEnabledTwoFactorAuthentication() ?? false,
+
+            // ✅ Reads from fortify config — tells modal whether TOTP confirm step is needed
+            'requiresConfirmation' => Features::optionEnabled(
+                Features::twoFactorAuthentication(),
+                'confirm'
+            ),
+
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'flash' => [
                 'success' => fn() => $request->session()->get('success'),
-                'error' => fn() => $request->session()->get('error'),
+                'error'   => fn() => $request->session()->get('error'),
                 'warning' => fn() => $request->session()->get('warning'),
-                'info' => fn() => $request->session()->get('info'),
+                'info'    => fn() => $request->session()->get('info'),
             ],
         ];
     }
