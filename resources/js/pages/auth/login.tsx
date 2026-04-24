@@ -29,18 +29,18 @@ const TEXT_MUTED = '#6b6258';
 
 // Enhanced badges – more features with varied colors
 const features = [
-    { label: 'Automated Payroll Calculation', color: '#03b479' },
-    { label: 'Incentives Sortification', color: '#c084fc' },
-    { label: 'Attendance Filterization', color: '#94a3b8' },
-    { label: 'Data Archive', color: '#f97316' },
-    { label: 'Dashboard Optimization', color: '#60a5fa' },
+    { label: 'Automated Payroll Calculation', color: '#03c283' },
+    { label: 'Incentives Sortification', color: '#4c7b33' },
+    { label: 'Attendance Filterization', color: '#5d6671' },
+    { label: 'Data Archive', color: '#ff6a00' },
+    { label: 'Dashboard Optimization', color: '#4799fd' },
     { label: 'Employee Management', color: '#facc15' },
     // { label: 'Report Generation', color: '#f87171' },
     // { label: 'Real-time Analytics', color: '#34d399' },
     // { label: 'Multi-role Access', color: '#a78bfa' },
     // { label: 'Compliance Tracking', color: '#fbbf24' },
     { label: 'Leave Management', color: '#9b4646' },
-    { label: 'Overtime Calculations', color: '#f472b6' },
+    { label: 'Overtime Calculations', color: '#f2439d' },
 ];
 
 function OutlinedField({ id, label, icon, children }: any) {
