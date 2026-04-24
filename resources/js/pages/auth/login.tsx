@@ -21,8 +21,8 @@ type Props = {
 const INTER = "'Inter', sans-serif";
 const ACCENT_COLOR = '#CC570D';
 const STEEL_BLUE = '#093B92';
-const CARD_BG = '#fefaf5';           // dirty white card
-const BODY_BG = '#f1ede8';           // dirty white background
+const CARD_BG = '#fefaf5';
+const BODY_BG = '#f1ede8';
 const BORDER_LIGHT = '#e2dbd1';
 const TEXT_DARK = '#2c2b28';
 const TEXT_MUTED = '#6b6258';
@@ -85,81 +85,345 @@ export default function Login({ status }: Props) {
     return (
         <>
             <Head title="DEKA Payroll Management System" />
-            <style>{`
-                /* Prevent autofill background color change */
-                input:-webkit-autofill,
-                input:-webkit-autofill:hover,
-                input:-webkit-autofill:focus,
-                input:-webkit-autofill:active {
-                    -webkit-box-shadow: 0 0 0 30px ${CARD_BG} inset !important;
-                    -webkit-text-fill-color: ${TEXT_DARK} !important;
-                    caret-color: ${TEXT_DARK} !important;
-                    transition: background-color 5000s ease-in-out 0s;
-                }
+            <style>
+                {`
+                    /* Base responsive reset */
+                    * {
+                        box-sizing: border-box;
+                    }
+                    
+                    /* Prevent autofill background color change */
+                    input:-webkit-autofill,
+                    input:-webkit-autofill:hover,
+                    input:-webkit-autofill:focus,
+                    input:-webkit-autofill:active {
+                        -webkit-box-shadow: 0 0 0 30px ${CARD_BG} inset !important;
+                        -webkit-text-fill-color: ${TEXT_DARK} !important;
+                        caret-color: ${TEXT_DARK} !important;
+                        transition: background-color 5000s ease-in-out 0s;
+                    }
 
-                /* Custom light‑theme checkbox */
-                input[type="checkbox"] {
-                    appearance: none;
-                    width: 18px;
-                    height: 18px;
-                    background: #fff;
-                    border: 1.5px solid ${BORDER_LIGHT};
-                    border-radius: 4px;
-                    cursor: pointer;
-                    position: relative;
-                    transition: all 0.2s ease;
-                }
-                input[type="checkbox"]:checked {
-                    background: ${ACCENT_COLOR};
-                    border-color: ${ACCENT_COLOR};
-                }
-                input[type="checkbox"]:checked::after {
-                    content: '✓';
-                    position: absolute;
-                    color: white;
-                    font-size: 12px;
-                    top: 50%;
-                    left: 50%;
-                    transform: translate(-50%, -50%);
-                }
-                input[type="checkbox"]:hover {
-                    border-color: ${ACCENT_COLOR};
-                }
-            `}</style>
-            <div
-                style={{
-                    position: 'relative',
-                    minHeight: '100vh',
-                    width: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    backgroundColor: BODY_BG,
-                }}
-            >
-                <div style={{ position: 'absolute', top: '28px', left: '36px', zIndex: 20 }}>
-                    <img src="/images/dekalogo.png" style={{ width: '52px', height: '52px', objectFit: 'contain', opacity: 0.9 }} alt="DEKA" />
+                    /* Custom checkbox – always a perfect square */
+                    input[type="checkbox"] {
+                        appearance: none;
+                        -webkit-appearance: none;
+                        width: 18px !important;
+                        height: 18px !important;
+                        min-width: 18px !important;
+                        min-height: 18px !important;
+                        max-width: 18px !important;
+                        max-height: 18px !important;
+                        background: #fff;
+                        border: 1.5px solid ${BORDER_LIGHT};
+                        border-radius: 4px;
+                        cursor: pointer;
+                        position: relative;
+                        transition: all 0.2s ease;
+                        flex-shrink: 0;
+                        flex-grow: 0;
+                        display: inline-block;
+                        margin: 0;
+                        padding: 0;
+                        aspect-ratio: 1 / 1;
+                    }
+                    
+                    input[type="checkbox"]:checked {
+                        background: ${ACCENT_COLOR};
+                        border-color: ${ACCENT_COLOR};
+                    }
+                    
+                    input[type="checkbox"]:checked::after {
+                        content: '✓';
+                        position: absolute;
+                        color: white;
+                        font-size: 12px;
+                        top: 50%;
+                        left: 50%;
+                        transform: translate(-50%, -50%);
+                    }
+                    
+                    input[type="checkbox"]:hover {
+                        border-color: ${ACCENT_COLOR};
+                    }
+                    
+                    /* Ensure no breakpoint overrides the square shape */
+                    @media (max-width: 768px) {
+                        input[type="checkbox"] {
+                            width: 18px !important;
+                            height: 18px !important;
+                            min-width: 18px !important;
+                            min-height: 18px !important;
+                            max-width: 18px !important;
+                            max-height: 18px !important;
+                        }
+                    }
+                    
+                    @media (max-width: 480px) {
+                        input[type="checkbox"] {
+                            width: 18px !important;
+                            height: 18px !important;
+                            min-width: 18px !important;
+                            min-height: 18px !important;
+                            max-width: 18px !important;
+                            max-height: 18px !important;
+                        }
+                    }
+                    
+                    /* Main layout containers */
+                    .login-page {
+                        position: relative;
+                        min-height: 100vh;
+                        width: 100%;
+                        display: flex;
+                        flex-direction: column;
+                        background-color: ${BODY_BG};
+                        overflow-x: hidden;
+                    }
+                    
+                    .login-content-wrapper {
+                        position: relative;
+                        z-index: 10;
+                        flex: 1;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        width: 100%;
+                        padding: 100px 5% 60px;
+                        gap: 5%;
+                        flex-wrap: wrap;
+                    }
+                    
+                    .login-hero {
+                        flex: 1 1 45%;
+                        min-width: 280px;
+                        margin-bottom: 2rem;
+                    }
+                    
+                    .login-card-container {
+                        width: 100%;
+                        max-width: 460px;
+                        flex-shrink: 0;
+                        margin: 0 auto;
+                    }
+                    
+                    .login-card {
+                        background: ${CARD_BG};
+                        border-radius: 28px;
+                        box-shadow: 0 20px 35px -10px rgba(0,0,0,0.08);
+                        padding: 2rem;
+                        border: 1px solid ${BORDER_LIGHT};
+                        transition: padding 0.2s ease;
+                    }
+                    
+                    .logo-wrapper {
+                        position: absolute;
+                        top: 28px;
+                        left: 36px;
+                        z-index: 20;
+                        transition: all 0.2s ease;
+                    }
+                    
+                    .logo-image {
+                        width: 52px;
+                        height: 52px;
+                        object-fit: contain;
+                        opacity: 0.9;
+                        transition: width 0.2s ease, height 0.2s ease;
+                    }
+                    
+                    .features-container {
+                        display: flex;
+                        flex-wrap: wrap;
+                        gap: 12px;
+                    }
+                    
+                    .feature-tag {
+                        font-family: ${INTER};
+                        font-weight: 600;
+                        font-size: 0.75rem;
+                        border-radius: 32px;
+                        padding: 5px 14px;
+                        background: rgba(255,250,240,0.9);
+                        letter-spacing: 0.3px;
+                        transition: transform 0.1s ease;
+                        white-space: nowrap;
+                    }
+                    
+                    @media (max-width: 640px) {
+                        .feature-tag {
+                            font-size: 0.7rem;
+                            padding: 4px 10px;
+                            white-space: normal;
+                            text-align: center;
+                        }
+                        .features-container {
+                            justify-content: center;
+                        }
+                    }
+                    
+                    @media (max-width: 900px) {
+                        .login-content-wrapper {
+                            gap: 3rem;
+                            padding: 90px 4% 50px;
+                        }
+                        .login-hero {
+                            text-align: center;
+                            flex-basis: 100%;
+                            margin-bottom: 1rem;
+                        }
+                        .login-hero p {
+                            margin-left: auto;
+                            margin-right: auto;
+                        }
+                        .features-container {
+                            justify-content: center;
+                        }
+                    }
+                    
+                    @media (max-width: 768px) {
+                        .login-content-wrapper {
+                            padding: 80px 20px 40px;
+                            gap: 2rem;
+                        }
+                        .login-card {
+                            padding: 1.5rem;
+                        }
+                        .login-hero h1 {
+                            font-size: clamp(1.8rem, 6vw, 2.8rem);
+                        }
+                        .login-hero h2 {
+                            font-size: clamp(1.2rem, 4vw, 2rem);
+                        }
+                        .login-hero p {
+                            font-size: 0.85rem;
+                            max-width: 90%;
+                        }
+                        .logo-wrapper {
+                            top: 16px;
+                            left: 16px;
+                        }
+                        .logo-image {
+                            width: 40px;
+                            height: 40px;
+                        }
+                    }
+                    
+                    @media (max-width: 480px) {
+                        .login-content-wrapper {
+                            padding: 70px 16px 30px;
+                            gap: 1.5rem;
+                        }
+                        .login-card {
+                            padding: 1.25rem;
+                            border-radius: 24px;
+                        }
+                        .login-card h2 {
+                            font-size: 1.4rem;
+                        }
+                        .logo-wrapper {
+                            top: 12px;
+                            left: 12px;
+                        }
+                        .logo-image {
+                            width: 34px;
+                            height: 34px;
+                        }
+                    }
+                    
+                    @media (max-width: 640px) {
+                        .outlined-field-container {
+                            height: 48px;
+                        }
+                        button[type="submit"] {
+                            height: 48px;
+                            font-size: 0.9rem;
+                        }
+                    }
+                    
+                    @media (max-width: 450px) {
+                        .login-actions {
+                            flex-direction: column;
+                            align-items: flex-start;
+                            gap: 12px;
+                        }
+                    }
+                    
+                    @media (hover: none) and (pointer: coarse) {
+                        button, .feature-tag, .text-link {
+                            cursor: pointer;
+                            min-height: 44px;
+                        }
+                        button[type="submit"] {
+                            min-height: 48px;
+                        }
+                    }
+                `}
+            </style>
+            
+            <div className="login-page">
+                <div className="logo-wrapper">
+                    <img src="/images/dekalogo.png" className="logo-image" alt="DEKA" />
                 </div>
 
-                <div style={{ position: 'relative', zIndex: 10, flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', padding: '100px 5% 60px', gap: '5%', flexWrap: 'wrap' }}>
-                    {/* Left side */}
-                    <div style={{ flex: '1 1 45%', minWidth: '280px', marginBottom: '2rem' }}>
+                <div className="login-content-wrapper">
+                    {/* Left side - Hero section */}
+                    <div className="login-hero">
                         <div style={{ marginBottom: '1rem' }}>
-                            <span style={{ fontFamily: INTER, fontWeight: 600, fontSize: '0.75rem', letterSpacing: '2px', color: ACCENT_COLOR, textTransform: 'uppercase', background: 'rgba(0,0,0,0.04)', padding: '4px 12px', borderRadius: '20px' }}>
+                            <span 
+                                style={{ 
+                                    fontFamily: INTER, 
+                                    fontWeight: 600, 
+                                    fontSize: '0.75rem', 
+                                    letterSpacing: '2px', 
+                                    color: ACCENT_COLOR, 
+                                    textTransform: 'uppercase', 
+                                    background: 'rgba(0,0,0,0.04)', 
+                                    padding: '4px 12px', 
+                                    borderRadius: '20px',
+                                    display: 'inline-block'
+                                }}
+                            >
                                 Industrial Enterprise Suite
                             </span>
                         </div>
-                        <h1 style={{ fontFamily: INTER, fontWeight: 1000, fontSize: 'clamp(2rem, 4vw, 4rem)', lineHeight: 1.2, margin: '0 0 0.5rem 0', color: TEXT_DARK }}>
+                        <h1 style={{ 
+                            fontFamily: INTER, 
+                            fontWeight: 1000, 
+                            fontSize: 'clamp(2rem, 4vw, 4rem)', 
+                            lineHeight: 1.2, 
+                            margin: '0 0 0.5rem 0', 
+                            color: TEXT_DARK 
+                        }}>
                             <span style={{ color: STEEL_BLUE }}>WARLEN INDUSTRIAL SALES CORP.</span>{' '}
                             <span style={{ color: ACCENT_COLOR }}>DEKA Sales</span>
                         </h1>
-                        <h2 style={{ fontFamily: INTER, fontWeight: 800, fontSize: 'clamp(1rem, 3vw, 3rem)', color: '#4a4238', margin: '0 0 1rem 0' }}>Payroll Management System</h2>
-                        <p style={{ fontFamily: INTER, fontSize: '0.95rem', color: TEXT_MUTED, lineHeight: 1.6, margin: '0 0 1.8rem 0', maxWidth: '520px' }}>
+                        <h2 style={{ 
+                            fontFamily: INTER, 
+                            fontWeight: 800, 
+                            fontSize: 'clamp(1rem, 3vw, 3rem)', 
+                            color: '#4a4238', 
+                            margin: '0 0 1rem 0' 
+                        }}>
+                            Payroll Management System
+                        </h2>
+                        <p style={{ 
+                            fontFamily: INTER, 
+                            fontSize: '0.95rem', 
+                            color: TEXT_MUTED, 
+                            lineHeight: 1.6, 
+                            margin: '0 0 1.8rem 0', 
+                            maxWidth: '520px' 
+                        }}>
                             Secure, high‑performance payroll management exclusively for{' '}
                             <strong style={{ color: TEXT_DARK }}>WARLEN INDUSTRIAL SALES CORPORATION, DEKA Sales</strong>.
                         </p>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
+                        <div className="features-container">
                             {features.map(({ label, color }) => (
-                                <span key={label} style={{ fontFamily: INTER, fontWeight: 600, fontSize: '0.75rem', color: color, border: `2px solid ${color}`, borderRadius: '32px', padding: '5px 14px', background: 'rgba(255,250,240,0.9)', letterSpacing: '0.3px' }}>
+                                <span 
+                                    key={label} 
+                                    className="feature-tag"
+                                    style={{ border: `2px solid ${color}`, color: color }}
+                                >
                                     {label}
                                 </span>
                             ))}
@@ -167,16 +431,41 @@ export default function Login({ status }: Props) {
                     </div>
 
                     {/* Right side – Login Card */}
-                    <div style={{ width: '100%', maxWidth: '460px', flexShrink: 0 }}>
-                        <div style={{ background: CARD_BG, borderRadius: '28px', boxShadow: '0 20px 35px -10px rgba(0,0,0,0.08)', padding: '2rem', border: `1px solid ${BORDER_LIGHT}` }}>
+                    <div className="login-card-container">
+                        <div className="login-card">
                             <div style={{ textAlign: 'center', marginBottom: '1.8rem' }}>
-                                <div style={{ width: '48px', height: '3px', background: `linear-gradient(90deg, ${ACCENT_COLOR}, ${STEEL_BLUE})`, margin: '0 auto 1rem auto', borderRadius: '4px' }} />
-                                <h2 style={{ fontFamily: INTER, fontWeight: 700, fontSize: '1.6rem', letterSpacing: '0.2em', color: TEXT_DARK, margin: 0 }}>L O G I N</h2>
-                                <p style={{ fontSize: '0.75rem', color: TEXT_MUTED, marginTop: '6px' }}>Secure authentication required</p>
+                                <div style={{ 
+                                    width: '48px', 
+                                    height: '3px', 
+                                    background: `linear-gradient(90deg, ${ACCENT_COLOR}, ${STEEL_BLUE})`, 
+                                    margin: '0 auto 1rem auto', 
+                                    borderRadius: '4px' 
+                                }} />
+                                <h2 style={{ 
+                                    fontFamily: INTER, 
+                                    fontWeight: 700, 
+                                    fontSize: 'clamp(1.3rem, 5vw, 1.6rem)', 
+                                    letterSpacing: '0.2em', 
+                                    color: TEXT_DARK, 
+                                    margin: 0 
+                                }}>
+                                    L O G I N
+                                </h2>
+                                <p style={{ fontSize: '0.75rem', color: TEXT_MUTED, marginTop: '6px' }}>
+                                    Secure authentication required
+                                </p>
                             </div>
 
                             {status && (
-                                <div style={{ fontSize: '0.8rem', color: '#10b981', textAlign: 'center', marginBottom: '20px', background: 'rgba(16, 185, 129, 0.1)', padding: '8px', borderRadius: '12px' }}>
+                                <div style={{ 
+                                    fontSize: '0.8rem', 
+                                    color: '#10b981', 
+                                    textAlign: 'center', 
+                                    marginBottom: '20px', 
+                                    background: 'rgba(16, 185, 129, 0.1)', 
+                                    padding: '8px', 
+                                    borderRadius: '12px' 
+                                }}>
                                     {status}
                                 </div>
                             )}
@@ -203,6 +492,7 @@ export default function Login({ status }: Props) {
                                                         fontSize: '0.9rem',
                                                         color: TEXT_DARK,
                                                         padding: '12px 0',
+                                                        width: '100%',
                                                     }}
                                                 />
                                             </OutlinedField>
@@ -227,6 +517,7 @@ export default function Login({ status }: Props) {
                                                         fontSize: '0.9rem',
                                                         color: TEXT_DARK,
                                                         padding: '12px 0',
+                                                        width: '100%',
                                                     }}
                                                 />
                                                 <button
@@ -241,6 +532,7 @@ export default function Login({ status }: Props) {
                                                         alignItems: 'center',
                                                         color: TEXT_MUTED,
                                                         marginLeft: '8px',
+                                                        flexShrink: 0,
                                                     }}
                                                     onMouseEnter={e => (e.currentTarget.style.color = ACCENT_COLOR)}
                                                     onMouseLeave={e => (e.currentTarget.style.color = TEXT_MUTED)}
@@ -251,8 +543,18 @@ export default function Login({ status }: Props) {
                                             {errors?.password && <InputError message={errors.password} className="text-xs mt-1" />}
                                         </div>
 
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
-                                            <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                                        <div 
+                                            className="login-actions"
+                                            style={{ 
+                                                display: 'flex', 
+                                                justifyContent: 'space-between', 
+                                                alignItems: 'center', 
+                                                marginTop: '4px',
+                                                flexWrap: 'wrap',
+                                                gap: '8px'
+                                            }}
+                                        >
+                                            <label style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
                                                 <input type="checkbox" name="remember" />
                                                 <span style={{ fontSize: '0.8rem', color: TEXT_MUTED }}>Keep session</span>
                                             </label>
@@ -278,7 +580,7 @@ export default function Login({ status }: Props) {
                                             style={{
                                                 fontFamily: INTER,
                                                 fontWeight: 600,
-                                                fontSize: '0.95rem',
+                                                fontSize: 'clamp(0.85rem, 4vw, 0.95rem)',
                                                 letterSpacing: '0.5px',
                                                 color: '#fff',
                                                 background: STEEL_BLUE,
@@ -307,14 +609,30 @@ export default function Login({ status }: Props) {
                                 )}
                             </Form>
 
-                            <div style={{ marginTop: '1.8rem', textAlign: 'center', fontSize: '0.7rem', color: TEXT_MUTED, borderTop: `1px solid ${BORDER_LIGHT}`, paddingTop: '1.2rem' }}>
-                                <span> Restricted Access</span>
+                            <div style={{ 
+                                marginTop: '1.8rem', 
+                                textAlign: 'center', 
+                                fontSize: '0.7rem', 
+                                color: TEXT_MUTED, 
+                                borderTop: `1px solid ${BORDER_LIGHT}`, 
+                                paddingTop: '1.2rem' 
+                            }}>
+                                <span>Restricted Access</span>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div style={{ position: 'relative', zIndex: 10, textAlign: 'center', padding: '1rem 1rem 1.5rem', fontSize: '0.7rem', color: TEXT_MUTED, borderTop: `1px solid ${BORDER_LIGHT}`, marginTop: 'auto' }}>
+                <div style={{ 
+                    position: 'relative', 
+                    zIndex: 10, 
+                    textAlign: 'center', 
+                    padding: '1rem 1rem 1.5rem', 
+                    fontSize: 'clamp(0.6rem, 3vw, 0.7rem)', 
+                    color: TEXT_MUTED, 
+                    borderTop: `1px solid ${BORDER_LIGHT}`, 
+                    marginTop: 'auto' 
+                }}>
                     © 2026 Warlen Industrial Sales Corporation, DEKA Sales — All operational data is encrypted and monitored.
                 </div>
             </div>
