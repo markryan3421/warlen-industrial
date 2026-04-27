@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Printer, X, User, Calendar, Minus, HandCoins, Coins, Landmark, Download } from 'lucide-react';
 import { useEffect, useState, useRef } from 'react';
 import html2pdf from 'html2pdf.js';
+import { usePage } from '@inertiajs/react';
 
 interface PayrollPrintLayoutProps {
     isOpen: boolean;
@@ -35,6 +36,13 @@ interface PayrollData {
     };
     avatar?: string;
     employee_avatar?: string;
+}
+
+interface User {
+    id: number;
+    name: string;
+    email: string;
+    role?: string;
 }
 
 const formatCurrency = (amount: number) => {
@@ -138,6 +146,9 @@ const categorizeEarnings = (earnings: Array<{ description: string; amount: numbe
 };
 
 export default function PayrollPrintLayout({ isOpen, onClose, payrollId, fetchUrl }: PayrollPrintLayoutProps) {
+    const { auth } = usePage().props;
+    const user = auth?.user as User;
+
     const [payrollData, setPayrollData] = useState<PayrollData | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -217,12 +228,26 @@ export default function PayrollPrintLayout({ isOpen, onClose, payrollId, fetchUr
     const dailyRate = payrollData ? getDailyRate() : 0;
     const periodDays = payrollData ? getPeriodDays() : 0;
 
+    // Get current date and time for signature
+    const getCurrentDateTime = () => {
+        const now = new Date();
+        return now.toLocaleString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    };
+
     const generateSalarySlipHTML = () => {
         if (!payrollData) return '';
 
         const employeeNameValue = payrollData.employee_name || payrollData.employee?.name || 'N/A';
         const employeeCodeValue = payrollData.employee_code || payrollData.employee?.emp_code || 'N/A';
         const positionValue = payrollData.position || payrollData.employee?.position?.pos_name || 'N/A';
+        const authorizedByName = user?.name || 'System Administrator';
+        const currentDateTime = getCurrentDateTime();
 
         const startDateFormatted = payrollData.start_date ? new Date(payrollData.start_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A';
         const endDateFormatted = payrollData.end_date ? new Date(payrollData.end_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A';
@@ -310,14 +335,14 @@ export default function PayrollPrintLayout({ isOpen, onClose, payrollId, fetchUr
                         <span>${formatCurrency(deductionAmount)}</span>
                     </div>
                 ` : (deductionAmount > 0 ? formatCurrency(deductionAmount) : '')}
-            </td>
-        </tr>
+             </td>
+         </tr>
     `;
         }
 
         return `
         <div class="salary-slip" style="max-width: 100%; width: 100%; margin: 0 auto; background: #ffffff; padding: 15px; position: relative; border: 1px solid #000;">
-            <div style="position: absolute; top: 100px; left: 0; right: 0; bottom: 0; background-image: url('/images/dekalogo.webp'); background-repeat: no-repeat; background-position: center; background-size: 48%; opacity: 0.06; pointer-events: none; z-index: 0;"></div>
+            <div style="position: absolute; top: 100px; left: 0; right: 0; bottom: 0; margin-inline: -20px; background-image: url('/images/dekalogo.webp'); background-repeat: no-repeat; background-position: center; background-size: 48%; opacity: 0.06; pointer-events: none; z-index: 0;"></div>
             
             <div style="position: relative; z-index: 1;">
                 <div style="text-align: center; border-bottom: 0.5px solid #333; margin-bottom: 10px; padding-bottom: 8px;">
@@ -341,9 +366,9 @@ export default function PayrollPrintLayout({ isOpen, onClose, payrollId, fetchUr
                 <table style="width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 0.65rem; border: 1px solid #000;">
                     <thead>
                         <tr>
-                            <th style="width: 40%; text-align: left; padding: 6px 4px; border-bottom: 1px solid #000;">EARNINGS </th>
+                            <th style="width: 40%; text-align: left; padding: 6px 4px; border-bottom: 1px solid #000;">EARNINGS</th>
                             <th style="width: 20%; text-align: right; padding: 6px 4px; border-bottom: 1px solid #000; border-right: 1px solid #000;">AMOUNT</th>
-                            <th style="width: 40%; text-align: left; padding: 6px 4px; border-bottom: 1px solid #000;"><div style = "display:flex; justify-content: space-between;"><span>DEDUCTIONS </span> <span>AMOUNT</span></div></th>
+                            <th style="width: 40%; text-align: left; padding: 6px 4px; border-bottom: 1px solid #000;"><div style="display:flex; justify-content: space-between;"><span>DEDUCTIONS</span> <span>AMOUNT</span></div></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -375,9 +400,18 @@ export default function PayrollPrintLayout({ isOpen, onClose, payrollId, fetchUr
                     <div>PRINTED DATE: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
                     <div>RELEASE DATE: ${payDateFormatted}</div>
                 </div>
-                <div style="margin-top: 8px; display: flex; justify-content: space-between; font-size: 0.55rem;">
-                    <div>AUTHORIZED SIGNATURE: _________________</div>
-                    <div style="text-align: right;">* This is a system-generated salary slip. For any discrepancy, contact payroll officer.</div>
+                
+                <!-- Updated Signature Section with Logged-in User -->
+                <div style="margin-top: 12px; display: flex; justify-content: space-between; font-size: 0.6rem; border-top: 1px solid #ddd; padding-top: 10px;">
+                    <div style="flex: 1;">
+                         <div style="margin-bottom: 4px;"><strong>AUTHORIZED SIGNATURE:</strong> 
+                            <span style="font-size: 0.65rem; font-weight: 500; border-bottom: 1px solid #000; padding-inline: 4px; align-items:center; dsiplay:flex; justify-content: center;">${authorizedByName}</span>
+                         </div>
+                    </div>
+                </div>
+                
+               <div style="margin-top: 8px; text-align: center; font-size: 0.5rem; color: #999;">
+                    * This is a system-generated salary slip. For any discrepancy, please contact the HR Department.
                 </div>
             </div>
         </div>

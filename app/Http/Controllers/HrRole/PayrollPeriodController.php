@@ -10,7 +10,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\PayrollPeriod\StorePayrollPeriodRequest;
 use App\Http\Requests\PayrollPeriod\UpdatePayrollPeriodRequest;
 use App\Models\PayrollPeriod;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -24,10 +23,17 @@ class PayrollPeriodController extends Controller
     {
         Gate::authorize('viewAny', PayrollPeriod::class);
 
-        $payrollPeriods = PayrollPeriod::query()->get();
+        $payrollPeriods = PayrollPeriod::query()
+            ->get([
+                'id',
+                'start_date',
+                'end_date',
+                'pay_date',
+                'payroll_per_status',
+                'is_paid'
+            ]);
 
         $payroll_period_enums = PayrollPeriodStatusEnum::options();
-
 
         return Inertia::render('HR/payroll-period/index', compact('payrollPeriods', 'payroll_period_enums'));
     }
@@ -71,9 +77,10 @@ class PayrollPeriodController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show(PayrollPeriod $payrollPeriod)
     {
-        //
+        Gate::authorize('view', $payrollPeriod);
+        return Inertia::render('HR/payroll-period/show', compact('payrollPeriod'));
     }
 
     /**
@@ -89,7 +96,7 @@ class PayrollPeriodController extends Controller
                 $query->with('user'); // Load user to get employee name
             }]);
         }]);
-        
+
         $payroll_period_enums = PayrollPeriodStatusEnum::options();
         return Inertia::render('HR/payroll-period/edit', compact('payrollPeriod', 'payroll_period_enums'));
     }
@@ -108,17 +115,15 @@ class PayrollPeriodController extends Controller
         DB::beginTransaction();
 
         try {
-            $oldStatus = $payrollPeriod->payroll_per_status;
-            $payroll_updated = $action->update($request->validated(), $payrollPeriod);
-            $newStatus = $payroll_updated->payroll_per_status;
+            $action->update($request->validated(), $payrollPeriod);
+
             DB::commit();
 
-            // Dispatch event ONLY if status changed to processing
             if (
-                $newStatus === PayrollPeriodStatusEnum::PROCESSING->value &&
-                $oldStatus !== PayrollPeriodStatusEnum::PROCESSING->value
+                $payrollPeriod->wasChanged('payroll_per_status') &&
+                $payrollPeriod->payroll_per_status === PayrollPeriodStatusEnum::PROCESSING->value
             ) {
-                PayrollProcessingEvent::dispatch($payroll_updated);
+                PayrollProcessingEvent::dispatch($payrollPeriod);
             }
 
             return redirect()->route('hr.payroll-periods.index')->with('success', 'Payroll period updated successfully.');
@@ -127,15 +132,18 @@ class PayrollPeriodController extends Controller
             return back()->with('error', $e->getMessage());
         }
     }
+
     /**
      * Remove the specified resource from storage.
      */
     public function destroy(PayrollPeriod $payrollPeriod)
     {
         Gate::authorize('delete', $payrollPeriod);
+
         if ($this->limit('delete-payroll-period:' . auth()->id(), 60, 5)) {
             return back()->with('error', 'Too many attempts. Please try again later.');
         }
+
         $payrollPeriod->delete();
 
         return redirect()->route('hr.payroll-periods.index')->with('success', 'Payroll period deleted successfully.');
