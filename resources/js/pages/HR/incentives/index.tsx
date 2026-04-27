@@ -11,7 +11,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import AppLayout from '@/layouts/hr-layout';
 import { CardContent } from '@/components/ui/card';
 import type { BreadcrumbItem } from '@/types';
-// import { CustomToast, toast } from '@/components/custom-toast';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-modal';
 import { CustomPagination } from '@/components/custom-pagination';
 import { IncentivesTableConfig } from '@/config/tables/incentives-table';
@@ -72,6 +71,21 @@ interface Props {
     filteredCount?: number;
 }
 
+// --- Helper: format a Date object as YYYY-MM-DD in the local timezone ---
+const formatLocalDate = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
+// --- Helper: parse YYYY-MM-DD into a Date object at local midnight ---
+const parseLocalDate = (dateStr: string): Date | undefined => {
+    if (!dateStr) return undefined;
+    const [year, month, day] = dateStr.split('-').map(Number);
+    return new Date(year, month - 1, day);
+};
+
 // Custom toast style helper
 const toastStyle = (color: string) => ({
     style: {
@@ -102,13 +116,13 @@ export default function Index({ incentives, payroll_periods, employees, filters 
     const [isDeleting, setIsDeleting] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
-    // Local state for filters
+    // Local state for filters – now using parseLocalDate to avoid UTC shift
     const [searchTerm, setSearchTerm] = useState(filters.search || '');
     const [dateFrom, setDateFrom] = useState<Date | undefined>(
-        filters.date_from ? new Date(filters.date_from) : undefined
+        filters.date_from ? parseLocalDate(filters.date_from) : undefined
     );
     const [dateTo, setDateTo] = useState<Date | undefined>(
-        filters.date_to ? new Date(filters.date_to) : undefined
+        filters.date_to ? parseLocalDate(filters.date_to) : undefined
     );
     const [currentPage, setCurrentPage] = useState(incentives.current_page || 1);
     const [itemsPerPage, setItemsPerPage] = useState(incentives.per_page || 10);
@@ -125,25 +139,23 @@ export default function Index({ incentives, payroll_periods, employees, filters 
         const now = Date.now();
         const last = lastFlashRef.current;
 
-        // If same flash key appeared within last 500ms, skip (prevents double toast)
         if (last.key === flashKey && (now - last.time) < 500) {
             return;
         }
 
-        // Update ref
         lastFlashRef.current = { key: flashKey, time: now };
 
         if (flash.success) {
-            toast.success(flash.success, toastStyle('#16a34a')); // green text
+            toast.success(flash.success, toastStyle('#16a34a'));
         }
         if (flash.error) {
-            toast.error(flash.error, toastStyle('#dc2626')); // red text
+            toast.error(flash.error, toastStyle('#dc2626'));
         }
         if (flash.warning) {
-            toast.warning(flash.warning, toastStyle('#f97316')); // orange text
+            toast.warning(flash.warning, toastStyle('#f97316'));
         }
         if (flash.info) {
-            toast.info(flash.info, toastStyle('#3b82f6')); // blue text
+            toast.info(flash.info, toastStyle('#3b82f6'));
         }
     }, [props.flash]);
 
@@ -155,7 +167,7 @@ export default function Index({ incentives, payroll_periods, employees, filters 
     const isInitialMount = useRef(true);
     const prevFiltersRef = useRef({ search: '', dateFrom: '', dateTo: '' });
 
-    // Navigate with filters
+    // Navigate with filters – uses local date formatting
     const navigateWithFilters = useCallback((updates: {
         search?: string;
         dateFrom?: Date;
@@ -172,8 +184,9 @@ export default function Index({ incentives, payroll_periods, employees, filters 
         const perPage = updates.perPage !== undefined ? updates.perPage : itemsPerPage;
 
         if (search) params.append('search', search);
-        if (from) params.append('date_from', from.toISOString().split('T')[0]);
-        if (to) params.append('date_to', to.toISOString().split('T')[0]);
+        // ✅ FIX: use formatLocalDate instead of toISOString()
+        if (from) params.append('date_from', formatLocalDate(from));
+        if (to) params.append('date_to', formatLocalDate(to));
         params.append('page', String(page));
         params.append('per_page', String(perPage));
 
@@ -194,15 +207,15 @@ export default function Index({ incentives, payroll_periods, employees, filters 
             isInitialMount.current = false;
             prevFiltersRef.current = {
                 search: debouncedSearchTerm,
-                dateFrom: debouncedDateFrom?.toISOString() || '',
-                dateTo: debouncedDateTo?.toISOString() || ''
+                dateFrom: debouncedDateFrom ? formatLocalDate(debouncedDateFrom) : '',
+                dateTo: debouncedDateTo ? formatLocalDate(debouncedDateTo) : ''
             };
             return;
         }
 
         const currentSearch = debouncedSearchTerm || '';
-        const currentDateFrom = debouncedDateFrom?.toISOString() || '';
-        const currentDateTo = debouncedDateTo?.toISOString() || '';
+        const currentDateFrom = debouncedDateFrom ? formatLocalDate(debouncedDateFrom) : '';
+        const currentDateTo = debouncedDateTo ? formatLocalDate(debouncedDateTo) : '';
 
         const filtersChanged =
             currentSearch !== prevFiltersRef.current.search ||
@@ -283,7 +296,6 @@ export default function Index({ incentives, payroll_periods, employees, filters 
         setIsDeleting(true);
         destroy(IncentiveController.destroy(itemToDelete.id).url, {
             onSuccess: () => {
-                // Flash message will be shown by global useEffect
                 setDeleteDialogOpen(false);
                 setItemToDelete(null);
             },
@@ -301,7 +313,7 @@ export default function Index({ incentives, payroll_periods, employees, filters 
     const hasFilters = !!(searchTerm || dateFrom || dateTo);
     const currentData = incentives.data || [];
 
-    // Generate pagination links
+    // Generate pagination links – also uses local date formatting
     const paginationLinks = useMemo(() => {
         const links = [];
         const totalPages = Math.ceil(incentives.total / itemsPerPage);
@@ -309,8 +321,8 @@ export default function Index({ incentives, payroll_periods, employees, filters 
         const buildUrl = (page: number) => {
             const params = new URLSearchParams();
             if (searchTerm) params.append('search', searchTerm);
-            if (dateFrom) params.append('date_from', dateFrom.toISOString().split('T')[0]);
-            if (dateTo) params.append('date_to', dateTo.toISOString().split('T')[0]);
+            if (dateFrom) params.append('date_from', formatLocalDate(dateFrom));
+            if (dateTo) params.append('date_to', formatLocalDate(dateTo));
             params.append('page', String(page));
             params.append('per_page', String(itemsPerPage));
             return `/hr/incentives?${params.toString()}`;
@@ -363,7 +375,6 @@ export default function Index({ incentives, payroll_periods, employees, filters 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Incentives" />
-            {/* <CustomToast /> */}
 
             <style>{`
                 @keyframes fadeUp {
