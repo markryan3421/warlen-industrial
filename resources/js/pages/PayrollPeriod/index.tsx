@@ -495,12 +495,12 @@ export default function Index({ payrollPeriods }: PayrollPeriodProps) {
                             </div>
 
                             {/* Add button - right on mobile, top on desktop */}
-                            <Link href={PayrollPeriodController.create().url} className="lg:order-2">
+                            {/* <Link href={PayrollPeriodController.create().url} className="lg:order-2">
                                 <Button className="bg-[#1d4791] hover:bg-[#1d4791]/90 whitespace-nowrap">
                                     <Plus className="h-4 w-4 mr-2" />
                                     <span>Add Payroll Period</span>
                                 </Button>
-                            </Link>
+                            </Link> */}
                         </div>
                     </div>
 
@@ -537,13 +537,13 @@ export default function Index({ payrollPeriods }: PayrollPeriodProps) {
                             <p className="mt-1 max-w-sm text-sm text-muted-foreground">
                                 Get started by creating your first payroll period.
                             </p>
-                            <Link
+                            {/* <Link
                                 href={PayrollPeriodController.create().url}
                                 className="mt-6 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground transition-all hover:brightness-110 hover:shadow-lg active:scale-95"
                             >
                                 <Plus className="h-4 w-4" />
                                 Create First Period
-                            </Link>
+                            </Link> */}
                         </div>
                     ) : (
                         <div className="pp-row">
