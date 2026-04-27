@@ -1,6 +1,6 @@
 import HrLayout from '@/layouts/hr-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import InputError from '@/components/input-error';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -445,7 +445,7 @@ export default function Edit({ payrollPeriod }: EditProps) {
                             <div className="flex gap-3">
                                 <button
                                     type="button"
-                                    onClick={() => window.history.back()}
+                                    onClick={() => router.get('/hr/payroll-periods')}
                                     disabled={processing}
                                     className="rounded-xl border-2 border-border px-5 py-2.5 text-sm font-semibold text-foreground transition-all hover:border-primary hover:text-primary disabled:opacity-50 active:scale-95"
                                 >

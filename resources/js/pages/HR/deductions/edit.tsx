@@ -1,302 +1,298 @@
+// pages/deductions/edit.tsx
 import { Head, Link, useForm } from '@inertiajs/react';
+import { ArrowLeft, HandCoins, Save, Pencil, Users, Calendar, AlertCircle } from 'lucide-react';
 import AppLayout from '@/layouts/hr-layout';
-import type { BreadcrumbItem } from '@/types';
-import { useState, useRef, useEffect } from 'react';
-import { Search, ChevronDown, X, Users, UserCheck, AlertTriangle } from 'lucide-react';
-import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import InputError from '@/components/input-error';
-import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { IncentiveEmployeeSelector } from '@/components/incentive-employee-selector';
+import { toast } from '@/components/custom-toast';
+import { Badge } from '@/components/ui/badge';
+import type { BreadcrumbItem } from '@/types';
+import DeductionController from '@/actions/App/Http/Controllers/HrRole/HRDeductionController';
 
-const breadcrumbs: BreadcrumbItem[] = [{ title: 'Update Deduction', href: '/hr/deductions/edit' }];
+/* ─────────────────────────────────────────────────────────────
+Keyframes
+───────────────────────────────────────────────────────────── */
+const KF = `@keyframes incFadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }`;
+if (typeof document !== 'undefined' && !document.getElementById('inc-kf')) {
+  const s = document.createElement('style'); s.id = 'inc-kf'; s.textContent = KF;
+  document.head.appendChild(s);
+}
+const fu = (d = 0): React.CSSProperties => ({ animation: `incFadeUp 0.4s ease both`, animationDelay: `${d}ms` });
 
+/* ─────────────────────────────────────────────────────────────
+Types
+───────────────────────────────────────────────────────────── */
 interface Employee {
-    id: number;
-    emp_code: string | number | null;
-    user?: { name: string } | null;
+  id: number;
+  emp_code?: string | number | null;
+  user?: { name: string } | null;
+  name?: string;
 }
-
+interface PayrollPeriod {
+  id: number;
+  start_date: string;
+  end_date: string;
+  pay_date: string;
+  payroll_per_status: string;
+}
 interface Deduction {
-    id: number;
-    payroll_period_id: number;
-    deduction_name: string;
-    deduction_amount: string | number;
-    employees?: Employee[];
+  id: number;
+  deduction_name: string;
+  deduction_amount: string | number;
+  payroll_period_id: number;
+  employees?: Employee[];
 }
-
 interface Props {
-    payroll_periods?: Array<{ id: number; start_date?: string; end_date?: string }>;
-    employees?: Employee[];
-    deduction: Deduction;
+  deduction: Deduction;
+  payroll_periods: PayrollPeriod[];
+  employees: Employee[];
 }
 
-const formatDate = (dateString: string) =>
-    new Date(dateString).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+const fmtDate = (d: string) => new Date(d).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' });
 
-// Reusable Confirm Modal
-function ConfirmModal({ open, onClose, onConfirm, title, description, note, confirmLabel, confirmClass }: {
-    open: boolean; onClose: () => void; onConfirm: () => void;
-    title: string; description: string; note: string;
-    confirmLabel: string; confirmClass: string;
+const getStatusBadge = (status: string) => {
+  const statusLower = status?.toLowerCase();
+  switch (statusLower) {
+    case 'open':
+      return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-[10px]">OPEN</Badge>;
+    case 'processing':
+      return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200 text-[10px]">PROCESSING</Badge>;
+    case 'calculated':
+      return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-[10px]">CALCULATED</Badge>;
+    default:
+      return <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200 text-[10px]">{status}</Badge>;
+  }
+};
+
+/* ─────────────────────────────────────────────────────────────
+Shared sub-components
+───────────────────────────────────────────────────────────── */
+function NavyCardHeader({ icon, title, subtitle }: { icon: React.ReactNode; title: string; subtitle?: string }) {
+  return (
+    <div className="bg-[#1d4791] px-5 py-4 flex items-center gap-3">
+      <div className="h-8 w-8 rounded-lg bg-white/15 flex items-center justify-center">{icon}</div>
+      <div>
+        <p className="text-xs font-bold tracking-widest uppercase text-white">{title}</p>
+        {subtitle && <p className="text-[10px] text-white/65 mt-0.5">{subtitle}</p>}
+      </div>
+    </div>
+  );
+}
+
+function FieldGroup({ label, required, error, hint, children }: {
+  label: string; required?: boolean; error?: string; hint?: string; children: React.ReactNode;
 }) {
-    if (!open) return null;
-    return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4" onClick={onClose}>
-            <div className="bg-white rounded-xl w-full max-w-md overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
-                <div className="p-6">
-                    <div className="flex items-center gap-4 mb-4">
-                        <div className="p-3 bg-red-100 rounded-full">
-                            <AlertTriangle className="h-6 w-6 text-red-600" />
-                        </div>
-                        <div>
-                            <h3 className="font-semibold text-lg text-gray-900">{title}</h3>
-                            <p className="text-sm text-gray-500">{description}</p>
-                        </div>
-                    </div>
-                    <p className="text-sm text-gray-600 mb-6 pl-[68px]">{note}</p>
-                    <div className="flex justify-end gap-2">
-                        <Button type="button" variant="outline" size="sm" onClick={onClose}>Cancel</Button>
-                        <Button type="button" size="sm" onClick={onConfirm} className={confirmClass}>{confirmLabel}</Button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
+  return (
+    <div className="space-y-1.5">
+      <label className="block text-xs font-bold text-slate-700">
+        {label} {required && <span className="text-[#d85e39]">*</span>}
+      </label>
+      {children}
+      {hint && !error && <p className="text-[10px] text-slate-400">{hint}</p>}
+      {error && <p className="text-[10px] text-[#d85e39]">⚠ {error}</p>}
+    </div>
+  );
 }
 
-export default function Update({ payroll_periods = [], employees = [], deduction }: Props) {
-    const [searchTerm, setSearchTerm] = useState('');
-    const [isOpen, setIsOpen] = useState(false);
-    const [showAllModal, setShowAllModal] = useState(false);
-    const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
-    const [showClearConfirm, setShowClearConfirm] = useState(false);
-    const dropdownRef = useRef<HTMLDivElement>(null);
+/* ─────────────────────────────────────────────────────────────
+Main page
+───────────────────────────────────────────────────────────── */
+export default function Edit({ deduction, payroll_periods, employees }: Props) {
+  const breadcrumbs: BreadcrumbItem[] = [
+    { title: 'Deductions', href: '/hr/deductions' },
+    { title: deduction.deduction_name, href: '#' },
+  ];
 
-    const { data, setData, put, processing, errors } = useForm({
-        deduction_name: deduction.deduction_name || '',
-        deduction_amount: deduction.deduction_amount || '',
-        payroll_period_id: deduction.payroll_period_id || '',
-        employee_ids: deduction.employees?.map(e => e.id) ?? [] as number[],
+  const { data, setData, put, processing, errors } = useForm({
+    deduction_name:    deduction.deduction_name || '',
+    deduction_amount:  String(deduction.deduction_amount || ''), 
+    payroll_period_id: String(deduction.payroll_period_id || ''),
+    employee_ids:      deduction.employees?.map(e => e.id) ?? [],
+  });
+
+  // Find the currently selected period to show its status
+  const selectedPeriod = payroll_periods.find(p => p.id === Number(data.payroll_period_id));
+  const isSelectedPeriodOpen = selectedPeriod?.payroll_per_status?.toLowerCase() === 'open';
+  const canEdit = isSelectedPeriodOpen;
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!canEdit) {
+      toast.error('Cannot edit deduction for a closed or processed payroll period');
+      return;
+    }
+    put(DeductionController.update(deduction.id).url, {
+      // onSuccess: () => toast.success('Deduction updated successfully'),
+      // onError:   (errs) => toast.error(Object.values(errs).flat()[0] as string || 'Failed to update deduction'),
     });
+  };
 
-    useEffect(() => {
-        const handler = (e: MouseEvent) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-                setIsOpen(false);
-                setSearchTerm('');
-            }
-        };
-        document.addEventListener('mousedown', handler);
-        return () => document.removeEventListener('mousedown', handler);
-    }, []);
-
-    const filteredEmployees = employees.filter(emp => {
-        if (!searchTerm) return true;
-        const term = searchTerm.toLowerCase();
-        return String(emp.emp_code ?? '').toLowerCase().includes(term) ||
-            (emp.user?.name?.toLowerCase() ?? '').includes(term);
-    });
-
-    const displayedEmployees = searchTerm ? filteredEmployees : filteredEmployees.slice(0, 5);
-    const selectedEmployees = employees.filter(emp => data.employee_ids.includes(emp.id));
-    const allFilteredSelected = filteredEmployees.length > 0 && filteredEmployees.every(emp => data.employee_ids.includes(emp.id));
-
-    const toggleEmployee = (id: number) =>
-        setData('employee_ids', data.employee_ids.includes(id)
-            ? data.employee_ids.filter(eId => eId !== id)
-            : [...data.employee_ids, id]);
-
-    const removeAll = () => {
-        setData('employee_ids', []);
-        setShowRemoveConfirm(false);
-        setShowClearConfirm(false);
-    };
-
-    return (
-        <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Update Deduction" />
-            <form onSubmit={e => { e.preventDefault(); put(`/hr/deductions/${deduction.id}`); }} className="p-4">
-                <div className="flex gap-6">
-
-                    {/* Left Column */}
-                    <div className="w-1/2 space-y-4">
-                        <h2 className="text-lg font-semibold">Deduction Details</h2>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="deduction_name">Deduction Name <span className="text-red-500">*</span></Label>
-                            <Input id="deduction_name" value={data.deduction_name} onChange={e => setData('deduction_name', e.target.value)} placeholder="Enter deduction name" />
-                            <InputError message={errors.deduction_name} />
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="deduction_amount">Deduction Amount <span className="text-red-500">*</span></Label>
-                            <Input type="number" id="deduction_amount" value={data.deduction_amount} onChange={e => setData('deduction_amount', e.target.value)} placeholder="Enter deduction amount" />
-                            <InputError message={errors.deduction_amount} />
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="payroll_period_id">Payroll Period <span className="text-red-500">*</span></Label>
-                            <select id="payroll_period_id" value={data.payroll_period_id} onChange={e => setData('payroll_period_id', e.target.value)} className="w-full p-2 border rounded">
-                                <option value="">Select Payroll Period</option>
-                                {payroll_periods.map(p => (
-                                    <option key={p.id} value={p.id}>{formatDate(p.start_date!)} - {formatDate(p.end_date!)}</option>
-                                ))}
-                            </select>
-                            <InputError message={errors.payroll_period_id} />
-                        </div>
-                    </div>
-
-                    {/* Right Column */}
-                    <div className="w-1/2 space-y-4" ref={dropdownRef}>
-                        <h2 className="text-lg font-semibold">Employee Selection</h2>
-
-                        {/* Selected Tags */}
-                        {selectedEmployees.length > 0 && (
-                            <div>
-                                <p className="text-xs text-gray-500 mb-1">{selectedEmployees.length} employee{selectedEmployees.length !== 1 ? 's' : ''} selected</p>
-                                <div className="flex flex-wrap gap-1.5 p-2 border rounded bg-gray-50 min-h-[40px]">
-                                    {selectedEmployees.slice(0, 5).map(emp => (
-                                        <div key={emp.id} className="flex items-center gap-1 bg-blue-50 px-1.5 py-0.5 rounded text-xs border border-blue-200">
-                                            <span className="max-w-[150px] truncate">{emp.user?.name ?? 'N/A'}</span>
-                                            <button type="button" onClick={() => setData('employee_ids', data.employee_ids.filter(id => id !== emp.id))} className="text-blue-600 hover:text-blue-800">
-                                                <X className="h-2.5 w-2.5" />
-                                            </button>
-                                        </div>
-                                    ))}
-                                    {selectedEmployees.length > 5 && (
-                                        <button type="button" onClick={() => setShowAllModal(true)} className="bg-gray-200 px-2 py-0.5 rounded text-xs hover:bg-gray-300">
-                                            +{selectedEmployees.length - 5} more
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* All Employees Modal */}
-                        {showAllModal && (
-                            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowAllModal(false)}>
-                                <div className="bg-white rounded-xl w-full max-w-2xl max-h-[85vh] overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
-                                    <div className="px-6 py-4 border-b bg-orange-50 flex justify-between items-center">
-                                        <div className="flex items-center gap-3">
-                                            <div className="p-2 bg-orange-100 rounded-lg"><Users className="h-5 w-5 text-orange-600" /></div>
-                                            <div>
-                                                <h3 className="font-semibold text-lg">Selected Employees</h3>
-                                                <p className="text-sm text-gray-500">{selectedEmployees.length} employees will have this deduction</p>
-                                            </div>
-                                        </div>
-                                        <button onClick={() => setShowAllModal(false)} className="p-2 hover:bg-orange-100 rounded-lg"><X className="h-5 w-5" /></button>
-                                    </div>
-
-                                    <div className="p-6 overflow-y-auto max-h-[calc(85vh-180px)] space-y-2">
-                                        {selectedEmployees.map((emp, i) => (
-                                            <div key={emp.id} className="group flex items-center justify-between h-10 p-3 border rounded-lg hover:shadow-md hover:border-orange-200 transition-all">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="flex items-center justify-center w-7 h-7 bg-orange-100 rounded-full text-sm font-medium">{i + 1}</div>
-                                                    <span className="font-medium">{emp.user?.name ?? 'No name'}</span>
-                                                    <span className="text-xs px-2 py-0.5 bg-gray-100 rounded-full text-gray-600">{emp.emp_code ?? 'N/A'}</span>
-                                                </div>
-                                                <button type="button" onClick={() => { setData('employee_ids', data.employee_ids.filter(id => id !== emp.id)); if (selectedEmployees.length === 1) setShowAllModal(false); }} className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-50 rounded-lg transition-all">
-                                                    <X className="h-4 w-4 text-red-500" />
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
-
-                                    <div className="px-6 py-4 border-t bg-gray-50 flex justify-between items-center">
-                                        <div className="flex items-center gap-2">
-                                            <UserCheck className="h-4 w-4 text-orange-600" />
-                                            <span className="text-sm"><span className="font-semibold">{selectedEmployees.length}</span> selected</span>
-                                        </div>
-                                        <div className="flex gap-2">
-                                            <Button type="button" variant="destructive" size="sm" onClick={() => setShowRemoveConfirm(true)} disabled={selectedEmployees.length === 0}>Remove All</Button>
-                                            <Button type="button" size="sm" onClick={() => setShowAllModal(false)} className="bg-blue-600 hover:bg-blue-700">Done</Button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Confirm Modals */}
-                        <ConfirmModal
-                            open={showRemoveConfirm}
-                            onClose={() => setShowRemoveConfirm(false)}
-                            onConfirm={() => { removeAll(); setShowAllModal(false); }}
-                            title="Remove All Employees"
-                            description={`Are you sure you want to remove all ${selectedEmployees.length} selected employees?`}
-                            note="This action cannot be undone. You will need to select employees again."
-                            confirmLabel="Yes, Remove All"
-                            confirmClass="bg-red-600 hover:bg-red-700"
-                        />
-                        <ConfirmModal
-                            open={showClearConfirm}
-                            onClose={() => setShowClearConfirm(false)}
-                            onConfirm={() => { removeAll(); setIsOpen(false); }}
-                            title="Clear All Selections"
-                            description={`Are you sure you want to clear all ${data.employee_ids.length} selected employees?`}
-                            note="This will remove all employees from your selection. You can select them again later."
-                            confirmLabel="Yes, Clear All"
-                            confirmClass="bg-yellow-600 hover:bg-yellow-700"
-                        />
-
-                        {/* Dropdown */}
-                        <div className="relative">
-                            <p className="text-sm text-gray-500 mb-1">Choose employees to deduct</p>
-                            <div className="flex items-center border rounded cursor-pointer p-2 hover:bg-gray-50" onClick={() => setIsOpen(!isOpen)}>
-                                <span className="flex-1">{data.employee_ids.length === 0 ? 'Select employees...' : `${data.employee_ids.length} selected`}</span>
-                                <ChevronDown className="h-4 w-4" />
-                            </div>
-
-                            {isOpen && (
-                                <div className="absolute z-10 w-full mt-1 border rounded bg-white shadow-lg max-h-80 overflow-y-auto">
-                                    <div className="p-2 sticky top-0 bg-white border-b">
-                                        <div className="flex items-center border rounded px-2">
-                                            <Search className="h-4 w-4 text-gray-400" />
-                                            <input autoFocus type="text" placeholder="Search employees..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} onClick={e => e.stopPropagation()} className="w-full p-1 outline-none" />
-                                        </div>
-                                        {filteredEmployees.length > 0 && (
-                                            <div className="flex justify-between items-center mt-2 px-1">
-                                                <label className="flex items-center gap-2 text-sm cursor-pointer">
-                                                    <input type="checkbox" checked={allFilteredSelected} className="rounded"
-                                                        onChange={e => e.target.checked
-                                                            ? setData('employee_ids', filteredEmployees.map(e => e.id))
-                                                            : setData('employee_ids', data.employee_ids.filter(id => !filteredEmployees.map(e => e.id).includes(id)))
-                                                        }
-                                                    />
-                                                    <span>Select all ({filteredEmployees.length})</span>
-                                                </label>
-                                                <Button type="button" variant="ghost" size="sm" onClick={() => setShowClearConfirm(true)} className="text-xs h-6 px-2" disabled={data.employee_ids.length === 0}>
-                                                    Clear all
-                                                </Button>
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="py-1">
-                                        {displayedEmployees.map(emp => (
-                                            <div key={emp.id} className="p-2 hover:bg-gray-100 cursor-pointer flex items-center gap-2" onClick={() => toggleEmployee(emp.id)}>
-                                                <input type="checkbox" checked={data.employee_ids.includes(emp.id)} onChange={() => {}} className="rounded" />
-                                                <span>{emp.emp_code ?? 'N/A'} - {emp.user?.name ?? 'No name'}</span>
-                                            </div>
-                                        ))}
-                                        {!searchTerm && employees.length > 5 && (
-                                            <p className="p-2 text-center text-sm text-gray-500 border-t">Showed 5 of {employees.length}. Type to search more.</p>
-                                        )}
-                                        {searchTerm && displayedEmployees.length === 0 && (
-                                            <p className="p-4 text-center text-gray-500">No employees found</p>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        <InputError message={errors.employee_ids} />
-                    </div>
-                </div>
-
-                <div className="flex gap-2 mt-6 pt-4">
-                    <Button type="submit" disabled={processing}>{processing ? 'Updating...' : 'Update Deduction'}</Button>
-                    <Link href="/hr/deductions"><Button variant="outline" type="button">Cancel</Button></Link>
-                </div>
-            </form>
-        </AppLayout>
+  const toggleEmployee = (id: number) =>
+    setData('employee_ids',
+      data.employee_ids.includes(id)
+        ? data.employee_ids.filter(x => x !== id)
+        : [...data.employee_ids, id]
     );
+
+  const handleSelectAll = (ids: number[]) => setData('employee_ids', ids);
+
+  return (
+    <AppLayout breadcrumbs={breadcrumbs}>
+      <Head title={`Edit: ${deduction.deduction_name}`} />
+
+      <div className="px-4 sm:px-6 lg:px-8 py-6 max-w-6xl mx-auto space-y-5">
+
+        {/* ── Page header ── */}
+        <div style={fu(0)} className="flex items-center justify-between">
+          <a href="/hr/deductions"
+            className="inline-flex items-center gap-2 text-xs font-semibold text-slate-500 hover:text-[#1d4791] transition-colors group">
+            <ArrowLeft className="h-3.5 w-3.5 group-hover:-translate-x-0.5 transition-transform" />
+            Back to Deductions
+          </a>
+
+          <div className="bg-[#1d4791] px-4 py-2.5 rounded-xl flex items-center gap-3 shadow-md">
+            <div className="h-7 w-7 rounded-lg bg-white/15 flex items-center justify-center">
+              <Pencil className="h-3.5 w-3.5 text-white" />
+            </div>
+            <div>
+              <p className="text-[10px] font-bold tracking-widest uppercase text-white">Edit Deduction</p>
+              <p className="text-[10px] text-white/55 mt-0.5 max-w-[200px] truncate">{deduction.deduction_name}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Warning for non-OPEN payroll period */}
+        {!canEdit && (
+          <div style={fu(30)} className="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 text-amber-600 flex-shrink-0" />
+            <p className="text-xs text-amber-700">
+              This deduction is associated with a {selectedPeriod?.payroll_per_status?.toLowerCase() || 'closed'} payroll period and cannot be edited.
+              Please create a new deduction for an open payroll period if changes are needed.
+            </p>
+          </div>
+        )}
+
+        {/* ── Form Grid ── */}
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
+
+          {/* Column 1: Deduction Details */}
+          <div style={fu(60)} className="rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-white h-fit">
+            <NavyCardHeader
+              icon={<HandCoins className="h-4 w-4 text-white" />}
+              title="Deduction Details"
+              subtitle="Edit name, amount, and payroll period"
+            />
+            <div className="p-5 space-y-5">
+              <FieldGroup label="Deduction Name" required error={errors.deduction_name}>
+                <Input
+                  value={data.deduction_name}
+                  onChange={e => setData('deduction_name', e.target.value)}
+                  placeholder="e.g., SSS, Pag-IBIG, Tax"
+                  disabled={!canEdit}
+                  className={`h-9 text-sm border-slate-200 focus:border-[#1d4791] focus:ring-2 focus:ring-[#1d4791]/20 ${!canEdit ? 'bg-slate-50' : ''}`}
+                />
+              </FieldGroup>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <FieldGroup label="Amount (₱)" required error={errors.deduction_amount}>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium select-none">₱</span>
+                    <Input
+                      type="number" step="0.01" min="0"
+                      value={data.deduction_amount}
+                      onChange={e => setData('deduction_amount', e.target.value)}
+                      placeholder="0.00"
+                      disabled={!canEdit}
+                      className={`pl-7 h-9 text-sm border-slate-200 focus:border-[#1d4791] focus:ring-2 focus:ring-[#1d4791]/20 ${!canEdit ? 'bg-slate-50' : ''}`}
+                    />
+                  </div>
+                </FieldGroup>
+
+                <FieldGroup label="Payroll Period" required error={errors.payroll_period_id}>
+                  <Select 
+                    value={data.payroll_period_id} 
+                    onValueChange={v => setData('payroll_period_id', v)}
+                    disabled={!canEdit}
+                  >
+                    <SelectTrigger className={`h-9 text-sm border-slate-200 focus:ring-2 focus:ring-[#1d4791]/20 focus:border-[#1d4791] ${!canEdit ? 'bg-slate-50' : ''}`}>
+                      <SelectValue placeholder="Select period" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl shadow-xl">
+                      {payroll_periods.map(p => (
+                        <SelectItem key={p.id} value={String(p.id)} className="text-xs">
+                          <div className="flex items-center justify-between w-full gap-2">
+                            <span className="flex items-center gap-1.5">
+                              <Calendar className="h-3 w-3 text-slate-400" />
+                              {fmtDate(p.start_date)} – {fmtDate(p.end_date)}
+                            </span>
+                            {/* {getStatusBadge(p.payroll_per_status)} */}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {selectedPeriod && !isSelectedPeriodOpen && (
+                    <p className="text-[10px] text-amber-600 mt-1">
+                      ⚠️ This payroll period is {selectedPeriod.payroll_per_status?.toLowerCase()}. Changes are not allowed.
+                    </p>
+                  )}
+                </FieldGroup>
+              </div>
+
+              {/* Current amount preview */}
+              {data.deduction_amount && !isNaN(Number(data.deduction_amount)) && Number(data.deduction_amount) > 0 && (
+                <div className="rounded-xl bg-[#1d4791]/4 border border-[#1d4791]/15 px-4 py-3 flex items-center justify-between">
+                  <span className="text-[11px] font-semibold text-slate-500">Deduction Amount</span>
+                  <span className="text-sm font-bold text-[#1d4791]">
+                    ₱{Number(data.deduction_amount).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Column 2: Employee Assignment */}
+          <div style={fu(120)} className="rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-white h-fit">
+            <NavyCardHeader
+              icon={<Users className="h-4 w-4 text-white" />}
+              title="Employee Assignment"
+              subtitle="Manage who is subject to this deduction"
+            />
+            <div className="p-5">
+              <IncentiveEmployeeSelector
+                employees={employees}
+                selectedIds={data.employee_ids}
+                onToggle={canEdit ? toggleEmployee : () => {}}
+                onSelectAll={canEdit ? handleSelectAll : () => {}}
+                onRemoveAll={canEdit ? () => setData('employee_ids', []) : () => {}}
+                error={errors.employee_ids as string | undefined}
+                disabled={!canEdit}
+              />
+              {!canEdit && (
+                <p className="text-[10px] text-amber-600 mt-2 text-center">
+                  Employee assignment cannot be changed for this payroll period.
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Action row - Spans both columns */}
+          <div style={fu(180)} className="col-span-1 lg:col-span-2 flex items-center justify-end gap-3 pt-2">
+            <Link as='button' href="/hr/deductions"
+              className="h-9 px-4 rounded-lg border border-slate-200 text-xs font-semibold text-slate-600 hover:border-slate-300 hover:text-slate-800 transition-colors">
+              Cancel
+            </Link>
+            <button type="submit" disabled={processing || !canEdit}
+              className={`h-9 px-5 rounded-lg bg-[#1d4791] hover:bg-[#1d4791]/90 text-white text-xs font-bold shadow-sm shadow-[#1d4791]/20 flex items-center gap-2 transition-colors disabled:opacity-60 disabled:cursor-not-allowed`}>
+              {processing
+                ? <> <span className="h-3.5 w-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" />Saving… </>
+                : <> <Save className="h-3.5 w-3.5" />Update Deduction </>
+              }
+            </button>
+          </div>
+        </form>
+      </div>
+    </AppLayout>
+  );
 }

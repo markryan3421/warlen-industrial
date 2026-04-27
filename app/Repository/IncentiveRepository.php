@@ -5,6 +5,7 @@ namespace App\Repository;
 use App\Enums\PayrollPeriodStatusEnum;
 use App\Models\Deduction;
 use App\Models\Employee;
+use App\Models\Incentive;
 use App\Models\PayrollPeriod;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -46,6 +47,19 @@ class IncentiveRepository
                 'end_date',
                 'pay_date',
                 'payroll_per_status'
+            ]);
+    }
+
+    public function getIncentives(): Collection
+    {
+        return Incentive::query()
+            ->with(['employees', 'payroll_period'])
+            ->get([
+                'id',
+                'payroll_period_id',
+                'incentive_name',
+                'incentive_amount',
+                'is_daily',
             ]);
     }
 }
