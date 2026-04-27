@@ -2,12 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\AIInsightService;
-use App\Services\AdvancedAIInsightService;
 use App\Models\AIInsight;
-use Inertia\Inertia;
+use App\Services\AdvancedAIInsightService;
+use App\Services\AIInsightService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
+use Inertia\Inertia;
 
 class AIInsightController extends Controller
 {
@@ -22,6 +23,7 @@ class AIInsightController extends Controller
 
     public function dashboard()
     {
+        Gate::authorize('viewAny', AIInsight::class);
         // Get stored insights from database
         $storedInsights = [
             'payroll' => AIInsight::ofType('payroll')
@@ -56,8 +58,14 @@ class AIInsightController extends Controller
      */
     public function generateInsights(Request $request)
     {
+        Gate::authorize('create', AIInsight::class);
+
         if ($this->limit('generateInsights:' . auth()->id(), 60, 5)) {
-            return back()->with('message', 'Too many attempts. Please try again later.');
+            return response()->json([
+                'success' => false,
+                'message' => 'Too many attempts. Please try again later.',
+                'rate_limited' => true
+            ], 429);
         }
         try {
             $type = $request->get('type', 'all');
@@ -142,6 +150,8 @@ class AIInsightController extends Controller
      */
     public function getInsights(Request $request)
     {
+        Gate::authorize('getInsights', AIInsight::class);
+
         $type = $request->get('type', 'all');
 
         $response = [
@@ -188,6 +198,7 @@ class AIInsightController extends Controller
      */
     public function deepAnalysis(Request $request)
     {
+        Gate::authorize('deepAnalysis', AIInsight::class);
         $timeframe = $request->get('timeframe', 'last_3_months');
 
         // Perform deeper analysis
@@ -225,6 +236,7 @@ class AIInsightController extends Controller
      */
     public function analyzeAttendance()
     {
+        Gate::authorize('analyzeAttendance', AIInsight::class);
         $attendanceInsights = $this->aiService->getAttendanceInsights();
         return response()->json($attendanceInsights);
     }

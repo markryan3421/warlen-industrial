@@ -4,10 +4,12 @@ namespace App\Policies;
 
 use App\Models\PayrollPeriod;
 use App\Models\User;
+use Illuminate\Auth\Access\HandlesAuthorization;
 use Illuminate\Auth\Access\Response;
 
 class PayrollPeriodPolicy
 {
+      use HandlesAuthorization;
     /**
      * Determine whether the user can view any models.
      */

@@ -4,9 +4,11 @@ namespace App\Policies;
 
 use App\Models\ApplicationLeave;
 use App\Models\User;
+use Illuminate\Auth\Access\HandlesAuthorization;
 
 class ApplicationLeavePolicy
 {
+      use HandlesAuthorization;
     /**
      * Determine whether the user can view any models.
      */

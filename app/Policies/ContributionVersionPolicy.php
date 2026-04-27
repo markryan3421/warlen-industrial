@@ -4,10 +4,12 @@ namespace App\Policies;
 
 use App\Models\ContributionVersion;
 use App\Models\User;
+use Illuminate\Auth\Access\HandlesAuthorization;
 use Illuminate\Auth\Access\Response;
 
 class ContributionVersionPolicy
 {
+    use HandlesAuthorization;
     /**
      * Determine whether the user can view any models.
      */

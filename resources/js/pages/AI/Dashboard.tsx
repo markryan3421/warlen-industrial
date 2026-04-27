@@ -1,5 +1,5 @@
 // pages/AI/Dashboard.tsx
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     Brain, TrendingUp, AlertTriangle, Lightbulb, RefreshCw,
@@ -12,7 +12,7 @@ import { PageSkeleton } from '@/components/skeletons/page-skeleton';
 import { toast } from 'sonner';
 import { type BreadcrumbItem } from '@/types';
 import AppLayout from '@/layouts/app-layout';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -20,6 +20,16 @@ const breadcrumbs: BreadcrumbItem[] = [
         href: '/ai/dashboard',
     },
 ];
+
+// Custom toast style helper
+const toastStyle = (color: string) => ({
+    style: {
+        backgroundColor: 'white',
+        color: color,
+        border: '1px solid #e2e8f0',
+        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+    },
+});
 
 /* ─────────────────────────────────────────────────────────────
    Keyframes — injected once
@@ -597,6 +607,42 @@ export default function AIDashboard({
     const [loading]          = useState(false);
     const [generating, setGenerating] = useState(false);
     const [activeTab,  setActiveTab]  = useState('overview');
+    
+    const { props } = usePage<{ flash?: { success?: string; error?: string; warning?: string; info?: string } }>();
+    
+    // Track last shown flash to prevent duplicates within a short time window
+    const lastFlashRef = useRef<{ key: string; time: number }>({ key: '', time: 0 });
+
+    // Flash message listener – prevents duplicate toasts within 500ms
+    useEffect(() => {
+        const flash = props.flash;
+        if (!flash) return;
+
+        const flashKey = JSON.stringify(flash);
+        const now = Date.now();
+        const last = lastFlashRef.current;
+
+        // If same flash key appeared within last 500ms, skip (prevents double toast)
+        if (last.key === flashKey && (now - last.time) < 500) {
+            return;
+        }
+
+        // Update ref
+        lastFlashRef.current = { key: flashKey, time: now };
+
+        if (flash.success) {
+            toast.success(flash.success, toastStyle('#16a34a')); // green text
+        }
+        if (flash.error) {
+            toast.error(flash.error, toastStyle('#dc2626')); // red text (danger)
+        }
+        if (flash.warning) {
+            toast.warning(flash.warning, toastStyle('#f97316')); // orange text (warning)
+        }
+        if (flash.info) {
+            toast.info(flash.info, toastStyle('#3b82f6')); // blue text (info)
+        }
+    }, [props.flash]);
 
     const generateFreshInsights = async (type = 'all') => {
         setGenerating(true);
@@ -612,12 +658,21 @@ export default function AIDashboard({
                 },
                 body: JSON.stringify({ type }),
             });
-            if (!res.ok) throw new Error('Failed');
+            
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.message || 'Failed to generate insights');
+            }
+            
             const data = await res.json();
-            if (data.success) { toast.success('Insights generated!'); window.location.reload(); }
-            else toast.error(data.message || 'Failed to generate insights');
-        } catch {
-            toast.error('Failed to generate insights. Please try again.');
+            if (data.success) { 
+                toast.success(data.message || 'Insights generated successfully!', toastStyle('#16a34a'));
+                window.location.reload(); 
+            } else {
+                toast.error(data.message || 'Failed to generate insights', toastStyle('#dc2626'));
+            }
+        } catch (error: any) {
+            toast.error(error.message || 'Failed to generate insights. Please try again.', toastStyle('#dc2626'));
         } finally {
             setGenerating(false);
         }
