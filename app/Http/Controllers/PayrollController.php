@@ -14,7 +14,7 @@ use Inertia\Inertia;
 class PayrollController extends Controller
 {
     use HasPaginatedIndex;
-    
+
     public function __construct(protected PayrollService $payrollService) {}
 
     /**
@@ -82,14 +82,14 @@ class PayrollController extends Controller
         if ($request->filled('date_from') || $request->filled('date_to')) {
             $query->whereHas('payrollPeriod', function ($q) use ($request) {
                 if ($request->filled('date_from') && $request->filled('date_to')) {
-                    $q->whereRaw('DATE(start_date) <= ?', [$request->date_to])
-                        ->whereRaw('DATE(end_date) >= ?', [$request->date_from]);
+                    $q->whereDate('start_date', '<=', $request->date_to)
+                        ->whereDate('end_date', '>=', $request->date_from);
                 } elseif ($request->filled('date_from')) {
-                    $q->whereRaw('DATE(start_date) <= ?', [$request->date_from])
-                        ->whereRaw('DATE(end_date) >= ?', [$request->date_from]);
+                    $q->whereDate('start_date', '<=', $request->date_from)
+                        ->whereDate('end_date', '>=', $request->date_from);
                 } elseif ($request->filled('date_to')) {
-                    $q->whereRaw('DATE(start_date) <= ?', [$request->date_to])
-                        ->whereRaw('DATE(end_date) >= ?', [$request->date_to]);
+                    $q->whereDate('start_date', '<=', $request->date_to)
+                        ->whereDate('end_date', '>=', $request->date_to);
                 }
             });
         }
@@ -104,7 +104,7 @@ class PayrollController extends Controller
         // FIXED: Handle invalid page numbers
         $currentPage = $request->input('page', 1);
         $lastPage = max(1, ceil($filteredCount / $perPage));
-        
+
         // Reset to last page if current page exceeds last page
         if ($currentPage > $lastPage && $lastPage > 0) {
             $currentPage = $lastPage;

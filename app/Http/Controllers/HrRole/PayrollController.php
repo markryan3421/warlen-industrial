@@ -15,7 +15,7 @@ use Inertia\Inertia;
 class PayrollController extends Controller
 {
     use HasPaginatedIndex;
-    
+
     public function __construct(protected PayrollService $payrollService) {}
 
     /**
@@ -84,14 +84,14 @@ class PayrollController extends Controller
         if ($request->filled('date_from') || $request->filled('date_to')) {
             $query->whereHas('payrollPeriod', function ($q) use ($request) {
                 if ($request->filled('date_from') && $request->filled('date_to')) {
-                    $q->whereRaw('DATE(start_date) <= ?', [$request->date_to])
-                        ->whereRaw('DATE(end_date) >= ?', [$request->date_from]);
+                    $q->whereDate('start_date', '<=', $request->date_to)
+                        ->whereDate('end_date', '>=', $request->date_from);
                 } elseif ($request->filled('date_from')) {
-                    $q->whereRaw('DATE(start_date) <= ?', [$request->date_from])
-                        ->whereRaw('DATE(end_date) >= ?', [$request->date_from]);
+                    $q->whereDate('start_date', '<=', $request->date_from)
+                        ->whereDate('end_date', '>=', $request->date_from);
                 } elseif ($request->filled('date_to')) {
-                    $q->whereRaw('DATE(start_date) <= ?', [$request->date_to])
-                        ->whereRaw('DATE(end_date) >= ?', [$request->date_to]);
+                    $q->whereDate('start_date', '<=', $request->date_to)
+                        ->whereDate('end_date', '>=', $request->date_to);
                 }
             });
         }
@@ -222,7 +222,7 @@ class PayrollController extends Controller
         $payroll = Payroll::with(['employee.user', 'employee.position', 'employee.branch', 'employee.site', 'payrollPeriod', 'payrollItems'])
             ->findOrFail($id);
 
-         Gate::authorize('viewAny', $payroll);
+        Gate::authorize('viewAny', $payroll);
 
         return response()->json([
             'id' => $payroll->id,
@@ -277,9 +277,9 @@ class PayrollController extends Controller
     {
         $payroll = Payroll::findOrFail($id);
         Gate::authorize('delete', $payroll);
-        
+
         $payroll->delete();
-        
+
         return redirect()->back()->with('success', 'Payroll record deleted successfully');
     }
 
