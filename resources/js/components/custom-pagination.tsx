@@ -40,18 +40,8 @@ export const CustomPagination = ({
 	isLoading = false,
 }: PaginationProps) => {
 
-	// Calculate total pages
 	const totalPages = Math.ceil(pagination.total / parseInt(perPage));
-	
-	// FIXED: Only hide pagination when:
-	// 1. Not loading
-	// 2. Total count is 0 (no data at all)
-	// 3. Not searching (because search might return 0 results)
-	// But even then, we might want to show pagination to allow changing per page
-	const shouldHide = !isLoading && totalCount === 0 && filteredCount === 0 && !search;
-	
-	// If we have any data or we're loading, show pagination
-	if (shouldHide) {
+	if (totalPages <= 1 || pagination.total === 0) {
 		return null;
 	}
 
