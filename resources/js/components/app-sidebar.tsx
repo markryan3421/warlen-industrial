@@ -117,6 +117,9 @@ export function AppSidebar() {
     const { isCurrentUrl } = useCurrentUrl();
     const isExpanded = state === 'expanded';
 
+    // Container style (only added this)
+    const categoryContainerClass = 'mb-4 rounded-lg border border-gray-200 bg-white/50 p-2 shadow-sm transition-all duration-200';
+
     return (
         <Sidebar collapsible="icon" className="border-r-1 bg-white border-gray-400">
             <SidebarHeader className="px-0 sm:-ml-1 md:px-5 lg:px-2 lg:ml-2">
@@ -143,11 +146,22 @@ export function AppSidebar() {
             <SidebarContent className={`
                 ${isExpanded ? 'px-5 transition-all duration-200 ease-in-out' : 'px-2 transition-all duration-200 ease-in-out'}
             `}>
-                <NavMain items={DashboardAndReports} label="General" isCollapsed={!isExpanded} />
-                <NavMain items={OrganizationItems} label="Organization" isCollapsed={!isExpanded} />
-                <NavMain items={WorkforceManagementItems} label="Workforce Management" isCollapsed={!isExpanded} />
-                <NavMain items={PayrollConfigurationItems} label="Payroll Configuration" isCollapsed={!isExpanded} />
-                <NavMain items={PayrollOperationsItems} label="Payroll Operations" isCollapsed={!isExpanded} />
+                {/* Only containers added below */}
+                <div className={categoryContainerClass}>
+                    <NavMain items={DashboardAndReports} label="General" isCollapsed={!isExpanded} />
+                </div>
+                <div className={categoryContainerClass}>
+                    <NavMain items={OrganizationItems} label="Organization" isCollapsed={!isExpanded} />
+                </div>
+                <div className={categoryContainerClass}>
+                    <NavMain items={WorkforceManagementItems} label="Workforce Management" isCollapsed={!isExpanded} />
+                </div>
+                <div className={categoryContainerClass}>
+                    <NavMain items={PayrollConfigurationItems} label="Payroll Configuration" isCollapsed={!isExpanded} />
+                </div>
+                <div className={categoryContainerClass}>
+                    <NavMain items={PayrollOperationsItems} label="Payroll Operations" isCollapsed={!isExpanded} />
+                </div>
             </SidebarContent>
 
             <SidebarFooter>
