@@ -9,7 +9,7 @@ export default function AppLogo() {
         <div className="flex items-center gap-2 p-5 mx-1.5 md:ml-3 lg:mr-5">
             <div className={`
                 flex items-center justify-center rounded-md
-                ${isExpanded ? 'size-11 -ml-5 transition-all duration-300 ease-in-out' : 'size-7 -ml-6.5 transition-all duration-200 ease-in-out'}
+                ${isExpanded ? 'size-11 -ml-5 transition-all duration-300 ease-in-out' : 'size-7 -ml-9.5 transition-all duration-200 ease-in-out'}
             `}>
                 <AppLogoIcon/>
             </div>
