@@ -44,7 +44,7 @@ export function NavMain({ items, label, isCollapsed = false }: NavMainProps) {
                         }
 
                         return (
-                            <SidebarMenuItem key={item.title}>
+                            <SidebarMenuItem key={item.title} className='-ml-2'>
                                 <SidebarMenuButton
                                     asChild
                                     isActive={isActive}

@@ -55,7 +55,7 @@ const HROrganizationItems: NavItem[] = [
 const HRWorkforceManagementItems: NavItem[] = [
     {
         title: 'Employees',
-        href: HREmployeeController.index(),
+        href: '/hr/employees',
         icon: CircleUser,
     },
     {
@@ -110,8 +110,11 @@ const HRGeneralItems: NavItem[] = [
 ];
 
 export function HrSidebar() {
-    const { state } = useSidebar(); // This will work because it's inside SidebarProvider
+    const { state } = useSidebar();
     const isExpanded = state === 'expanded';
+
+    // Container style (copied from base app-sidebar)
+    const categoryContainerClass = 'mb-4 rounded-lg border border-gray-200 bg-white/50 p-2 shadow-sm transition-all duration-200';
 
     return (
         <Sidebar collapsible="icon" className="border-r-1 bg-white">
@@ -130,13 +133,22 @@ export function HrSidebar() {
             <SidebarContent className={`
                 ${isExpanded ? 'px-5 transition-all duration-200 ease-in-out' : 'px-2 transition-all duration-200 ease-in-out'}
             `}>
-
-                <NavMain items={HRGeneralItems} label="General" />
-                <NavMain items={HROrganizationItems} label="Organization" />
-                <NavMain items={HRWorkforceManagementItems} label="Workforce Management" />
-                <NavMain items={HRPayrollConfigurationItems} label="Payroll Configurations" />
-                <NavMain items={HRPayrollOperationsItems} label="Payroll Operations" />
-
+                {/* Containers added below */}
+                <div className={categoryContainerClass}>
+                    <NavMain items={HRGeneralItems} label="General" />
+                </div>
+                <div className={categoryContainerClass}>
+                    <NavMain items={HROrganizationItems} label="Organization" />
+                </div>
+                <div className={categoryContainerClass}>
+                    <NavMain items={HRWorkforceManagementItems} label="Workforce Management" />
+                </div>
+                <div className={categoryContainerClass}>
+                    <NavMain items={HRPayrollConfigurationItems} label="Payroll Configurations" />
+                </div>
+                <div className={categoryContainerClass}>
+                    <NavMain items={HRPayrollOperationsItems} label="Payroll Operations" />
+                </div>
             </SidebarContent>
 
             <SidebarFooter>

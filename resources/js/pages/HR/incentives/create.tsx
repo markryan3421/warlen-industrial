@@ -1,529 +1,280 @@
-"use client"
-import { Head, Link, useForm } from '@inertiajs/react';
-import { Search, ChevronDown, X, CheckSquare, Square, Users, UserCheck, AlertTriangle } from 'lucide-react';
-import { useState, useRef, useEffect } from 'react';
-import IncentiveController from "@/actions/App/Http/Controllers/HrRole/HRIncentiveController";
-import InputError from '@/components/input-error';
-import { Button } from '@/components/ui/button';
-import {
-  Combobox,
-  ComboboxContent,
-  ComboboxEmpty,
-  ComboboxInput,
-  ComboboxItem,
-  ComboboxList,
-} from "@/components/ui/combobox"
+// pages/incentives/create.tsx
+import { Head, router, useForm } from '@inertiajs/react';
+import { ArrowLeft, Coins, Save, Users, Plus, ToggleLeft, ToggleRight, Calendar } from 'lucide-react';
+import AppLayout from '@/layouts/hr-layout';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import HrLayout from '@/layouts/hr-layout';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { IncentiveEmployeeSelector } from '@/components/incentive-employee-selector';
+import { toast } from '@/components/custom-toast';
 import type { BreadcrumbItem } from '@/types';
+import IncentiveController, { store } from '@/actions/App/Http/Controllers/HrRole/HRIncentiveController';
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Create Incentive',
-        href: 'hr/incentives/create',
-    },
-];
+/* ─────────────────────────────────────────────────────────────
+Keyframes — shared with edit.tsx
+───────────────────────────────────────────────────────────── */
+const KF = `@keyframes incFadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} } @keyframes incScaleIn { from{opacity:0;transform:scale(0.97)} to{opacity:1;transform:scale(1)} }`;
+if (typeof document !== 'undefined' && !document.getElementById('inc-kf')) {
+  const s = document.createElement('style'); s.id = 'inc-kf'; s.textContent = KF;
+  document.head.appendChild(s);
+}
+const fu = (d = 0): React.CSSProperties => ({ animation: `incFadeUp 0.4s ease both`, animationDelay: `${d}ms` });
 
+/* ─────────────────────────────────────────────────────────────
+Types
+───────────────────────────────────────────────────────────── */
 interface Employee {
-    id: number;
-    emp_code: string | number | null;
-    user?: { name: string } | null;
+  id: number;
+  emp_code?: string | number | null;
+  user?: { name: string } | null;
+  name?: string;
+}
+interface PayrollPeriod {
+  id: number;
+  start_date: string;
+  end_date: string;
+  pay_date: string;
+  payroll_per_status: string;
+}
+interface Props {
+  payroll_periods: PayrollPeriod[];
+  employees: Employee[];
 }
 
-interface CreateProps {
-    payroll_periods?: Array<{ id: number; name: string; start_date?: string; end_date?: string }>;
-    employees?: Employee[];
+const fmtDate = (d: string) => new Date(d).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' });
+
+/* ─────────────────────────────────────────────────────────────
+Shared sub-components
+───────────────────────────────────────────────────────────── */
+function NavyCardHeader({ icon, title, subtitle }: { icon: React.ReactNode; title: string; subtitle?: string }) {
+  return (
+    <div className="bg-[#1d4791] px-5 py-4 flex items-center gap-3">
+      <div className="h-8 w-8 rounded-lg bg-white/15 flex items-center justify-center">{icon}</div>
+      <div>
+        <p className="text-xs font-bold tracking-widest uppercase text-white">{title}</p>
+        {subtitle && <p className="text-[10px] text-white/65 mt-0.5">{subtitle}</p>}
+      </div>
+    </div>
+  );
 }
 
-export default function Create({ payroll_periods = [], employees = [] }: CreateProps) {
-    const [searchTerm, setSearchTerm] = useState('');
-    const [isOpen, setIsOpen] = useState(false);
-    const [showAllEmployeesModal, setShowAllEmployeesModal] = useState(false);
-    const [showRemoveAllConfirmation, setShowRemoveAllConfirmation] = useState(false);
-    const [showClearAllConfirmation, setShowClearAllConfirmation] = useState(false);
-    const dropdownRef = useRef<HTMLDivElement>(null);
+function FieldGroup({ label, required, error, hint, children }: {
+  label: string; required?: boolean; error?: string; hint?: string; children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <label className="block text-xs font-bold text-slate-700">
+        {label} {required && <span className="text-[#d85e39]">*</span>}
+      </label>
+      {children}
+      {hint && !error && <p className="text-[10px] text-slate-400">{hint}</p>}
+      {error && <p className="text-[10px] text-[#d85e39]">⚠ {error}</p>}
+    </div>
+  );
+}
 
-    const { data, setData, post, processing, errors } = useForm({
-        incentive_name: '',
-        incentive_amount: '',
-        payroll_period_id: '',
-        employee_ids: [] as number[],
+/* ─────────────────────────────────────────────────────────────
+Main page
+───────────────────────────────────────────────────────────── */
+export default function Create({ payroll_periods, employees }: Props) {
+  const breadcrumbs: BreadcrumbItem[] = [
+    { title: 'Incentives', href: '/hr/incentives' },
+    { title: 'Create', href: '/hr/incentives/create' },
+  ];
+
+  const { data, setData, post, processing, errors, reset } = useForm({
+    incentive_name:    '',
+    incentive_amount:  '', 
+    payroll_period_id: '',
+    employee_ids:      [] as number[],
+    is_daily:          false,
+  });
+
+  // Filter payroll periods to only show OPEN ones (not processing or calculated)
+  const availablePayrollPeriods = payroll_periods.filter(period => 
+    period.payroll_per_status === 'OPEN' || period.payroll_per_status === 'open'
+  );
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    post(IncentiveController.store().url, {
+      // onSuccess: () => {
+      //   toast.success('Incentive created successfully');
+      //   reset();
+      // },
+      // onError: (errs) => toast.error(Object.values(errs).flat()[0] as string || 'Failed to create incentive'),
     });
+  };
 
-    const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
-    };
-
-    // Close dropdown when clicking outside
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-                setIsOpen(false);
-                setSearchTerm('');
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
-
-    const submit = (e: React.FormEvent) => {
-        e.preventDefault();
-        post(IncentiveController.store().url);
-    };
-
-    // Filter employees based on search
-    const filteredEmployees = employees.filter(emp => {
-        if (!searchTerm) return true;
-        const term = searchTerm.toLowerCase();
-        const code = emp.emp_code ? String(emp.emp_code).toLowerCase() : '';
-        const name = emp.user?.name?.toLowerCase() || '';
-        return code.includes(term) || name.includes(term);
-    });
-
-    // Show first 10 if no search, otherwise show all filtered
-    const displayedEmployees = searchTerm ? filteredEmployees : filteredEmployees.slice(0, 5);
-
-    const toggleEmployee = (id: number) => {
-        setData('employee_ids',
-            data.employee_ids.includes(id)
-                ? data.employee_ids.filter(eId => eId !== id)
-                : [...data.employee_ids, id]
-        );
-    };
-
-    const removeEmployee = (id: number) => {
-        setData('employee_ids', data.employee_ids.filter(eId => eId !== id));
-    };
-
-    const selectAll = () => {
-        const allEmployeeIds = filteredEmployees.map(emp => emp.id);
-        setData('employee_ids', allEmployeeIds);
-    };
-
-    const removeAll = () => {
-        setData('employee_ids', []);
-        setShowRemoveAllConfirmation(false);
-        setShowClearAllConfirmation(false);
-    };
-
-    const selectedEmployees = employees.filter(emp => data.employee_ids.includes(emp.id));
-    const allFilteredSelected = filteredEmployees.length > 0 &&
-        filteredEmployees.every(emp => data.employee_ids.includes(emp.id));
-
-    return (
-        <HrLayout breadcrumbs={breadcrumbs}>
-            <Head title="Create Incentive" />
-            <div className = "border-1 m-5 rounded-lg">
-                <form onSubmit={submit} className="p-4">
-                    {/* Two Column Layout */}
-                    <div className="flex gap-6">
-                        {/* Left Column - Incentive Details */}
-                        <div className="w-1/2 space-y-4">
-                            <h2 className="text-lg font-semibold mb-4">Incentive Details</h2>
-
-                            {/* Incentive Name */}
-                            <div className="space-y-2">
-                                <Label htmlFor="incentive_name">Incentive Name <span className="text-red-500">*</span></Label>
-                                <Input
-                                    id="incentive_name"
-                                    value={data.incentive_name}
-                                    onChange={e => setData('incentive_name', e.target.value)}
-                                    placeholder="Enter incentive name"
-                                />
-                                <InputError message={errors.incentive_name} />
-                            </div>
-
-                            {/* Incentive Amount */}
-                            <div className="space-y-2">
-                                <Label htmlFor="incentive_amount">Incentive Amount <span className="text-red-500">*</span></Label>
-                                <Input
-                                    type='number'
-                                    id="incentive_amount"
-                                    value={data.incentive_amount}
-                                    onChange={e => setData('incentive_amount', e.target.value)}
-                                    placeholder="Enter incentive amount"
-                                />
-                                <InputError message={errors.incentive_amount} />
-                            </div>
-
-                            {/* Payroll Period */}
-                            <div className="space-y-2">
-                                <Label htmlFor="payroll_period_id">Payroll Period <span className="text-red-500">*</span></Label>
-                                <select
-                                    id="payroll_period_id"
-                                    value={data.payroll_period_id}
-                                    onChange={e => {
-                                        console.log('Selected payroll period:', e.target.value);
-                                        setData('payroll_period_id', e.target.value);
-                                    }}
-                                    className="w-full p-2 border rounded"
-                                >
-                                    <option value="">Select Payroll Period</option>
-                                    {payroll_periods.map(period => (
-                                        <option key={period.id} value={period.id}>
-                                            {formatDate(period.start_date)} - {formatDate(period.end_date)}
-                                        </option>
-                                    ))}
-                                </select>
-                                <InputError message={errors.payroll_period_id} />
-                            </div>
-                        </div>
-
-                        {/* Right Column - Employee Selection */}
-                        <div className="w-1/2 space-y-4" ref={dropdownRef}>
-                            <div className="space-y-2">
-                                <div className="flex justify-between items-center">
-                                    <h2 className="text-lg font-semibold mb-2">Employee Selection</h2>
-                                </div>
-
-                                {/* Selected Tags - Only show first 10, rest in modal */}
-                                {selectedEmployees.length > 0 && (
-                                    <div className="mb-3">
-                                        {/* Selected count indicator */}
-                                        <div className="text-xs text-gray-500 mb-1">
-                                            {selectedEmployees.length} employee{selectedEmployees.length !== 1 ? 's' : ''} selected
-                                        </div>
-
-                                        {/* Selected tags - max 10 displayed */}
-                                        <div className="flex flex-wrap gap-1.5 p-2 border rounded bg-gray-50 min-h-[40px]">
-                                            {selectedEmployees.slice(0, 5).map(emp => (
-                                                <div key={emp.id} className="flex items-center gap-1 bg-blue-50 px-1.5 py-0.5 rounded text-xs border border-blue-200">
-                                                    <span className="max-w-[150px] truncate">
-                                                        {String(emp.user?.name || 'N/A')}
-                                                    </span>
-                                                    <button type="button" onClick={() => removeEmployee(emp.id)} className="text-blue-600 hover:text-blue-800">
-                                                        <X className="h-2.5 w-2.5" />
-                                                    </button>
-                                                </div>
-                                            ))}
-
-                                            {/* Show more indicator */}
-                                            {selectedEmployees.length > 5 && (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setShowAllEmployeesModal(true)}
-                                                    className="flex items-center gap-1 bg-gray-200 px-2 py-0.5 rounded text-xs hover:bg-gray-300 transition-colors"
-                                                >
-                                                    <span>+{selectedEmployees.length - 5} more</span>
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Beautiful Modal for viewing all selected employees */}
-                                {showAllEmployeesModal && (
-                                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowAllEmployeesModal(false)}>
-                                        <div
-                                            className="bg-white rounded-xl w-full max-w-2xl max-h-[85vh] overflow-hidden shadow-2xl animate-in fade-in-0 zoom-in-95 duration-200"
-                                            onClick={e => e.stopPropagation()}
-                                        >
-                                            {/* Modal Header */}
-                                            <div className="px-6 py-4 border-b bg-gradient-to-r from-orange-50 to-orange-50">
-                                                <div className="flex justify-between items-center">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="p-2 bg-orange-100 rounded-lg">
-                                                            <Users className="h-5 w-5 text-orange-600" />
-                                                        </div>
-                                                        <div>
-                                                            <h3 className="font-semibold text-lg text-gray-900">Selected Employees</h3>
-                                                            <p className="text-sm text-gray-500">{selectedEmployees.length} employees will receive this incentive</p>
-                                                        </div>
-                                                    </div>
-                                                    <button
-                                                        onClick={() => setShowAllEmployeesModal(false)}
-                                                        className="p-2 hover:bg-orange-100 rounded-lg transition-colors"
-                                                    >
-                                                        <X className="h-5 w-5 " />
-                                                    </button>
-                                                </div>
-                                            </div>
-
-                                            {/* Modal Body */}
-                                            <div className="p-6 overflow-y-auto max-h-[calc(85vh-180px)]">
-                                                <div className="space-y-2">
-                                                    {selectedEmployees.map((emp, index) => (
-                                                        <div
-                                                            key={emp.id}
-                                                            className="group flex items-center justify-between h-10 p-3 bg-white border rounded-lg hover:shadow-md transition-all duration-200 hover:border-orange-200"
-                                                        >
-                                                            <div className="flex items-center gap-4">
-                                                                <div className="flex items-center justify-center w-7 h-7 bg-gradient-to-br from-orange-100 to-orange-100 rounded-full text-sm font-medium">
-                                                                    {index + 1}
-                                                                </div>
-                                                                <div>
-                                                                    <div className="flex items-center gap-2">
-                                                                        <span className="font-medium text-gray-900">{emp.user?.name || 'No name'}</span>
-                                                                        <span className="text-xs px-2 py-0.5 bg-gray-100 rounded-full text-gray-600">
-                                                                            {String(emp.emp_code || 'N/A')}
-                                                                        </span>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => {
-                                                                    removeEmployee(emp.id);
-                                                                    if (selectedEmployees.length === 1) {
-                                                                        setShowAllEmployeesModal(false);
-                                                                    }
-                                                                }}
-                                                                className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-50 rounded-lg transition-all duration-200"
-                                                                title="Remove employee"
-                                                            >
-                                                                <X className="h-4 w-4 text-red-500" />
-                                                            </button>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-
-                                            {/* Modal Footer */}
-                                            <div className="px-6 py-4 border-t bg-gray-50">
-                                                <div className="flex justify-between items-center">
-                                                    <div className="flex items-center gap-2">
-                                                        <UserCheck className="h-4 w-4 text-orange-600" />
-                                                        <span className="text-sm text-gray-600">
-                                                            <span className="font-semibold text-gray-900">{selectedEmployees.length}</span> selected
-                                                        </span>
-                                                    </div>
-                                                    <div className="flex gap-2">
-                                                        <Button
-                                                            type="button"
-                                                            variant="destructive"
-                                                            size="sm"
-                                                            onClick={() => setShowRemoveAllConfirmation(true)}
-                                                            className="text-xs"
-                                                            disabled={selectedEmployees.length === 0}
-                                                        >
-                                                            Remove All
-                                                        </Button>
-                                                        <Button
-                                                            type="button"
-                                                            size="sm"
-                                                            onClick={() => setShowAllEmployeesModal(false)}
-                                                            className="bg-blue-600 hover:bg-blue-700"
-                                                        >
-                                                            Done
-                                                        </Button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Remove All Confirmation Modal */}
-                                {showRemoveAllConfirmation && (
-                                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4" onClick={() => setShowRemoveAllConfirmation(false)}>
-                                        <div
-                                            className="bg-white rounded-xl w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in-0 zoom-in-95 duration-200"
-                                            onClick={e => e.stopPropagation()}
-                                        >
-                                            <div className="p-6">
-                                                <div className="flex items-center gap-4 mb-4">
-                                                    <div className="p-3 bg-red-100 rounded-full">
-                                                        <AlertTriangle className="h-6 w-6 text-red-600" />
-                                                    </div>
-                                                    <div>
-                                                        <h3 className="font-semibold text-lg text-gray-900">Remove All Employees</h3>
-                                                        <p className="text-sm text-gray-500">Are you sure you want to remove all {selectedEmployees.length} selected employees?</p>
-                                                    </div>
-                                                </div>
-                                                <p className="text-sm text-gray-600 mb-6 pl-[68px]">
-                                                    This action cannot be undone. You will need to select employees again.
-                                                </p>
-                                                <div className="flex justify-end gap-2">
-                                                    <Button
-                                                        type="button"
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={() => setShowRemoveAllConfirmation(false)}
-                                                    >
-                                                        Cancel
-                                                    </Button>
-                                                    <Button
-                                                        type="button"
-                                                        size="sm"
-                                                        onClick={() => {
-                                                            removeAll();
-                                                            setShowAllEmployeesModal(false);
-                                                        }}
-                                                        className="bg-red-600 hover:bg-red-700"
-                                                    >
-                                                        Yes, Remove All
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Dropdown */}
-                                <div className="relative">
-                                    <span className="text-md text-gray-500">
-                                        Choose who will receive this incentive
-                                    </span>
-                                    <div
-                                        className="flex items-center border rounded cursor-pointer p-2 hover:bg-gray-50"
-                                        onClick={() => setIsOpen(!isOpen)}
-                                    >
-                                        <span className="flex-1">
-                                            {data.employee_ids.length === 0 ? 'Select employees...' : `${data.employee_ids.length} selected`}
-                                        </span>
-                                        <ChevronDown className="h-4 w-4" />
-                                    </div>
-
-                                    {isOpen && (
-                                        <div className="absolute z-10 w-full mt-1 border rounded bg-white shadow-lg max-h-80 overflow-y-auto">
-                                            <div className="p-2 sticky top-0 bg-white border-b">
-                                                <div className="flex items-center border rounded px-2">
-                                                    <Search className="h-4 w-4 text-gray-400" />
-                                                    <input
-                                                        type="text"
-                                                        placeholder="Search employees..."
-                                                        value={searchTerm}
-                                                        onChange={e => setSearchTerm(e.target.value)}
-                                                        className="w-full p-1 outline-none"
-                                                        onClick={e => e.stopPropagation()}
-                                                        autoFocus
-                                                    />
-                                                </div>
-
-                                                {/* Quick Actions in Dropdown */}
-                                                {filteredEmployees.length > 0 && (
-                                                    <div className="flex justify-between items-center mt-2 px-1">
-                                                        <label className="flex items-center gap-2 text-sm cursor-pointer">
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={allFilteredSelected}
-                                                                onChange={(e) => {
-                                                                    if (e.target.checked) {
-                                                                        selectAll();
-                                                                    } else {
-                                                                        const filteredIds = filteredEmployees.map(emp => emp.id);
-                                                                        setData('employee_ids',
-                                                                            data.employee_ids.filter(id => !filteredIds.includes(id))
-                                                                        );
-                                                                    }
-                                                                }}
-                                                                className="rounded"
-                                                            />
-                                                            <span>Select all ({filteredEmployees.length})</span>
-                                                        </label>
-                                                        <Button
-                                                            type="button"
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            onClick={() => setShowClearAllConfirmation(true)}
-                                                            className="text-xs h-6 px-2"
-                                                            disabled={data.employee_ids.length === 0}
-                                                        >
-                                                            Clear all
-                                                        </Button>
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            <div className="py-1">
-                                                {displayedEmployees.map(emp => (
-                                                    <div
-                                                        key={emp.id}
-                                                        className="p-2 hover:bg-gray-100 cursor-pointer flex items-center gap-2"
-                                                        onClick={() => toggleEmployee(emp.id)}
-                                                    >
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={data.employee_ids.includes(emp.id)}
-                                                            onChange={() => { }}
-                                                            className="rounded"
-                                                        />
-                                                        <span>{String(emp.emp_code || 'N/A')} - {emp.user?.name || 'No name'}</span>
-                                                    </div>
-                                                ))}
-
-                                                {!searchTerm && employees.length > 5 && (
-                                                    <div className="p-2 text-center text-sm text-gray-500 border-t">
-                                                        Showed 5 of {employees.length}. Type to search more.
-                                                    </div>
-                                                )}
-
-                                                {searchTerm && displayedEmployees.length === 0 && (
-                                                    <div className="p-4 text-center text-gray-500">No employees found</div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Clear All Confirmation Modal */}
-                                {showClearAllConfirmation && (
-                                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4" onClick={() => setShowClearAllConfirmation(false)}>
-                                        <div
-                                            className="bg-white rounded-xl w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in-0 zoom-in-95 duration-200"
-                                            onClick={e => e.stopPropagation()}
-                                        >
-                                            <div className="p-6">
-                                                <div className="flex items-center gap-4 mb-4">
-                                                    <div className="p-3 bg-yellow-100 rounded-full">
-                                                        <AlertTriangle className="h-6 w-6 text-yellow-600" />
-                                                    </div>
-                                                    <div>
-                                                        <h3 className="font-semibold text-lg text-gray-900">Clear All Selections</h3>
-                                                        <p className="text-sm text-gray-500">Are you sure you want to clear all {data.employee_ids.length} selected employees?</p>
-                                                    </div>
-                                                </div>
-                                                <p className="text-sm text-gray-600 mb-6 pl-[68px]">
-                                                    This will remove all employees from your selection. You can select them again later.
-                                                </p>
-                                                <div className="flex justify-end gap-2">
-                                                    <Button
-                                                        type="button"
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={() => setShowClearAllConfirmation(false)}
-                                                    >
-                                                        Cancel
-                                                    </Button>
-                                                    <Button
-                                                        type="button"
-                                                        size="sm"
-                                                        onClick={() => {
-                                                            removeAll();
-                                                            setShowClearAllConfirmation(false);
-                                                            setIsOpen(false);
-                                                        }}
-                                                        className="bg-yellow-600 hover:bg-yellow-700"
-                                                    >
-                                                        Yes, Clear All
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
-                                <InputError message={errors.employee_ids} />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Buttons - Full width at bottom */}
-                    <div className="flex gap-2 mt-6 pt-4">
-                        <Button type="submit" disabled={processing}>
-                            {processing ? 'Creating...' : 'Create'}
-                        </Button>
-                        <Link href="/hr/incentives">
-                            <Button variant='outline' type="button">Cancel</Button>
-                        </Link>
-                    </div>
-                </form>
-            </div>
-        </HrLayout>
+  const toggleEmployee = (id: number) =>
+    setData('employee_ids',
+      data.employee_ids.includes(id)
+        ? data.employee_ids.filter(x => x !== id)
+        : [...data.employee_ids, id]
     );
+
+  const handleSelectAll = (ids: number[]) => setData('employee_ids', ids);
+
+  return (
+    <AppLayout breadcrumbs={breadcrumbs}>
+      <Head title="Create Incentive" />
+
+      <div className="px-4 sm:px-6 lg:px-8 py-6 max-w-6xl mx-auto space-y-5">
+
+        {/* ── Page header ── */}
+        <div style={fu(0)} className="flex items-center justify-between">
+          <a href="/hr/incentives"
+            className="inline-flex items-center gap-2 text-xs font-semibold text-slate-500 hover:text-[#1d4791] transition-colors group">
+            <ArrowLeft className="h-3.5 w-3.5 group-hover:-translate-x-0.5 transition-transform" />
+            Back to Incentives
+          </a>
+
+          <div className="bg-[#1d4791] px-4 py-2.5 rounded-xl flex items-center gap-3 shadow-md">
+            <div className="h-7 w-7 rounded-lg bg-white/15 flex items-center justify-center">
+              <Plus className="h-3.5 w-3.5 text-white" />
+            </div>
+            <div>
+              <p className="text-[10px] font-bold tracking-widest uppercase text-white">New Incentive</p>
+              <p className="text-[10px] text-white/55 mt-0.5 max-w-[200px] truncate">Define bonus structure & recipients</p>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Form Grid ── */}
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
+
+          {/* Column 1: Incentive Details */}
+          <div style={fu(60)} className="rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-white h-fit">
+            <NavyCardHeader
+              icon={<Coins className="h-4 w-4 text-white" />}
+              title="Incentive Details"
+              subtitle="Name, amount, and frequency"
+            />
+            <div className="p-5 space-y-5">
+              <FieldGroup label="Incentive Name" required error={errors.incentive_name}>
+                <Input
+                  value={data.incentive_name}
+                  onChange={e => setData('incentive_name', e.target.value)}
+                  placeholder="Enter incentive name"
+                  className="h-9 text-sm border-slate-200 focus:border-[#1d4791] focus:ring-2 focus:ring-[#1d4791]/20"
+                />
+              </FieldGroup>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <FieldGroup label="Amount (₱)" required error={errors.incentive_amount}>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium select-none">₱</span>
+                    <Input
+                      type="number" step="0.01" min="0"
+                      value={data.incentive_amount}
+                      onChange={e => setData('incentive_amount', e.target.value)}
+                      placeholder="0.00"
+                      className="pl-7 h-9 text-sm border-slate-200 focus:border-[#1d4791] focus:ring-2 focus:ring-[#1d4791]/20"
+                    />
+                  </div>
+                </FieldGroup>
+
+                {/* Only show Payroll Period field if there are available OPEN periods */}
+                {availablePayrollPeriods.length > 0 && (
+                  <FieldGroup label="Payroll Period" required error={errors.payroll_period_id}>
+                    <Select value={data.payroll_period_id} onValueChange={v => setData('payroll_period_id', v)}>
+                      <SelectTrigger className="h-9 text-sm border-slate-200 focus:ring-2 focus:ring-[#1d4791]/20 focus:border-[#1d4791]">
+                        <SelectValue placeholder="Select period" />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl shadow-xl">
+                        {availablePayrollPeriods.map(p => (
+                          <SelectItem key={p.id} value={String(p.id)} className="text-xs">
+                            <span className="flex items-center gap-1.5">
+                              <Calendar className="h-3 w-3 text-slate-400" />
+                              {fmtDate(p.start_date)} – {fmtDate(p.end_date)}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FieldGroup>
+                )}
+
+                {/* Show message when no OPEN periods available */}
+                {availablePayrollPeriods.length === 0 && (
+                  <div className="col-span-1 sm:col-span-2">
+                    <div className="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3">
+                      <p className="text-xs text-amber-700">
+                        ⚠️ No open payroll periods available. Please create or open a payroll period first before creating incentives.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Daily toggle */}
+              <button
+                type="button"
+                onClick={() => setData('is_daily', !data.is_daily)}
+                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-all ${
+                  data.is_daily
+                    ? 'bg-[#1d4791]/5 border-[#1d4791]/25'
+                    : 'bg-slate-50 border-slate-200 hover:border-slate-300'
+                }`}
+              >
+                <div className="text-left">
+                  <p className="text-xs font-semibold text-slate-700">Daily Incentive</p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">Applies per day instead of one-time</p>
+                </div>
+                {data.is_daily
+                  ? <ToggleRight className="h-6 w-6 text-[#1d4791] flex-shrink-0" />
+                  : <ToggleLeft className="h-6 w-6 text-slate-300 flex-shrink-0" />
+                }
+              </button>
+
+              {/* Current amount preview */}
+              {data.incentive_amount && !isNaN(Number(data.incentive_amount)) && Number(data.incentive_amount) > 0 && (
+                <div className="rounded-xl bg-[#1d4791]/4 border border-[#1d4791]/15 px-4 py-3 flex items-center justify-between">
+                  <span className="text-[11px] font-semibold text-slate-500">
+                    {data.is_daily ? 'Daily rate' : 'One-time amount'}
+                  </span>
+                  <span className="text-sm font-bold text-[#1d4791]">
+                    ₱{Number(data.incentive_amount).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Column 2: Employee Assignment */}
+          <div style={fu(120)} className="rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-white h-fit">
+            <NavyCardHeader
+              icon={<Users className="h-4 w-4 text-white" />}
+              title="Employee Assignment"
+              subtitle="Manage who receives this incentive"
+            />
+            <div className="p-5">
+              <IncentiveEmployeeSelector
+                employees={employees}
+                selectedIds={data.employee_ids}
+                onToggle={toggleEmployee}
+                onSelectAll={handleSelectAll}
+                onRemoveAll={() => setData('employee_ids', [])}
+                error={errors.employee_ids as string | undefined}
+              />
+            </div>
+          </div>
+
+          {/* Action row - Spans both columns */}
+          <div style={fu(180)} className="col-span-1 lg:col-span-2 flex items-center justify-end gap-3 pt-2">
+            <button type="button" onClick={() => router.get('/hr/incentives')}
+              className="h-9 px-4 rounded-lg border border-slate-200 text-xs font-semibold text-slate-600 hover:border-slate-300 hover:text-slate-800 transition-colors">
+              Cancel
+            </button>
+            <button type="submit" disabled={processing || availablePayrollPeriods.length === 0}
+              className="h-9 px-5 rounded-lg bg-[#1d4791] hover:bg-[#1d4791]/90 text-white text-xs font-bold shadow-sm shadow-[#1d4791]/20 flex items-center gap-2 transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+              {processing
+                ? <> <span className="h-3.5 w-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" />Creating… </>
+                : <> <Save className="h-3.5 w-3.5" />Create Incentive </>
+              }
+            </button>
+          </div>
+        </form>
+      </div>
+    </AppLayout>
+  );
 }
