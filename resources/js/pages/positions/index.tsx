@@ -220,7 +220,7 @@ export default function Index({ positions, filters = { search: '', perPage: '10'
             <Head title="Positions" />
             {/* <CustomToast /> */}
 
-            <div className="flex flex-col gap-4 p-4 mx-4">
+            <div className="flex flex-col gap-4 p-4 min-h-[calc(85vh-48px)] mx-4">
                 
                 {/* Header with title */}
                 <div className="flex justify-between items-center">

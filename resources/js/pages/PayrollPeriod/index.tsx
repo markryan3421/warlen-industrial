@@ -472,8 +472,8 @@ export default function Index({ payrollPeriods }: PayrollPeriodProps) {
                 .pp-header { animation: headerReveal 0.35s cubic-bezier(0.22,1,0.36,1) both; }
             `}</style>
 
-            <div className="min-h-screen py-8 -mt-9 md:py-12">
-                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="py-4 min-h-[calc(95vh-6.5rem)] -mt-5 md:py-6">
+                <div className="mx-auto px-4 sm:px-6 lg:px-8">
 
                     {/* ── Page header ── */}
                     <div className="grid grid-rows-1 justify-center sm:mx-1 md:grid-row-1 md:mx-0 mt-3 lg:flex lg:justify-between items-center lg:mx-0 lg:mt-3 lg:pb-4 lg:-mb-2 pp-header">
@@ -485,7 +485,7 @@ export default function Index({ payrollPeriods }: PayrollPeriodProps) {
 
                         <div className="flex flex-row justify-between items-center gap-3 -mt-2 mb-3 lg:flex-col lg:items-end lg:justify-end lg:gap-2 lg:-mt-5">
                             {/* Total count badge - left on mobile, bottom on desktop */}
-                            <div className="flex items-center gap-2 lg:order-1">
+                            <div className="flex items-center gap-2 lg:order-1 mt-2">
                                 <span className='border px-1.5 py-0.1 rounded-full text-sm bg-primary/10 border-primary/30'>
                                     {payrollPeriods.length}
                                 </span>
