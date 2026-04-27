@@ -241,12 +241,13 @@ export default function AttendanceManagement({
     const [activeMainTab, setActiveMainTab] = useState(currentTab);
     const [activeSubTab, setActiveSubTab] = useState<'table' | 'timeline' | 'calendar'>('table');
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [isTableLoading, setIsTableLoading] = useState(false);
+    const [isTableLoading, setIsTableLoading] = useState(true); // CHANGED: Start with true to show skeleton immediately
     const [localSearch, setLocalSearch] = useState(filters.search || '');
     const [animateHeader, setAnimateHeader] = useState(false);
     const [refreshKey, setRefreshKey] = useState(0);
 
     const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const initialLoadRef = useRef(true); // Track initial load
 
     const { data, setData } = useForm({
         search: filters.search || '',
@@ -258,7 +259,7 @@ export default function AttendanceManagement({
 
     // Refresh data function
     const refreshData = useCallback(() => {
-        setIsTableLoading(true); // Show loading immediately
+        setIsTableLoading(true);
         setRefreshKey(prev => prev + 1);
 
         router.reload({
@@ -266,13 +267,13 @@ export default function AttendanceManagement({
             preserveScroll: true,
             only: ['logs', 'exceptionStats', 'schedules', 'periodStats', 'totalCounts', 'filteredCounts'],
             onFinish: () => {
-                // Small delay to ensure data is rendered
                 setTimeout(() => {
                     setIsTableLoading(false);
                 }, 300);
             }
         });
     }, []);
+
     // ==========================================================================
     // SYNC STATE WITH PROPS
     // ==========================================================================
@@ -296,35 +297,148 @@ export default function AttendanceManagement({
     }, [filters.perPage, data.perPage, setData]);
 
     // ==========================================================================
-    // HANDLE LOADING STATE
+    // HANDLE LOADING STATE - FIXED FOR SIDEBAR NAVIGATION AND INITIAL LOAD
     // ==========================================================================
 
+    // Helper function to get current data (needs to be defined before useEffect)
+    const getCurrentData = useCallback(() => {
+        switch (activeMainTab) {
+            case 'logs':
+                return {
+                    data: logs?.data || [],
+                    pagination: {
+                        current_page: logs?.current_page || 1,
+                        last_page: logs?.last_page || 1,
+                        per_page: logs?.per_page || parseInt(data.perPage),
+                        total: logs?.total || 0,
+                        from: logs?.from || 0,
+                        to: logs?.to || 0,
+                        links: logs?.links || [],
+                    },
+                    config: AttendanceLogsTableConfig,
+                    title: 'Attendance Logs',
+                    totalCount: totalCounts?.logs || logs?.total || 0,
+                    filteredCount: filteredCounts?.logs || logs?.data?.length || 0,
+                };
+            case 'exceptions':
+                return {
+                    data: exceptionStats?.data || [],
+                    pagination: {
+                        current_page: exceptionStats?.current_page || 1,
+                        last_page: exceptionStats?.last_page || 1,
+                        per_page: exceptionStats?.per_page || parseInt(data.perPage),
+                        total: exceptionStats?.total || 0,
+                        from: exceptionStats?.from || 0,
+                        to: exceptionStats?.to || 0,
+                        links: exceptionStats?.links || [],
+                    },
+                    config: AttendanceExceptionStatsTableConfig,
+                    title: 'Attendance Exception Stats',
+                    totalCount: totalCounts?.exceptionStats || exceptionStats?.total || 0,
+                    filteredCount: filteredCounts?.exceptionStats || exceptionStats?.data?.length || 0,
+                };
+            case 'schedules':
+                return {
+                    data: schedules?.data || [],
+                    pagination: {
+                        current_page: schedules?.current_page || 1,
+                        last_page: schedules?.last_page || 1,
+                        per_page: schedules?.per_page || parseInt(data.perPage),
+                        total: schedules?.total || 0,
+                        from: schedules?.from || 0,
+                        to: schedules?.to || 0,
+                        links: schedules?.links || [],
+                    },
+                    config: AttendanceSchedulesTableConfig,
+                    title: 'Attendance Schedules',
+                    totalCount: totalCounts?.schedules || schedules?.total || 0,
+                    filteredCount: filteredCounts?.schedules || schedules?.data?.length || 0,
+                };
+            case 'periods':
+                return {
+                    data: periodStats?.data || [],
+                    pagination: {
+                        current_page: periodStats?.current_page || 1,
+                        last_page: periodStats?.last_page || 1,
+                        per_page: periodStats?.per_page || parseInt(data.perPage),
+                        total: periodStats?.total || 0,
+                        from: periodStats?.from || 0,
+                        to: periodStats?.to || 0,
+                        links: periodStats?.links || [],
+                    },
+                    config: AttendancePeriodStatsTableConfig,
+                    title: 'Attendance Period Stats',
+                    totalCount: totalCounts?.periodStats || periodStats?.total || 0,
+                    filteredCount: filteredCounts?.periodStats || periodStats?.data?.length || 0,
+                };
+            default:
+                return {
+                    data: [],
+                    pagination: {
+                        current_page: 1,
+                        last_page: 1,
+                        per_page: parseInt(data.perPage),
+                        total: 0,
+                        from: 0,
+                        to: 0,
+                        links: [],
+                    },
+                    config: AttendanceLogsTableConfig,
+                    title: 'Attendance Management',
+                    totalCount: 0,
+                    filteredCount: 0,
+                };
+        }
+    }, [activeMainTab, data.perPage, logs, exceptionStats, schedules, periodStats, totalCounts, filteredCounts]);
+
+    // Effect for handling initial load and navigation loading states
     useEffect(() => {
         let timeoutId: NodeJS.Timeout;
-        let isNavigating = false;
         let isMounted = true;
 
+        // Handler for navigation start
         const onStart = () => {
             if (!isMounted) return;
-            isNavigating = true;
             if (timeoutId) clearTimeout(timeoutId);
             setIsTableLoading(true);
         };
 
+        // Handler for navigation finish
         const onFinish = () => {
             if (!isMounted) return;
             if (timeoutId) clearTimeout(timeoutId);
 
             timeoutId = setTimeout(() => {
-                if (isMounted && isNavigating) {
+                if (isMounted) {
                     setIsTableLoading(false);
-                    isNavigating = false;
+                    initialLoadRef.current = false;
                 }
             }, 150);
         };
 
+        // Register event listeners
         const removeStartListener = router.on('start', onStart);
         const removeFinishListener = router.on('finish', onFinish);
+
+        // Handle initial load - turn off loading after data is available
+        const currentData = getCurrentData();
+        if (currentData.data.length > 0 || currentData.totalCount > 0) {
+            // If data is already available, turn off loading after a short delay
+            timeoutId = setTimeout(() => {
+                if (isMounted) {
+                    setIsTableLoading(false);
+                    initialLoadRef.current = false;
+                }
+            }, 300);
+        } else if (currentData.data.length === 0 && initialLoadRef.current) {
+            // Keep loading true until data arrives or timeout
+            timeoutId = setTimeout(() => {
+                if (isMounted && initialLoadRef.current) {
+                    setIsTableLoading(false);
+                    initialLoadRef.current = false;
+                }
+            }, 1000); // Fallback timeout
+        }
 
         return () => {
             isMounted = false;
@@ -332,7 +446,22 @@ export default function AttendanceManagement({
             removeFinishListener();
             if (timeoutId) clearTimeout(timeoutId);
         };
-    }, []);
+    }, []); // Run once on mount
+
+    // Effect to watch for data changes and turn off loading
+    useEffect(() => {
+        // If we're loading and data arrives, turn off loading
+        if (isTableLoading && initialLoadRef.current) {
+            const currentData = getCurrentData();
+            if (currentData.data.length > 0 || currentData.totalCount > 0) {
+                const timer = setTimeout(() => {
+                    setIsTableLoading(false);
+                    initialLoadRef.current = false;
+                }, 100);
+                return () => clearTimeout(timer);
+            }
+        }
+    }, [logs, exceptionStats, schedules, periodStats]); // Watch for data changes
 
     // ==========================================================================
     // TAB CHANGE HANDLER
@@ -358,7 +487,11 @@ export default function AttendanceManagement({
         router.get('/attendances', queryString, {
             preserveState: true,
             preserveScroll: true,
-            onError: () => setIsTableLoading(false)
+            onFinish: () => {
+                setTimeout(() => {
+                    setIsTableLoading(false);
+                }, 150);
+            }
         });
 
         setActiveMainTab(tabId);
@@ -366,7 +499,11 @@ export default function AttendanceManagement({
 
     const handleSubTabChange = useCallback((value: string) => {
         if (value === activeSubTab) return;
+        setIsTableLoading(true);
         setActiveSubTab(value as typeof activeSubTab);
+        setTimeout(() => {
+            setIsTableLoading(false);
+        }, 300);
     }, [activeSubTab]);
 
     useEffect(() => {
@@ -411,6 +548,11 @@ export default function AttendanceManagement({
             router.get('/attendances', queryString, {
                 preserveState: true,
                 preserveScroll: true,
+                onFinish: () => {
+                    setTimeout(() => {
+                        setIsTableLoading(false);
+                    }, 150);
+                }
             });
         }, 500);
     }, [activeMainTab, data.perPage, localSearch]);
@@ -432,6 +574,11 @@ export default function AttendanceManagement({
         router.get('/attendances', queryString, {
             preserveState: true,
             preserveScroll: true,
+            onFinish: () => {
+                setTimeout(() => {
+                    setIsTableLoading(false);
+                }, 150);
+            }
         });
     }, [activeMainTab, localSearch]);
 
@@ -447,6 +594,11 @@ export default function AttendanceManagement({
         }, {
             preserveState: true,
             preserveScroll: true,
+            onFinish: () => {
+                setTimeout(() => {
+                    setIsTableLoading(false);
+                }, 150);
+            }
         });
     }, [activeMainTab]);
 
@@ -504,7 +656,7 @@ export default function AttendanceManagement({
         },
         {
             id: 'exceptions',
-            label: 'Exception Stats',
+            label: 'Attendance Exception Stats',
             icon: ChartSpline,
             count: totalCounts?.exceptionStats || exceptionStats?.total || 0,
             data: exceptionStats,
@@ -513,7 +665,7 @@ export default function AttendanceManagement({
         },
         {
             id: 'schedules',
-            label: 'Schedules',
+            label: 'Attendance Schedules',
             icon: Clock,
             count: totalCounts?.schedules || schedules?.total || 0,
             data: schedules,
@@ -522,7 +674,7 @@ export default function AttendanceManagement({
         },
         {
             id: 'periods',
-            label: 'Period Stats',
+            label: 'Attendance Period Stats',
             icon: Calendar,
             count: totalCounts?.periodStats || periodStats?.total || 0,
             data: periodStats,
@@ -535,106 +687,8 @@ export default function AttendanceManagement({
     // HELPER FUNCTIONS
     // ==========================================================================
 
-    const getCurrentData = useCallback(() => {
-        switch (activeMainTab) {
-            case 'logs': {
-                return {
-                    data: logs?.data || [],
-                    pagination: {
-                        current_page: logs?.current_page || 1,
-                        last_page: logs?.last_page || 1,
-                        per_page: logs?.per_page || parseInt(data.perPage),
-                        total: logs?.total || 0,
-                        from: logs?.from || 0,
-                        to: logs?.to || 0,
-                        links: logs?.links || [],
-                    },
-                    config: AttendanceLogsTableConfig,
-                    title: 'Attendance Logs',
-                    totalCount: totalCounts?.logs || logs?.total || 0,
-                    filteredCount: filteredCounts?.logs || logs?.data?.length || 0,
-                };
-            }
-            case 'exceptions': {
-                return {
-                    data: exceptionStats?.data || [],
-                    pagination: {
-                        current_page: exceptionStats?.current_page || 1,
-                        last_page: exceptionStats?.last_page || 1,
-                        per_page: exceptionStats?.per_page || parseInt(data.perPage),
-                        total: exceptionStats?.total || 0,
-                        from: exceptionStats?.from || 0,
-                        to: exceptionStats?.to || 0,
-                        links: exceptionStats?.links || [],
-                    },
-                    config: AttendanceExceptionStatsTableConfig,
-                    title: 'Exception Stats',
-                    totalCount: totalCounts?.exceptionStats || exceptionStats?.total || 0,
-                    filteredCount: filteredCounts?.exceptionStats || exceptionStats?.data?.length || 0,
-                };
-            }
-            case 'schedules': {
-                return {
-                    data: schedules?.data || [],
-                    pagination: {
-                        current_page: schedules?.current_page || 1,
-                        last_page: schedules?.last_page || 1,
-                        per_page: schedules?.per_page || parseInt(data.perPage),
-                        total: schedules?.total || 0,
-                        from: schedules?.from || 0,
-                        to: schedules?.to || 0,
-                        links: schedules?.links || [],
-                    },
-                    config: AttendanceSchedulesTableConfig,
-                    title: 'Schedules',
-                    totalCount: totalCounts?.schedules || schedules?.total || 0,
-                    filteredCount: filteredCounts?.schedules || schedules?.data?.length || 0,
-                };
-            }
-            case 'periods': {
-                return {
-                    data: periodStats?.data || [],
-                    pagination: {
-                        current_page: periodStats?.current_page || 1,
-                        last_page: periodStats?.last_page || 1,
-                        per_page: periodStats?.per_page || parseInt(data.perPage),
-                        total: periodStats?.total || 0,
-                        from: periodStats?.from || 0,
-                        to: periodStats?.to || 0,
-                        links: periodStats?.links || [],
-                    },
-                    config: AttendancePeriodStatsTableConfig,
-                    title: 'Period Stats',
-                    totalCount: totalCounts?.periodStats || periodStats?.total || 0,
-                    filteredCount: filteredCounts?.periodStats || periodStats?.data?.length || 0,
-                };
-            }
-            default:
-                return {
-                    data: [],
-                    pagination: {
-                        current_page: 1,
-                        last_page: 1,
-                        per_page: parseInt(data.perPage),
-                        total: 0,
-                        from: 0,
-                        to: 0,
-                        links: [],
-                    },
-                    config: AttendanceLogsTableConfig,
-                    title: 'Attendance Management',
-                    totalCount: 0,
-                    filteredCount: 0,
-                };
-        }
-    }, [activeMainTab, data.perPage, logs, exceptionStats, schedules, periodStats, totalCounts, filteredCounts]);
-
-    const getCurrentMainTab = useCallback(() => {
-        return mainTabs.find(t => t.id === activeMainTab) || mainTabs[0];
-    }, [activeMainTab, mainTabs]);
-
     const current = getCurrentData();
-    const currentMainTab = getCurrentMainTab();
+    const currentMainTab = mainTabs.find(t => t.id === activeMainTab) || mainTabs[0];
 
     const getSkeletonColumns = useCallback(() => {
         switch (activeMainTab) {
@@ -751,8 +805,7 @@ export default function AttendanceManagement({
                                 <BiometricImport
                                     onSuccess={() => {
                                         setIsDialogOpen(false);
-                                        setIsTableLoading(true); // Show loading immediately
-                                        // Small delay to ensure dialog closes before refresh
+                                        setIsTableLoading(true);
                                         setTimeout(() => {
                                             refreshData();
                                         }, 100);
@@ -850,7 +903,7 @@ export default function AttendanceManagement({
                                         type="text"
                                         value={localSearch}
                                         onChange={handleSearchChange}
-                                        placeholder={`Search in ${currentMainTab.label}...`}
+                                        placeholder={`Search employee name...`}
                                         className="h-9 w-60 placeholder:text-[14px] lg:placeholder:text-[15px] lg:h-10 lg:w-64 pr-8"
                                         autoComplete="off"
                                     />
@@ -889,7 +942,7 @@ export default function AttendanceManagement({
                                 type="text"
                                 value={localSearch}
                                 onChange={handleSearchChange}
-                                placeholder={`Search in ${currentMainTab.label}...`}
+                                placeholder={`Search employee name...`}
                                 className="placeholder:text-[14px] lg:placeholder:text-[15px] lg:h-10 lg:w-64 lg:pr-8"
                                 autoComplete="off"
                             />
@@ -919,11 +972,10 @@ export default function AttendanceManagement({
                 )}
 
                 {/* Content Area */}
-                {/* Content Area */}
                 <div className="relative min-h-[400px]">
                     {activeSubTab === 'table' ? (
                         <>
-                            {/* Table with Skeleton Loader */}
+                            {/* Table with Skeleton Loader - ALWAYS show skeleton when loading */}
                             {isTableLoading ? (
                                 <div className='pp-row'>
                                     <TableSkeleton
@@ -950,7 +1002,6 @@ export default function AttendanceManagement({
                                         onEdit={() => { }}
                                         title={current.title || currentMainTab.label}
                                         filterEmptyState={
-                                            // This will only show when CustomTable has no data and no loading
                                             <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
                                                 <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center mb-3">
                                                     {activeMainTab === 'logs' && <ScrollText className="h-5 w-5 text-slate-400 dark:text-slate-500" />}

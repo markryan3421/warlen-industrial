@@ -449,7 +449,7 @@ export default function Dashboard({
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard" />
-            <div className="@container/main flex flex-1 flex-col gap-2 -m-3">
+            <div className="@container/main flex flex-1 flex-col gap-2 m-4 mb-2.5">
                 <div className = "-m-4 mb-0">
                     <SectionCards
                         totalNetPay={totalNetPay}
@@ -567,7 +567,7 @@ export default function Dashboard({
 
                                 {/* Desktop Layout */}
                                 <div className="hidden lg:block xl:max-w-[350px] mt-4">
-                                    <div className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50">
+                                    <div className="p-4 py-7 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50">
                                         <header className='flex justify-center font-semibold text-xs text-center text-gray-700 dark:text-gray-300'>
                                             Employee Distribution by Pay Frequency
                                         </header>
