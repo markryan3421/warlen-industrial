@@ -62,12 +62,12 @@ const formatDateRangeCompact = (startDate: string, endDate: string): string => {
         const start = new Date(startDate);
         const end = new Date(endDate);
         if (isNaN(start.getTime()) || isNaN(end.getTime())) return 'N/A';
-        
+
         const startMonth = start.toLocaleDateString('en-US', { month: 'short' });
         const endMonth = end.toLocaleDateString('en-US', { month: 'short' });
         const startYear = start.getFullYear();
         const endYear = end.getFullYear();
-        
+
         if (startYear === endYear && startMonth === endMonth) {
             return `${startMonth} ${startYear}`;
         } else if (startYear === endYear) {
@@ -81,6 +81,35 @@ const formatDateRangeCompact = (startDate: string, endDate: string): string => {
 };
 
 export const getPayrollTableColumns = (formatCurrency: (amount: number) => string) => [
+    {
+        label: 'Profile',
+        key: 'avatar',
+        className: 'p-4 align-items-center',
+        // Use a custom render instead of isImage to control the URL
+        render: (row: any) => {
+            if (!row.avatar) {
+                // Fallback placeholder
+                return (
+                    <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                    </div>
+                );
+            }
+            // If avatar is already a full URL, use it; otherwise prepend storage path
+            const avatarUrl = row.avatar.startsWith('http')
+                ? row.avatar
+                : `/storage/${row.avatar}`;
+            return (
+                <img
+                    src={avatarUrl}
+                    alt="Avatar"
+                    className="w-10 h-10 rounded-full object-cover border border-slate-200"
+                />
+            );
+        }
+    },
     {
         label: 'EMPLOYEE',
         key: 'employee_name',
@@ -106,17 +135,6 @@ export const getPayrollTableColumns = (formatCurrency: (amount: number) => strin
         render: (row: PayrollTableRow) => (
             <div className="flex items-center gap-1">
                 <span className="text-sm">{row.site_name || 'N/A'}</span>
-            </div>
-        ),
-    },
-    {
-        label: 'PERIOD',
-        key: 'period_name',
-        render: (row: PayrollTableRow) => (
-            <div className="flex flex-col">
-                <span className="text-xs text-gray-500">
-                    {formatDateToShortMonth(row.period_start)} - {formatDateToShortMonth(row.period_end)}
-                </span>
             </div>
         ),
     },

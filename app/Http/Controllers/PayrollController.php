@@ -47,6 +47,8 @@ class PayrollController extends Controller
             'activeEmployee' => $this->payrollService->getActiveEmployeesInPayroll($payrollsCollection),
         ];
 
+       // dd($payrolls->perPage());
+
         return Inertia::render('payrolls/index', [
             'payrolls' => $payrolls->items(),
             'pagination' => [

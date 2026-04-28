@@ -8,7 +8,7 @@ export default defineConfig({
     plugins: [
         laravel({
             input: ['resources/css/app.css', 'resources/js/app.tsx'],
-            ssr: 'resources/js/ssr.tsx',
+            ssr: 'resources/js/ssr.tsx',   // OK if you use SSR; remove if not needed
             refresh: true,
         }),
         react({
@@ -17,9 +17,7 @@ export default defineConfig({
             },
         }),
         tailwindcss(),
-        wayfinder({
-            formVariants: true,
-        }),
+        ...(process.env.WAYFINDER_DISABLE ? [] : [wayfinder({ formVariants: true })]),
     ],
     esbuild: {
         jsx: 'automatic',
