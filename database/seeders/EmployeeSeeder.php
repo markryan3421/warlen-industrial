@@ -77,6 +77,7 @@ class EmployeeSeeder extends Seeder
             
             // HR User
             ['name' => 'Jona', 'email' => 'jona@gmail.com', 'emp_id' => 2222, 'role' => 'hr_head'],
+            ['name' => 'Rica', 'email' => 'rica@gmail.com', 'emp_id' => 3333, 'role' => 'hr_head'],
             
             // from uphd
             ['name' => 'Jolisa', 'email' => 'jolisa@example.com', 'emp_id' => 1100, 'role' => 'employee'],

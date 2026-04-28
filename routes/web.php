@@ -81,7 +81,7 @@ Route::middleware(['auth', 'admin', 'auth.session', 'throttle:limit-actions',])-
 	Route::resource('application-leave', ApplicationLeaveController::class);
 	Route::resource('attendances', AttendanceImportController::class);
 
-	Route::resource('payroll-periods', PayrollPeriodController::class)->except(['show', 'destroy']);
+	Route::resource('payroll-periods', PayrollPeriodController::class)->except(['show', 'destroy','create']);
 
 	Route::resource('payrolls', PayrollController::class)->except(['show']);
 
@@ -162,9 +162,9 @@ Route::middleware(['auth', 'hr', 'auth.session', 'throttle:limit-actions'])->gro
 		'update' => 'hr.payroll.update',
 	]);
 
-	Route::resource('/hr/payroll-periods', HrPayrollPeriodController::class)->names([
+	Route::resource('/hr/payroll-periods', HrPayrollPeriodController::class)->except(['show','create'])->names([
 		'index' => 'hr.payroll-periods.index',
-		'create' => 'hr.payroll-periods.create',
+		//'create' => 'hr.payroll-periods.create',
 		'store' => 'hr.payroll-periods.store',
 		'edit' => 'hr.payroll-periods.edit',
 		'update' => 'hr.payroll-periods.update',
