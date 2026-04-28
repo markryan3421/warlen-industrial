@@ -27,6 +27,42 @@ class EmployeeSeeder extends Seeder
     }
 
     /**
+     * Generate a unique 10-digit SSS number (without hyphens)
+     */
+    private function generateSssNumber(): string
+    {
+        do {
+            $number = str_pad(rand(0, 9999999999), 10, '0', STR_PAD_LEFT);
+        } while (Employee::where('sss_number', $number)->exists());
+
+        return $number;
+    }
+
+    /**
+     * Generate a unique 12-digit Pag-IBIG number
+     */
+    private function generatePagibigNumber(): string
+    {
+        do {
+            $number = str_pad(rand(0, 999999999999), 12, '0', STR_PAD_LEFT);
+        } while (Employee::where('pagibig_number', $number)->exists());
+
+        return $number;
+    }
+
+    /**
+     * Generate a unique 12-digit PhilHealth number
+     */
+    private function generatePhilhealthNumber(): string
+    {
+        do {
+            $number = str_pad(rand(0, 999999999999), 12, '0', STR_PAD_LEFT);
+        } while (Employee::where('philhealth_number', $number)->exists());
+
+        return $number;
+    }
+
+    /**
      * Create or get branch
      */
     private function getBranch(): Branch
@@ -77,6 +113,7 @@ class EmployeeSeeder extends Seeder
             
             // HR User
             ['name' => 'Jona', 'email' => 'jona@gmail.com', 'emp_id' => 2222, 'role' => 'hr_head'],
+            ['name' => 'Rica', 'email' => 'rica@gmail.com', 'emp_id' => 3333, 'role' => 'hr_head'],
             
             // from uphd
             ['name' => 'Jolisa', 'email' => 'jolisa@example.com', 'emp_id' => 1100, 'role' => 'employee'],
@@ -163,6 +200,9 @@ class EmployeeSeeder extends Seeder
                 'slug_emp' => Str::slug($user->name . '-' . $empId),
                 'emp_code' => $empId,
                 'employee_number' => $this->generateEmployeeNumber(),
+                'sss_number' => $this->generateSssNumber(),
+                'pagibig_number' => $this->generatePagibigNumber(),
+                'philhealth_number' => $this->generatePhilhealthNumber(),
                 'contract_start_date' => now(),
                 'contract_end_date' => now()->addYear(),
                 'emergency_contact_number' => '09123456789',

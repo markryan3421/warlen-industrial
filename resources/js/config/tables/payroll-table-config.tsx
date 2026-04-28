@@ -154,17 +154,6 @@ export const getPayrollTableColumns = (formatCurrency: (amount: number) => strin
         ),
     },
     {
-        label: 'PERIOD',
-        key: 'period_name',
-        render: (row: PayrollTableRow) => (
-            <div className="flex flex-col">
-                <span className="text-xs text-gray-500">
-                    {formatDateToShortMonth(row.period_start)} - {formatDateToShortMonth(row.period_end)}
-                </span>
-            </div>
-        ),
-    },
-    {
         label: 'POSITION',
         key: 'position_name',
         render: (row: PayrollTableRow) => (

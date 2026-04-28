@@ -47,6 +47,7 @@ class PayrollController extends Controller
             'activeEmployee' => $this->payrollService->getActiveEmployeesInPayroll($payrollsCollection),
         ];
 
+<<<<<<< HEAD
         // Transform payrolls to include employee avatar AND payroll_items
         $transformedPayrolls = $payrollsCollection->map(function ($payroll) {
             return [
@@ -80,6 +81,9 @@ class PayrollController extends Controller
                 'updated_at' => $payroll->updated_at,
             ];
         });
+=======
+       // dd($payrolls->perPage());
+>>>>>>> 2fde1083725624f8c09463f8003873ce00168782
 
         return Inertia::render('payrolls/index', [
             'payrolls' => $transformedPayrolls,

@@ -27,6 +27,9 @@ return new class extends Migration
             $table->string('emergency_contact_number');
             $table->date('contract_start_date');
             $table->date('contract_end_date');
+            $table->string('sss_number')->unique();
+            $table->string('philhealth_number')->unique();
+            $table->string('pagibig_number')->unique();
             $table->enum('pay_frequency',['weekender','monthly','semi_monthly'])->default('monthly');
             $table->enum('employee_status',['active','inactive'])->default('active'); // base on  contract end date
 

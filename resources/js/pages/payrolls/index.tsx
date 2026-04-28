@@ -48,6 +48,7 @@ interface Payroll {
     employee?: {
         id: number;
         emp_code: string;
+        avatar: string | null;
         user: { name: string; email: string; };
         position: { id: number; pos_name: string; deleted_at: string; };
         branch?: {
@@ -105,6 +106,7 @@ export default function Index({
     branchesData = [],
 }: PageProps) {
     const { delete: destroy } = useForm();
+    console.log("payrolls", payrolls);
 
     const { auth } = usePage().props;
     const currentUser = auth?.user as { id: number; name: string; email: string; role?: string };
@@ -392,6 +394,7 @@ export default function Index({
         gross_pay: p.gross_pay ?? 0,
         total_deduction: p.total_deduction ?? 0,
         net_pay: p.net_pay ?? 0,
+        avatar: p.employee?.avatar,
         _original: p,
     })), [payrolls]);
 

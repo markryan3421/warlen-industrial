@@ -13,6 +13,7 @@ use App\Http\Controllers\EmployeeContributionSettingsController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\EmployeeDashboardController;
 use App\Http\Controllers\EmployeeRole\ApplicationLeaveController as EmployeeApplicationLeaveController;
+use App\Http\Controllers\HrRole\HRAIInsightController;
 use App\Http\Controllers\HrRole\HRApplicationLeaveController;
 use App\Http\Controllers\HrRole\HRAttendanceController;
 use App\Http\Controllers\HrRole\HRAttendanceImportController;
@@ -31,6 +32,7 @@ use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\PayrollPeriodController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\PositionController;
+use App\Http\Middleware\CapPerpageMiddleware;
 use App\Http\Middleware\HomeMiddleware;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Auth;
@@ -49,7 +51,7 @@ Route::get('/', function () {
 	return Inertia::render('auth/login');
 })->name('home')->middleware(HomeMiddleware::class);
 
-Route::middleware(['auth', 'admin', 'auth.session', 'throttle:limit-actions',])->group(function () {
+Route::middleware(['auth', 'admin', 'auth.session', 'throttle:limit-actions', CapPerpageMiddleware::class.':100'])->group(function () {
 
 	Route::get('payroll', function () {
 		return Inertia::render('payroll/index');
@@ -81,7 +83,7 @@ Route::middleware(['auth', 'admin', 'auth.session', 'throttle:limit-actions',])-
 	Route::resource('application-leave', ApplicationLeaveController::class);
 	Route::resource('attendances', AttendanceImportController::class);
 
-	Route::resource('payroll-periods', PayrollPeriodController::class)->except(['show', 'destroy']);
+	Route::resource('payroll-periods', PayrollPeriodController::class)->except(['show', 'destroy','create']);
 
 	Route::resource('payrolls', PayrollController::class)->except(['show']);
 
@@ -99,7 +101,7 @@ Route::middleware(['auth', 'admin', 'auth.session', 'throttle:limit-actions',])-
 });
 
 //Intended for employee
-Route::middleware(['auth', 'employee', 'auth.session', 'throttle:limit-actions'])->group(function () {
+Route::middleware(['auth', 'employee', 'auth.session', 'throttle:limit-actions', CapPerpageMiddleware::class.':100'])->group(function () {
 
 	// Route::get('employee/dashboard', function () {
 	//     return Inertia::render('employee-role/dashboard');
@@ -118,7 +120,7 @@ Route::middleware(['auth', 'employee', 'auth.session', 'throttle:limit-actions']
 });
 
 //intended for HR
-Route::middleware(['auth', 'hr', 'auth.session', 'throttle:limit-actions'])->group(function () {
+Route::middleware(['auth', 'hr', 'auth.session', 'throttle:limit-actions', CapPerpageMiddleware::class.':100'])->group(function () {
 
 	Route::delete('/hr/employees/bulk-destroy', [HREmployeeController::class, 'bulkDestroy']);
     Route::put('/hr/employees/bulk-restore', [HREmployeeController::class, 'bulkRestore']);
@@ -162,9 +164,9 @@ Route::middleware(['auth', 'hr', 'auth.session', 'throttle:limit-actions'])->gro
 		'update' => 'hr.payroll.update',
 	]);
 
-	Route::resource('/hr/payroll-periods', HrPayrollPeriodController::class)->names([
+	Route::resource('/hr/payroll-periods', HrPayrollPeriodController::class)->except(['show','create'])->names([
 		'index' => 'hr.payroll-periods.index',
-		'create' => 'hr.payroll-periods.create',
+		//'create' => 'hr.payroll-periods.create',
 		'store' => 'hr.payroll-periods.store',
 		'edit' => 'hr.payroll-periods.edit',
 		'update' => 'hr.payroll-periods.update',
@@ -229,14 +231,23 @@ Route::middleware(['auth', 'hr', 'auth.session', 'throttle:limit-actions'])->gro
 	]);
 });
 
-// AI Routes for Inertia (these return JSON for API calls)
-Route::middleware(['auth', 'admin', 'auth.session', 'throttle:limit-actions'])->prefix('ai')->group(function () {
+// AI Routes for Inertia (these return JSON for API calls) for admin
+Route::middleware(['auth', 'admin', 'auth.session', 'throttle:limit-actions', CapPerpageMiddleware::class.':100'])->prefix('ai')->group(function () {
 	Route::get('/dashboard', [AIInsightController::class, 'dashboard']);
 	Route::get('/insights', [AIInsightController::class, 'getInsights']);
 	Route::post('/generate-insights', [AIInsightController::class, 'generateInsights']); // Add this
 	Route::post('/deep-analysis', [AIInsightController::class, 'deepAnalysis']);
 	Route::get('/attendance', [AIInsightController::class, 'analyzeAttendance']);
 });
+
+Route::middleware(['auth', 'hr', 'auth.session', 'throttle:limit-actions', CapPerpageMiddleware::class.':100'])->prefix('ai/hr')->group(function () {
+	Route::get('/dashboard', [HRAIInsightController::class, 'dashboard']);
+	Route::get('/insights', [HRAIInsightController::class, 'getInsights']);
+	Route::post('/generate-insights', [HRAIInsightController::class, 'generateInsights']); // Add this
+	Route::post('/deep-analysis', [HRAIInsightController::class, 'deepAnalysis']);
+	Route::get('/attendance', [HRAIInsightController::class, 'analyzeAttendance']);
+});
+
 
 
 Route::get('/maintenance', function () {

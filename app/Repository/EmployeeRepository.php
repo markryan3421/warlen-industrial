@@ -41,6 +41,9 @@ class EmployeeRepository
                 'pay_frequency',
                 'contract_start_date',
                 'contract_end_date',
+                'sss_number',
+                'pagibig_number',
+                'philhealth_number',
                 'employee_status',
             ]);
     }

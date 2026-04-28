@@ -17,6 +17,7 @@ import {
     LayoutDashboard,
     Building2,
     Handshake,
+    ChartSpline,
 } from 'lucide-react';
 import AttendanceController from "@/actions/App/Http/Controllers/HrRole/HRAttendanceController";
 import HREmployeeController from '@/actions/App/Http/Controllers/HrRole/HREmployeeController';
@@ -106,6 +107,12 @@ const HRGeneralItems: NavItem[] = [
         title: 'Dashboard',
         href: '/hr/dashboard',
         icon: LayoutDashboard,
+    },
+     {
+        title: 'Analytics',
+        href: '/ai/hr/dashboard',
+        exactMatch: true,
+        icon: ChartSpline,
     },
 ];
 

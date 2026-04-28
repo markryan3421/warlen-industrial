@@ -48,6 +48,9 @@ class Employee extends Model
         'employee_number',
         'contract_start_date',
         'contract_end_date',
+        'sss_number',
+        'pagibig_number',
+        'philhealth_number',
         'emergency_contact_number',
         'pay_frequency',
         'employee_status',
@@ -59,6 +62,9 @@ class Employee extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
+        'sss_number' => 'encrypted',
+        'pagibig_number' => 'encrypted',
+        'philhealth_number' => 'encrypted',
     ];
 
     public function getActivitylogOptions(): LogOptions
@@ -79,6 +85,9 @@ class Employee extends Model
                 'employee_number',
                 'contract_start_date',
                 'contract_end_date',
+                'sss_number',
+                'pagibig_number',
+                'philhealth_number',
                 'emergency_contact_number',
                 'pay_frequency',
                 'employee_status',
@@ -105,6 +114,9 @@ class Employee extends Model
             'employee_number' => 'Employee Number',
             'contract_start_date' => 'Contract Start Date',
             'contract_end_date' => 'Contract End Date',
+            'sss_number' => 'SSS Number',
+            'pagibig_number' => 'Pag-Ibig Membership ID',
+            'philhealth' => 'PhilHealth Identification Number',
             'emergency_contact_number' => 'Emergency Contact Number',
             'pay_frequency' => 'Pay Frequency',
             'employee_status' => 'Employee Status',
@@ -206,6 +218,8 @@ class Employee extends Model
     {
         return $this->belongsToMany(Employee::class, 'employee_incentives', 'employee_id', 'incentive_id');
     }
+
+
 
     // Accessors and Mutators
     protected function employeeStatus(): Attribute
