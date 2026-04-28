@@ -1,5 +1,5 @@
 import { Head, useForm, usePage, router } from '@inertiajs/react';
-import { Search, ChevronDown, User, Briefcase, MapPin, Calendar, Phone, Mail, Hash, Clock, LoaderCircle, PersonStanding } from 'lucide-react';
+import { Search, ChevronDown, User, Briefcase, MapPin, Calendar, Phone, Mail, Hash, Clock, LoaderCircle, PersonStanding, Shield } from 'lucide-react';
 import { useEffect, useState, useRef } from 'react';
 // import { toast } from 'sonner';
 import { store } from '@/actions/App/Http/Controllers/EmployeeController';
@@ -196,6 +196,10 @@ export default function Create({ positions, branches, site = [] }: Props) {
         pay_frequency: '',
         emergency_contact_number: '',
         employee_status: '',
+        // New government number fields
+        sss_number: '',
+        pagibig_number: '',
+        philhealth_number: '',
     });
 
     // Update available sites when branch changes
@@ -203,7 +207,7 @@ export default function Create({ positions, branches, site = [] }: Props) {
         if (data.branch_id) {
             const filtered = site.filter(s => s.branch_id === parseInt(data.branch_id));
             setAvailableSites(filtered);
-            
+
             // 🔁 Clear site_id if the current value is not valid for the new branch
             const currentSiteId = data.site_id;
             if (currentSiteId) {
@@ -240,6 +244,17 @@ export default function Create({ positions, branches, site = [] }: Props) {
     };
     const getDisplayValue = (field: 'employee_number' | 'emergency_contact_number') => {
         return data[field] ? data[field].replace('+63', '') : '';
+    };
+
+    // Helper for government numbers (numeric-only input)
+    const handleGovNumberChange = (
+        field: 'sss_number' | 'pagibig_number' | 'philhealth_number',
+        value: string,
+        maxLength: number
+    ) => {
+        // Allow only digits and hyphens
+        const cleaned = value.replace(/[^0-9\-]/g, '').slice(0, maxLength);
+        setData(field, cleaned);
     };
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -294,7 +309,7 @@ export default function Create({ positions, branches, site = [] }: Props) {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Create Employee" />    
+            <Head title="Create Employee" />
 
             <style>{`
                 @keyframes formFadeUp {
@@ -336,7 +351,7 @@ export default function Create({ positions, branches, site = [] }: Props) {
                             {/* Avatar Upload Section */}
                             <div className="grid gap-2">
                                 <Label>Profile picture</Label>
-                                
+
                                 <div className="flex items-center gap-4">
                                     {/* Avatar Preview */}
                                     <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-full bg-muted">
@@ -371,7 +386,7 @@ export default function Create({ positions, branches, site = [] }: Props) {
                                             >
                                                 Choose image
                                             </Button>
-                                            
+
                                             {avatarPreview && (
                                                 <Button
                                                     type="button"
@@ -387,7 +402,7 @@ export default function Create({ positions, branches, site = [] }: Props) {
                                                 </Button>
                                             )}
                                         </div>
-                                        
+
                                         <p className="text-xs text-muted-foreground">
                                             Recommended: Square image, at least 200x200px. Max size: 2MB
                                         </p>
@@ -473,7 +488,7 @@ export default function Create({ positions, branches, site = [] }: Props) {
                             </div>
                         </FormSection>
 
-                        {/* 2. Employee Details */}
+                        {/* 3. Employee Details */}
                         <FormSection icon={Briefcase} title="Employee Details" index={3}>
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div className="space-y-2">
@@ -560,8 +575,58 @@ export default function Create({ positions, branches, site = [] }: Props) {
                             </div>
                         </FormSection>
 
-                        {/* 3. Contract Period */}
-                        <FormSection icon={Calendar} title="Contract Period" index={4}>
+                        {/* 🆕 4. Government Numbers (SSS, Pag-IBIG, PhilHealth) */}
+                        <FormSection icon={Shield} title="Government Numbers" index={4}>
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                <div className="space-y-2">
+                                    <Label className="text-sm font-semibold">
+                                        SSS Number <span className="text-accent">*</span>
+                                    </Label>
+                                    <Input
+                                        type="text"
+                                        value={data.sss_number}
+                                        onChange={e => handleGovNumberChange('sss_number', e.target.value, 15)}
+                                        placeholder="e.g., 12-3456789-1"
+                                        maxLength={15}
+                                        className="rounded-xl"
+                                    />
+                                    <InputError message={errors.sss_number} />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label className="text-sm font-semibold">
+                                        Pag-IBIG Membership ID <span className="text-accent">*</span>
+                                    </Label>
+                                    <Input
+                                        type="text"
+                                        value={data.pagibig_number}
+                                        onChange={e => handleGovNumberChange('pagibig_number', e.target.value, 15)}
+                                        placeholder="e.g., 9102-1234-5678"
+                                        maxLength={15}
+                                        className="rounded-xl"
+                                    />
+                                    <InputError message={errors.pagibig_number} />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label className="text-sm font-semibold">
+                                        PhilHealth Identification Number (PIN) <span className="text-accent">*</span>
+                                    </Label>
+                                    <Input
+                                        type="text"
+                                        value={data.philhealth_number}
+                                        onChange={e => handleGovNumberChange('philhealth_number', e.target.value, 15)}
+                                        placeholder="e.g., 9102-1234-5678"
+                                        maxLength={15}
+                                        className="rounded-xl"
+                                    />
+                                    <InputError message={errors.philhealth_number} />
+                                </div>
+                            </div>
+                        </FormSection>
+
+                        {/* 5. Contract Period */}
+                        <FormSection icon={Calendar} title="Contract Period" index={5}>
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div className="space-y-2">
                                     <Label className="text-sm font-semibold">
@@ -589,8 +654,8 @@ export default function Create({ positions, branches, site = [] }: Props) {
                             </div>
                         </FormSection>
 
-                        {/* 4. Location Assignment */}
-                        <FormSection icon={MapPin} title="Location Assignment" index={5}>
+                        {/* 6. Location Assignment */}
+                        <FormSection icon={MapPin} title="Location Assignment" index={6}>
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <SearchableDropdown
                                     label="Branch"

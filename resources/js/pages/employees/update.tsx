@@ -1,6 +1,6 @@
 import { Head, router } from '@inertiajs/react';
 import { useForm } from '@inertiajs/react';
-import { Search, ChevronDown, User, Briefcase, MapPin, Calendar, Phone, Mail, Hash, Clock, LoaderCircle, ImagePlus, PersonStanding } from 'lucide-react';
+import { Search, ChevronDown, User, Briefcase, MapPin, Calendar, Phone, Mail, Hash, Clock, LoaderCircle, ImagePlus, PersonStanding, Shield, Eye, EyeOff } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 // import { toast } from 'sonner';
 import { update } from '@/actions/App/Http/Controllers/EmployeeController';
@@ -155,15 +155,16 @@ function SearchableDropdown({
     );
 }
 
-
-// Same getStatusFromDates and FormSection, SearchableDropdown as above
-// (copy them or import from a shared file)
-
 export default function Update({ positions, branches, employee, site = [] }: Props) {
     const [availableSites, setAvailableSites] = useState<any[]>([]);
     const [positionSearch, setPositionSearch] = useState('');
     const [branchSearch, setBranchSearch] = useState('');
     const [siteSearch, setSiteSearch] = useState('');
+
+    // Visibility toggles for government number fields
+    const [showSss, setShowSss] = useState(false);
+    const [showPagibig, setShowPagibig] = useState(false);
+    const [showPhilhealth, setShowPhilhealth] = useState(false);
 
     const { data, setData, put, processing, errors } = useForm({
         name: employee.user?.name || '',
@@ -180,6 +181,9 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
         emergency_contact_number: employee.emergency_contact_number || '',
         employee_status: employee.employee_status || 'Inactive',
         avatar: employee.avatar || '',
+        sss_number: employee.sss_number?.toString() || '',
+        pagibig_number: employee.pagibig_number?.toString() || '',
+        philhealth_number: employee.philhealth_number?.toString() || '',
     });
 
     // Update status when dates change
@@ -200,12 +204,11 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
     }, []);
 
     // Update available sites when branch changes
-   useEffect(() => {
+    useEffect(() => {
         if (data.branch_id) {
             const filtered = site.filter(s => s.branch_id === parseInt(data.branch_id));
             setAvailableSites(filtered);
-            
-            // 🔁 Clear site_id if the current value is not valid for the new branch
+
             const currentSiteId = data.site_id;
             if (currentSiteId) {
                 const stillValid = filtered.some(s => s.id === parseInt(currentSiteId));
@@ -214,7 +217,6 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
                     setSiteSearch('');
                 }
             } else {
-                // If branch changes and no site was selected, ensure site_id is cleared
                 setData('site_id', '');
                 setSiteSearch('');
             }
@@ -233,6 +235,16 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
         return data[field] ? data[field].replace('+63', '') : '';
     };
 
+    // Helper for government numbers (allow digits and hyphens)
+    const handleGovNumberChange = (
+        field: 'sss_number' | 'pagibig_number' | 'philhealth_number',
+        value: string,
+        maxLength: number
+    ) => {
+        const cleaned = value.replace(/[^0-9\-]/g, '').slice(0, maxLength);
+        setData(field, cleaned);
+    };
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         put(update(employee.slug_emp).url, {
@@ -245,7 +257,7 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
         });
     };
 
-    // Prepare dropdown items (same as create)
+    // Prepare dropdown items
     const positionItems = positions.map(p => ({ id: p.id, name: p.pos_name }));
     const branchItems = branches.map(b => ({ id: b.id, name: b.branch_name }));
     const siteItems = availableSites.map(s => ({ id: s.id, name: s.site_name || s.name || '' }));
@@ -281,7 +293,6 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
     }
 
     const fileInputRef = useRef<HTMLInputElement>(null);
-
     const [avatarFile, setAvatarFile] = useState<File | null>(null);
     const [avatarPreview, setAvatarPreview] = useState<string | null>(
         employee.avatar ? `/storage/${employee.avatar}` : null
@@ -343,14 +354,11 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
                     </div>
 
                     <form onSubmit={handleSubmit} className="space-y-6">
-                         {/* 1. Avatar */}
+                        {/* 1. Avatar */}
                         <FormSection icon={PersonStanding} title="Avatar" index={1}>
-                            {/* Avatar Upload Section */}
                             <div className="grid gap-2">
                                 <Label>Profile picture</Label>
-                                
                                 <div className="flex items-center gap-4">
-                                    {/* Avatar Preview */}
                                     <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-full bg-muted">
                                         {avatarPreview ? (
                                             <img
@@ -360,18 +368,12 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
                                             />
                                         ) : (
                                             <div className="flex h-full w-full items-center justify-center bg-neutral-100 text-neutral-400 dark:bg-neutral-800">
-                                                <svg
-                                                    className="h-10 w-10"
-                                                    fill="currentColor"
-                                                    viewBox="0 0 24 24"
-                                                >
+                                                <svg className="h-10 w-10" fill="currentColor" viewBox="0 0 24 24">
                                                     <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
                                                 </svg>
                                             </div>
                                         )}
                                     </div>
-
-                                    {/* Upload Buttons */}
                                     <div className="flex flex-col gap-2">
                                         <div className="flex gap-2">
                                             <Button
@@ -383,7 +385,6 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
                                             >
                                                 Change avatar
                                             </Button>
-                                            
                                             {avatarPreview && (
                                                 <Button
                                                     type="button"
@@ -399,12 +400,10 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
                                                 </Button>
                                             )}
                                         </div>
-                                        
                                         <p className="text-xs text-muted-foreground">
                                             Recommended: Square image, at least 200x200px. Max size: 2MB
                                         </p>
                                     </div>
-
                                     <Input
                                         ref={fileInputRef}
                                         id="avatar"
@@ -419,18 +418,12 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
                                         className="hidden"
                                     />
                                 </div>
-
-                                {errors.avatar && (
-                                    <InputError
-                                        className="mt-2"
-                                        message={errors.avatar}
-                                    />
-                                )}
+                                {errors.avatar && <InputError className="mt-2" message={errors.avatar} />}
                             </div>
                         </FormSection>
 
-                        {/* 1. User Details */}
-                        <FormSection icon={User} title="User Details" index={0}>
+                        {/* 2. User Details */}
+                        <FormSection icon={User} title="User Details" index={2}>
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div className="space-y-2">
                                     <Label className="text-sm font-semibold">
@@ -481,8 +474,8 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
                             </div>
                         </FormSection>
 
-                        {/* 2. Employee Details */}
-                        <FormSection icon={Briefcase} title="Employee Details" index={1}>
+                        {/* 3. Employee Details */}
+                        <FormSection icon={Briefcase} title="Employee Details" index={3}>
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div className="space-y-2">
                                     <Label className="text-sm font-semibold">
@@ -568,8 +561,92 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
                             </div>
                         </FormSection>
 
-                        {/* 3. Contract Period */}
-                        <FormSection icon={Calendar} title="Contract Period" index={3}>
+                        {/* 4. Government Numbers (SSS, Pag-IBIG, PhilHealth) with show/hide */}
+                        <FormSection icon={Shield} title="Government Numbers" index={4}>
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                {/* SSS Number */}
+                                <div className="space-y-2">
+                                    <Label className="text-sm font-semibold">
+                                        SSS Number <span className="text-accent">*</span>
+                                    </Label>
+                                    <div className="relative">
+                                        <Input
+                                            type={showSss ? "text" : "password"}
+                                            value={data.sss_number}
+                                            onChange={e => handleGovNumberChange('sss_number', e.target.value, 15)}
+                                            placeholder="e.g., 12-3456789-1"
+                                            maxLength={15}
+                                            className="rounded-xl pr-10"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowSss(!showSss)}
+                                            className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground"
+                                        >
+                                            {showSss ? (
+                                                <EyeOff className="h-4 w-4" />
+                                            ) : (
+                                                <Eye className="h-4 w-4" />
+                                            )}
+                                        </button>
+                                    </div>
+                                    <InputError message={errors.sss_number} />
+                                </div>
+
+                                {/* Pag-IBIG Number */}
+                                <div className="space-y-2">
+                                    <Label className="text-sm font-semibold">
+                                        Pag-IBIG Membership ID <span className="text-accent">*</span>
+                                    </Label>
+                                    <div className="relative">
+                                        <Input
+                                            type={showPagibig ? "text" : "password"}
+                                            value={data.pagibig_number}
+                                            onChange={e => handleGovNumberChange('pagibig_number', e.target.value, 15)}
+                                            placeholder="e.g., 9102-1234-5678"
+                                            maxLength={15}
+                                            className="rounded-xl pr-10"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPagibig(!showPagibig)}
+                                            className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground"
+                                        >
+                                            {showPagibig ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                        </button>
+                                    </div>
+                                    <InputError message={errors.pagibig_number} />
+                                </div>
+
+                                {/* PhilHealth Number */}
+                                <div className="space-y-2">
+                                    <Label className="text-sm font-semibold">
+                                        PhilHealth Identification Number (PIN) <span className="text-accent">*</span>
+                                    </Label>
+                                    <div className="relative">
+                                        <Input
+                                            type={showPhilhealth ? "text" : "password"}
+                                            value={data.philhealth_number}
+                                            onChange={e => handleGovNumberChange('philhealth_number', e.target.value, 15)}
+                                            placeholder="e.g., 9102-1234-5678"
+                                            maxLength={15}
+                                            className="rounded-xl pr-10"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPhilhealth(!showPhilhealth)}
+                                            className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground"
+                                        >
+                                            {showPhilhealth ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                        </button>
+                                    </div>
+                                    <InputError message={errors.philhealth_number} />
+                                </div>
+                            </div>
+                        </FormSection>
+
+                        {/* 5. Contract Period */}
+                        <FormSection icon={Calendar} title="Contract Period" index={5}>
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div className="space-y-2">
                                     <Label className="text-sm font-semibold">
@@ -597,8 +674,8 @@ export default function Update({ positions, branches, employee, site = [] }: Pro
                             </div>
                         </FormSection>
 
-                        {/* 4. Location Assignment */}
-                        <FormSection icon={MapPin} title="Location Assignment" index={2}>
+                        {/* 6. Location Assignment */}
+                        <FormSection icon={MapPin} title="Location Assignment" index={6}>
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <SearchableDropdown
                                     label="Branch"

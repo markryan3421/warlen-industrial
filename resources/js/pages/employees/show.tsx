@@ -2,7 +2,7 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import {
 	ArrowLeft, Edit, Trash2, Mail, Phone, Calendar, MapPin,
-	Building2, Briefcase, CreditCard, Clock, User, Hash
+	Building2, Briefcase, CreditCard, Clock, User, Hash, Shield
 } from 'lucide-react';
 import { useState } from 'react';
 import EmployeeController from '@/actions/App/Http/Controllers/EmployeeController';
@@ -27,6 +27,10 @@ interface Employee {
 	employee_status: 'active' | 'inactive';
 	created_at: string;
 	updated_at: string;
+	// Government numbers
+	sss_number?: string;
+	pagibig_number?: string;
+	philhealth_number?: string;
 	position: {
 		id: number;
 		pos_name: string;
@@ -178,7 +182,6 @@ export default function Show({ employee }: PageProps) {
 
 				{/* ─── Header Actions ──────────────────────────────────────── */}
 				<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 fade-up stagger-1">
-					{/* Back to the previous page */}
 					<Button
 						onClick={() => router.get('/employees')}
 						className="inline-flex items-center gap-2 text-sm group"
@@ -242,7 +245,6 @@ export default function Show({ employee }: PageProps) {
 
 				{/* ─── Employee Card ───────────────────────────────────────── */}
 				<Card className="overflow-hidden border-slate-200 shadow-sm fade-up stagger-2">
-					{/* Navy Header */}
 					<div className="bg-[#1d4791] px-5 py-4 flex items-center justify-between">
 						<div className="flex items-center gap-3">
 							<User className="h-4 w-4 text-white/90" />
@@ -255,7 +257,6 @@ export default function Show({ employee }: PageProps) {
 						{/* Profile Section */}
 						<div className="p-5 sm:p-6 border-b border-slate-100 bg-slate-50/50">
 							<div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
-								{/* Avatar */}
 								<div className="relative shrink-0">
 									{avatarUrl ? (
 										<img
@@ -277,7 +278,6 @@ export default function Show({ employee }: PageProps) {
 									</div>
 								</div>
 
-								{/* Name & Contact */}
 								<div className="flex-1 text-center sm:text-left space-y-2">
 									<div>
 										<h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
@@ -316,7 +316,7 @@ export default function Show({ employee }: PageProps) {
 						<div className="p-5 sm:p-6">
 							<div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
-								{/* Left: Personal & Employment */}
+								{/* Left: Personal, Government & Employment */}
 								<div className="space-y-4">
 									<InfoSection
 										icon={User}
@@ -328,10 +328,21 @@ export default function Show({ employee }: PageProps) {
 										<InfoRow label="Emergency Contact" value={employee.emergency_contact_number || '—'} />
 									</InfoSection>
 
+									{/* 🆕 Government Numbers Section */}
+									<InfoSection
+										icon={Shield}
+										title="Government Numbers"
+										delay={4}
+									>
+										<InfoRow label="SSS Number" value={employee.sss_number || '—'} />
+										<InfoRow label="Pag-IBIG Membership ID" value={employee.pagibig_number || '—'} />
+										<InfoRow label="PhilHealth Identification Number" value={employee.philhealth_number || '—'} />
+									</InfoSection>
+
 									<InfoSection
 										icon={Briefcase}
 										title="Position & Pay"
-										delay={4}
+										delay={5}
 									>
 										<InfoRow
 											label="Position"
@@ -352,7 +363,7 @@ export default function Show({ employee }: PageProps) {
 									<InfoSection
 										icon={MapPin}
 										title="Work Location"
-										delay={5}
+										delay={6}
 									>
 										<InfoRow label="Branch" value={employee.branch?.branch_name || '—'} />
 										{employee.branch?.branch_address && (
@@ -364,10 +375,20 @@ export default function Show({ employee }: PageProps) {
 									<InfoSection
 										icon={Calendar}
 										title="Contract Period"
-										delay={6}
+										delay={7}
 									>
 										<InfoRow label="Start Date" value={formatDate(employee.contract_start_date)} />
 										<InfoRow label="End Date" value={formatDate(employee.contract_end_date)} />
+									</InfoSection>
+
+									{/* Optional: System info (created/updated) */}
+									<InfoSection
+										icon={Clock}
+										title="System Info"
+										delay={8}
+									>
+										<InfoRow label="Created" value={formatDate(employee.created_at)} />
+										<InfoRow label="Last Updated" value={formatDate(employee.updated_at)} />
 									</InfoSection>
 								</div>
 							</div>
@@ -415,23 +436,6 @@ function InfoRow({ label, value, isComponent = false, isMultiline = false }: Inf
 			<dd className={`font-medium text-slate-900 text-right ${isMultiline ? 'text-left' : ''} ${isComponent ? '' : ''}`}>
 				{value}
 			</dd>
-		</div>
-	);
-}
-
-interface SystemInfoProps {
-	label: string;
-	value: string;
-	mono?: boolean;
-}
-
-function SystemInfo({ label, value, mono = false }: SystemInfoProps) {
-	return (
-		<div className="text-center sm:text-left">
-			<span className="text-xs text-slate-400 block mb-0.5">{label}</span>
-			<span className={`text-sm font-medium text-slate-700 ${mono ? 'font-mono text-xs bg-slate-100 px-1.5 py-0.5 rounded' : ''}`}>
-				{value}
-			</span>
 		</div>
 	);
 }

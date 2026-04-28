@@ -48,6 +48,9 @@ class UpdateEmployee
             'emergency_contact_number' => $data['emergency_contact_number'],
             'contract_start_date' => $data['contract_start_date'],
             'contract_end_date' => $data['contract_end_date'],
+            'sss_number' => $data['sss_number'],
+            'pagibig_number' => $data['pagibig_number'],
+            'philhealth_number' => $data['philhealth_number'], 
             'pay_frequency' => $data['pay_frequency'],
             'employee_status' => $data['employee_status'],
         ]);

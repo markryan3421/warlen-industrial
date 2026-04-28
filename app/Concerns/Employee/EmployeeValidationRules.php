@@ -2,6 +2,8 @@
 
 namespace App\Concerns\Employee;
 
+use App\Models\Employee;
+use App\Rules\UniqueEncrypted;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 
@@ -71,13 +73,36 @@ trait EmployeeValidationRules
                 'after_or_equal:contract_start_date'
             ],
 
+           'sss_number' => [
+                'required',
+                'string',
+                'max:15',
+                'regex:/^[\d\-]+$/',
+                new UniqueEncrypted( Employee::class, 'sss_number', $this->route('employee')?->id),
+            ],
+
+            'pagibig_number' => [
+                'required',
+                'string',
+                'max:15',
+                'regex:/^[\d\-]+$/',
+                new UniqueEncrypted( Employee::class, 'pagibig_number', $this->route('employee')?->id),
+            ],
+
+            'philhealth_number' => [
+                'required',
+                'string',
+                'max:15',
+                'regex:/^[\d\-]+$/',
+                new UniqueEncrypted( Employee::class, 'philhealth_number', $this->route('employee')?->id ),
+            ],
+
             'employee_status' => ['required'],
 
             'position_id' => [
                 'nullable',
                 'exists:positions,id',
-                'sometimes
-                  '
+                'sometimes'
             ],
 
             'branch_id' => [
