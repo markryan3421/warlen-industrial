@@ -3,6 +3,7 @@ import { Eye } from 'lucide-react';
 export interface PayrollTableRow {
     id: number;
     employee_name: string;
+    employee_avatar?: string | null;
     emp_code: string;
     branch_name: string;
     site_name: string;
@@ -48,6 +49,15 @@ const formatDateToMonthYear = (dateString: string): string => {
     }
 };
 
+// Helper function to get avatar URL
+const getAvatarUrl = (avatar: string | null | undefined): string | null => {
+    if (!avatar) return null;
+    if (avatar.startsWith('/storage/') || avatar.startsWith('http')) {
+        return avatar;
+    }
+    return `/storage/${avatar}`;
+};
+
 // Function to format date range with short months
 const formatDateRange = (startDate: string, endDate: string): string => {
     const start = formatDateToShortMonth(startDate);
@@ -62,12 +72,12 @@ const formatDateRangeCompact = (startDate: string, endDate: string): string => {
         const start = new Date(startDate);
         const end = new Date(endDate);
         if (isNaN(start.getTime()) || isNaN(end.getTime())) return 'N/A';
-        
+
         const startMonth = start.toLocaleDateString('en-US', { month: 'short' });
         const endMonth = end.toLocaleDateString('en-US', { month: 'short' });
         const startYear = start.getFullYear();
         const endYear = end.getFullYear();
-        
+
         if (startYear === endYear && startMonth === endMonth) {
             return `${startMonth} ${startYear}`;
         } else if (startYear === endYear) {
@@ -82,7 +92,41 @@ const formatDateRangeCompact = (startDate: string, endDate: string): string => {
 
 export const getPayrollTableColumns = (formatCurrency: (amount: number) => string) => [
     {
-        label: 'EMPLOYEE',
+        label: 'AVATAR',
+        key: 'employee_avatar',
+        render: (row: PayrollTableRow) => {
+            const avatarUrl = getAvatarUrl(row.employee_avatar);
+            console.log('Avatar URL:', avatarUrl); // Debug log
+            return avatarUrl ? (
+                <img
+                    src={avatarUrl}
+                    alt={row.employee_name}
+                    className="w-8 h-8 rounded-full object-cover"
+                    onError={(e) => {
+                        console.error('Failed to load avatar:', avatarUrl);
+                        (e.target as HTMLImageElement).style.display = 'none';
+                        // Show fallback when image fails to load
+                        const parent = (e.target as HTMLImageElement).parentElement;
+                        if (parent) {
+                            const fallback = document.createElement('div');
+                            fallback.className = 'w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center';
+                            fallback.innerHTML = `<span class="text-xs font-medium text-gray-600">${row.employee_name?.charAt(0).toUpperCase() || '?'}</span>`;
+                            (e.target as HTMLImageElement).style.display = 'none';
+                            parent.appendChild(fallback);
+                        }
+                    }}
+                />
+            ) : (
+                <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+                    <span className="text-xs font-medium text-gray-600">
+                        {row.employee_name?.charAt(0).toUpperCase() || '?'}
+                    </span>
+                </div>
+            );
+        },
+    },
+    {
+        label: 'EMPLOYEE NAME',
         key: 'employee_name',
         render: (row: PayrollTableRow) => (
             <div className="flex flex-col">

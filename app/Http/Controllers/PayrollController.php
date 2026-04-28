@@ -47,8 +47,42 @@ class PayrollController extends Controller
             'activeEmployee' => $this->payrollService->getActiveEmployeesInPayroll($payrollsCollection),
         ];
 
+        // Transform payrolls to include employee avatar AND payroll_items
+        $transformedPayrolls = $payrollsCollection->map(function ($payroll) {
+            return [
+                'id' => $payroll->id,
+                'payroll_period_id' => $payroll->payroll_period_id,
+                'employee_id' => $payroll->employee_id,
+                'gross_pay' => $payroll->gross_pay,
+                'total_deduction' => $payroll->total_deduction,
+                'net_pay' => $payroll->net_pay,
+                'payroll_items' => $payroll->payrollItems->map(function ($item) {
+                    return [
+                        'id' => $item->id,
+                        'type' => $item->type,
+                        'code' => $item->code,
+                        'description' => $item->description,
+                        'amount' => $item->amount,
+                    ];
+                }),
+                'payroll_period' => $payroll->payroll_period,
+                'employee' => $payroll->employee ? [
+                    'id' => $payroll->employee->id,
+                    'emp_code' => $payroll->employee->emp_code,
+                    'avatar' => $payroll->employee->avatar,
+                    'user' => $payroll->employee->user,
+                    'position' => $payroll->employee->position,
+                    'branch' => $payroll->employee->branch,
+                    'site' => $payroll->employee->site,
+                    'pay_frequency' => $payroll->employee->pay_frequency,
+                ] : null,
+                'created_at' => $payroll->created_at,
+                'updated_at' => $payroll->updated_at,
+            ];
+        });
+
         return Inertia::render('payrolls/index', [
-            'payrolls' => $payrolls->items(),
+            'payrolls' => $transformedPayrolls,
             'pagination' => [
                 'current_page' => $payrolls->currentPage(),
                 'last_page' => $payrolls->lastPage(),
