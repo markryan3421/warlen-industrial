@@ -18,6 +18,7 @@ import {
     getPayrollTableActions,
     getSkeletonColumns
 } from '@/config/tables/payroll-table-config';
+import axios from 'axios';
 
 declare global { interface Window { Echo: any; } }
 
@@ -121,6 +122,9 @@ export default function Index({
     const [selectedPrintPayrollId, setSelectedPrintPayrollId] = useState<number | null>(null);
     const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
 
+    // ── Bulk selection state ─────────────────────────────────────────────────
+    const [selectedPayrollIds, setSelectedPayrollIds] = useState<(string | number)[]>([]);
+
     // ── Filter state ──────────────────────────────────────────────────────────
     const parseDate = (d?: string) => {
         if (!d) return undefined;
@@ -213,7 +217,6 @@ export default function Index({
         if (rf && isValid(rf)) params.date_from = format(rf, 'yyyy-MM-dd');
         if (rt && isValid(rt)) params.date_to = format(rt, 'yyyy-MM-dd');
 
-        // Always send perPage parameter
         const perPageValue = rpp ? parseInt(rpp) : 10;
         params.perPage = perPageValue;
 
@@ -455,11 +458,53 @@ export default function Index({
         });
     }, [destroy, applyFilters]);
 
+    // ── Email handlers (using axios to avoid Inertia response issues) ─────────
+    const handleEmailPayroll = useCallback((row: any) => {
+        const payrollId = row._original?.id;
+        if (!payrollId) return;
+
+        toast.loading('Sending email...', { id: `email-${payrollId}` });
+
+        axios.post(`/payrolls/${payrollId}/email`)
+            .then(() => {
+                toast.success('Payroll summary sent to employee\'s email.', { id: `email-${payrollId}` });
+            })
+            .catch((error) => {
+                console.error(error);
+                const message = error.response?.data?.message || 'Failed to send email. Please try again.';
+                toast.error(message, { id: `email-${payrollId}` });
+            });
+    }, []);
+
+    const handleBulkEmail = useCallback((selectedRows: any[]) => {
+        const ids = selectedRows.map(row => row._original?.id).filter(Boolean);
+        if (ids.length === 0) return;
+
+        toast.loading(`Sending ${ids.length} email(s)...`, { id: 'bulk-email' });
+
+        axios.post('/payrolls/bulk-email', { ids })
+            .then((response) => {
+                const { success, failures } = response.data;
+                if (success > 0 && failures === 0) {
+                    toast.success(`Successfully sent ${success} email(s).`, { id: 'bulk-email' });
+                } else if (success > 0 && failures > 0) {
+                    toast.warning(`Sent ${success} email(s), failed: ${failures}.`, { id: 'bulk-email' });
+                } else {
+                    toast.error('Failed to send any emails.', { id: 'bulk-email' });
+                }
+                setSelectedPayrollIds([]); // clear selection after sending
+            })
+            .catch((error) => {
+                console.error(error);
+                const message = error.response?.data?.message || 'Failed to send emails.';
+                toast.error(message, { id: 'bulk-email' });
+            });
+    }, []);
+
     const handlePrintSummary = useCallback(() => {
         // Prepare full payroll data with earnings and deductions from payroll_items
         const summaryPayrolls = filteredPayrollTableData.map(p => {
             const originalPayroll = payrolls.find(pr => pr.id === p.id);
-            // Extract earnings and deductions from payroll_items
             const earnings = originalPayroll?.payroll_items
                 ?.filter(item => item.type === 'earning')
                 .map(item => ({
@@ -494,68 +539,37 @@ export default function Index({
             };
         });
 
-        // Calculate totals - ensure all values are numbers
-        let totalGrossPay = 0;
-        let totalDeductions = 0;
-        let totalNetPay = 0;
-        let totalOvertimePay = 0;
-        let totalOvertimeHours = 0;
-        let totalHolidayOvertimePay = 0;
-        let totalIncentives = 0;
-        let totalContributions = 0;
-        let totalOtherDeductions = 0;
-        let totalLateDeduction = 0;
+        let totalGrossPay = 0, totalDeductions = 0, totalNetPay = 0;
+        let totalOvertimePay = 0, totalOvertimeHours = 0, totalHolidayOvertimePay = 0;
+        let totalIncentives = 0, totalContributions = 0, totalOtherDeductions = 0, totalLateDeduction = 0;
 
         summaryPayrolls.forEach(p => {
-            // Add to main totals - ensure numbers
             totalGrossPay += Number(p.gross_pay) || 0;
             totalDeductions += Number(p.total_deduction) || 0;
             totalNetPay += Number(p.net_pay) || 0;
 
-            // Calculate earnings breakdown
             if (p.earnings && Array.isArray(p.earnings)) {
                 p.earnings.forEach((e: any) => {
                     const desc = String(e.description || '').toLowerCase();
                     const amount = Number(e.amount) || 0;
                     if (desc.includes('overtime')) {
-                        if (desc.includes('holiday')) {
-                            totalHolidayOvertimePay += amount;
-                        } else {
-                            totalOvertimePay += amount;
-                        }
-                    } else if (desc.includes('incentive')) {
-                        totalIncentives += amount;
-                    }
+                        if (desc.includes('holiday')) totalHolidayOvertimePay += amount;
+                        else totalOvertimePay += amount;
+                    } else if (desc.includes('incentive')) totalIncentives += amount;
                 });
             }
 
-            // Calculate deductions breakdown
             if (p.deductions && Array.isArray(p.deductions)) {
                 p.deductions.forEach((d: any) => {
                     const desc = String(d.description || '').toLowerCase();
                     const amount = Number(d.amount) || 0;
                     if (desc.includes('sss') || desc.includes('philhealth') || desc.includes('pag-ibig') || desc.includes('pagibig') || desc.includes('contribution')) {
                         totalContributions += amount;
-                    } else if (desc.includes('late')) {
-                        totalLateDeduction += amount;
-                    } else {
-                        totalOtherDeductions += amount;
-                    }
+                    } else if (desc.includes('late')) totalLateDeduction += amount;
+                    else totalOtherDeductions += amount;
                 });
             }
         });
-
-        // Debug logs
-        console.log('=== DEBUG TOTALS ===');
-        console.log('totalGrossPay:', totalGrossPay);
-        console.log('totalDeductions:', totalDeductions);
-        console.log('totalNetPay:', totalNetPay);
-        console.log('totalOvertimePay:', totalOvertimePay);
-        console.log('totalIncentives:', totalIncentives);
-        console.log('totalContributions:', totalContributions);
-        console.log('totalOtherDeductions:', totalOtherDeductions);
-        console.log('totalLateDeduction:', totalLateDeduction);
-        console.log('summaryPayrolls length:', summaryPayrolls.length);
 
         const dateRange = dateFrom && dateTo
             ? `${format(dateFrom, 'MMMM d, yyyy')} – ${format(dateTo, 'MMMM d, yyyy')}`
@@ -571,7 +585,6 @@ export default function Index({
             ? `Branch: ${selectedBranches[0] || 'All'} | Site: ${selectedSites[0] || 'All'}`
             : '';
 
-        // Generate HTML and print
         const htmlContent = generateSummaryHTML({
             summaryPayrolls,
             totalGrossPay,
@@ -594,15 +607,11 @@ export default function Index({
         printPayrollSummary(htmlContent);
     }, [filteredPayrollTableData, payrolls, searchTerm, selectedPositions, selectedBranches, selectedSites, dateFrom, dateTo, formatCurrency, authorizedByName]);
 
-    // Helper function to format date for display
-    const formatDateDisplay = (date: Date | undefined) => {
-        if (!date) return '';
-        return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-    };
-
     // ── Table config ──────────────────────────────────────────────────────────
     const columns = useMemo(() => getPayrollTableColumns(formatCurrency), [formatCurrency]);
-    const actions = useMemo(() => getPayrollTableActions(handleViewPayroll), [handleViewPayroll]);
+    // Note: getPayrollTableActions now expects two arguments (view and email)
+    const baseActions = getPayrollTableActions(handleViewPayroll, handleEmailPayroll);
+    const actions = useMemo(() => baseActions, [baseActions]);
     const skeletonColumns = useMemo(() => getSkeletonColumns(), []);
 
     // ── Toolbar ───────────────────────────────────────────────────────────────
@@ -696,9 +705,15 @@ export default function Index({
                             from={serverPagination?.from || 0}
                             title="Payroll Records"
                             onView={handleViewPayroll}
-                            onEdit={() => { }}
                             onDelete={handleDeletePayroll}
+                            onEmail={handleEmailPayroll}
                             toolbar={toolbar}
+                            selectable={true}
+                            selectedIds={selectedPayrollIds}
+                            onSelectChange={setSelectedPayrollIds}
+                            bulkActions={[
+                                { label: 'Email Selected', icon: 'Mail', onClick: handleBulkEmail }
+                            ]}
                             filterEmptyState={
                                 <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
                                     <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center mb-3">

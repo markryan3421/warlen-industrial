@@ -48,6 +48,7 @@ interface CustomTableProps {
     onView?: (row: TableRow) => void;
     onEdit?: (row: TableRow) => void;
     onRunPayroll?: (row: TableRow) => void;
+    onEmail?: (row: TableRow) => void; // new
     title?: string;
     toolbar?: React.ReactNode;
     filterEmptyState?: React.ReactNode;
@@ -169,6 +170,7 @@ function ActionDropdown({
     onEdit,
     onRestore,
     onRunPayroll,
+    onEmail, // new
     route,
 }: {
     row: TableRow;
@@ -178,6 +180,7 @@ function ActionDropdown({
     onEdit?: (r: TableRow) => void;
     onRestore?: (r: TableRow) => void;
     onRunPayroll?: (r: TableRow) => void;
+    onEmail?: (r: TableRow) => void; // new
     route: ReturnType<typeof useRoute>;
 }) {
     // Filter "Run Payroll" to only appear on rows with status "open"
@@ -187,9 +190,10 @@ function ActionDropdown({
     });
 
     const nonDestructive = visibleActions.filter(
-        a => a.label !== 'Delete' && a.label !== 'Restore' && a.label !== 'Run Payroll'
+        a => a.label !== 'Delete' && a.label !== 'Restore' && a.label !== 'Run Payroll' && a.label !== 'Email'
     );
     const runPayrollActions = visibleActions.filter(a => a.label === 'Run Payroll');
+    const emailActions = visibleActions.filter(a => a.label === 'Email');
     const destructive = visibleActions.filter(a => a.label === 'Delete');
     const restore = visibleActions.filter(a => a.label === 'Restore');
 
@@ -208,6 +212,8 @@ function ActionDropdown({
             onRestore?.(row);
         } else if (action.label === 'Run Payroll') {
             onRunPayroll?.(row);
+        } else if (action.label === 'Email') {
+            onEmail?.(row);
         } else if (action.route) {
             if (row.id !== undefined && row.id !== null) {
                 window.location.href = route(action.route, row.id);
@@ -246,7 +252,7 @@ function ActionDropdown({
                         );
                     })}
 
-                    {restore.length > 0 && (nonDestructive.length > 0 || runPayrollActions.length > 0) && (
+                    {restore.length > 0 && (nonDestructive.length > 0 || runPayrollActions.length > 0 || emailActions.length > 0) && (
                         <DropdownMenuSeparator className="my-1 border-slate-100 dark:border-slate-800" />
                     )}
 
@@ -266,7 +272,7 @@ function ActionDropdown({
                     })}
 
                     {/* Run Payroll — separated, styled distinctively */}
-                    {runPayrollActions.length > 0 && nonDestructive.length > 0 && (
+                    {runPayrollActions.length > 0 && (nonDestructive.length > 0 || emailActions.length > 0) && (
                         <DropdownMenuSeparator className="my-1 border-slate-100 dark:border-slate-800" />
                     )}
                     {runPayrollActions.map((action, i) => {
@@ -283,8 +289,26 @@ function ActionDropdown({
                         );
                     })}
 
+                    {/* Email actions — separate, styled distinctively */}
+                    {emailActions.length > 0 && (nonDestructive.length > 0 || runPayrollActions.length > 0) && (
+                        <DropdownMenuSeparator className="my-1 border-slate-100 dark:border-slate-800" />
+                    )}
+                    {emailActions.map((action, i) => {
+                        const Icon = LucidIcons[action.icon] as React.ElementType;
+                        return (
+                            <DropdownMenuItem
+                                key={i}
+                                onClick={() => handleAction(action)}
+                                className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/20 cursor-pointer transition-colors"
+                            >
+                                <Icon className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.75} />
+                                {action.label}
+                            </DropdownMenuItem>
+                        );
+                    })}
+
                     {/* Separator + destructive */}
-                    {destructive.length > 0 && (nonDestructive.length > 0 || restore.length > 0 || runPayrollActions.length > 0) && (
+                    {destructive.length > 0 && (nonDestructive.length > 0 || restore.length > 0 || runPayrollActions.length > 0 || emailActions.length > 0) && (
                         <DropdownMenuSeparator className="my-1 border-slate-100 dark:border-slate-800" />
                     )}
                     {destructive.map((action, i) => {
@@ -321,6 +345,7 @@ export const CustomTable = ({
     onView,
     onEdit,
     onRunPayroll,
+    onEmail, // new
     title,
     toolbar,
     filterEmptyState,
@@ -334,7 +359,7 @@ export const CustomTable = ({
     const route = useRoute();
     const dataColumns = columns.filter(col => !col.isAction);
     const hasActions = columns.some(col => col.isAction);
-    const actionProps = { actions, onDelete, onView, onEdit, onRestore, onRunPayroll, route };
+    const actionProps = { actions, onDelete, onView, onEdit, onRestore, onRunPayroll, onEmail, route };
 
     const handleSelectAll = (checked: boolean) => {
         if (!onSelectChange) return;
@@ -680,7 +705,7 @@ export const CustomTable = ({
 
                 {/* Bulk Action Bar */}
                 {selectable && hasSelected && (
-                    <div className="">
+                    <div className="px-5 py-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/50 flex flex-wrap gap-2">
                         {bulkActions.map((action, idx) => {
                             const Icon = LucidIcons[action.icon] as React.ElementType;
                             return (

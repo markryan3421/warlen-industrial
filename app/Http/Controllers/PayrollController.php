@@ -8,6 +8,10 @@ use App\Traits\HasPaginatedIndex;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
+use App\Mail\PayrollSummaryMail;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 
 class PayrollController extends Controller
 {
@@ -47,42 +51,10 @@ class PayrollController extends Controller
             'activeEmployee' => $this->payrollService->getActiveEmployeesInPayroll($payrollsCollection),
         ];
 
-        // Transform payrolls to include employee avatar AND payroll_items
-        $transformedPayrolls = $payrollsCollection->map(function ($payroll) {
-            return [
-                'id' => $payroll->id,
-                'payroll_period_id' => $payroll->payroll_period_id,
-                'employee_id' => $payroll->employee_id,
-                'gross_pay' => $payroll->gross_pay,
-                'total_deduction' => $payroll->total_deduction,
-                'net_pay' => $payroll->net_pay,
-                'payroll_items' => $payroll->payrollItems->map(function ($item) {
-                    return [
-                        'id' => $item->id,
-                        'type' => $item->type,
-                        'code' => $item->code,
-                        'description' => $item->description,
-                        'amount' => $item->amount,
-                    ];
-                }),
-                'payroll_period' => $payroll->payroll_period,
-                'employee' => $payroll->employee ? [
-                    'id' => $payroll->employee->id,
-                    'emp_code' => $payroll->employee->emp_code,
-                    'avatar' => $payroll->employee->avatar,
-                    'user' => $payroll->employee->user,
-                    'position' => $payroll->employee->position,
-                    'branch' => $payroll->employee->branch,
-                    'site' => $payroll->employee->site,
-                    'pay_frequency' => $payroll->employee->pay_frequency,
-                ] : null,
-                'created_at' => $payroll->created_at,
-                'updated_at' => $payroll->updated_at,
-            ];
-        });
+       // dd($payrolls->perPage());
 
         return Inertia::render('payrolls/index', [
-            'payrolls' => $transformedPayrolls,
+            'payrolls' => $payrolls->items(),
             'pagination' => [
                 'current_page' => $payrolls->currentPage(),
                 'last_page' => $payrolls->lastPage(),
@@ -199,5 +171,83 @@ class PayrollController extends Controller
     public function destroy(Payroll $payroll)
     {
         //
+    }
+
+public function emailPayroll(Payroll $payroll): JsonResponse
+{
+    try {
+        // Force load all required relationships
+        $payroll->loadMissing([
+            'employee.user', 
+            'payrollPeriod', 
+            'payrollItems',
+            'employee.position'
+        ]);
+
+        // TEMPORARILY COMMENT OUT AUTHORIZATION FOR TESTING
+        // Gate::authorize('view', $payroll);
+
+        $email = $payroll->employee?->user?->email;
+        if (!$email) {
+            Log::warning('No email address for payroll', ['payroll_id' => $payroll->id]);
+            return response()->json(['message' => 'Employee has no email address.'], 422);
+        }
+
+        Mail::to($email)->send(new PayrollSummaryMail($payroll));
+
+        Log::info('Payroll email sent', ['payroll_id' => $payroll->id, 'email' => $email]);
+        return response()->json(['message' => 'Payroll summary sent successfully.']);
+
+    } catch (\Exception $e) {
+        Log::error('Email sending failed', [
+            'payroll_id' => $payroll->id,
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+
+        return response()->json([
+            'message' => 'Failed to send email: ' . $e->getMessage()
+        ], 500);
+    }
+}
+    public function bulkEmail(Request $request): JsonResponse
+    {
+        $ids = $request->input('ids', []);
+        if (empty($ids)) {
+            return response()->json(['message' => 'No payroll IDs provided.'], 422);
+        }
+
+        $payrolls = Payroll::with(['employee.user', 'employee.position', 'payrollPeriod', 'payrollItems'])
+            ->whereIn('id', $ids)
+            ->get();
+
+        $success = 0;
+        $failures = 0;
+        $errors = [];
+
+        foreach ($payrolls as $payroll) {
+            $email = $payroll->employee?->user?->email;
+            if (!$email) {
+                $failures++;
+                $errors[] = "Payroll #{$payroll->id}: no email address";
+                continue;
+            }
+
+            try {
+                Mail::to($email)->send(new PayrollSummaryMail($payroll));
+                $success++;
+            } catch (\Exception $e) {
+                $failures++;
+                $errors[] = "Payroll #{$payroll->id}: " . $e->getMessage();
+                Log::error("Bulk email failed for payroll {$payroll->id}: " . $e->getMessage());
+            }
+        }
+
+        return response()->json([
+            'message' => "Emails sent: {$success}, failed: {$failures}.",
+            'success' => $success,
+            'failures' => $failures,
+            'errors' => config('app.debug') ? $errors : null,
+        ]);
     }
 }

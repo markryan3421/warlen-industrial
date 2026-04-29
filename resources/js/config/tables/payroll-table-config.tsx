@@ -1,4 +1,4 @@
-import { Eye } from 'lucide-react';
+// config/tables/payroll-table-config.ts
 
 export interface PayrollTableRow {
     id: number;
@@ -18,7 +18,7 @@ export interface PayrollTableRow {
     _original: any;
 }
 
-// Function to format date to short month (e.g., "Jan 15, 2024")
+// Helper: format date to short month (e.g., "Jan 15, 2024")
 const formatDateToShortMonth = (dateString: string): string => {
     if (!dateString) return 'N/A';
     try {
@@ -27,67 +27,18 @@ const formatDateToShortMonth = (dateString: string): string => {
         return date.toLocaleDateString('en-US', {
             month: 'short',
             day: 'numeric',
-            year: 'numeric'
+            year: 'numeric',
         });
-    } catch (error) {
+    } catch {
         return 'N/A';
     }
 };
 
-// Function to format date to just month and year (e.g., "Jan 2024")
-const formatDateToMonthYear = (dateString: string): string => {
-    if (!dateString) return 'N/A';
-    try {
-        const date = new Date(dateString);
-        if (isNaN(date.getTime())) return 'N/A';
-        return date.toLocaleDateString('en-US', {
-            month: 'short',
-            year: 'numeric'
-        });
-    } catch (error) {
-        return 'N/A';
-    }
-};
-
-// Helper function to get avatar URL
+// Helper: get avatar URL
 const getAvatarUrl = (avatar: string | null | undefined): string | null => {
     if (!avatar) return null;
-    if (avatar.startsWith('/storage/') || avatar.startsWith('http')) {
-        return avatar;
-    }
+    if (avatar.startsWith('/storage/') || avatar.startsWith('http')) return avatar;
     return `/storage/${avatar}`;
-};
-
-// Function to format date range with short months
-const formatDateRange = (startDate: string, endDate: string): string => {
-    const start = formatDateToShortMonth(startDate);
-    const end = formatDateToShortMonth(endDate);
-    return `${start} - ${end}`;
-};
-
-// Function to format date range with compact view (just months)
-const formatDateRangeCompact = (startDate: string, endDate: string): string => {
-    if (!startDate || !endDate) return 'N/A';
-    try {
-        const start = new Date(startDate);
-        const end = new Date(endDate);
-        if (isNaN(start.getTime()) || isNaN(end.getTime())) return 'N/A';
-
-        const startMonth = start.toLocaleDateString('en-US', { month: 'short' });
-        const endMonth = end.toLocaleDateString('en-US', { month: 'short' });
-        const startYear = start.getFullYear();
-        const endYear = end.getFullYear();
-
-        if (startYear === endYear && startMonth === endMonth) {
-            return `${startMonth} ${startYear}`;
-        } else if (startYear === endYear) {
-            return `${startMonth} - ${endMonth} ${startYear}`;
-        } else {
-            return `${startMonth} ${startYear} - ${endMonth} ${endYear}`;
-        }
-    } catch (error) {
-        return 'N/A';
-    }
 };
 
 export const getPayrollTableColumns = (formatCurrency: (amount: number) => string) => [
@@ -96,16 +47,13 @@ export const getPayrollTableColumns = (formatCurrency: (amount: number) => strin
         key: 'employee_avatar',
         render: (row: PayrollTableRow) => {
             const avatarUrl = getAvatarUrl(row.employee_avatar);
-            console.log('Avatar URL:', avatarUrl); // Debug log
             return avatarUrl ? (
                 <img
                     src={avatarUrl}
                     alt={row.employee_name}
                     className="w-10 h-10 rounded-full object-cover flex justify-center items-center"
                     onError={(e) => {
-                        console.error('Failed to load avatar:', avatarUrl);
                         (e.target as HTMLImageElement).style.display = 'none';
-                        // Show fallback when image fails to load
                         const parent = (e.target as HTMLImageElement).parentElement;
                         if (parent) {
                             const fallback = document.createElement('div');
@@ -138,29 +86,17 @@ export const getPayrollTableColumns = (formatCurrency: (amount: number) => strin
     {
         label: 'BRANCH',
         key: 'branch_name',
-        render: (row: PayrollTableRow) => (
-            <div className="flex items-center gap-1">
-                <span className="text-sm">{row.branch_name || 'N/A'}</span>
-            </div>
-        ),
+        render: (row: PayrollTableRow) => <span className="text-sm">{row.branch_name || 'N/A'}</span>,
     },
     {
         label: 'SITE',
         key: 'site_name',
-        render: (row: PayrollTableRow) => (
-            <div className="flex items-center gap-1">
-                <span className="text-sm">{row.site_name || 'N/A'}</span>
-            </div>
-        ),
+        render: (row: PayrollTableRow) => <span className="text-sm">{row.site_name || 'N/A'}</span>,
     },
     {
         label: 'POSITION',
         key: 'position_name',
-        render: (row: PayrollTableRow) => (
-            <div className="flex items-center gap-1">
-                <span className="text-sm">{row.position_name}</span>
-            </div>
-        ),
+        render: (row: PayrollTableRow) => <span className="text-sm">{row.position_name}</span>,
     },
     {
         label: 'FREQUENCY',
@@ -195,27 +131,36 @@ export const getPayrollTableColumns = (formatCurrency: (amount: number) => strin
     },
 ];
 
-export const getPayrollTableActions = (handleViewPayroll: (row: PayrollTableRow) => void) => [
+export const getPayrollTableActions = (
+    handleViewPayroll: (row: PayrollTableRow) => void,
+    handleEmailPayroll: (row: PayrollTableRow) => void
+) => [
     {
         label: 'View',
         icon: 'Eye',
         onClick: (row: PayrollTableRow) => handleViewPayroll(row),
     },
+    {
+        label: 'Email',
+        icon: 'Mail',
+        onClick: (row: PayrollTableRow) => handleEmailPayroll(row),
+    },
 ];
 
-export const getSkeletonColumns = () => [
-    'EMPLOYEE',
-    'BRANCH',
-    'SITE',
-    'PERIOD',
-    'POSITION',
-    'FREQUENCY',
-    'GROSS PAY',
-    'DEDUCTIONS',
-    'NET PAY',
-    'ACTIONS',
-].map(label => ({
-    label,
-    key: label.toLowerCase().replace(/\s+/g, '_'),
-    className: ''
-}));
+export const getSkeletonColumns = () =>
+    [
+        'EMPLOYEE',
+        'BRANCH',
+        'SITE',
+        'PERIOD',
+        'POSITION',
+        'FREQUENCY',
+        'GROSS PAY',
+        'DEDUCTIONS',
+        'NET PAY',
+        'ACTIONS',
+    ].map((label) => ({
+        label,
+        key: label.toLowerCase().replace(/\s+/g, '_'),
+        className: '',
+    }));
