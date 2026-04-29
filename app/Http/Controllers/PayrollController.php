@@ -51,7 +51,7 @@ class PayrollController extends Controller
             'activeEmployee' => $this->payrollService->getActiveEmployeesInPayroll($payrollsCollection),
         ];
 
-        // dd($payrolls->perPage());
+       // dd($payrolls->perPage());
 
         return Inertia::render('payrolls/index', [
             'payrolls' => $payrolls->items(),
@@ -173,80 +173,89 @@ class PayrollController extends Controller
         //
     }
 
-    public function emailPayroll(Payroll $payroll): JsonResponse
-    {
-        try {
-            // Force load all required relationships
-            $payroll->loadMissing([
-                'employee.user',
-                'payrollPeriod',
-                'payrollItems',
-                'employee.position'
-            ]);
+public function emailPayroll(Payroll $payroll): JsonResponse
+{
+    try {
+        // Force load all required relationships
+        $payroll->loadMissing([
+            'employee.user', 
+            'payrollPeriod', 
+            'payrollItems',
+            'employee.position'
+        ]);
 
-            // TEMPORARILY COMMENT OUT AUTHORIZATION FOR TESTING
-            // Gate::authorize('view', $payroll);
+        // TEMPORARILY COMMENT OUT AUTHORIZATION FOR TESTING
+        // Gate::authorize('view', $payroll);
 
-            $email = $payroll->employee?->user?->email;
-            if (!$email) {
-                Log::warning('No email address for payroll', ['payroll_id' => $payroll->id]);
-                return response()->json(['message' => 'Employee has no email address.'], 422);
-            }
-
-            Mail::to($email)->send(new PayrollSummaryMail($payroll));
-
-            Log::info('Payroll email sent', ['payroll_id' => $payroll->id, 'email' => $email]);
-            return response()->json(['message' => 'Payroll summary sent successfully.']);
-        } catch (\Exception $e) {
-            Log::error('Email sending failed', [
-                'payroll_id' => $payroll->id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return response()->json([
-                'message' => 'Failed to send email: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-    public function bulkEmail(Request $request): JsonResponse
-    {
-        $ids = $request->input('ids', []);
-        if (empty($ids)) {
-            return response()->json(['message' => 'No payroll IDs provided.'], 422);
+        $email = $payroll->employee?->user?->email;
+        if (!$email) {
+            Log::warning('No email address for payroll', ['payroll_id' => $payroll->id]);
+            return response()->json(['message' => 'Employee has no email address.'], 422);
         }
 
-        $payrolls = Payroll::with(['employee.user', 'employee.position', 'payrollPeriod', 'payrollItems'])
-            ->whereIn('id', $ids)
-            ->get();
+        Mail::to($email)->send(new PayrollSummaryMail($payroll));
 
-        $success = 0;
-        $failures = 0;
-        $errors = [];
+        Log::info('Payroll email sent', ['payroll_id' => $payroll->id, 'email' => $email]);
+        return response()->json(['message' => 'Payroll summary sent successfully.']);
 
-        foreach ($payrolls as $payroll) {
-            $email = $payroll->employee?->user?->email;
-            if (!$email) {
-                $failures++;
-                $errors[] = "Payroll #{$payroll->id}: no email address";
-                continue;
-            }
-
-            try {
-                Mail::to($email)->send(new PayrollSummaryMail($payroll));
-                $success++;
-            } catch (\Exception $e) {
-                $failures++;
-                $errors[] = "Payroll #{$payroll->id}: " . $e->getMessage();
-                Log::error("Bulk email failed for payroll {$payroll->id}: " . $e->getMessage());
-            }
-        }
+    } catch (\Exception $e) {
+        Log::error('Email sending failed', [
+            'payroll_id' => $payroll->id,
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
 
         return response()->json([
-            'message' => "Emails sent: {$success}, failed: {$failures}.",
-            'success' => $success,
-            'failures' => $failures,
-            'errors' => config('app.debug') ? $errors : null,
-        ]);
+            'message' => 'Failed to send email: ' . $e->getMessage()
+        ], 500);
     }
+}
+public function bulkEmail(Request $request): JsonResponse
+{
+    $ids = $request->input('ids', []);
+    if (empty($ids)) {
+        return response()->json(['message' => 'No payroll IDs provided.'], 422);
+    }
+
+    // Fetch payrolls efficiently
+    $payrolls = Payroll::with(['employee.user', 'employee.position', 'payrollPeriod', 'payrollItems'])
+        ->whereIn('id', $ids)
+        ->get();
+
+    $success = 0;
+    $failures = 0;
+    $errors = [];
+
+    foreach ($payrolls as $index => $payroll) {
+        // Add delay before sending the FIRST email? Usually you want it AFTER each send.
+        // Here we add a delay before each email except the first one, to space them out.
+        if ($index > 0) {
+            sleep(10);  // 10 seconds delay between consecutive emails
+        }
+
+        // Safer email retrieval
+        $email = optional($payroll->employee?->user)->email;
+        if (blank($email)) {
+            $failures++;
+            $errors[] = "Payroll #{$payroll->id}: no email address";
+            continue;
+        }
+
+        try {
+            Mail::to($email)->send(new PayrollSummaryMail($payroll));
+            $success++;
+        } catch (\Exception $e) {
+            $failures++;
+            $errors[] = "Payroll #{$payroll->id}: " . $e->getMessage();
+            Log::error("Bulk email failed for payroll {$payroll->id}: " . $e->getMessage());
+        }
+    }
+
+    return response()->json([
+        'message' => "Emails sent: {$success}, failed: {$failures}.",
+        'success' => $success,
+        'failures' => $failures,
+        'errors' => config('app.debug') ? $errors : null,
+    ]);
+}
 }
