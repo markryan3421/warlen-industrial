@@ -75,19 +75,19 @@ export const generateSummaryHTML = (props: PayrollSummaryPrintProps) => {
                     }
                     earningsListHtml += `
                         <div style="display: flex; justify-content: space-between; padding: 2px 0; border-bottom: 1px dotted #e5e7eb;">
-                            <span style="font-size: 0.6rem;">${earningDesc}</span>
-                            <span style="font-size: 0.6rem;">${formatCurrency(amount)}</span>
+                            <span style="font-size: 0.75rem;">${earningDesc}</span>
+                            <span style="font-size: 0.75rem;">${formatCurrency(amount)}</span>
                         </div>
                     `;
                 });
             } else {
-                earningsListHtml = '<div style="display: flex; justify-content: space-between; padding: 2px 0;"><span style="font-size: 0.6rem;">No earnings data</span><span style="font-size: 0.6rem;">₱0.00</span></div>';
+                earningsListHtml = '<div style="display: flex; justify-content: space-between; padding: 2px 0;"><span style="font-size: 0.75rem;">No earnings data</span><span style="font-size: 0.75rem;">₱0.00</span></div>';
             }
 
             earningsListHtml += `
                 <div style="display: flex; justify-content: space-between; padding: 4px 0; margin-top: 4px; border-top: 1px solid #000; font-weight: 800;">
-                    <span style="font-size: 0.65rem;">TOTAL</span>
-                    <span style="font-size: 0.65rem;">${formatCurrency(totalEarningsAmount)}</span>
+                    <span style="font-size: 0.75rem;">TOTAL</span>
+                    <span style="font-size: 0.75rem; color: #059669;">${formatCurrency(totalEarningsAmount)}</span>
                 </div>
             `;
 
@@ -104,19 +104,19 @@ export const generateSummaryHTML = (props: PayrollSummaryPrintProps) => {
                     deductionDesc = deductionDesc.replace(/\bLATE\b/i, 'Late');
                     deductionsListHtml += `
                         <div style="display: flex; justify-content: space-between; padding: 2px 0; border-bottom: 1px dotted #e5e7eb;">
-                            <span style="font-size: 0.6rem;">${deductionDesc}</span>
-                            <span style="font-size: 0.6rem;">${formatCurrency(amount)}</span>
+                            <span style="font-size: 0.75rem;">${deductionDesc}</span>
+                            <span style="font-size: 0.75rem;">${formatCurrency(amount)}</span>
                         </div>
                     `;
                 });
             } else {
-                deductionsListHtml = '<div style="display: flex; justify-content: space-between; padding: 2px 0;"><span style="font-size: 0.6rem;">No deductions data</span><span style="font-size: 0.6rem;">₱0.00</span></div>';
+                deductionsListHtml = '<div style="display: flex; justify-content: space-between; padding: 2px 0;"><span style="font-size: 0.75rem;">No deductions data</span><span style="font-size: 0.75rem;">₱0.00</span></div>';
             }
 
             deductionsListHtml += `
                 <div style="display: flex; justify-content: space-between; padding: 4px 0; margin-top: 4px; border-top: 1px solid #000; font-weight: 800;">
-                    <span style="font-size: 0.65rem;">TOTAL</span>
-                    <span style="font-size: 0.65rem;">${formatCurrency(totalDeductionsAmount)}</span>
+                    <span style="font-size: 0.75rem;">TOTAL</span>
+                    <span style="font-size: 0.75rem; color: #dc2626;">${formatCurrency(totalDeductionsAmount)}</span>
                 </div>
             `;
 
@@ -124,19 +124,19 @@ export const generateSummaryHTML = (props: PayrollSummaryPrintProps) => {
                 <tr style="border-bottom: 1px solid #ccc;">
                     <td style="padding: 6px 4px; text-align: center; vertical-align: middle;">
                         ${avatarUrl ?
-                            `<img src="${avatarUrl}" style="width: 30px; height: 30px; border-radius: 50%; object-fit: cover; border: 1px solid #ddd;" onerror="this.style.display='none'; this.parentElement.innerHTML='<div style=\\'width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);display:inline-flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700;color:white;\\'>${initial}</div>'" />` :
+                            `<img src="${avatarUrl}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 1px solid #ddd;" onerror="this.style.display='none'; this.parentElement.innerHTML='<div style=\\'width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);display:inline-flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700;color:white;\\'>${initial}</div>'" />` :
                             `<div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);display:inline-flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700;color:white;">${initial}</div>`
                         }
                     </td>
                     <td style="padding: 6px 4px; vertical-align: middle;">
-                        <div style="font-weight: 600; font-size: 0.65rem;">${p.employee_name}</div>
-                        <div style="font-size: 0.5rem; color: #6b7280;">EMP-${p.emp_code}</div>
-                        <div style="font-size: 0.5rem; color: #6b7280;">${p.position_name}</div>
+                        <div style="font-weight: 600; font-size: 0.75rem; margin-left:13px;">${p.employee_name}</div>
+                        <div style="font-size: 0.65rem; color: #6b72800; margin-left:13px;">EMP-${p.emp_code}</div>
+                        <div style="font-size: 0.65rem; color: #6b7280; margin-left:13px;">${p.position_name}</div>
                     </td>
-                    <td style="padding: 6px 4px; vertical-align: middle; font-size: 0.55rem;">
+                    <td style="padding: 6px 4px; vertical-align: middle; font-size: 0.70rem; text-align:center;">
                         ${p.branch_name}
                     </td>
-                    <td style="padding: 6px 4px; vertical-align: middle; font-size: 0.55rem;">
+                    <td style="padding: 6px 4px; vertical-align: middle; text-align:center; font-size: 0.70rem;">
                        ${p.site_name}
                     </td>
                     <td style="padding: 6px 4px; vertical-align: top; width: 22%;">
@@ -145,9 +145,9 @@ export const generateSummaryHTML = (props: PayrollSummaryPrintProps) => {
                     <td style="padding: 6px 4px; vertical-align: top; width: 22%;">
                         ${deductionsListHtml}
                     </td>
-                    <td style="padding: 6px 4px; text-align: right; vertical-align: middle; color: #059669; font-weight: 600; font-size: 0.6rem;">${formatCurrency(p.gross_pay)}</td>
-                    <td style="padding: 6px 4px; text-align: right; vertical-align: middle; color: #dc2626; font-weight: 600; font-size: 0.6rem;">${formatCurrency(p.total_deduction)}</td>
-                    <td style="padding: 6px 4px; text-align: right; vertical-align: middle; color: #075985; font-weight: 800; font-size: 0.6rem;">${formatCurrency(p.net_pay)}</td>
+                    <td style="padding: 6px 4px; text-align: center; vertical-align: middle; color: #059669; font-weight: 600; font-size: 0.75rem;">${formatCurrency(p.gross_pay)}</td>
+                    <td style="padding: 6px 4px; text-align: center; vertical-align: middle; color: #dc2626; font-weight: 600; font-size: 0.75rem;">${formatCurrency(p.total_deduction)}</td>
+                    <td style="padding: 6px 4px; text-align: center; vertical-align: middle; color: #075985; font-weight: 800; font-size: 0.75rem;">${formatCurrency(p.net_pay)}</td>
                 </tr>
             `;
         });
@@ -178,24 +178,24 @@ export const generateSummaryHTML = (props: PayrollSummaryPrintProps) => {
                     padding-bottom: 6px;
                 }
                 .company-name {
-                    font-size: 1rem;
+                    font-size: 18px;
                     font-weight: 800;
                     text-transform: uppercase;
                     color: #05469D;
                 }
                 .deka-sales {
-                    font-size: 0.65rem;
+                    font-size: 0.85rem;
                     font-weight: 700;
                     color: #FD0C0B;
                 }
                 .specialty-contractor {
-                    font-size: 0.5rem;
+                    font-size: 0.70rem;
                     font-weight: 600;
                     text-transform: uppercase;
                     color: #555;
                 }
                 .report-title {
-                    font-size: 0.7rem;
+                    font-size: 0.75rem;
                     font-weight: 700;
                     margin-top: 6px;
                 }
@@ -210,6 +210,7 @@ export const generateSummaryHTML = (props: PayrollSummaryPrintProps) => {
                     display: flex;
                     justify-content: space-between;
                     margin-bottom: 3px;
+                    font-size:13px;
                 }
                 .summary-cards {
                     display: grid;
@@ -294,7 +295,7 @@ export const generateSummaryHTML = (props: PayrollSummaryPrintProps) => {
         <body>
             <div class="report-container">
                 <div class="company-header">
-                    <img src="/images/dekalogo.webp" alt="Deka Sales Logo" style="height: 40px; width: 40px; margin-bottom: 3px;" />
+                    <img src="/images/dekalogo.webp" alt="Deka Sales Logo" style="height: 60px; width: 60px; margin-bottom: 3px;" />
                     <div class="company-name">WARLEN INDUSTRIAL SALES CORPORATION</div>
                     <div class="deka-sales">DEKA SALES</div>
                     <div class="specialty-contractor">GENERAL ENGINEERING & SPECIALTY CONTRACTOR</div>
@@ -321,12 +322,12 @@ export const generateSummaryHTML = (props: PayrollSummaryPrintProps) => {
                 <table class="main-table">
                     <thead>
                         <tr>
-                            <th style="width: 5%">Profile</th>
+                            <th style="width: 11%">Profile</th>
                             <th style="width: 12%">Employee</th>
                             <th style="width: 6%">Branch</th>
                             <th style="width: 6%">Site</th>
-                            <th style="width: 28%">Earnings</th>
-                            <th style="width: 28%">Deductions</th>
+                            <th style="width: 25%">Earnings</th>
+                            <th style="width: 25%">Deductions</th>
                             <th style="width: 5%">Gross Pay</th>
                             <th style="width: 5%">Deductions</th>
                             <th style="width: 5%">Net Pay</th>
@@ -336,10 +337,10 @@ export const generateSummaryHTML = (props: PayrollSummaryPrintProps) => {
                         ${tableRowsHtml}
                         <tr class="grand-total-row">
                             <td colspan="4" style="text-align: right; font-weight: 800; font-size: 0.7rem;">GRAND TOTAL</td>
-                            <td style="text-align: right; font-weight: 800;">${formatCurrency(safeTotalGrossPay)}</td>
-                            <td style="text-align: right; font-weight: 800;">${formatCurrency(safeTotalDeductions)}</td>
-                            <td style="text-align: right; font-weight: 800;">${formatCurrency(safeTotalGrossPay)}</td>
-                            <td style="text-align: right; font-weight: 800;">${formatCurrency(safeTotalDeductions)}</td>
+                            <td style="text-align: right; font-weight: 800; color: #059669;">${formatCurrency(safeTotalGrossPay)}</td>
+                            <td style="text-align: right; font-weight: 800; color: #dc2626;">${formatCurrency(safeTotalDeductions)}</td>
+                            <td style="text-align: right; font-weight: 800; color: #059669;">${formatCurrency(safeTotalGrossPay)}</td>
+                            <td style="text-align: right; font-weight: 800; color: #dc2626;">${formatCurrency(safeTotalDeductions)}</td>
                             <td style="text-align: right; font-weight: 800; color: #075985;">${formatCurrency(safeTotalNetPay)}</td>
                         </tr>
                     </tbody>
