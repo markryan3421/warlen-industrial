@@ -639,9 +639,9 @@ export default function Index({
                 searchPlaceholder="Search by name or employee code..."
                 dateLabel="Payroll Period"
             />
-            <Button onClick={handlePrintSummary} variant="outline" className="ml-4">
+            <Button onClick={handlePrintSummary} variant="outline" className="ml-4 cursor-pointer text-slate-600 hover:border-blue-700 hover:border-0.2  hover:text-blue-800">
                 <Printer className="h-4 w-4 mr-2" />
-                Print Summary
+                Print Summary Report
             </Button>
         </div>
     );

@@ -92,7 +92,7 @@ const formatDateRangeCompact = (startDate: string, endDate: string): string => {
 
 export const getPayrollTableColumns = (formatCurrency: (amount: number) => string) => [
     {
-        label: 'AVATAR',
+        label: 'PROFILE',
         key: 'employee_avatar',
         render: (row: PayrollTableRow) => {
             const avatarUrl = getAvatarUrl(row.employee_avatar);
@@ -101,7 +101,7 @@ export const getPayrollTableColumns = (formatCurrency: (amount: number) => strin
                 <img
                     src={avatarUrl}
                     alt={row.employee_name}
-                    className="w-8 h-8 rounded-full object-cover"
+                    className="w-10 h-10 rounded-full object-cover flex justify-center items-center"
                     onError={(e) => {
                         console.error('Failed to load avatar:', avatarUrl);
                         (e.target as HTMLImageElement).style.display = 'none';
@@ -109,16 +109,16 @@ export const getPayrollTableColumns = (formatCurrency: (amount: number) => strin
                         const parent = (e.target as HTMLImageElement).parentElement;
                         if (parent) {
                             const fallback = document.createElement('div');
-                            fallback.className = 'w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center';
-                            fallback.innerHTML = `<span class="text-xs font-medium text-gray-600">${row.employee_name?.charAt(0).toUpperCase() || '?'}</span>`;
+                            fallback.className = 'w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center';
+                            fallback.innerHTML = `<span class="text-xs font-medium text-blue-600">${row.employee_name?.charAt(0).toUpperCase() || '?'}</span>`;
                             (e.target as HTMLImageElement).style.display = 'none';
                             parent.appendChild(fallback);
                         }
                     }}
                 />
             ) : (
-                <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-                    <span className="text-xs font-medium text-gray-600">
+                <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                    <span className="text-xs font-medium text-blue-900">
                         {row.employee_name?.charAt(0).toUpperCase() || '?'}
                     </span>
                 </div>
