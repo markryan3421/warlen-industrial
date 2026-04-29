@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\EmailSummary;
 use App\Models\Payroll;
 use App\Services\PayrollService;
 use App\Traits\HasPaginatedIndex;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
 
 class PayrollController extends Controller
@@ -167,5 +169,30 @@ class PayrollController extends Controller
     public function destroy(Payroll $payroll)
     {
         //
+    }
+
+    public function emailSummary(Request $request)
+    {
+        Gate::authorize('viewAny', Payroll::class);
+
+        // Get the filtered query (reuse service method)
+        $query = $this->payrollService->getFilteredPayrollsQuery($request);
+
+        // Calculate totals directly from the query (fast, no eager loading of items)
+        $totals = [
+            'totalGrossPay'      => (float) $query->sum('gross_pay'),
+            'totalDeductions'    => (float) $query->sum('total_deduction'),
+            'totalNetPay'        => (float) $query->sum('net_pay'),
+            'totalOvertimePay'   => (float) $query->sum('overtime_pay') ?? 0,    // adjust if column name differs
+            'totalOvertimeHours' => (float) $query->sum('overtime_hours') ?? 0,  // adjust if needed
+            'activeEmployee'     => (int) $query->distinct('employee_id')->count('employee_id'),
+            'filteredCount'      => (int) $query->count(),
+        ];
+
+        // Send email to the authenticated user
+        $user = $request->user();
+        Mail::to($user->email)->send(new EmailSummary($totals, $request->all()));
+
+        return response()->json(['message' => 'Summary email sent successfully.']);
     }
 }

@@ -50,6 +50,7 @@ Route::get('/', function () {
 	//Inertia::clearHistory();
 	return Inertia::render('auth/login');
 })->name('home')->middleware(HomeMiddleware::class);
+Route::post('/payrolls/email-summary', [PayrollController::class, 'emailSummary'])->name('payrolls.email-summary');
 
 Route::middleware(['auth', 'admin', 'auth.session', 'throttle:limit-actions', CapPerpageMiddleware::class.':100'])->group(function () {
 
