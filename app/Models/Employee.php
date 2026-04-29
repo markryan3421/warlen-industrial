@@ -67,6 +67,7 @@ class Employee extends Model
         'philhealth_number' => 'encrypted',
     ];
 
+
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
