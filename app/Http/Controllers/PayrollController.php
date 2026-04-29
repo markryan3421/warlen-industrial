@@ -51,7 +51,7 @@ class PayrollController extends Controller
             'activeEmployee' => $this->payrollService->getActiveEmployeesInPayroll($payrollsCollection),
         ];
 
-       // dd($payrolls->perPage());
+        // dd($payrolls->perPage());
 
         return Inertia::render('payrolls/index', [
             'payrolls' => $payrolls->items(),
@@ -173,43 +173,42 @@ class PayrollController extends Controller
         //
     }
 
-public function emailPayroll(Payroll $payroll): JsonResponse
-{
-    try {
-        // Force load all required relationships
-        $payroll->loadMissing([
-            'employee.user', 
-            'payrollPeriod', 
-            'payrollItems',
-            'employee.position'
-        ]);
+    public function emailPayroll(Payroll $payroll): JsonResponse
+    {
+        try {
+            // Force load all required relationships
+            $payroll->loadMissing([
+                'employee.user',
+                'payrollPeriod',
+                'payrollItems',
+                'employee.position'
+            ]);
 
-        // TEMPORARILY COMMENT OUT AUTHORIZATION FOR TESTING
-        // Gate::authorize('view', $payroll);
+            // TEMPORARILY COMMENT OUT AUTHORIZATION FOR TESTING
+            // Gate::authorize('view', $payroll);
 
-        $email = $payroll->employee?->user?->email;
-        if (!$email) {
-            Log::warning('No email address for payroll', ['payroll_id' => $payroll->id]);
-            return response()->json(['message' => 'Employee has no email address.'], 422);
+            $email = $payroll->employee?->user?->email;
+            if (!$email) {
+                Log::warning('No email address for payroll', ['payroll_id' => $payroll->id]);
+                return response()->json(['message' => 'Employee has no email address.'], 422);
+            }
+
+            Mail::to($email)->send(new PayrollSummaryMail($payroll));
+
+            Log::info('Payroll email sent', ['payroll_id' => $payroll->id, 'email' => $email]);
+            return response()->json(['message' => 'Payroll summary sent successfully.']);
+        } catch (\Exception $e) {
+            Log::error('Email sending failed', [
+                'payroll_id' => $payroll->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'message' => 'Failed to send email: ' . $e->getMessage()
+            ], 500);
         }
-
-        Mail::to($email)->send(new PayrollSummaryMail($payroll));
-
-        Log::info('Payroll email sent', ['payroll_id' => $payroll->id, 'email' => $email]);
-        return response()->json(['message' => 'Payroll summary sent successfully.']);
-
-    } catch (\Exception $e) {
-        Log::error('Email sending failed', [
-            'payroll_id' => $payroll->id,
-            'error' => $e->getMessage(),
-            'trace' => $e->getTraceAsString()
-        ]);
-
-        return response()->json([
-            'message' => 'Failed to send email: ' . $e->getMessage()
-        ], 500);
     }
-}
     public function bulkEmail(Request $request): JsonResponse
     {
         $ids = $request->input('ids', []);
