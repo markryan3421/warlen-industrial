@@ -3,6 +3,7 @@ import { Eye } from 'lucide-react';
 export interface PayrollTableRow {
     id: number;
     employee_name: string;
+    employee_avatar?: string | null;
     emp_code: string;
     branch_name: string;
     site_name: string;
@@ -48,6 +49,15 @@ const formatDateToMonthYear = (dateString: string): string => {
     }
 };
 
+// Helper function to get avatar URL
+const getAvatarUrl = (avatar: string | null | undefined): string | null => {
+    if (!avatar) return null;
+    if (avatar.startsWith('/storage/') || avatar.startsWith('http')) {
+        return avatar;
+    }
+    return `/storage/${avatar}`;
+};
+
 // Function to format date range with short months
 const formatDateRange = (startDate: string, endDate: string): string => {
     const start = formatDateToShortMonth(startDate);
@@ -82,36 +92,41 @@ const formatDateRangeCompact = (startDate: string, endDate: string): string => {
 
 export const getPayrollTableColumns = (formatCurrency: (amount: number) => string) => [
     {
-        label: 'Profile',
-        key: 'avatar',
-        className: 'p-4 align-items-center',
-        // Use a custom render instead of isImage to control the URL
-        render: (row: any) => {
-            if (!row.avatar) {
-                // Fallback placeholder
-                return (
-                    <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                        </svg>
-                    </div>
-                );
-            }
-            // If avatar is already a full URL, use it; otherwise prepend storage path
-            const avatarUrl = row.avatar.startsWith('http')
-                ? row.avatar
-                : `/storage/${row.avatar}`;
-            return (
+        label: 'AVATAR',
+        key: 'employee_avatar',
+        render: (row: PayrollTableRow) => {
+            const avatarUrl = getAvatarUrl(row.employee_avatar);
+            console.log('Avatar URL:', avatarUrl); // Debug log
+            return avatarUrl ? (
                 <img
                     src={avatarUrl}
-                    alt="Avatar"
-                    className="w-10 h-10 rounded-full object-cover border border-slate-200"
+                    alt={row.employee_name}
+                    className="w-8 h-8 rounded-full object-cover"
+                    onError={(e) => {
+                        console.error('Failed to load avatar:', avatarUrl);
+                        (e.target as HTMLImageElement).style.display = 'none';
+                        // Show fallback when image fails to load
+                        const parent = (e.target as HTMLImageElement).parentElement;
+                        if (parent) {
+                            const fallback = document.createElement('div');
+                            fallback.className = 'w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center';
+                            fallback.innerHTML = `<span class="text-xs font-medium text-gray-600">${row.employee_name?.charAt(0).toUpperCase() || '?'}</span>`;
+                            (e.target as HTMLImageElement).style.display = 'none';
+                            parent.appendChild(fallback);
+                        }
+                    }}
                 />
+            ) : (
+                <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+                    <span className="text-xs font-medium text-gray-600">
+                        {row.employee_name?.charAt(0).toUpperCase() || '?'}
+                    </span>
+                </div>
             );
-        }
+        },
     },
     {
-        label: 'EMPLOYEE',
+        label: 'EMPLOYEE NAME',
         key: 'employee_name',
         render: (row: PayrollTableRow) => (
             <div className="flex flex-col">

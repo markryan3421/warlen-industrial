@@ -349,7 +349,7 @@ export default function PayrollPrintLayout({ isOpen, onClose, payrollId, fetchUr
                     <img src="/images/dekalogo.webp" alt="Deka Sales Logo" style="height: 50px; width = 50px; margin-bottom: 4px;" />
                     <div style="font-size: 1rem; color: #05469D; font-weight: 800; text-transform: uppercase;">WARLEN INDUSTRIAL SALES CORPORATION</div>
                     <div style="font-size: 0.7rem; font-weight: 700; color: #FD0C0B; margin-top: 2px;">DEKA SALES</div>
-                    <div style="font-size: 0.5rem; font-weight: 600; text-transform: uppercase; color: #555;">SPECIALTY CONTRACTOR</div>
+                    <div style="font-size: 0.5rem; font-weight: 600; text-transform: uppercase; color: #555;">GENERAL ENGINEERING & SPECIALTY CONTRACTOR</div>
                 </div>
 
                 <div style="margin: 10px 0;">

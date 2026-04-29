@@ -1,15 +1,16 @@
-import { Head, useForm, router } from '@inertiajs/react';
+import { Head, useForm, router, usePage } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import type { BreadcrumbItem } from '@/types';
-import { X, Bell, Search } from 'lucide-react';
+import { X, Bell, Search, Printer } from 'lucide-react';
 import PayrollProcessingCards from '@/components/payroll-processing-cards';
 import { CustomTable } from '@/components/custom-table';
 import { CustomPagination } from '@/components/custom-pagination';
 import { toast } from 'sonner';
 import { TableSkeleton } from '@/components/table-skeleton';
 import PayrollPrintLayout from '@/components/payroll-print-layout';
+import { generateSummaryHTML, printPayrollSummary } from '@/components/payroll-summary-print';
 import { EmployeeFilterBar } from '@/components/employee/employee-filter-bar';
 import { format, parseISO, isValid } from 'date-fns';
 import {
@@ -106,6 +107,10 @@ export default function Index({
 }: PageProps) {
     const { delete: destroy } = useForm();
     console.log("payrolls", payrolls);
+
+    const { auth } = usePage().props;
+    const currentUser = auth?.user as { id: number; name: string; email: string; role?: string };
+    const authorizedByName = currentUser?.name || 'System Administrator';
 
     // ── UI state ──────────────────────────────────────────────────────────────
     const [notification, setNotification] = useState<{ message: string; timestamp: string } | null>(null);
@@ -383,6 +388,7 @@ export default function Index({
         employee_name: p.employee?.user.name ?? 'Unknown Employee',
         position_name: p.employee?.position?.pos_name ?? 'No Position',
         branch_name: p.employee?.branch?.branch_name ?? 'No Branch',
+        employee_avatar: p.employee?.avatar ?? null,
         site_name: p.employee?.site?.site_name ?? p.employee?.branch?.sites?.[0]?.site_name ?? 'No Site',
         pay_frequency: p.employee?.pay_frequency ?? 'N/A',
         gross_pay: p.gross_pay ?? 0,
@@ -449,6 +455,151 @@ export default function Index({
         });
     }, [destroy, applyFilters]);
 
+    const handlePrintSummary = useCallback(() => {
+        // Prepare full payroll data with earnings and deductions from payroll_items
+        const summaryPayrolls = filteredPayrollTableData.map(p => {
+            const originalPayroll = payrolls.find(pr => pr.id === p.id);
+            // Extract earnings and deductions from payroll_items
+            const earnings = originalPayroll?.payroll_items
+                ?.filter(item => item.type === 'earning')
+                .map(item => ({
+                    description: item.description || item.code,
+                    amount: Number(item.amount) || 0
+                })) || [];
+
+            const deductions = originalPayroll?.payroll_items
+                ?.filter(item => item.type === 'deduction')
+                .map(item => ({
+                    description: item.description || item.code,
+                    amount: Number(item.amount) || 0
+                })) || [];
+
+            return {
+                id: p.id,
+                employee_name: p.employee_name,
+                emp_code: p.emp_code,
+                employee_avatar: p.employee_avatar,
+                position_name: p.position_name,
+                branch_name: p.branch_name,
+                site_name: p.site_name,
+                period_name: p.period_name,
+                period_start: p.period_start,
+                period_end: p.period_end,
+                pay_frequency: p.pay_frequency,
+                gross_pay: Number(p.gross_pay) || 0,
+                total_deduction: Number(p.total_deduction) || 0,
+                net_pay: Number(p.net_pay) || 0,
+                earnings: earnings,
+                deductions: deductions,
+            };
+        });
+
+        // Calculate totals - ensure all values are numbers
+        let totalGrossPay = 0;
+        let totalDeductions = 0;
+        let totalNetPay = 0;
+        let totalOvertimePay = 0;
+        let totalOvertimeHours = 0;
+        let totalHolidayOvertimePay = 0;
+        let totalIncentives = 0;
+        let totalContributions = 0;
+        let totalOtherDeductions = 0;
+        let totalLateDeduction = 0;
+
+        summaryPayrolls.forEach(p => {
+            // Add to main totals - ensure numbers
+            totalGrossPay += Number(p.gross_pay) || 0;
+            totalDeductions += Number(p.total_deduction) || 0;
+            totalNetPay += Number(p.net_pay) || 0;
+
+            // Calculate earnings breakdown
+            if (p.earnings && Array.isArray(p.earnings)) {
+                p.earnings.forEach((e: any) => {
+                    const desc = String(e.description || '').toLowerCase();
+                    const amount = Number(e.amount) || 0;
+                    if (desc.includes('overtime')) {
+                        if (desc.includes('holiday')) {
+                            totalHolidayOvertimePay += amount;
+                        } else {
+                            totalOvertimePay += amount;
+                        }
+                    } else if (desc.includes('incentive')) {
+                        totalIncentives += amount;
+                    }
+                });
+            }
+
+            // Calculate deductions breakdown
+            if (p.deductions && Array.isArray(p.deductions)) {
+                p.deductions.forEach((d: any) => {
+                    const desc = String(d.description || '').toLowerCase();
+                    const amount = Number(d.amount) || 0;
+                    if (desc.includes('sss') || desc.includes('philhealth') || desc.includes('pag-ibig') || desc.includes('pagibig') || desc.includes('contribution')) {
+                        totalContributions += amount;
+                    } else if (desc.includes('late')) {
+                        totalLateDeduction += amount;
+                    } else {
+                        totalOtherDeductions += amount;
+                    }
+                });
+            }
+        });
+
+        // Debug logs
+        console.log('=== DEBUG TOTALS ===');
+        console.log('totalGrossPay:', totalGrossPay);
+        console.log('totalDeductions:', totalDeductions);
+        console.log('totalNetPay:', totalNetPay);
+        console.log('totalOvertimePay:', totalOvertimePay);
+        console.log('totalIncentives:', totalIncentives);
+        console.log('totalContributions:', totalContributions);
+        console.log('totalOtherDeductions:', totalOtherDeductions);
+        console.log('totalLateDeduction:', totalLateDeduction);
+        console.log('summaryPayrolls length:', summaryPayrolls.length);
+
+        const dateRange = dateFrom && dateTo
+            ? `${format(dateFrom, 'MMMM d, yyyy')} – ${format(dateTo, 'MMMM d, yyyy')}`
+            : 'All Periods';
+
+        const filterText = [];
+        if (searchTerm) filterText.push(`Search: ${searchTerm}`);
+        if (selectedPositions.length) filterText.push(`Positions: ${selectedPositions.join(', ')}`);
+        if (selectedBranches.length) filterText.push(`Branches: ${selectedBranches.join(', ')}`);
+        if (selectedSites.length) filterText.push(`Sites: ${selectedSites.join(', ')}`);
+
+        const locationFilter = selectedBranches[0] || selectedSites[0]
+            ? `Branch: ${selectedBranches[0] || 'All'} | Site: ${selectedSites[0] || 'All'}`
+            : '';
+
+        // Generate HTML and print
+        const htmlContent = generateSummaryHTML({
+            summaryPayrolls,
+            totalGrossPay,
+            totalDeductions,
+            totalNetPay,
+            totalOvertimePay,
+            totalOvertimeHours,
+            totalHolidayOvertimePay,
+            totalIncentives,
+            totalContributions,
+            totalOtherDeductions,
+            totalLateDeduction,
+            dateRange,
+            filterText,
+            locationFilter,
+            formatCurrency,
+            authorizedByName
+        });
+
+        printPayrollSummary(htmlContent);
+    }, [filteredPayrollTableData, payrolls, searchTerm, selectedPositions, selectedBranches, selectedSites, dateFrom, dateTo, formatCurrency, authorizedByName]);
+
+    // Helper function to format date for display
+    const formatDateDisplay = (date: Date | undefined) => {
+        if (!date) return '';
+        return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    };
+
     // ── Table config ──────────────────────────────────────────────────────────
     const columns = useMemo(() => getPayrollTableColumns(formatCurrency), [formatCurrency]);
     const actions = useMemo(() => getPayrollTableActions(handleViewPayroll), [handleViewPayroll]);
@@ -456,37 +607,43 @@ export default function Index({
 
     // ── Toolbar ───────────────────────────────────────────────────────────────
     const toolbar = (
-        <EmployeeFilterBar
-            filters={{
-                search: true,
-                position: true,
-                branch: true,
-                site: true,
-                date: true,
-                status: false
-            }}
-            allPositions={positionNames}
-            allBranches={branchNames}
-            allSites={siteNames}
-            branchesData={branchesData}
-            searchTerm={searchTerm}
-            selectedPositions={selectedPositions}
-            selectedBranch={selectedBranches[0] || ""}
-            selectedSite={selectedSites[0] || ""}
-            status=""
-            dateFrom={dateFrom}
-            dateTo={dateTo}
-            onSearchChange={handleSearchChange}
-            onPositionsChange={handlePositionsChange}
-            onBranchChange={handleBranchChange}
-            onSiteChange={handleSiteChange}
-            onStatusChange={() => { }}
-            onDateFromChange={handleDateFromChange}
-            onDateToChange={handleDateToChange}
-            onClearAll={clearFilters}
-            searchPlaceholder="Search by name or employee code..."
-            dateLabel="Payroll Period"
-        />
+        <div className="flex justify-between items-center">
+            <EmployeeFilterBar
+                filters={{
+                    search: true,
+                    position: true,
+                    branch: true,
+                    site: true,
+                    date: true,
+                    status: false
+                }}
+                allPositions={positionNames}
+                allBranches={branchNames}
+                allSites={siteNames}
+                branchesData={branchesData}
+                searchTerm={searchTerm}
+                selectedPositions={selectedPositions}
+                selectedBranch={selectedBranches[0] || ""}
+                selectedSite={selectedSites[0] || ""}
+                status=""
+                dateFrom={dateFrom}
+                dateTo={dateTo}
+                onSearchChange={handleSearchChange}
+                onPositionsChange={handlePositionsChange}
+                onBranchChange={handleBranchChange}
+                onSiteChange={handleSiteChange}
+                onStatusChange={() => { }}
+                onDateFromChange={handleDateFromChange}
+                onDateToChange={handleDateToChange}
+                onClearAll={clearFilters}
+                searchPlaceholder="Search by name or employee code..."
+                dateLabel="Payroll Period"
+            />
+            <Button onClick={handlePrintSummary} variant="outline" className="ml-4">
+                <Printer className="h-4 w-4 mr-2" />
+                Print Summary
+            </Button>
+        </div>
     );
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -562,7 +719,7 @@ export default function Index({
                         />
                     )}
 
-                    {/* FIXED: Always render pagination - removed the conditional */}
+                    {/* Always render pagination */}
                     <CustomPagination
                         pagination={paginationWithFilters}
                         perPage={perPage}
