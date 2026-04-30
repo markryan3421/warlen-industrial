@@ -65,7 +65,7 @@ class PayrollPolicy
     {
         return false;
     }
-    public function emailPayroll(User $user): bool
+    public function emailPayroll(User $user, Payroll $payroll): bool
     {
         return $user->hasAnyRole(['admin', 'hr_head']);
     }

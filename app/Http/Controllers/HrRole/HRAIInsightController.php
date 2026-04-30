@@ -8,6 +8,7 @@ use App\Services\AdvancedAIInsightService;
 use App\Services\AIInsightService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 class HRAIInsightController extends Controller

@@ -49,6 +49,7 @@ class AppServiceProvider extends ServiceProvider
         $this->enforceMorphMap();
         $this->configurePolicies();
         // $this->events();
+       // $this->configurePolicies();
 
     }
 
@@ -121,8 +122,13 @@ class AppServiceProvider extends ServiceProvider
 
     private function configurePolicies(): void
     {
-        Gate::define('import-attendance', [AttendanceImportPolicy::class, 'import']);
-        Gate::define('view-attendance', [AttendanceImportPolicy::class, 'viewAny']);
+        Gate::define('import-attendance', function ($user) {
+            return $user->hasAnyRole(['admin','hr_head']);
+        });
+
+        Gate::define('view-attendance-import', function ($user) {
+            return $user->hasAnyRole(['admin','hr_head']);
+        });
     }
 
     private function observer(): void
