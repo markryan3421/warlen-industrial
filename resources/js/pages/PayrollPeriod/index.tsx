@@ -2,6 +2,7 @@ import { Head, Link, usePage, router } from '@inertiajs/react';
 import {
     CalendarDays, Plus, Clock, CheckCircle2,
     AlertCircle, Filter, Pencil, Trash2, Eye, Calendar, XCircle, Loader2,
+    BadgeCheck,
 } from 'lucide-react';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import PayrollPeriodController from '@/actions/App/Http/Controllers/PayrollPeriodController';
@@ -53,13 +54,44 @@ const toastStyle = (color: string) => ({
 
 // ── Status config based on enum values ─────────────────────────────────────────
 const getStatusConfig = (status: string) => {
-    const configs: Record<string, { icon: any; badge: string; dot: string; color: 'primary' | 'secondary' | 'accent' | 'muted' }> = {
-        open: { icon: AlertCircle, badge: 'bg-secondary text-secondary-foreground', dot: 'bg-secondary', color: 'secondary' },
-        processing: { icon: Clock, badge: 'bg-primary/10 text-primary border border-primary/20', dot: 'bg-primary', color: 'primary' },
-        calculated: { icon: CheckCircle2, badge: 'bg-accent/10 text-accent border border-accent/20', dot: 'bg-accent', color: 'accent' },
-        completed: { icon: CheckCircle2, badge: 'bg-accent/10 text-accent border border-accent/20', dot: 'bg-accent', color: 'accent' },
-        failed: { icon: AlertCircle, badge: 'bg-red-100 text-red-700 border border-red-200', dot: 'bg-red-500', color: 'muted' },
+    const configs: Record<string, {
+        icon: any;
+        badge: string;      // classes for the badge (background, text, border)
+        dot: string;        // classes for the status dot
+        color: 'primary' | 'secondary' | 'accent' | 'muted'
+    }> = {
+        open: {
+            icon: AlertCircle,
+            badge: 'bg-slate-100 text-slate-700 border border-slate-200',
+            dot: 'bg-slate-400',
+            color: 'muted'
+        },
+        processing: {
+            icon: Clock,
+            badge: 'bg-amber-50 text-amber-700 border border-amber-200',
+            dot: 'bg-amber-500',
+            color: 'secondary'
+        },
+        calculated: {
+            icon: CheckCircle2,
+            badge: 'bg-sky-50 text-sky-700 border border-sky-200',
+            dot: 'bg-sky-500',
+            color: 'primary'
+        },
+        completed: {
+            icon: BadgeCheck,
+            badge: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+            dot: 'bg-emerald-500',
+            color: 'accent'
+        },
+        failed: {
+            icon: AlertCircle,
+            badge: 'bg-rose-50 text-rose-700 border border-rose-200',
+            dot: 'bg-rose-500',
+            color: 'muted'
+        },
     };
+
     return configs[status] || configs.open;
 };
 
@@ -81,7 +113,7 @@ function StatusBadge({ status, label, isProcessing, progress }: { status: string
 
     return (
         <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wider ${cfg.badge}`}>
-            <Icon className="h-3 w-3" />
+            <Icon className="h-3 w-3" color="#17ab30" />
             {label}
         </span>
     );

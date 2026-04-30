@@ -16,7 +16,6 @@ use App\Http\Controllers\EmployeeRole\ApplicationLeaveController as EmployeeAppl
 use App\Http\Controllers\HrRole\HRAIInsightController;
 use App\Http\Controllers\HrRole\HRApplicationLeaveController;
 use App\Http\Controllers\HrRole\HRAttendanceController;
-use App\Http\Controllers\HrRole\HRAttendanceImportController;
 use App\Http\Controllers\HrRole\HRBranchController;
 use App\Http\Controllers\HrRole\HRContributionVersionController;
 use App\Http\Controllers\HrRole\HRDashboardController;
@@ -35,18 +34,20 @@ use App\Http\Controllers\PositionController;
 use App\Http\Middleware\CapPerpageMiddleware;
 use App\Http\Middleware\HomeMiddleware;
 use Illuminate\Support\Facades\App;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-use Inertia\Middleware\EncryptHistory;
 
 
 Route::get('/', function () {
 
 	return Inertia::render('auth/login');
 })->name('home')->middleware(HomeMiddleware::class);
-Route::post('/payrolls/{payroll}/email', [PayrollController::class, 'emailPayroll']);
-Route::post('/payrolls/bulk-email', [PayrollController::class, 'bulkEmail']);
+
+Route::middleware(['auth', 'auth.session', 'throttle:limit-actions'])->group(function () {
+	Route::post('/payrolls/{payroll}/email', [PayrollController::class, 'emailPayroll'])->name('payrolls.email');
+	Route::post('/payrolls/bulk-email', [PayrollController::class, 'bulkEmail'])->name('payrolls.bulk-email');
+});
+
 Route::middleware(['auth', 'admin', 'auth.session', 'throttle:limit-actions', CapPerpageMiddleware::class.':100'])->group(function () {
 
 	Route::get('payroll', function () {

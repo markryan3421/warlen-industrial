@@ -12,6 +12,7 @@ use App\Mail\PayrollSummaryMail;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 
 class PayrollController extends Controller
 {
@@ -184,8 +185,7 @@ public function emailPayroll(Payroll $payroll): JsonResponse
             'employee.position'
         ]);
 
-        // TEMPORARILY COMMENT OUT AUTHORIZATION FOR TESTING
-        // Gate::authorize('view', $payroll);
+        Gate::authorize('emailPayroll', $payroll);
 
         $email = $payroll->employee?->user?->email;
         if (!$email) {
@@ -193,10 +193,10 @@ public function emailPayroll(Payroll $payroll): JsonResponse
             return response()->json(['message' => 'Employee has no email address.'], 422);
         }
 
-        Mail::to($email)->send(new PayrollSummaryMail($payroll));
+        Mail::to($email)->queue(new PayrollSummaryMail($payroll));
 
         Log::info('Payroll email sent', ['payroll_id' => $payroll->id, 'email' => $email]);
-        return response()->json(['message' => 'Payroll summary sent successfully.']);
+        return response()->json(['message' => 'Payroll summary queued successfully.']);
 
     } catch (\Exception $e) {
         Log::error('Email sending failed', [
@@ -212,7 +212,14 @@ public function emailPayroll(Payroll $payroll): JsonResponse
 }
 public function bulkEmail(Request $request): JsonResponse
 {
-    $ids = $request->input('ids', []);
+    // $ids = $request->input('ids', []);
+    $validated = $request->validate([
+        'ids' => ['required', 'array', 'min:1'],
+        'ids.*' => ['integer', 'distinct', Rule::exists('payrolls', 'id')],
+    ]);
+
+    $ids = $validated['ids'];
+
     if (empty($ids)) {
         return response()->json(['message' => 'No payroll IDs provided.'], 422);
     }
@@ -226,13 +233,15 @@ public function bulkEmail(Request $request): JsonResponse
     $failures = 0;
     $errors = [];
 
-    foreach ($payrolls as $index => $payroll) {
-        // Add delay before sending the FIRST email? Usually you want it AFTER each send.
-        // Here we add a delay before each email except the first one, to space them out.
-        if ($index > 0) {
-            sleep(10);  // 10 seconds delay between consecutive emails
-        }
+    // foreach ($payrolls as $index => $payroll) {
+    //     // Add delay before sending the FIRST email? Usually you want it AFTER each send.
+    //     // Here we add a delay before each email except the first one, to space them out.
+    //     if ($index > 0) {
+    //         sleep(10);  // 10 seconds delay between consecutive emails
+    //     }
 
+    foreach ($payrolls as $payroll) {
+        Gate::authorize('emailPayroll', $payroll);
         // Safer email retrieval
         $email = optional($payroll->employee?->user)->email;
         if (blank($email)) {
@@ -242,7 +251,7 @@ public function bulkEmail(Request $request): JsonResponse
         }
 
         try {
-            Mail::to($email)->send(new PayrollSummaryMail($payroll));
+            Mail::to($email)->queue(new PayrollSummaryMail($payroll));
             $success++;
         } catch (\Exception $e) {
             $failures++;
@@ -252,7 +261,7 @@ public function bulkEmail(Request $request): JsonResponse
     }
 
     return response()->json([
-        'message' => "Emails sent: {$success}, failed: {$failures}.",
+        'message' => "Emails queued: {$success}, failed: {$failures}.",
         'success' => $success,
         'failures' => $failures,
         'errors' => config('app.debug') ? $errors : null,
