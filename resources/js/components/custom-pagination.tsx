@@ -25,7 +25,6 @@ interface PaginationProps {
 	search: string;
 	resourceName?: string;
 	onPageChange?: (page: number) => void;
-	isLoading?: boolean;
 }
 
 export const CustomPagination = ({
@@ -37,13 +36,7 @@ export const CustomPagination = ({
 	search,
 	resourceName = "item",
 	onPageChange,
-	isLoading = false,
 }: PaginationProps) => {
-
-	const totalPages = Math.ceil(pagination.total / parseInt(perPage));
-	if (totalPages <= 1 || pagination.total === 0) {
-		return null;
-	}
 
 	const windowSize = 5;
 	const previousLink = pagination.links[0];
@@ -61,9 +54,9 @@ export const CustomPagination = ({
 	const prevPageNum = Number(currentPage) - 1;
 	const nextPageNum = Number(currentPage) + 1;
 
-	// Don't show negative page numbers
-	const validPrevPageNum = prevPageNum > 0 ? prevPageNum : 1;
-	const validNextPageNum = nextPageNum <= totalPages ? nextPageNum : totalPages;
+	// Determine if more than one page exists
+	const totalPages = Math.ceil(pagination.total / parseInt(perPage));
+	const showPaginationControls = totalPages > 1;
 
 	const infoText = search ? (
 		<p className="text-xs text-stone-500 dark:text-stone-400 text-center sm:text-left">
@@ -76,78 +69,82 @@ export const CustomPagination = ({
 	) : (
 		<p className="text-xs text-stone-500 dark:text-stone-400 text-center sm:text-left">
 			Showing{" "}
-			<span className="font-semibold text-stone-700 dark:text-stone-200">{pagination.from || 0}</span>
+			<span className="font-semibold text-stone-700 dark:text-stone-200">{pagination.from}</span>
 			{" "}–{" "}
-			<span className="font-semibold text-stone-700 dark:text-stone-200">{pagination.to || 0}</span>
+			<span className="font-semibold text-stone-700 dark:text-stone-200">{pagination.to}</span>
 			{" "}of{" "}
-			<span className="font-semibold text-blue-600 dark:text-blue-400">{pagination.total || 0}</span>
-			{" "}{resourceName}
+			<span className="font-semibold text-blue-600 dark:text-blue-400">{pagination.total}</span>
+			{" "}{resourceName}{totalCount !== 1 && "s"}
 		</p>
 	);
 
 	return (
-		<div className={`px-4 pt-4 pb-2 font-sans ${isLoading ? 'opacity-50 pointer-events-none' : ''}`}>
+		<div className="px-4 pt-4 pb-2 font-sans">
 
 			{/* MOBILE */}
 			<div className="flex flex-col items-center gap-3 sm:hidden">
-				<div className="flex items-center gap-1">
-					<PrevButton
-						link={previousLink}
-						onPageChange={onPageChange}
-						pageNum={validPrevPageNum}
-						disabled={!previousLink?.url || isLoading || currentPage <= 1}
-					/>
-					{visiblePages.map((link, i) => (
-						<PageButton
-							key={i}
-							link={link}
+				{/* Only render pagination buttons if more than one page */}
+				{showPaginationControls && (
+					<div className="flex items-center gap-1">
+						<PrevButton
+							link={previousLink}
 							onPageChange={onPageChange}
-							isLoading={isLoading}
+							pageNum={prevPageNum}
+							disabled={!previousLink?.url}
 						/>
-					))}
-					<NextButton
-						link={nextLink}
-						onPageChange={onPageChange}
-						pageNum={validNextPageNum}
-						disabled={!nextLink?.url || isLoading || currentPage >= totalPages}
-					/>
-				</div>
+						{visiblePages.map((link, i) => (
+							<PageButton
+								key={i}
+								link={link}
+								onPageChange={onPageChange}
+							/>
+						))}
+						<NextButton
+							link={nextLink}
+							onPageChange={onPageChange}
+							pageNum={nextPageNum}
+							disabled={!nextLink?.url}
+						/>
+					</div>
+				)}
 				<div className="flex items-center justify-between w-full gap-3">
 					{infoText}
-					<PerPageSelect value={perPage} onChange={onPerPageChange} isLoading={isLoading} />
+					<PerPageSelect value={perPage} onChange={onPerPageChange} />
 				</div>
 			</div>
 
 			{/* TABLET / DESKTOP */}
 			<div className="hidden sm:flex items-center justify-between gap-4">
 				{infoText}
-				<div className="flex items-center gap-1">
-					<PrevButton
-						link={previousLink}
-						onPageChange={onPageChange}
-						pageNum={validPrevPageNum}
-						disabled={!previousLink?.url || isLoading || currentPage <= 1}
-					/>
-					{visiblePages.map((link, i) => (
-						<PageButton
-							key={i}
-							link={link}
+				{/* Only render pagination buttons if more than one page */}
+				{showPaginationControls && (
+					<div className="flex items-center gap-1">
+						<PrevButton
+							link={previousLink}
 							onPageChange={onPageChange}
-							isLoading={isLoading}
+							pageNum={prevPageNum}
+							disabled={!previousLink?.url}
 						/>
-					))}
-					<NextButton
-						link={nextLink}
-						onPageChange={onPageChange}
-						pageNum={validNextPageNum}
-						disabled={!nextLink?.url || isLoading || currentPage >= totalPages}
-					/>
-				</div>
+						{visiblePages.map((link, i) => (
+							<PageButton
+								key={i}
+								link={link}
+								onPageChange={onPageChange}
+							/>
+						))}
+						<NextButton
+							link={nextLink}
+							onPageChange={onPageChange}
+							pageNum={nextPageNum}
+							disabled={!nextLink?.url}
+						/>
+					</div>
+				)}
 				<div className="flex items-center gap-2">
 					<span className="text-xs text-stone-500 dark:text-stone-400 whitespace-nowrap">
 						Rows per page
 					</span>
-					<PerPageSelect value={perPage} onChange={onPerPageChange} isLoading={isLoading} />
+					<PerPageSelect value={perPage} onChange={onPerPageChange} />
 				</div>
 			</div>
 
@@ -156,7 +153,7 @@ export const CustomPagination = ({
 };
 
 // =============================================================================
-// SUB-COMPONENTS
+// SUB-COMPONENTS (unchanged)
 // =============================================================================
 
 function PrevButton({ link, onPageChange, pageNum, disabled }: {
@@ -176,7 +173,7 @@ function PrevButton({ link, onPageChange, pageNum, disabled }: {
 	}
 
 	const handleClick = (e: React.MouseEvent) => {
-		if (onPageChange && !disabled) {
+		if (onPageChange) {
 			e.preventDefault();
 			onPageChange(pageNum);
 		}
@@ -186,8 +183,7 @@ function PrevButton({ link, onPageChange, pageNum, disabled }: {
 		return (
 			<button
 				onClick={handleClick}
-				disabled={disabled}
-				className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-stone-200 dark:border-stone-700 text-stone-500 dark:text-stone-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:border-blue-300 dark:hover:border-blue-700 hover:text-blue-600 dark:hover:text-blue-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+				className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-stone-200 dark:border-stone-700 text-stone-500 dark:text-stone-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:border-blue-300 dark:hover:border-blue-700 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
 			>
 				<ChevronLeft size={14} />
 			</button>
@@ -221,7 +217,7 @@ function NextButton({ link, onPageChange, pageNum, disabled }: {
 	}
 
 	const handleClick = (e: React.MouseEvent) => {
-		if (onPageChange && !disabled) {
+		if (onPageChange) {
 			e.preventDefault();
 			onPageChange(pageNum);
 		}
@@ -231,8 +227,7 @@ function NextButton({ link, onPageChange, pageNum, disabled }: {
 		return (
 			<button
 				onClick={handleClick}
-				disabled={disabled}
-				className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-stone-200 dark:border-stone-700 text-stone-500 dark:text-stone-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:border-blue-300 dark:hover:border-blue-700 hover:text-blue-600 dark:hover:text-blue-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+				className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-stone-200 dark:border-stone-700 text-stone-500 dark:text-stone-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:border-blue-300 dark:hover:border-blue-700 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
 			>
 				<ChevronRight size={14} />
 			</button>
@@ -249,10 +244,9 @@ function NextButton({ link, onPageChange, pageNum, disabled }: {
 	);
 }
 
-function PageButton({ link, onPageChange, isLoading }: {
+function PageButton({ link, onPageChange }: {
 	link: LinkProps;
 	onPageChange?: (page: number) => void;
-	isLoading?: boolean;
 }) {
 	const base = "inline-flex items-center justify-center w-8 h-8 rounded-lg border text-[12px] font-medium transition-colors";
 
@@ -264,22 +258,21 @@ function PageButton({ link, onPageChange, isLoading }: {
 		);
 	}
 
-	const isDisabled = !link.url || isLoading;
+	const isDisabled = !link.url;
 	const pageNumber = parseInt(link.label, 10);
 
 	const handleClick = (e: React.MouseEvent) => {
-		if (onPageChange && !isDisabled && !isNaN(pageNumber)) {
+		if (onPageChange && !isDisabled) {
 			e.preventDefault();
 			onPageChange(pageNumber);
 		}
 	};
 
-	if (onPageChange && !isDisabled && !isNaN(pageNumber)) {
+	if (onPageChange && !isDisabled) {
 		return (
 			<button
 				onClick={handleClick}
-				disabled={isDisabled}
-				className={`${base} border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:border-blue-300 dark:hover:border-blue-700 hover:text-blue-600 dark:hover:text-blue-400 disabled:opacity-50 disabled:cursor-not-allowed`}
+				className={`${base} border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:border-blue-300 dark:hover:border-blue-700 hover:text-blue-600 dark:hover:text-blue-400`}
 			>
 				{link.label}
 			</button>
@@ -304,9 +297,9 @@ function PageButton({ link, onPageChange, isLoading }: {
 	);
 }
 
-function PerPageSelect({ value, onChange, isLoading }: { value: string; onChange: (v: string) => void; isLoading?: boolean }) {
+function PerPageSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
 	return (
-		<Select onValueChange={onChange} value={value} disabled={isLoading}>
+		<Select onValueChange={onChange} value={value}>
 			<SelectTrigger className="h-8 w-[72px] text-xs border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 text-stone-700 dark:text-stone-300 focus:ring-blue-500">
 				<SelectValue placeholder="Rows" />
 			</SelectTrigger>
