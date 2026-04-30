@@ -169,19 +169,13 @@ export default function Index({ payrollPeriods }: PayrollPeriodProps) {
     // Echo listeners for real-time processing updates
     useEffect(() => {
         if (!window.Echo) {
-            console.warn('Echo is not initialized');
             return;
         }
-
-        console.log('Setting up Echo listeners for payroll channels...');
 
         const payrollChannel = window.Echo.private('payroll');
         const payrollPeriodChannel = window.Echo.private('payroll-period');
 
         const handlePayrollEvent = (event: any) => {
-            console.log('================== PAYROLL EVENT RECEIVED ==================');
-            console.log('Full event:', event);
-
             if (event.progress !== undefined && event.payroll_period_id) {
                 const isStillProcessing = event.progress < 100;
 
@@ -203,12 +197,6 @@ export default function Index({ payrollPeriods }: PayrollPeriodProps) {
 
         payrollChannel.listen('.payroll.completed', handlePayrollEvent);
         payrollPeriodChannel.listen('.payroll.completed', handlePayrollEvent);
-
-        payrollChannel.subscribed(() => console.log('✅ Subscribed to private payroll channel'));
-        payrollPeriodChannel.subscribed(() => console.log('✅ Subscribed to private payroll-period channel'));
-
-        payrollChannel.error((error: any) => console.error('❌ Error on payroll channel:', error));
-        payrollPeriodChannel.error((error: any) => console.error('❌ Error on payroll-period channel:', error));
 
         return () => {
             payrollChannel.stopListening('.payroll.completed');

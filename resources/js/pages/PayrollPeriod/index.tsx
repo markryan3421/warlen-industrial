@@ -215,38 +215,19 @@ export default function Index({ payrollPeriods }: PayrollPeriodProps) {
     // Listen to both payroll and payroll-period channels
     useEffect(() => {
         if (!window.Echo) {
-            console.warn('Echo is not initialized');
             return;
         }
-
-        console.log('Setting up Echo listeners for payroll channels...');
-
+        
         // Listen to payroll channel for general updates
         const payrollChannel = window.Echo.private('payroll');
         const payrollPeriodChannel = window.Echo.private('payroll-period');
 
         // Handle payroll.completed events
         const handlePayrollEvent = (event: any) => {
-            console.log('================== PAYROLL EVENT RECEIVED ==================');
-            console.log('Full event:', event);
-            console.log('Event properties:', {
-                progress: event.progress,
-                payroll_period_id: event.payroll_period_id,
-                message: event.message,
-                status: event.status,
-                period_name: event.period_name
-            });
 
             // Check if this is a progress update
             if (event.progress !== undefined && event.payroll_period_id) {
                 const isStillProcessing = event.progress < 100;
-
-                console.log('Updating processing state:', {
-                    periodId: event.payroll_period_id,
-                    progress: event.progress,
-                    isProcessing: isStillProcessing,
-                    message: event.message
-                });
 
                 setProcessingPeriodId(event.payroll_period_id);
                 setProcessingProgress(event.progress);
@@ -255,23 +236,17 @@ export default function Index({ payrollPeriods }: PayrollPeriodProps) {
                 // If processing is complete, clear after delay
                 if (!isStillProcessing) {
                     setTimeout(() => {
-                        console.log('🧹 Clearing processing state after completion');
+                       
                         setProcessingPeriodId(null);
                         setProcessingProgress(0);
                         setProcessingMessage('');
                     }, 3000);
                 }
             } else {
-                console.warn('⚠️ Event missing progress or payroll_period_id:', {
-                    hasProgress: event.progress !== undefined,
-                    hasPeriodId: event.payroll_period_id !== undefined,
-                    progressValue: event.progress,
-                    periodIdValue: event.payroll_period_id
-                });
+        
             }
 
-            console.log('============================================================');
-
+          
             // Reload the page to get updated data
             router.reload({ only: ['payrollPeriods'] });
         };
@@ -282,24 +257,24 @@ export default function Index({ payrollPeriods }: PayrollPeriodProps) {
 
         // Connection success handlers
         payrollChannel.subscribed(() => {
-            console.log('✅ Successfully subscribed to private payroll channel');
+          
         });
 
         payrollPeriodChannel.subscribed(() => {
-            console.log('✅ Successfully subscribed to private payroll-period channel');
+          
         });
 
         // Error handlers
         payrollChannel.error((error: any) => {
-            console.error('❌ Error on payroll channel:', error);
+          
         });
 
         payrollPeriodChannel.error((error: any) => {
-            console.error('❌ Error on payroll-period channel:', error);
+           
         });
 
         return () => {
-            console.log('🧹 Cleaning up Echo listeners');
+            
             payrollChannel.stopListening('.payroll.completed');
             payrollPeriodChannel.stopListening('.payroll.completed');
         };
@@ -365,7 +340,7 @@ export default function Index({ payrollPeriods }: PayrollPeriodProps) {
             render: (row: PayrollPeriod) => {
                 const isProcessing = processingPeriodId === row.id;
                 // Log when rendering each row to see if condition matches
-                console.log(`📊 Rendering row ${row.id}: isProcessing=${isProcessing}, processingPeriodId=${processingPeriodId}, progress=${processingProgress}`);
+              
                 return (
                     <StatusBadge
                         status={row.payroll_per_status}
