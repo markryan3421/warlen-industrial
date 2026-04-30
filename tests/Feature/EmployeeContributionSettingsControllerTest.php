@@ -4,10 +4,8 @@ use App\Models\ContributionVersion;
 use App\Models\Employee;
 use App\Models\EmployeeContributionSetting;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role;
 
-uses(RefreshDatabase::class);
 
 beforeEach(function () {
     $this->withoutMiddleware([
