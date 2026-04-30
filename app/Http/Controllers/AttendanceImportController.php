@@ -8,6 +8,7 @@ use App\Services\Importers\PeriodStatImporter;
 use App\Services\Importers\ScheduleImporter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -45,7 +46,8 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
  */
 class AttendanceImportController extends Controller
 {
-    public function index() {
+    public function index()
+    {
         return Inertia::render('attendances/index');
     }
 
@@ -83,13 +85,11 @@ class AttendanceImportController extends Controller
                 'skipped'  => $result['skipped'],
                 'errors'   => $result['errors'],
             ]);
-
         } catch (\Throwable $e) {
             return response()->json([
                 'message' => 'Import failed: ' . $e->getMessage(),
                 'sheet'   => $sheet,
             ], 422);
-
         } finally {
             // Always delete the temp file — even if an exception occurred
             Storage::disk('local')->delete($relativePath);

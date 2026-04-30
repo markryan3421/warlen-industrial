@@ -40,14 +40,9 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Inertia\Middleware\EncryptHistory;
 
-// use Laravel\Fortify\Features;
 
 Route::get('/', function () {
-	// return Inertia::render('welcome', [
-	//     'canRegister' => Features::enabled(Features::registration()),
-	// ]);
 
-	//Inertia::clearHistory();
 	return Inertia::render('auth/login');
 })->name('home')->middleware(HomeMiddleware::class);
 Route::post('/payrolls/{payroll}/email', [PayrollController::class, 'emailPayroll']);
@@ -75,7 +70,7 @@ Route::middleware(['auth', 'admin', 'auth.session', 'throttle:limit-actions', Ca
 
 	Route::resource('branches', BranchController::class);
 	Route::delete('/branches/{branch:branch_slug}', [BranchController::class, 'destroy'])->name('branches.destroy');
-	Route::resource('positions', PositionController::class)->except(['show']);
+	Route::resource('positions', PositionController::class);
 	Route::resource('employees', EmployeeController::class)->withTrashed();
 	Route::resource('permissions', PermissionController::class);
 	Route::resource('incentives', IncentiveController::class)->except(['show']);

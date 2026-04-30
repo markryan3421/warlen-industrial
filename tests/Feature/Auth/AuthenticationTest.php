@@ -1,8 +1,14 @@
 <?php
 
 use App\Models\User;
+use Database\Seeders\UserSeeder;
 use Illuminate\Support\Facades\RateLimiter;
 use Laravel\Fortify\Features;
+
+beforeEach(function () {
+    $this->seed(UserSeeder::class);
+    app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+});
 
 test('login screen can be rendered', function () {
     $response = $this->get(route('login'));
@@ -12,6 +18,7 @@ test('login screen can be rendered', function () {
 
 test('users can authenticate using the login screen', function () {
     $user = User::factory()->create();
+    $user->assignRole('admin');
 
     $response = $this->post(route('login.store'), [
         'email' => $user->email,

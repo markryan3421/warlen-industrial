@@ -13,11 +13,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Testing\Fluent\Concerns\Has;
+use App\Concerns\Cache\CacheTrait;
 use Inertia\Inertia;
 
 class PositionController extends Controller
 {
-    use HasPaginatedIndex;
+    use HasPaginatedIndex, CacheTrait;
 
     public function __construct(private PositionRepository $positionRepository) {}
     /**
@@ -76,11 +77,7 @@ class PositionController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Position $position)
-    {
-        Gate::authorize('view', $position);
-        return Inertia::render('positions.show', compact('position'));
-    }
+
 
     /**
      * Show the form for editing the specified resource.

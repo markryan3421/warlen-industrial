@@ -210,44 +210,52 @@ public function emailPayroll(Payroll $payroll): JsonResponse
         ], 500);
     }
 }
-    public function bulkEmail(Request $request): JsonResponse
-    {
-        $ids = $request->input('ids', []);
-        if (empty($ids)) {
-            return response()->json(['message' => 'No payroll IDs provided.'], 422);
-        }
-
-        $payrolls = Payroll::with(['employee.user', 'employee.position', 'payrollPeriod', 'payrollItems'])
-            ->whereIn('id', $ids)
-            ->get();
-
-        $success = 0;
-        $failures = 0;
-        $errors = [];
-
-        foreach ($payrolls as $payroll) {
-            $email = $payroll->employee?->user?->email;
-            if (!$email) {
-                $failures++;
-                $errors[] = "Payroll #{$payroll->id}: no email address";
-                continue;
-            }
-
-            try {
-                Mail::to($email)->send(new PayrollSummaryMail($payroll));
-                $success++;
-            } catch (\Exception $e) {
-                $failures++;
-                $errors[] = "Payroll #{$payroll->id}: " . $e->getMessage();
-                Log::error("Bulk email failed for payroll {$payroll->id}: " . $e->getMessage());
-            }
-        }
-
-        return response()->json([
-            'message' => "Emails sent: {$success}, failed: {$failures}.",
-            'success' => $success,
-            'failures' => $failures,
-            'errors' => config('app.debug') ? $errors : null,
-        ]);
+public function bulkEmail(Request $request): JsonResponse
+{
+    $ids = $request->input('ids', []);
+    if (empty($ids)) {
+        return response()->json(['message' => 'No payroll IDs provided.'], 422);
     }
+
+    // Fetch payrolls efficiently
+    $payrolls = Payroll::with(['employee.user', 'employee.position', 'payrollPeriod', 'payrollItems'])
+        ->whereIn('id', $ids)
+        ->get();
+
+    $success = 0;
+    $failures = 0;
+    $errors = [];
+
+    foreach ($payrolls as $index => $payroll) {
+        // Add delay before sending the FIRST email? Usually you want it AFTER each send.
+        // Here we add a delay before each email except the first one, to space them out.
+        if ($index > 0) {
+            sleep(10);  // 10 seconds delay between consecutive emails
+        }
+
+        // Safer email retrieval
+        $email = optional($payroll->employee?->user)->email;
+        if (blank($email)) {
+            $failures++;
+            $errors[] = "Payroll #{$payroll->id}: no email address";
+            continue;
+        }
+
+        try {
+            Mail::to($email)->send(new PayrollSummaryMail($payroll));
+            $success++;
+        } catch (\Exception $e) {
+            $failures++;
+            $errors[] = "Payroll #{$payroll->id}: " . $e->getMessage();
+            Log::error("Bulk email failed for payroll {$payroll->id}: " . $e->getMessage());
+        }
+    }
+
+    return response()->json([
+        'message' => "Emails sent: {$success}, failed: {$failures}.",
+        'success' => $success,
+        'failures' => $failures,
+        'errors' => config('app.debug') ? $errors : null,
+    ]);
+}
 }

@@ -12,6 +12,7 @@ use App\Models\PayrollPeriod;
 use App\Observers\ApplicationLeaveObserver;
 use App\Observers\AttendancePeriodStatObserver;
 use App\Observers\PayrollPeriodObserver;
+use App\Policies\AttendanceImportPolicy;
 use Carbon\CarbonImmutable;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -19,6 +20,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
@@ -46,6 +48,7 @@ class AppServiceProvider extends ServiceProvider
 
         $this->enforceMorphMap();
         // $this->events();
+
     }
 
     /**
@@ -115,7 +118,11 @@ class AppServiceProvider extends ServiceProvider
         ]);
     }
 
-
+    private function configurePolicies(): void
+    {
+        Gate::define('import-attendance', [AttendanceImportPolicy::class, 'import']);
+        Gate::define('view-attendance', [AttendanceImportPolicy::class, 'viewAny']);
+    }
 
     private function observer(): void
     {
