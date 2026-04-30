@@ -9,10 +9,10 @@ Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
-Route::post('/attendance/import', [AttendanceImportController::class, 'store']);
+// Route::post('/attendance/import', [AttendanceImportController::class, 'store']);
 
-Route::middleware(['auth', 'admin'])->prefix('ai')->group(function () {
-    Route::get('/dashboard', [AIInsightController::class, 'dashboard'])->name('ai.dashboard');
-    Route::get('/insights', [AIInsightController::class, 'getInsights']);
-    Route::post('/deep-analysis', [AIInsightController::class, 'deepAnalysis']);
-});
+// Route::middleware(['auth', 'admin'])->prefix('ai')->group(function () {
+//     Route::get('/dashboard', [AIInsightController::class, 'dashboard'])->name('ai.dashboard');
+//     Route::get('/insights', [AIInsightController::class, 'getInsights']);
+//     Route::post('/deep-analysis', [AIInsightController::class, 'deepAnalysis']);
+// });

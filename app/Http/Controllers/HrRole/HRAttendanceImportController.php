@@ -11,6 +11,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Gate;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class HRAttendanceImportController extends Controller
@@ -22,6 +23,7 @@ class HRAttendanceImportController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        Gate::authorize('import-attendance');
         // ── Validate the incoming request ─────────────────────────────────────
         $request->validate([
             'file'  => ['required', 'file', 'mimes:xls,xlsx', 'max:10240'],

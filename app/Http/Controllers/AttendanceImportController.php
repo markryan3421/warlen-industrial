@@ -48,11 +48,13 @@ class AttendanceImportController extends Controller
 {
     public function index()
     {
+       
         return Inertia::render('attendances/index');
     }
 
     public function store(Request $request): JsonResponse
     {
+        Gate::authorize('import-attendance');
         // ── Validate the incoming request ─────────────────────────────────────
         $request->validate([
             'file'  => ['required', 'file', 'mimes:xls,xlsx', 'max:10240'],
@@ -136,4 +138,6 @@ class AttendanceImportController extends Controller
 
         return $result;
     }
+
+
 }

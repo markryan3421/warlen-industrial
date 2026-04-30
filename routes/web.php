@@ -74,11 +74,10 @@ Route::middleware(['auth', 'admin', 'auth.session', 'throttle:limit-actions', Ca
 	Route::resource('employees', EmployeeController::class)->withTrashed();
 	Route::resource('permissions', PermissionController::class);
 	Route::resource('incentives', IncentiveController::class)->except(['show']);
+	Route::post('/attendance/import', [AttendanceImportController::class, 'store'])->name('attendance.import');
 
 	Route::resource('contribution-versions', ContributionVersionController::class)->except(['show']);
 	Route::resource('application-leave', ApplicationLeaveController::class);
-	Route::resource('attendances', AttendanceImportController::class);
-
 	Route::resource('payroll-periods', PayrollPeriodController::class)->except(['show', 'destroy','create']);
 
 	Route::resource('payrolls', PayrollController::class)->except(['show']);
@@ -132,10 +131,7 @@ Route::middleware(['auth', 'hr', 'auth.session', 'throttle:limit-actions', CapPe
 	Route::get('/hr/attendance-schedules', [HRAttendanceController::class, 'attendanceSchedules'])->name('hr.attendance-schedules');
 
 	Route::get('hr/attendances', [HRAttendanceController::class, 'attendanceManagement'])->name('hr.attendances.index');
-	// Route::resource('/hr/attendances', HRAttendanceImportController::class, [
-	//     'as' => 'hr'
-	// ]);
-
+	Route::post('/hr/attendance/import', [HRAttendanceImportController::class, 'store'])->name('attendance.import');
 	Route::get('/hr/employee-contribution-settings', [EmployeeContributionSettingsController::class, 'getSettingsByVersion']);
 	Route::get('/hr/employees/list', [EmployeeContributionSettingsController::class, 'getEmployees']);
 	// Bulk save settings

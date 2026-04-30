@@ -47,6 +47,7 @@ class AppServiceProvider extends ServiceProvider
         $this->observer();
 
         $this->enforceMorphMap();
+        $this->configurePolicies();
         // $this->events();
 
     }

@@ -117,7 +117,7 @@ export default function BiometricImport({
 
         try {
             const { data } = await axios.post<ImportResult>(
-                "/api/attendance/import",
+                "/attendance/import",
                 formData,
                 { headers: { "Content-Type": "multipart/form-data" } },
             );
