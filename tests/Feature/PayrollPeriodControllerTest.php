@@ -3,7 +3,6 @@
 use App\Enums\PayrollPeriodStatusEnum;
 use App\Models\PayrollPeriod;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use Spatie\Permission\Models\Role;
 use function Pest\Laravel\actingAs;
@@ -13,8 +12,6 @@ use function Pest\Laravel\delete;
 use function Pest\Laravel\get;
 use function Pest\Laravel\post;
 use function Pest\Laravel\put;
-
-uses(RefreshDatabase::class);
 
 beforeEach(function () {
     $this->withoutVite();
