@@ -16,6 +16,7 @@ use App\Http\Controllers\EmployeeRole\ApplicationLeaveController as EmployeeAppl
 use App\Http\Controllers\HrRole\HRAIInsightController;
 use App\Http\Controllers\HrRole\HRApplicationLeaveController;
 use App\Http\Controllers\HrRole\HRAttendanceController;
+use App\Http\Controllers\HrRole\HRAttendanceImportController;
 use App\Http\Controllers\HrRole\HRBranchController;
 use App\Http\Controllers\HrRole\HRContributionVersionController;
 use App\Http\Controllers\HrRole\HRDashboardController;
@@ -132,7 +133,7 @@ Route::middleware(['auth', 'hr', 'auth.session', 'throttle:limit-actions', CapPe
 	Route::get('/hr/attendance-schedules', [HRAttendanceController::class, 'attendanceSchedules'])->name('hr.attendance-schedules');
 
 	Route::get('hr/attendances', [HRAttendanceController::class, 'attendanceManagement'])->name('hr.attendances.index');
-	Route::post('/hr/attendance/import', [HRAttendanceImportController::class, 'store'])->name('attendance.import');
+	Route::post('/hr/attendance/import', [HRAttendanceImportController::class, 'store'])->name('hr.attendance.import');
 	Route::get('/hr/employee-contribution-settings', [EmployeeContributionSettingsController::class, 'getSettingsByVersion']);
 	Route::get('/hr/employees/list', [EmployeeContributionSettingsController::class, 'getEmployees']);
 	// Bulk save settings

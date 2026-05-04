@@ -23,7 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->trustProxies(at: '*');
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
 
-        // $middleware->trustProxies(at:'*');
+        $middleware->trustProxies(at:'*');
 
         $middleware->alias([
             'roleBase' => \App\Http\Middleware\RolaBaseMiddleware::class,

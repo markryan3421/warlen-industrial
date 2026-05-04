@@ -792,6 +792,7 @@ export default function AttendanceManagement({
                             </DialogHeader>
                             <div className="mt-4">
                                 <BiometricImport
+                                    uploadEndpoint="/hr/attendance/import"
                                     onSuccess={() => {
                                         setIsDialogOpen(false);
                                         setIsTableLoading(true);

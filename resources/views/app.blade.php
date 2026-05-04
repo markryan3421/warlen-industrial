@@ -56,7 +56,7 @@
 <body class="font-sans antialiased">
     @inertia
 
-    <script>
+    {{-- <script>
         // Disable developer tools (F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U, right-click)
         (function() {
             // Helper to prevent default action
@@ -95,7 +95,7 @@
                 prevent(e);
             });
         })();
-    </script>
+    </script> --}}
 </body>
 
 </html>

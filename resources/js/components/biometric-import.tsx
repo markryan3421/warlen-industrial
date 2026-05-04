@@ -33,15 +33,17 @@ interface ImportResult {
 }
 
 interface BiometricImportProps {
-    onSuccess?: () => void;  // Callback for successful import
-    refreshRoute?: string;    // Route to refresh after import
-    refreshOnly?: string[];   // Specific data to refresh (for Inertia only)
+    uploadEndpoint?: string;   // NEW: dynamic upload URL
+    onSuccess?: () => void;    // Callback for successful import
+    refreshRoute?: string;     // Route to refresh after import
+    refreshOnly?: string[];    // Specific data to refresh (for Inertia only)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Component
 // ─────────────────────────────────────────────────────────────────────────────
 export default function BiometricImport({ 
+    uploadEndpoint = "/attendance/import",   // default for backward compatibility
     onSuccess, 
     refreshRoute,
     refreshOnly = ['payrolls', 'pagination', 'filters', 'totalCount', 'filteredCount']
@@ -117,7 +119,7 @@ export default function BiometricImport({
 
         try {
             const { data } = await axios.post<ImportResult>(
-                "/attendance/import",
+                uploadEndpoint,   // ← dynamic endpoint
                 formData,
                 { headers: { "Content-Type": "multipart/form-data" } },
             );
