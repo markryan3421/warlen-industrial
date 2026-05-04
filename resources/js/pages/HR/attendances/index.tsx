@@ -1022,6 +1022,7 @@ export default function AttendanceManagement({
                                     <TabPagination
                                         pagination={current.pagination}
                                         perPage={data.perPage}
+                                        baseUrl='/hr/attendances'
                                         onPerPageChange={handlePerPageChange}
                                         activeTab={activeMainTab}
                                         searchTerm={localSearch}
