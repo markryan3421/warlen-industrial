@@ -12,7 +12,6 @@ use App\Services\PaginatedTableService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Gate;
-
 use Illuminate\Support\Facades\Log;
 
 class AttendanceController extends Controller
