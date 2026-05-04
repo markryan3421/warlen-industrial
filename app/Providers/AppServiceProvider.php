@@ -47,6 +47,7 @@ class AppServiceProvider extends ServiceProvider
         $this->observer();
 
         $this->enforceMorphMap();
+        
         $this->configurePolicies();
         // $this->events();
         // $this->configurePolicies();
@@ -76,13 +77,6 @@ class AppServiceProvider extends ServiceProvider
         );
     }
 
-    private function events(): void
-    {
-        Event::listen(
-            PayrollProcessingEvent::class,
-            PayrollProcessingListener::class
-        );
-    }
 
     private function enforceMorphMap(): void
     {

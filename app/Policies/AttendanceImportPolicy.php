@@ -9,11 +9,11 @@ class AttendanceImportPolicy
 
     public function import(User $user): bool
     {
-        return $user->hasAnyRole(['hr_head','admin']);
+        return $user->hasAnyRole(['admin','hr_head']);
     }
 
      public function viewAny(User $user): bool
     {
-        return $user->hasAnyRole(['admin','hr_head']);
+        return $user->hasAnyRole(['hr_head','admin']);
     }
 }

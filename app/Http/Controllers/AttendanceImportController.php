@@ -138,6 +138,4 @@ class AttendanceImportController extends Controller
 
         return $result;
     }
-
-
 }
