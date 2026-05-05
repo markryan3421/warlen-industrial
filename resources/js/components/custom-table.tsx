@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "./ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useRef, useEffect } from "react";
 
 // ─── Types ──────────────────────────────────────────────────────────────
 interface TableColumn {
@@ -48,10 +49,15 @@ interface CustomTableProps {
     onView?: (row: TableRow) => void;
     onEdit?: (row: TableRow) => void;
     onRunPayroll?: (row: TableRow) => void;
-    onEmail?: (row: TableRow) => void; // new
+    onEmail?: (row: TableRow) => void;
     title?: string;
     toolbar?: React.ReactNode;
+    headerActions?: React.ReactNode;
     filterEmptyState?: React.ReactNode;
+
+    // FIX: added isLoading so the caller can pass it without TS errors,
+    // and we use it to suppress pointer events on the table body while filtering.
+    isLoading?: boolean;
 
     // bulk selection props
     selectable?: boolean;
@@ -148,16 +154,23 @@ function CellValue({ col, row }: { col: TableColumn; row: TableRow }) {
 
 function EmptyState() {
     return (
-        <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
-            <div className="w-14 h-14 rounded-2xl bg-[#1d4791]/8 dark:bg-[#1d4791]/15 border border-[#1d4791]/12 dark:border-[#1d4791]/25 flex items-center justify-center mb-4">
-                <LucidIcons.Inbox className="w-6 h-6 text-[#1d4791]/40 dark:text-blue-400/40" strokeWidth={1.5} />
+        <div className="flex items-center gap-3 px-5 py-4 bg-[#1d4791] dark:bg-[#1d4791]">
+            <div className="w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center flex-shrink-0">
+                <LucidIcons.Table2 className="w-4 h-4 text-white" strokeWidth={1.75} />
             </div>
-            <p className="text-[14px] font-bold text-slate-700 dark:text-slate-200 mb-1">
-                No records found
-            </p>
-            <p className="text-[12px] text-slate-400 dark:text-slate-500">
-                There is no data to display right now.
-            </p>
+            <div className="flex-1 min-w-0">
+                <p className="text-[13px] font-bold text-white leading-tight truncate">
+                    {title ?? "Data Table"}
+                </p>
+                <p className="text-[11px] text-blue-200/60 mt-0.5">
+                    0 records
+                </p>
+            </div>
+            {headerActions && (
+                <div className="flex-shrink-0 flex items-center gap-2">
+                    {headerActions}
+                </div>
+            )}
         </div>
     );
 }
@@ -170,7 +183,7 @@ function ActionDropdown({
     onEdit,
     onRestore,
     onRunPayroll,
-    onEmail, // new
+    onEmail,
     route,
 }: {
     row: TableRow;
@@ -180,7 +193,7 @@ function ActionDropdown({
     onEdit?: (r: TableRow) => void;
     onRestore?: (r: TableRow) => void;
     onRunPayroll?: (r: TableRow) => void;
-    onEmail?: (r: TableRow) => void; // new
+    onEmail?: (r: TableRow) => void;
     route: ReturnType<typeof useRoute>;
 }) {
     // Filter "Run Payroll" to only appear on rows with status "open"
@@ -289,7 +302,7 @@ function ActionDropdown({
                         );
                     })}
 
-                    {/* Email actions — separate, styled distinctively */}
+                    {/* Email actions */}
                     {emailActions.length > 0 && (nonDestructive.length > 0 || runPayrollActions.length > 0) && (
                         <DropdownMenuSeparator className="my-1 border-slate-100 dark:border-slate-800" />
                     )}
@@ -345,21 +358,33 @@ export const CustomTable = ({
     onView,
     onEdit,
     onRunPayroll,
-    onEmail, // new
+    onEmail,
     title,
     toolbar,
     filterEmptyState,
+    isLoading = false,
     selectable = false,
     selectedIds = [],
     onSelectChange,
     selectAll = false,
     onRestore,
     bulkActions = [],
+    headerActions,
 }: CustomTableProps) => {
     const route = useRoute();
     const dataColumns = columns.filter(col => !col.isAction);
     const hasActions = columns.some(col => col.isAction);
     const actionProps = { actions, onDelete, onView, onEdit, onRestore, onRunPayroll, onEmail, route };
+
+    // ── FIX: Keep a ref to the latest selectedRows so bulk action onClick
+    // handlers always fire with current data, never a stale closure snapshot. ──
+    const selectedRows = data.filter(row => selectedIds.includes(row.id));
+    const selectedRowsRef = useRef<TableRow[]>(selectedRows);
+    useEffect(() => {
+        selectedRowsRef.current = selectedRows;
+    }, [selectedRows]);
+
+    const hasSelected = selectedRows.length > 0;
 
     const handleSelectAll = (checked: boolean) => {
         if (!onSelectChange) return;
@@ -438,9 +463,6 @@ export const CustomTable = ({
         );
     };
 
-    const selectedRows = data.filter(row => selectedIds.includes(row.id));
-    const hasSelected = selectedRows.length > 0;
-
     if (!data || data.length === 0) {
         return (
             <div className="w-full font-sans">
@@ -473,7 +495,9 @@ export const CustomTable = ({
     const MobileView = () => (
         <div className="block md:hidden">
             {hasSelected && (
-                <div className="sticky top-0 z-10 bg-[#1d4791] text-white p-3 flex items-center justify-between shadow-lg">
+                // FIX: added relative z-20 so the sticky bar is never occluded
+                // by the toolbar or any other sibling element.
+                <div className="sticky top-0 z-20 bg-[#1d4791] text-white p-3 flex items-center justify-between shadow-lg">
                     <div className="flex items-center gap-2">
                         <Checkbox
                             checked={selectAll}
@@ -488,10 +512,12 @@ export const CustomTable = ({
                             return (
                                 <button
                                     key={idx}
-                                    onClick={() => action.onClick(selectedRows)}
+                                    // FIX: use ref so the click always fires with the
+                                    // latest selected rows, not a stale snapshot.
+                                    onClick={() => action.onClick(selectedRowsRef.current)}
                                     className="px-3 py-1.5 bg-white/20 rounded-lg text-sm font-medium hover:bg-white/30 transition-colors"
                                 >
-                                    <Icon className="h-4 w-4" />
+                                    <Icon className="h-4 w-4 inline-block" />
                                     <span className="ml-1">{action.label}</span>
                                 </button>
                             );
@@ -499,13 +525,12 @@ export const CustomTable = ({
                     </div>
                 </div>
             )}
-            <div className="divide-y divide-slate-100 dark:divide-slate-800">
+            <div className={`divide-y divide-slate-100 dark:divide-slate-800 ${isLoading ? 'opacity-50 pointer-events-none' : ''}`}>
                 {data.map((row, index) => (
                     <div
                         key={row.id || index}
-                        className={`px-4 py-4 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors duration-150 ${
-                            selectedIds.includes(row.id) ? 'bg-blue-50 dark:bg-blue-950/30' : ''
-                        }`}
+                        className={`px-4 py-4 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors duration-150 ${selectedIds.includes(row.id) ? 'bg-blue-50 dark:bg-blue-950/30' : ''
+                            }`}
                     >
                         {/* Card header with selection and actions */}
                         <div className="flex items-center justify-between mb-3">
@@ -549,7 +574,8 @@ export const CustomTable = ({
     const TabletView = () => (
         <div className="hidden md:block lg:hidden">
             {hasSelected && (
-                <div className="sticky top-0 z-10 bg-[#1d4791] text-white p-3 flex items-center justify-between shadow-lg">
+                // FIX: z-20 so it sits above the toolbar
+                <div className="sticky top-0 z-20 bg-[#1d4791] text-white p-3 flex items-center justify-between shadow-lg">
                     <div className="flex items-center gap-2">
                         <Checkbox
                             checked={selectAll}
@@ -564,10 +590,11 @@ export const CustomTable = ({
                             return (
                                 <button
                                     key={idx}
-                                    onClick={() => action.onClick(selectedRows)}
+                                    // FIX: ref-based click handler
+                                    onClick={() => action.onClick(selectedRowsRef.current)}
                                     className="px-3 py-1.5 bg-white/20 rounded-lg text-sm font-medium hover:bg-white/30 transition-colors"
                                 >
-                                    <Icon className="h-4 w-4" />
+                                    <Icon className="h-4 w-4 inline-block" />
                                     <span className="ml-1">{action.label}</span>
                                 </button>
                             );
@@ -575,13 +602,12 @@ export const CustomTable = ({
                     </div>
                 </div>
             )}
-            <div className="p-4 grid grid-cols-2 gap-3">
+            <div className={`p-4 grid grid-cols-2 gap-3 ${isLoading ? 'opacity-50 pointer-events-none' : ''}`}>
                 {data.map((row, index) => (
                     <div
                         key={row.id || index}
-                        className={`rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/60 p-4 hover:border-[#1d4791]/40 dark:hover:border-[#1d4791]/50 hover:shadow-md transition-all duration-200 group ${
-                            selectedIds.includes(row.id) ? 'border-blue-400 bg-blue-50/50 dark:bg-blue-950/30' : ''
-                        }`}
+                        className={`rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/60 p-4 hover:border-[#1d4791]/40 dark:hover:border-[#1d4791]/50 hover:shadow-md transition-all duration-200 group ${selectedIds.includes(row.id) ? 'border-blue-400 bg-blue-50/50 dark:bg-blue-950/30' : ''
+                            }`}
                     >
                         {/* Card header */}
                         <div className="flex items-center justify-between mb-3 pb-3 border-b border-slate-100 dark:border-slate-700/60">
@@ -623,7 +649,7 @@ export const CustomTable = ({
 
     // ── DESKTOP VIEW (≥1024px) ─────────────────────────────────────────
     const DesktopView = () => (
-        <div className="hidden lg:block overflow-x-auto">
+        <div className={`hidden lg:block overflow-x-auto ${isLoading ? 'opacity-50 pointer-events-none' : ''}`}>
             <table className="w-full border-collapse text-[13px] text-slate-700 dark:text-slate-300">
                 <thead>
                     <tr className="border-b border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-800/80 border">
@@ -694,6 +720,16 @@ export const CustomTable = ({
                             {getHeaderRecordDisplayText()}
                         </p>
                     </div>
+                    {isLoading && (
+                        <div className="flex-shrink-0">
+                            <LucidIcons.Loader2 className="w-4 h-4 text-white/60 animate-spin" />
+                        </div>
+                    )}
+                    {headerActions && (
+                        <div className="flex-shrink-0 flex items-center gap-2">
+                            {headerActions}
+                        </div>
+                    )}
                 </div>
 
                 {/* Toolbar */}
@@ -703,9 +739,9 @@ export const CustomTable = ({
                     </div>
                 )}
 
-                {/* Bulk Action Bar */}
+                {/* Bulk actions bar */}
                 {selectable && hasSelected && (
-                    <div className="px-5 py-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/50 flex flex-wrap gap-2">
+                    <div>
                         {bulkActions.map((action, idx) => {
                             const Icon = LucidIcons[action.icon] as React.ElementType;
                             return (
@@ -713,7 +749,8 @@ export const CustomTable = ({
                                     key={idx}
                                     variant="outline"
                                     size="sm"
-                                    onClick={() => action.onClick(selectedRows)}
+                                    type="button"
+                                    onClick={() => action.onClick(selectedRowsRef.current)}
                                     className="text-sm"
                                 >
                                     <Icon className="h-4 w-4 mr-1" />
