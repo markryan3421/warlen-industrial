@@ -61,6 +61,8 @@ Route::middleware(['auth', 'admin', 'auth.session', 'throttle:limit-actions', Ca
 	Route::delete('/employees/bulk-force-delete', [EmployeeController::class, 'bulkForceDelete']);
 	Route::put('/employees/{employee:slug_emp}/restore', [EmployeeController::class, 'restore'])->name('employees.restore')->withTrashed();
 	Route::get('/payrolls/{id}/print-data', [PayrollController::class, 'getPrintData'])->name('payrolls.print-data');
+	Route::get('/payrolls/export-all', [PayrollController::class, 'exportAll']); // ← before
+	Route::get('/payrolls/{id}', [PayrollController::class, 'show']);             // ← after
 
 	//admin dashboard
 	Route::get('dashboard', AdminDashboardController::class)->name('dashboard');

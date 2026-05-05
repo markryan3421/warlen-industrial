@@ -488,93 +488,119 @@ export default function Index({
             });
     }, []);
 
-    const handlePrintSummary = useCallback(() => {
-        const summaryPayrolls = filteredPayrollTableData.map(p => {
-            const originalPayroll = payrolls.find(pr => pr.id === p.id);
-            const earnings = originalPayroll?.payroll_items
-                ?.filter(item => item.type === 'earning')
-                .map(item => ({ description: item.description || item.code, amount: Number(item.amount) || 0 })) || [];
-            const deductions = originalPayroll?.payroll_items
-                ?.filter(item => item.type === 'deduction')
-                .map(item => ({ description: item.description || item.code, amount: Number(item.amount) || 0 })) || [];
-            return {
-                id:              p.id,
-                employee_name:   p.employee_name,
-                emp_code:        p.emp_code,
-                employee_avatar: p.employee_avatar,
-                position_name:   p.position_name,
-                branch_name:     p.branch_name,
-                site_name:       p.site_name,
-                period_name:     p.period_name,
-                period_start:    p.period_start,
-                period_end:      p.period_end,
-                pay_frequency:   p.pay_frequency,
-                gross_pay:       Number(p.gross_pay)       || 0,
-                total_deduction: Number(p.total_deduction) || 0,
-                net_pay:         Number(p.net_pay)         || 0,
-                earnings,
-                deductions,
-            };
+const handlePrintSummary = useCallback(async () => {
+    // Build query params from current filters (no perPage/page limit)
+    const params = new URLSearchParams();
+    if (searchTerm.trim())            params.set('search',    searchTerm.trim());
+    if (selectedPositions.length)     params.set('positions', selectedPositions.join(','));
+    if (selectedBranches.length)      params.set('branches',  selectedBranches.join(','));
+    if (selectedSites.length)         params.set('sites',     selectedSites.join(','));
+    if (dateFrom && isValid(dateFrom)) params.set('date_from', format(dateFrom, 'yyyy-MM-dd'));
+    if (dateTo   && isValid(dateTo))   params.set('date_to',   format(dateTo,   'yyyy-MM-dd'));
+
+    toast.loading('Preparing print summary...', { id: 'print-summary' });
+
+    let allPayrolls: Payroll[] = [];
+    try {
+        const response = await axios.get(`/payrolls/export-all?${params.toString()}`);
+        allPayrolls = response.data;
+    } catch {
+        toast.error('Failed to fetch all payroll data for printing.', { id: 'print-summary' });
+        return;
+    }
+
+    toast.dismiss('print-summary');
+
+    // Map to summary shape (same as before, but uses allPayrolls instead of filteredPayrollTableData)
+    const summaryPayrolls = allPayrolls.map(p => {
+        const earnings = p.payroll_items
+            ?.filter(item => item.type === 'earning')
+            .map(item => ({ description: item.description || item.code, amount: Number(item.amount) || 0 })) || [];
+        const deductions = p.payroll_items
+            ?.filter(item => item.type === 'deduction')
+            .map(item => ({ description: item.description || item.code, amount: Number(item.amount) || 0 })) || [];
+
+        return {
+            id:              p.id,
+            employee_name:   p.employee?.user.name          ?? 'Unknown Employee',
+            emp_code:        p.employee?.emp_code            ?? 'N/A',
+            employee_avatar: p.employee?.avatar              ?? null,
+            position_name:   p.employee?.position?.pos_name  ?? 'No Position',
+            branch_name:     p.employee?.branch?.branch_name ?? 'No Branch',
+            site_name:       p.employee?.site?.site_name
+                          ?? p.employee?.branch?.sites?.[0]?.site_name
+                          ?? 'No Site',
+            period_name:     p.payroll_period?.period_name   ?? 'N/A',
+            period_start:    p.payroll_period?.start_date    ?? '',
+            period_end:      p.payroll_period?.end_date      ?? '',
+            pay_frequency:   p.employee?.pay_frequency       ?? 'N/A',
+            gross_pay:       Number(p.gross_pay)       || 0,
+            total_deduction: Number(p.total_deduction) || 0,
+            net_pay:         Number(p.net_pay)         || 0,
+            earnings,
+            deductions,
+        };
+    });
+
+    // Aggregate totals (same logic as before)
+    let totalGrossPay = 0, totalDeductions = 0, totalNetPay = 0;
+    let totalOvertimePay = 0, totalOvertimeHours = 0, totalHolidayOvertimePay = 0;
+    let totalIncentives = 0, totalContributions = 0, totalOtherDeductions = 0, totalLateDeduction = 0;
+
+    summaryPayrolls.forEach(p => {
+        totalGrossPay   += p.gross_pay;
+        totalDeductions += p.total_deduction;
+        totalNetPay     += p.net_pay;
+
+        p.earnings?.forEach((e: any) => {
+            const desc   = String(e.description || '').toLowerCase();
+            const amount = Number(e.amount) || 0;
+            if (desc.includes('overtime')) {
+                desc.includes('holiday') ? (totalHolidayOvertimePay += amount) : (totalOvertimePay += amount);
+            } else if (desc.includes('incentive')) {
+                totalIncentives += amount;
+            }
         });
 
-        let totalGrossPay = 0, totalDeductions = 0, totalNetPay = 0;
-        let totalOvertimePay = 0, totalOvertimeHours = 0, totalHolidayOvertimePay = 0;
-        let totalIncentives = 0, totalContributions = 0, totalOtherDeductions = 0, totalLateDeduction = 0;
-
-        summaryPayrolls.forEach(p => {
-            totalGrossPay   += Number(p.gross_pay)       || 0;
-            totalDeductions += Number(p.total_deduction) || 0;
-            totalNetPay     += Number(p.net_pay)         || 0;
-
-            p.earnings?.forEach((e: any) => {
-                const desc   = String(e.description || '').toLowerCase();
-                const amount = Number(e.amount) || 0;
-                if (desc.includes('overtime')) {
-                    desc.includes('holiday') ? (totalHolidayOvertimePay += amount) : (totalOvertimePay += amount);
-                } else if (desc.includes('incentive')) {
-                    totalIncentives += amount;
-                }
-            });
-
-            p.deductions?.forEach((d: any) => {
-                const desc   = String(d.description || '').toLowerCase();
-                const amount = Number(d.amount) || 0;
-                if (desc.includes('sss') || desc.includes('philhealth') || desc.includes('pag-ibig') || desc.includes('pagibig') || desc.includes('contribution')) {
-                    totalContributions += amount;
-                } else if (desc.includes('late')) {
-                    totalLateDeduction += amount;
-                } else {
-                    totalOtherDeductions += amount;
-                }
-            });
+        p.deductions?.forEach((d: any) => {
+            const desc   = String(d.description || '').toLowerCase();
+            const amount = Number(d.amount) || 0;
+            if (desc.includes('sss') || desc.includes('philhealth') || desc.includes('pag-ibig') || desc.includes('pagibig') || desc.includes('contribution')) {
+                totalContributions += amount;
+            } else if (desc.includes('late')) {
+                totalLateDeduction += amount;
+            } else {
+                totalOtherDeductions += amount;
+            }
         });
+    });
 
-        const dateRange  = dateFrom && dateTo
-            ? `${format(dateFrom, 'MMMM d, yyyy')} – ${format(dateTo, 'MMMM d, yyyy')}`
-            : 'All Periods';
-        const filterText: string[] = [];
-        if (searchTerm)              filterText.push(`Search: ${searchTerm}`);
-        if (selectedPositions.length) filterText.push(`Positions: ${selectedPositions.join(', ')}`);
-        if (selectedBranches.length)  filterText.push(`Branches: ${selectedBranches.join(', ')}`);
-        if (selectedSites.length)     filterText.push(`Sites: ${selectedSites.join(', ')}`);
-        const locationFilter = selectedBranches[0] || selectedSites[0]
-            ? `Branch: ${selectedBranches[0] || 'All'} | Site: ${selectedSites[0] || 'All'}`
-            : '';
+    const dateRange = dateFrom && dateTo
+        ? `${format(dateFrom, 'MMMM d, yyyy')} – ${format(dateTo, 'MMMM d, yyyy')}`
+        : 'All Periods';
 
-        const htmlContent = generateSummaryHTML({
-            summaryPayrolls,
-            totalGrossPay, totalDeductions, totalNetPay,
-            totalOvertimePay, totalOvertimeHours, totalHolidayOvertimePay,
-            totalIncentives, totalContributions, totalOtherDeductions, totalLateDeduction,
-            dateRange, filterText, locationFilter, formatCurrency, authorizedByName,
-        });
+    const filterText: string[] = [];
+    if (searchTerm)               filterText.push(`Search: ${searchTerm}`);
+    if (selectedPositions.length)  filterText.push(`Positions: ${selectedPositions.join(', ')}`);
+    if (selectedBranches.length)   filterText.push(`Branches: ${selectedBranches.join(', ')}`);
+    if (selectedSites.length)      filterText.push(`Sites: ${selectedSites.join(', ')}`);
+    const locationFilter = selectedBranches[0] || selectedSites[0]
+        ? `Branch: ${selectedBranches[0] || 'All'} | Site: ${selectedSites[0] || 'All'}`
+        : '';
 
-        printPayrollSummary(htmlContent);
-    }, [
-        filteredPayrollTableData, payrolls,
-        searchTerm, selectedPositions, selectedBranches, selectedSites,
-        dateFrom, dateTo, formatCurrency, authorizedByName,
-    ]);
+    const htmlContent = generateSummaryHTML({
+        summaryPayrolls,
+        totalGrossPay, totalDeductions, totalNetPay,
+        totalOvertimePay, totalOvertimeHours, totalHolidayOvertimePay,
+        totalIncentives, totalContributions, totalOtherDeductions, totalLateDeduction,
+        dateRange, filterText, locationFilter, formatCurrency, authorizedByName,
+    });
+
+    printPayrollSummary(htmlContent);
+}, [
+    searchTerm, selectedPositions, selectedBranches, selectedSites,
+    dateFrom, dateTo, formatCurrency, authorizedByName,
+]);
 
     // ── Table config ──────────────────────────────────────────────────────────
     const columns        = useMemo(() => getPayrollTableColumns(formatCurrency), [formatCurrency]);
