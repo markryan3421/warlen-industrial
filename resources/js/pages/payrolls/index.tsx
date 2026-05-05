@@ -201,20 +201,20 @@ export default function Index({
         } = filtersRef.current;
 
         const params: Record<string, string | number> = {};
-        const rs  = overrides.search    !== undefined ? overrides.search    : s;
-        const rp  = overrides.positions !== undefined ? overrides.positions : pos;
-        const rb  = overrides.branches  !== undefined ? overrides.branches  : br;
-        const rst = overrides.sites     !== undefined ? overrides.sites     : st;
-        const rf  = overrides.from      !== undefined ? overrides.from      : from;
-        const rt  = overrides.to        !== undefined ? overrides.to        : to;
-        const rpp = overrides.perPage   !== undefined ? overrides.perPage   : pp;
+        const rs = overrides.search !== undefined ? overrides.search : s;
+        const rp = overrides.positions !== undefined ? overrides.positions : pos;
+        const rb = overrides.branches !== undefined ? overrides.branches : br;
+        const rst = overrides.sites !== undefined ? overrides.sites : st;
+        const rf = overrides.from !== undefined ? overrides.from : from;
+        const rt = overrides.to !== undefined ? overrides.to : to;
+        const rpp = overrides.perPage !== undefined ? overrides.perPage : pp;
 
-        if (rs?.trim())        params.search    = rs.trim();
-        if (rp?.length)        params.positions = rp.join(',');
-        if (rb?.length)        params.branches  = rb.join(',');
-        if (rst?.length)       params.sites     = rst.join(',');
+        if (rs?.trim()) params.search = rs.trim();
+        if (rp?.length) params.positions = rp.join(',');
+        if (rb?.length) params.branches = rb.join(',');
+        if (rst?.length) params.sites = rst.join(',');
         if (rf && isValid(rf)) params.date_from = format(rf, 'yyyy-MM-dd');
-        if (rt && isValid(rt)) params.date_to   = format(rt, 'yyyy-MM-dd');
+        if (rt && isValid(rt)) params.date_to = format(rt, 'yyyy-MM-dd');
 
         params.perPage = rpp ? parseInt(rpp) : 10;
         if (overrides.page) params.page = overrides.page;
@@ -375,23 +375,23 @@ export default function Index({
 
     const payrollTableData = useMemo(() => payrolls.map(p => ({
         id: p.id,
-        period_name:     p.payroll_period?.period_name ?? 'N/A',
-        period_start:    p.payroll_period?.start_date  ?? '',
-        period_end:      p.payroll_period?.end_date    ?? '',
-        emp_code:        p.employee?.emp_code           ?? 'N/A',
-        employee_name:   p.employee?.user.name          ?? 'Unknown Employee',
-        position_name:   p.employee?.position?.pos_name ?? 'No Position',
-        branch_name:     p.employee?.branch?.branch_name ?? 'No Branch',
-        employee_avatar: p.employee?.avatar              ?? null,
-        site_name:       p.employee?.site?.site_name
-                      ?? p.employee?.branch?.sites?.[0]?.site_name
-                      ?? 'No Site',
-        pay_frequency:   p.employee?.pay_frequency ?? 'N/A',
-        gross_pay:       p.gross_pay       ?? 0,
+        period_name: p.payroll_period?.period_name ?? 'N/A',
+        period_start: p.payroll_period?.start_date ?? '',
+        period_end: p.payroll_period?.end_date ?? '',
+        emp_code: p.employee?.emp_code ?? 'N/A',
+        employee_name: p.employee?.user.name ?? 'Unknown Employee',
+        position_name: p.employee?.position?.pos_name ?? 'No Position',
+        branch_name: p.employee?.branch?.branch_name ?? 'No Branch',
+        employee_avatar: p.employee?.avatar ?? null,
+        site_name: p.employee?.site?.site_name
+            ?? p.employee?.branch?.sites?.[0]?.site_name
+            ?? 'No Site',
+        pay_frequency: p.employee?.pay_frequency ?? 'N/A',
+        gross_pay: p.gross_pay ?? 0,
         total_deduction: p.total_deduction ?? 0,
-        net_pay:         p.net_pay         ?? 0,
-        avatar:          p.employee?.avatar,
-        _original:       p,
+        net_pay: p.net_pay ?? 0,
+        avatar: p.employee?.avatar,
+        _original: p,
     })), [payrolls]);
 
     const filteredPayrollTableData = useMemo(() => {
@@ -406,18 +406,18 @@ export default function Index({
         if (!serverPagination?.links?.length) return serverPagination;
 
         const baseParams = new URLSearchParams();
-        if (searchTerm.trim())          baseParams.set('search',    searchTerm.trim());
-        if (selectedPositions.length)   baseParams.set('positions', selectedPositions.join(','));
-        if (selectedBranches.length)    baseParams.set('branches',  selectedBranches.join(','));
-        if (selectedSites.length)       baseParams.set('sites',     selectedSites.join(','));
+        if (searchTerm.trim()) baseParams.set('search', searchTerm.trim());
+        if (selectedPositions.length) baseParams.set('positions', selectedPositions.join(','));
+        if (selectedBranches.length) baseParams.set('branches', selectedBranches.join(','));
+        if (selectedSites.length) baseParams.set('sites', selectedSites.join(','));
         if (dateFrom && isValid(dateFrom)) baseParams.set('date_from', format(dateFrom, 'yyyy-MM-dd'));
-        if (dateTo   && isValid(dateTo))   baseParams.set('date_to',   format(dateTo,   'yyyy-MM-dd'));
+        if (dateTo && isValid(dateTo)) baseParams.set('date_to', format(dateTo, 'yyyy-MM-dd'));
         baseParams.set('perPage', String(serverPagination.per_page || 10));
 
         const links = serverPagination.links.map((link: any) => {
             if (!link.url) return link;
-            const url    = new URL(link.url, window.location.origin);
-            const page   = url.searchParams.get('page');
+            const url = new URL(link.url, window.location.origin);
+            const page = url.searchParams.get('page');
             const merged = new URLSearchParams(baseParams.toString());
             if (page) merged.set('page', page);
             url.search = merged.toString();
@@ -446,7 +446,7 @@ export default function Index({
         if (!confirm('Are you sure you want to delete this payroll record?')) return;
         destroy(`/payrolls/${row.id}`, {
             onSuccess: () => { toast.success('Payroll record deleted successfully'); applyFilters(); },
-            onError:   () => toast.error('Failed to delete payroll record'),
+            onError: () => toast.error('Failed to delete payroll record'),
         });
     }, [destroy, applyFilters]);
 
@@ -469,142 +469,139 @@ export default function Index({
             toast.error('No payroll records selected.');
             return;
         }
-        toast.loading(`Sending ${ids.length} email(s)...`, { id: 'bulk-email' });
+        toast.loading(`Queuing ${ids.length} email(s)...`, { id: 'bulk-email' });
         axios.post('/payrolls/bulk-email', { ids })
-            .then((response) => {
-                const { success, failures } = response.data;
-                if (success > 0 && failures === 0) {
-                    toast.success(`Successfully sent ${success} email(s).`, { id: 'bulk-email' });
-                } else if (success > 0 && failures > 0) {
-                    toast.warning(`Sent ${success} email(s), failed: ${failures}.`, { id: 'bulk-email' });
-                } else {
-                    toast.error('Failed to send any emails.', { id: 'bulk-email' });
-                }
+            .then(() => {
+                // Backend returns 202 — emails are queued, not sent immediately
+                toast.success(
+                    `${ids.length} payroll email(s) successfully. They will be sent shortly.`,
+                    { id: 'bulk-email' }
+                );
                 setSelectedPayrollIds([]);
             })
             .catch((error) => {
-                const message = error.response?.data?.message || 'Failed to send emails.';
+                const message = error.response?.data?.message || 'Failed to queue emails. Please try again.';
                 toast.error(message, { id: 'bulk-email' });
             });
     }, []);
 
-const handlePrintSummary = useCallback(async () => {
-    // Build query params from current filters (no perPage/page limit)
-    const params = new URLSearchParams();
-    if (searchTerm.trim())            params.set('search',    searchTerm.trim());
-    if (selectedPositions.length)     params.set('positions', selectedPositions.join(','));
-    if (selectedBranches.length)      params.set('branches',  selectedBranches.join(','));
-    if (selectedSites.length)         params.set('sites',     selectedSites.join(','));
-    if (dateFrom && isValid(dateFrom)) params.set('date_from', format(dateFrom, 'yyyy-MM-dd'));
-    if (dateTo   && isValid(dateTo))   params.set('date_to',   format(dateTo,   'yyyy-MM-dd'));
+    const handlePrintSummary = useCallback(async () => {
+        // Build query params from current filters (no perPage/page limit)
+        const params = new URLSearchParams();
+        if (searchTerm.trim()) params.set('search', searchTerm.trim());
+        if (selectedPositions.length) params.set('positions', selectedPositions.join(','));
+        if (selectedBranches.length) params.set('branches', selectedBranches.join(','));
+        if (selectedSites.length) params.set('sites', selectedSites.join(','));
+        if (dateFrom && isValid(dateFrom)) params.set('date_from', format(dateFrom, 'yyyy-MM-dd'));
+        if (dateTo && isValid(dateTo)) params.set('date_to', format(dateTo, 'yyyy-MM-dd'));
 
-    toast.loading('Preparing print summary...', { id: 'print-summary' });
+        toast.loading('Preparing print summary...', { id: 'print-summary' });
 
-    let allPayrolls: Payroll[] = [];
-    try {
-        const response = await axios.get(`/payrolls/export-all?${params.toString()}`);
-        allPayrolls = response.data;
-    } catch {
-        toast.error('Failed to fetch all payroll data for printing.', { id: 'print-summary' });
-        return;
-    }
+        let allPayrolls: Payroll[] = [];
+        try {
+            const response = await axios.get(`/payrolls/export-all?${params.toString()}`);
+            allPayrolls = response.data;
+        } catch {
+            toast.error('Failed to fetch all payroll data for printing.', { id: 'print-summary' });
+            return;
+        }
 
-    toast.dismiss('print-summary');
+        toast.dismiss('print-summary');
 
-    // Map to summary shape (same as before, but uses allPayrolls instead of filteredPayrollTableData)
-    const summaryPayrolls = allPayrolls.map(p => {
-        const earnings = p.payroll_items
-            ?.filter(item => item.type === 'earning')
-            .map(item => ({ description: item.description || item.code, amount: Number(item.amount) || 0 })) || [];
-        const deductions = p.payroll_items
-            ?.filter(item => item.type === 'deduction')
-            .map(item => ({ description: item.description || item.code, amount: Number(item.amount) || 0 })) || [];
+        // Map to summary shape (same as before, but uses allPayrolls instead of filteredPayrollTableData)
+        const summaryPayrolls = allPayrolls.map(p => {
+            const earnings = p.payroll_items
+                ?.filter(item => item.type === 'earning')
+                .map(item => ({ description: item.description || item.code, amount: Number(item.amount) || 0 })) || [];
+            const deductions = p.payroll_items
+                ?.filter(item => item.type === 'deduction')
+                .map(item => ({ description: item.description || item.code, amount: Number(item.amount) || 0 })) || [];
 
-        return {
-            id:              p.id,
-            employee_name:   p.employee?.user.name          ?? 'Unknown Employee',
-            emp_code:        p.employee?.emp_code            ?? 'N/A',
-            employee_avatar: p.employee?.avatar              ?? null,
-            position_name:   p.employee?.position?.pos_name  ?? 'No Position',
-            branch_name:     p.employee?.branch?.branch_name ?? 'No Branch',
-            site_name:       p.employee?.site?.site_name
-                          ?? p.employee?.branch?.sites?.[0]?.site_name
-                          ?? 'No Site',
-            period_name:     p.payroll_period?.period_name   ?? 'N/A',
-            period_start:    p.payroll_period?.start_date    ?? '',
-            period_end:      p.payroll_period?.end_date      ?? '',
-            pay_frequency:   p.employee?.pay_frequency       ?? 'N/A',
-            gross_pay:       Number(p.gross_pay)       || 0,
-            total_deduction: Number(p.total_deduction) || 0,
-            net_pay:         Number(p.net_pay)         || 0,
-            earnings,
-            deductions,
-        };
-    });
-
-    // Aggregate totals (same logic as before)
-    let totalGrossPay = 0, totalDeductions = 0, totalNetPay = 0;
-    let totalOvertimePay = 0, totalOvertimeHours = 0, totalHolidayOvertimePay = 0;
-    let totalIncentives = 0, totalContributions = 0, totalOtherDeductions = 0, totalLateDeduction = 0;
-
-    summaryPayrolls.forEach(p => {
-        totalGrossPay   += p.gross_pay;
-        totalDeductions += p.total_deduction;
-        totalNetPay     += p.net_pay;
-
-        p.earnings?.forEach((e: any) => {
-            const desc   = String(e.description || '').toLowerCase();
-            const amount = Number(e.amount) || 0;
-            if (desc.includes('overtime')) {
-                desc.includes('holiday') ? (totalHolidayOvertimePay += amount) : (totalOvertimePay += amount);
-            } else if (desc.includes('incentive')) {
-                totalIncentives += amount;
-            }
+            return {
+                id: p.id,
+                employee_name: p.employee?.user.name ?? 'Unknown Employee',
+                emp_code: p.employee?.emp_code ?? 'N/A',
+                employee_avatar: p.employee?.avatar ?? null,
+                position_name: p.employee?.position?.pos_name ?? 'No Position',
+                branch_name: p.employee?.branch?.branch_name ?? 'No Branch',
+                site_name: p.employee?.site?.site_name
+                    ?? p.employee?.branch?.sites?.[0]?.site_name
+                    ?? 'No Site',
+                period_name: p.payroll_period?.period_name ?? 'N/A',
+                period_start: p.payroll_period?.start_date ?? '',
+                period_end: p.payroll_period?.end_date ?? '',
+                pay_frequency: p.employee?.pay_frequency ?? 'N/A',
+                gross_pay: Number(p.gross_pay) || 0,
+                total_deduction: Number(p.total_deduction) || 0,
+                net_pay: Number(p.net_pay) || 0,
+                earnings,
+                deductions,
+            };
         });
 
-        p.deductions?.forEach((d: any) => {
-            const desc   = String(d.description || '').toLowerCase();
-            const amount = Number(d.amount) || 0;
-            if (desc.includes('sss') || desc.includes('philhealth') || desc.includes('pag-ibig') || desc.includes('pagibig') || desc.includes('contribution')) {
-                totalContributions += amount;
-            } else if (desc.includes('late')) {
-                totalLateDeduction += amount;
-            } else {
-                totalOtherDeductions += amount;
-            }
+        // Aggregate totals (same logic as before)
+        let totalGrossPay = 0, totalDeductions = 0, totalNetPay = 0;
+        let totalOvertimePay = 0, totalOvertimeHours = 0, totalHolidayOvertimePay = 0;
+        let totalIncentives = 0, totalContributions = 0, totalOtherDeductions = 0, totalLateDeduction = 0;
+
+        summaryPayrolls.forEach(p => {
+            totalGrossPay += p.gross_pay;
+            totalDeductions += p.total_deduction;
+            totalNetPay += p.net_pay;
+
+            p.earnings?.forEach((e: any) => {
+                const desc = String(e.description || '').toLowerCase();
+                const amount = Number(e.amount) || 0;
+                if (desc.includes('overtime')) {
+                    desc.includes('holiday') ? (totalHolidayOvertimePay += amount) : (totalOvertimePay += amount);
+                } else if (desc.includes('incentive')) {
+                    totalIncentives += amount;
+                }
+            });
+
+            p.deductions?.forEach((d: any) => {
+                const desc = String(d.description || '').toLowerCase();
+                const amount = Number(d.amount) || 0;
+                if (desc.includes('sss') || desc.includes('philhealth') || desc.includes('pag-ibig') || desc.includes('pagibig') || desc.includes('contribution')) {
+                    totalContributions += amount;
+                } else if (desc.includes('late')) {
+                    totalLateDeduction += amount;
+                } else {
+                    totalOtherDeductions += amount;
+                }
+            });
         });
-    });
 
-    const dateRange = dateFrom && dateTo
-        ? `${format(dateFrom, 'MMMM d, yyyy')} – ${format(dateTo, 'MMMM d, yyyy')}`
-        : 'All Periods';
+        const dateRange = dateFrom && dateTo
+            ? `${format(dateFrom, 'MMMM d, yyyy')} – ${format(dateTo, 'MMMM d, yyyy')}`
+            : 'All Periods';
 
-    const filterText: string[] = [];
-    if (searchTerm)               filterText.push(`Search: ${searchTerm}`);
-    if (selectedPositions.length)  filterText.push(`Positions: ${selectedPositions.join(', ')}`);
-    if (selectedBranches.length)   filterText.push(`Branches: ${selectedBranches.join(', ')}`);
-    if (selectedSites.length)      filterText.push(`Sites: ${selectedSites.join(', ')}`);
-    const locationFilter = selectedBranches[0] || selectedSites[0]
-        ? `Branch: ${selectedBranches[0] || 'All'} | Site: ${selectedSites[0] || 'All'}`
-        : '';
+        const filterText: string[] = [];
+        if (searchTerm) filterText.push(`Search: ${searchTerm}`);
+        if (selectedPositions.length) filterText.push(`Positions: ${selectedPositions.join(', ')}`);
+        if (selectedBranches.length) filterText.push(`Branches: ${selectedBranches.join(', ')}`);
+        if (selectedSites.length) filterText.push(`Sites: ${selectedSites.join(', ')}`);
+        const locationFilter = selectedBranches[0] || selectedSites[0]
+            ? `Branch: ${selectedBranches[0] || 'All'} | Site: ${selectedSites[0] || 'All'}`
+            : '';
 
-    const htmlContent = generateSummaryHTML({
-        summaryPayrolls,
-        totalGrossPay, totalDeductions, totalNetPay,
-        totalOvertimePay, totalOvertimeHours, totalHolidayOvertimePay,
-        totalIncentives, totalContributions, totalOtherDeductions, totalLateDeduction,
-        dateRange, filterText, locationFilter, formatCurrency, authorizedByName,
-    });
+        const htmlContent = generateSummaryHTML({
+            summaryPayrolls,
+            totalGrossPay, totalDeductions, totalNetPay,
+            totalOvertimePay, totalOvertimeHours, totalHolidayOvertimePay,
+            totalIncentives, totalContributions, totalOtherDeductions, totalLateDeduction,
+            dateRange, filterText, locationFilter, formatCurrency, authorizedByName,
+        });
 
-    printPayrollSummary(htmlContent);
-}, [
-    searchTerm, selectedPositions, selectedBranches, selectedSites,
-    dateFrom, dateTo, formatCurrency, authorizedByName,
-]);
+        printPayrollSummary(htmlContent);
+    }, [
+        searchTerm, selectedPositions, selectedBranches, selectedSites,
+        dateFrom, dateTo, formatCurrency, authorizedByName,
+    ]);
 
     // ── Table config ──────────────────────────────────────────────────────────
-    const columns        = useMemo(() => getPayrollTableColumns(formatCurrency), [formatCurrency]);
-    const actions        = useMemo(() => getPayrollTableActions(handleViewPayroll, handleEmailPayroll), [handleViewPayroll, handleEmailPayroll]);
+    const columns = useMemo(() => getPayrollTableColumns(formatCurrency), [formatCurrency]);
+    const actions = useMemo(() => getPayrollTableActions(handleViewPayroll, handleEmailPayroll), [handleViewPayroll, handleEmailPayroll]);
     const skeletonColumns = useMemo(() => getSkeletonColumns(), []);
 
     const selectAll = useMemo(() => {
@@ -652,7 +649,7 @@ const handlePrintSummary = useCallback(async () => {
             searchTerm={searchTerm}
             selectedPositions={selectedPositions}
             selectedBranch={selectedBranches[0] || ''}
-            selectedSite={selectedSites[0]   || ''}
+            selectedSite={selectedSites[0] || ''}
             status=""
             dateFrom={dateFrom}
             dateTo={dateTo}
@@ -660,7 +657,7 @@ const handlePrintSummary = useCallback(async () => {
             onPositionsChange={handlePositionsChange}
             onBranchChange={handleBranchChange}
             onSiteChange={handleSiteChange}
-            onStatusChange={() => {}}
+            onStatusChange={() => { }}
             onDateFromChange={handleDateFromChange}
             onDateToChange={handleDateToChange}
             onClearAll={clearFilters}

@@ -232,53 +232,53 @@ class PayrollController extends Controller
         ], 202);
     }
     public function exportAll(Request $request)
-{
-    // Gate::authorize('viewAny', Payroll::class);
+    {
+        // Gate::authorize('viewAny', Payroll::class);
 
-    $query = Payroll::with([
-        'employee.user',
-        'employee.position',
-        'employee.branch.sites',
-        'employee.site',
-        'payrollPeriod',   // ← camelCase, not snake_case
-        'payrollItems'     // ← camelCase, not snake_case
-    ])
-    ->when($request->search, function ($q) use ($request) {
-        $q->where(function ($inner) use ($request) {  // ← wrap in where() to scope the OR
-            $inner->whereHas('employee.user', fn($q2) =>
-                $q2->where('name', 'like', "%{$request->search}%")
-            )->orWhereHas('employee', fn($q2) =>
-                $q2->where('emp_code', 'like', "%{$request->search}%")
-            );
-        });
-    })
-    ->when($request->positions, fn($q) =>
-        $q->whereHas('employee.position', fn($q2) =>
-            $q2->whereIn('pos_name', explode(',', $request->positions))
+        $query = Payroll::with([
+            'employee.user',
+            'employee.position',
+            'employee.branch.sites',
+            'employee.site',
+            'payrollPeriod',   // ← camelCase, not snake_case
+            'payrollItems'     // ← camelCase, not snake_case
+        ])
+        ->when($request->search, function ($q) use ($request) {
+            $q->where(function ($inner) use ($request) {  // ← wrap in where() to scope the OR
+                $inner->whereHas('employee.user', fn($q2) =>
+                    $q2->where('name', 'like', "%{$request->search}%")
+                )->orWhereHas('employee', fn($q2) =>
+                    $q2->where('emp_code', 'like', "%{$request->search}%")
+                );
+            });
+        })
+        ->when($request->positions, fn($q) =>
+            $q->whereHas('employee.position', fn($q2) =>
+                $q2->whereIn('pos_name', explode(',', $request->positions))
+            )
         )
-    )
-    ->when($request->branches, fn($q) =>
-        $q->whereHas('employee.branch', fn($q2) =>
-            $q2->whereIn('branch_name', explode(',', $request->branches))
+        ->when($request->branches, fn($q) =>
+            $q->whereHas('employee.branch', fn($q2) =>
+                $q2->whereIn('branch_name', explode(',', $request->branches))
+            )
         )
-    )
-    ->when($request->sites, fn($q) =>
-        $q->whereHas('employee.site', fn($q2) =>
-            $q2->whereIn('site_name', explode(',', $request->sites))
+        ->when($request->sites, fn($q) =>
+            $q->whereHas('employee.site', fn($q2) =>
+                $q2->whereIn('site_name', explode(',', $request->sites))
+            )
         )
-    )
-    ->when($request->date_from, fn($q) =>
-        $q->whereHas('payrollPeriod', fn($q2) =>  // ← camelCase
-            $q2->where('start_date', '>=', $request->date_from)
+        ->when($request->date_from, fn($q) =>
+            $q->whereHas('payrollPeriod', fn($q2) =>  // ← camelCase
+                $q2->where('start_date', '>=', $request->date_from)
+            )
         )
-    )
-    ->when($request->date_to, fn($q) =>
-        $q->whereHas('payrollPeriod', fn($q2) =>  // ← camelCase
-            $q2->where('end_date', '<=', $request->date_to)
-        )
-    );
+        ->when($request->date_to, fn($q) =>
+            $q->whereHas('payrollPeriod', fn($q2) =>  // ← camelCase
+                $q2->where('end_date', '<=', $request->date_to)
+            )
+        );
 
-    return response()->json($query->get());
-}
+        return response()->json($query->get());
+    }
     
 }
