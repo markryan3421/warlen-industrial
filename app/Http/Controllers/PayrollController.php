@@ -2,17 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\BulkEmailRequested;
+use App\Mail\PayrollSummaryMail;
 use App\Models\Payroll;
 use App\Services\PayrollService;
 use App\Traits\HasPaginatedIndex;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Gate;
-use Inertia\Inertia;
-use App\Mail\PayrollSummaryMail;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
+use Inertia\Inertia;
 
 class PayrollController extends Controller
 {
@@ -52,7 +54,7 @@ class PayrollController extends Controller
             'activeEmployee' => $this->payrollService->getActiveEmployeesInPayroll($payrollsCollection),
         ];
 
-       // dd($payrolls->perPage());
+        // dd($payrolls->perPage());
 
         return Inertia::render('payrolls/index', [
             'payrolls' => $payrolls->items(),
@@ -174,97 +176,59 @@ class PayrollController extends Controller
         //
     }
 
-public function emailPayroll(Payroll $payroll): JsonResponse
-{
-    try {
-        // Force load all required relationships
-        $payroll->loadMissing([
-            'employee.user', 
-            'payrollPeriod', 
-            'payrollItems',
-            'employee.position'
+    public function emailPayroll(Payroll $payroll): JsonResponse
+    {
+        try {
+            // Force load all required relationships
+            $payroll->loadMissing([
+                'employee.user',
+                'payrollPeriod',
+                'payrollItems',
+                'employee.position'
+            ]);
+
+            Gate::authorize('emailPayroll', $payroll);
+
+            $email = $payroll->employee?->user?->email;
+            if (!$email) {
+                Log::warning('No email address for payroll', ['payroll_id' => $payroll->id]);
+                return response()->json(['message' => 'Employee has no email address.'], 422);
+            }
+
+            Mail::to($email)->queue(new PayrollSummaryMail($payroll));
+
+            Log::info('Payroll email sent', ['payroll_id' => $payroll->id, 'email' => $email]);
+            return response()->json(['message' => 'Payroll summary queued successfully.']);
+        } catch (\Exception $e) {
+            Log::error('Email sending failed', [
+                'payroll_id' => $payroll->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'message' => 'Failed to send email: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    public function bulkEmail(Request $request): JsonResponse
+    {
+        // $ids = $request->input('ids', []);
+        $validated = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'distinct', Rule::exists('payrolls', 'id')],
         ]);
 
-        Gate::authorize('emailPayroll', $payroll);
+        $ids = $validated['ids'];
 
-        $email = $payroll->employee?->user?->email;
-        if (!$email) {
-            Log::warning('No email address for payroll', ['payroll_id' => $payroll->id]);
-            return response()->json(['message' => 'Employee has no email address.'], 422);
+        if (empty($ids)) {
+            return response()->json(['message' => 'No payroll IDs provided.'], 422);
         }
 
-        Mail::to($email)->queue(new PayrollSummaryMail($payroll));
-
-        Log::info('Payroll email sent', ['payroll_id' => $payroll->id, 'email' => $email]);
-        return response()->json(['message' => 'Payroll summary queued successfully.']);
-
-    } catch (\Exception $e) {
-        Log::error('Email sending failed', [
-            'payroll_id' => $payroll->id,
-            'error' => $e->getMessage(),
-            'trace' => $e->getTraceAsString()
-        ]);
+        BulkEmailRequested::dispatch($ids, Auth::id());
 
         return response()->json([
-            'message' => 'Failed to send email: ' . $e->getMessage()
-        ], 500);
+            'message' => 'Bulk email request accepted. The emails will be queued and sent in the background.',
+        ], 202);
     }
-}
-public function bulkEmail(Request $request): JsonResponse
-{
-    // $ids = $request->input('ids', []);
-    $validated = $request->validate([
-        'ids' => ['required', 'array', 'min:1'],
-        'ids.*' => ['integer', 'distinct', Rule::exists('payrolls', 'id')],
-    ]);
-
-    $ids = $validated['ids'];
-
-    if (empty($ids)) {
-        return response()->json(['message' => 'No payroll IDs provided.'], 422);
-    }
-
-    // Fetch payrolls efficiently
-    $payrolls = Payroll::with(['employee.user', 'employee.position', 'payrollPeriod', 'payrollItems'])
-        ->whereIn('id', $ids)
-        ->get();
-
-    $success = 0;
-    $failures = 0;
-    $errors = [];
-
-    // foreach ($payrolls as $index => $payroll) {
-    //     // Add delay before sending the FIRST email? Usually you want it AFTER each send.
-    //     // Here we add a delay before each email except the first one, to space them out.
-    //     if ($index > 0) {
-    //         sleep(10);  // 10 seconds delay between consecutive emails
-    //     }
-
-    foreach ($payrolls as $payroll) {
-        Gate::authorize('emailPayroll', $payroll);
-        // Safer email retrieval
-        $email = optional($payroll->employee?->user)->email;
-        if (blank($email)) {
-            $failures++;
-            $errors[] = "Payroll #{$payroll->id}: no email address";
-            continue;
-        }
-
-        try {
-            Mail::to($email)->queue(new PayrollSummaryMail($payroll));
-            $success++;
-        } catch (\Exception $e) {
-            $failures++;
-            $errors[] = "Payroll #{$payroll->id}: " . $e->getMessage();
-            Log::error("Bulk email failed for payroll {$payroll->id}: " . $e->getMessage());
-        }
-    }
-
-    return response()->json([
-        'message' => "Emails queued: {$success}, failed: {$failures}.",
-        'success' => $success,
-        'failures' => $failures,
-        'errors' => config('app.debug') ? $errors : null,
-    ]);
-}
 }

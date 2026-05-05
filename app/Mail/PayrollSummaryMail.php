@@ -12,10 +12,15 @@ class PayrollSummaryMail extends Mailable
     use Queueable, SerializesModels;
 
     public Payroll $payroll;
-
-    public function __construct(Payroll $payroll)
+    public ?string $authorName;
+    public $tries = 3;
+    
+    public function __construct(Payroll $payroll,
+     ?string $authorName
+    )
     {
         $this->payroll = $payroll;
+        $this->authorName = $authorName;
     }
 
    public function build()
@@ -27,7 +32,7 @@ class PayrollSummaryMail extends Mailable
                         'payroll' => $this->payroll,
                         'earnings' => $this->payroll->payrollItems->where('type', 'earning'),
                         'deductions' => $this->payroll->payrollItems->where('type', 'deduction'),
-                        'authorizedName' => auth()->user()->name ?? 'System Administrator',
+                        'authorizedName' => $this->authorName ?? 'System Administrator',
                     ]);
     }
 }
