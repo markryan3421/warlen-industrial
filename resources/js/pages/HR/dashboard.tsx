@@ -510,7 +510,7 @@ export default function Dashboard({
 
                                         {/* View Full Analysis Link */}
                                         <Link
-                                            href="/reports/analysis"
+                                            href="/ai/hr/dashboard"
                                             className="inline-flex items-center text-xs text-blue-600 hover:text-blue-800 hover:underline font-medium transition-colors duration-200 group"
                                         >
                                             <span>View Full Analysis</span>
