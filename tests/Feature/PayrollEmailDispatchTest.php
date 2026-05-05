@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Events\BulkEmailRequested;
 use App\Mail\PayrollSummaryMail;
 use App\Models\Employee;
 use App\Models\Payroll;
@@ -9,12 +10,13 @@ use App\Models\PayrollPeriod;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class PayrollEmailDispatchTest extends TestCase
 {
-    use RefreshDatabase;
+   use RefreshDatabase;
 
     public function test_guest_cannot_access_payroll_email_endpoint(): void
     {
@@ -43,7 +45,7 @@ class PayrollEmailDispatchTest extends TestCase
 
     public function test_bulk_email_queues_selected_payrolls(): void
     {
-        Mail::fake();
+        Event::fake();
 
         $user = User::factory()->create();
         $this->assignAdminRole($user);
@@ -55,13 +57,16 @@ class PayrollEmailDispatchTest extends TestCase
             'ids' => [$first->id, $second->id],
         ]);
 
-        $response->assertOk()
+        $response->assertAccepted()
             ->assertJson([
-                'success' => 2,
-                'failures' => 0,
+                'message' => 'Bulk email request accepted. The emails will be queued and sent in the background.',
             ]);
 
-        Mail::assertQueued(PayrollSummaryMail::class, 2);
+        // ✅ Fixed: added $user to the closure
+        Event::assertDispatched(BulkEmailRequested::class, function ($event) use ($first, $second, $user) {
+            return $event->payrollIds === [$first->id, $second->id]
+                && $event->userId === $user->id;
+        });
     }
 
     private function createPayrollForEmail(): Payroll

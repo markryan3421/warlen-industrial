@@ -195,7 +195,7 @@ class PayrollController extends Controller
                 return response()->json(['message' => 'Employee has no email address.'], 422);
             }
 
-            Mail::to($email)->queue(new PayrollSummaryMail($payroll));
+            Mail::to($email)->queue(new PayrollSummaryMail($payroll, Auth::user()?->name));
 
             Log::info('Payroll email sent', ['payroll_id' => $payroll->id, 'email' => $email]);
             return response()->json(['message' => 'Payroll summary queued successfully.']);
