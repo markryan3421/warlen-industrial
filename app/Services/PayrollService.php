@@ -74,36 +74,27 @@ class PayrollService
     protected function applyPositionFilter(Builder $query, string $positions): void
     {
         $positionsArray = explode(',', $positions);
-        $lowerPositions = array_map('strtolower', $positionsArray);
 
-        $query->whereHas('employee.position', function ($q) use ($lowerPositions) {
-            $q->whereIn('pos_name', $lowerPositions);
+        $query->whereHas('employee.position', function ($q) use ($positionsArray) {
+            $q->whereIn('pos_name', $positionsArray);
         });
     }
 
-    /**
-     * Apply branch filter to query
-     */
     protected function applyBranchFilter(Builder $query, string $branches): void
     {
         $branchesArray = explode(',', $branches);
-        $lowerBranches = array_map('strtolower', $branchesArray);
 
-        $query->whereHas('employee.branch', function ($q) use ($lowerBranches) {
-            $q->whereIn('branch_name', $lowerBranches);
+        $query->whereHas('employee.branch', function ($q) use ($branchesArray) {
+            $q->whereIn('branch_name', $branchesArray);
         });
     }
 
-    /**
-     * Apply site filter to query
-     */
     protected function applySiteFilter(Builder $query, string $sites): void
     {
         $sitesArray = explode(',', $sites);
-        $lowerSites = array_map('strtolower', $sitesArray);
 
-        $query->whereHas('employee.site', function ($q) use ($lowerSites) {
-            $q->whereIn('site_name', $lowerSites);
+        $query->whereHas('employee.site', function ($q) use ($sitesArray) {
+            $q->whereIn('site_name', $sitesArray);
         });
     }
 
